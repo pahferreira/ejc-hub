@@ -1,1 +1,3 @@
 /api/.env
+/api/build
+/*/node_modules
