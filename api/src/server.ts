@@ -1,5 +1,5 @@
 import fastify from 'fastify'
-import { env } from './config/env.js' // Assuming you have an env.js file for configuration
+import { env } from './config/env.ts'
 
 const server = fastify({
   logger: true,

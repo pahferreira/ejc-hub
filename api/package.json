@@ -2,11 +2,12 @@
   "name": "api",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -w",
-    "dev": "nodemon build/index.js",
+    "dev": "node --env-file=.env --experimental-strip-types --watch --no-warnings src/server.ts",
+    "start": "node --experimental-strip-types --no-warnings src/server.ts",
     "lint": "eslint 'src/**/*.{ts,js}'",
     "lint:fix": "eslint 'src/**/*.{ts,js}' --fix",
     "format": "prettier --check .",
@@ -17,11 +18,11 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^16.5.0",
-    "fastify": "^5.3.3",
-    "nodemon": "^3.1.10"
+    "fastify": "^5.3.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
+    "@tsconfig/node24": "^24.0.1",
     "@types/node": "^22.15.29",
     "@typescript-eslint/eslint-plugin": "^8.33.1",
     "@typescript-eslint/parser": "^8.33.1",
