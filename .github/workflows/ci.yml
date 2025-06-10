@@ -7,9 +7,12 @@ on:
       - main
 
 jobs:
-  code-quality:
-    name: Code Quality Checks
+  api-code-quality:
+    name: API Code Quality Checks
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./api
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -19,7 +22,8 @@ jobs:
         with:
           node-version: 24
           cache: npm
+          cache-dependency-path: ./api/package-lock.json
       - name: Install dependencies
-        run: npm i
+        run: npm install
       - name: Run ESLint
         run: npm run lint
