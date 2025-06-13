@@ -18,14 +18,18 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^16.5.0",
-    "fastify": "^5.3.3"
+    "drizzle-orm": "^0.44.2",
+    "fastify": "^5.3.3",
+    "pg": "^8.16.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
     "@tsconfig/node24": "^24.0.1",
     "@types/node": "^22.15.29",
+    "@types/pg": "^8.15.4",
     "@typescript-eslint/eslint-plugin": "^8.33.1",
     "@typescript-eslint/parser": "^8.33.1",
+    "drizzle-kit": "^0.31.1",
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.1",
