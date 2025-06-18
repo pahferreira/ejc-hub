@@ -1,10 +1,6 @@
-import 'dotenv/config'
 import { drizzle } from 'drizzle-orm/node-postgres'
+import { env } from '../envs/env.ts'
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL is not set')
-}
-
-export const db = drizzle(process.env.DATABASE_URL, {
+export const db = drizzle(env.DATABASE_URL, {
   casing: 'snake_case',
 })
