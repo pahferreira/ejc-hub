@@ -21,7 +21,9 @@
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.44.2",
     "fastify": "^5.3.3",
-    "pg": "^8.16.0"
+    "fastify-type-provider-zod": "^5.0.1",
+    "pg": "^8.16.0",
+    "zod": "^3.25.67"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
