@@ -1,10 +1,20 @@
 import fastify from 'fastify'
 import { env } from './core/envs/env.ts'
 import Auth0 from '@auth0/auth0-fastify-api'
+import { teamTemplateRoutes } from './features/team/http/team-templates-routes.ts'
+import {
+  serializerCompiler,
+  validatorCompiler,
+  type ZodTypeProvider,
+} from 'fastify-type-provider-zod'
 
 const server = fastify({
   logger: true,
-})
+}).withTypeProvider<ZodTypeProvider>()
+
+// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+server.setSerializerCompiler(serializerCompiler)
+server.setValidatorCompiler(validatorCompiler)
 
 server.register(Auth0, {
   domain: env.AUTH_DOMAIN,
@@ -29,6 +39,8 @@ server.register(() => {
     }
   )
 })
+
+server.register(teamTemplateRoutes(server))
 
 async function startServer() {
   try {
