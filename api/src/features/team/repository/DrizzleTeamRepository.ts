@@ -5,7 +5,7 @@ import type { TeamRepository } from '../domain/TeamRepository.ts'
 
 class DrizzleTeamRepository implements TeamRepository {
   async insertTeamTemplate(input: {
-    description?: string
+    description?: string | null
     key: string
     name: string
   }) {
@@ -28,6 +28,19 @@ class DrizzleTeamRepository implements TeamRepository {
       .selectDistinct()
       .from(schema.teamTemplates)
       .where(eq(schema.teamTemplates.key, key))
+
+    if (result[0]) {
+      return result[0]
+    }
+
+    return undefined
+  }
+
+  async getTeamTemplateById(id: string) {
+    const result = await db
+      .selectDistinct()
+      .from(schema.teamTemplates)
+      .where(eq(schema.teamTemplates.id, id))
 
     if (result[0]) {
       return result[0]

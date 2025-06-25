@@ -15,6 +15,16 @@ class TeamTemplates {
     const result = await teamRepository.insertTeamTemplate(input)
     return result
   }
+
+  async getTeamTemplateById(id: string) {
+    const teamTemplate = await teamRepository.getTeamTemplateById(id)
+
+    if (!teamTemplate) {
+      return undefined
+    }
+
+    return teamTemplate
+  }
 }
 
 export const teamTemplatesApp = new TeamTemplates()
