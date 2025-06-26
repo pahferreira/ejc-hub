@@ -1,10 +1,13 @@
-import {
+import type {
   TeamTemplateInput,
   TeamTemplateModel,
 } from '../../../core/database/schemas/index.ts'
 
 export interface TeamRepository {
   insertTeamTemplate: (input: TeamTemplateInput) => Promise<string>
-  getTeamTemplateByKey: (key: string) => Promise<TeamTemplateModel | undefined>
-  getTeamTemplateById: (id: string) => Promise<TeamTemplateModel | undefined>
+  selectTeamTemplateByKey: (
+    key: string
+  ) => Promise<TeamTemplateModel | undefined>
+  selectTeamTemplateById: (id: string) => Promise<TeamTemplateModel | undefined>
+  listTeamTemplates: () => Promise<TeamTemplateModel[]>
 }

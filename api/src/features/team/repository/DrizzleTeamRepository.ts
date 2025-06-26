@@ -23,7 +23,7 @@ class DrizzleTeamRepository implements TeamRepository {
     return result[0].id ?? ''
   }
 
-  async getTeamTemplateByKey(key: string) {
+  async selectTeamTemplateByKey(key: string) {
     const result = await db
       .selectDistinct()
       .from(schema.teamTemplates)
@@ -36,7 +36,7 @@ class DrizzleTeamRepository implements TeamRepository {
     return undefined
   }
 
-  async getTeamTemplateById(id: string) {
+  async selectTeamTemplateById(id: string) {
     const result = await db
       .selectDistinct()
       .from(schema.teamTemplates)
@@ -47,6 +47,15 @@ class DrizzleTeamRepository implements TeamRepository {
     }
 
     return undefined
+  }
+
+  async listTeamTemplates() {
+    const results = await db
+      .selectDistinct()
+      .from(schema.teamTemplates)
+      .orderBy(schema.teamTemplates.name)
+
+    return results
   }
 }
 
