@@ -20,7 +20,10 @@ class DrizzleTeamRepository implements TeamRepository {
   }
 
   async selectTeamTemplateByKey(key: string) {
-    const result = await db.selectDistinct().from(schema.teamTemplates).where(eq(schema.teamTemplates.key, key))
+    const result = await db
+      .selectDistinct()
+      .from(schema.teamTemplates)
+      .where(eq(schema.teamTemplates.key, key))
 
     if (result[0]) {
       return result[0]
@@ -30,7 +33,10 @@ class DrizzleTeamRepository implements TeamRepository {
   }
 
   async selectTeamTemplateById(id: string) {
-    const result = await db.selectDistinct().from(schema.teamTemplates).where(eq(schema.teamTemplates.id, id))
+    const result = await db
+      .selectDistinct()
+      .from(schema.teamTemplates)
+      .where(eq(schema.teamTemplates.id, id))
 
     if (result[0]) {
       return result[0]
@@ -40,7 +46,10 @@ class DrizzleTeamRepository implements TeamRepository {
   }
 
   async listTeamTemplates() {
-    const results = await db.selectDistinct().from(schema.teamTemplates).orderBy(schema.teamTemplates.name)
+    const results = await db
+      .selectDistinct()
+      .from(schema.teamTemplates)
+      .orderBy(schema.teamTemplates.name)
 
     return results
   }

@@ -51,7 +51,10 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
           name,
         })
 
-        return reply.code(HttpStatus.Created).header('location', `/teams/templates/${resultId}`).send(resultId)
+        return reply
+          .code(HttpStatus.Created)
+          .header('location', `/teams/templates/${resultId}`)
+          .send(resultId)
       }
     )
 

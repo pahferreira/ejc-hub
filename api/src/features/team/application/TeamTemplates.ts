@@ -53,7 +53,9 @@ class TeamTemplates {
     const isInputValid = updatePayloadSchema.safeParse(input).success
 
     if (!isInputValid) {
-      throw new Error('At least one of the following attributes needs to be present: name, description')
+      throw new Error(
+        'At least one of the following attributes needs to be present: name, description'
+      )
     }
 
     const teamTemplateToUpdate = await this.#teamRepository.selectTeamTemplateById(id)
