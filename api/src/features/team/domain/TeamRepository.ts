@@ -10,4 +10,8 @@ export interface TeamRepository {
   ) => Promise<TeamTemplateModel | undefined>
   selectTeamTemplateById: (id: string) => Promise<TeamTemplateModel | undefined>
   listTeamTemplates: () => Promise<TeamTemplateModel[]>
+  updateTeamTemplate: (
+    id: string,
+    input: Partial<TeamTemplateInput>
+  ) => Promise<TeamTemplateModel | undefined>
 }
