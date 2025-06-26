@@ -9,4 +9,5 @@ export interface TeamRepository {
     id: string,
     input: Partial<TeamTemplateInput>
   ) => Promise<TeamTemplateModel | undefined>
+  deleteTeamTemplate: (id: string) => Promise<TeamTemplateModel>
 }

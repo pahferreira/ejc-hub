@@ -111,5 +111,27 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
         })
       }
     )
+
+    server.delete(
+      '/teams/templates/:teamTemplateId',
+      {
+        schema: {
+          params: getTeamTemplateParamSchema,
+        },
+      },
+      async (request, reply) => {
+        const { teamTemplateId } = request.params
+
+        const teamTemplate = await teamTemplatesApp.deleteTeamTemplate(teamTemplateId)
+
+        if (!teamTemplate) {
+          throw new Error('Something went wrong while deleting this team template')
+        }
+
+        return reply.code(HttpStatus.Ok).send({
+          message: `${teamTemplate.name} was deleted successfuly.`,
+        })
+      }
+    )
   }
 }
