@@ -28,6 +28,11 @@ const getTeamTemplateParamSchema = z.object({
   teamTemplateId: z.uuid(),
 })
 
+const updateTeamTemplateBodySchema = z.object({
+  description: z.string().nonempty().optional(),
+  name: z.string().nonempty().optional(),
+})
+
 export function teamTemplateRoutes(server: FastifyServerInstance) {
   return () => {
     server.post(
@@ -46,10 +51,7 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
           name,
         })
 
-        return reply
-          .code(HttpStatus.Created)
-          .header('location', `/teams/templates/${resultId}`)
-          .send(resultId)
+        return reply.code(HttpStatus.Created).header('location', `/teams/templates/${resultId}`).send(resultId)
       }
     )
 
@@ -76,12 +78,35 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
       }
     )
 
-    server.get('/teams/templates', async (request, reply) => {
+    server.get('/teams/templates', async (_, reply) => {
       const teamTemplates = await teamTemplatesApp.listAll()
 
       return reply.code(HttpStatus.Ok).send({
         teamTemplates,
       })
     })
+
+    server.patch(
+      '/teams/templates/:teamTemplateId',
+      {
+        schema: {
+          params: getTeamTemplateParamSchema,
+          body: updateTeamTemplateBodySchema,
+        },
+      },
+      async (request, reply) => {
+        const { teamTemplateId } = request.params
+
+        const teamTemplate = await teamTemplatesApp.updateTeamTemplate(teamTemplateId, request.body)
+
+        if (!teamTemplate) {
+          throw new Error('Something went wrong while updating this team template')
+        }
+
+        return reply.code(HttpStatus.Ok).send({
+          teamTemplate,
+        })
+      }
+    )
   }
 }
