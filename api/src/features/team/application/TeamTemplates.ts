@@ -67,6 +67,11 @@ class TeamTemplates {
     const updatedTeamTemplate = await this.#teamRepository.updateTeamTemplate(id, input)
     return updatedTeamTemplate
   }
+
+  async deleteTeamTemplate(id: string) {
+    const deleted = await this.#teamRepository.deleteTeamTemplate(id)
+    return deleted
+  }
 }
 
 export const teamTemplatesApp = new TeamTemplates(teamRepository)

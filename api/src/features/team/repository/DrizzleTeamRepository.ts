@@ -63,6 +63,15 @@ class DrizzleTeamRepository implements TeamRepository {
 
     return updatedTeamTemplate[0]
   }
+
+  async deleteTeamTemplate(id: string) {
+    const deleted = await db
+      .delete(schema.teamTemplates)
+      .where(eq(schema.teamTemplates.id, id))
+      .returning()
+
+    return deleted[0]
+  }
 }
 
 export const teamRepository = new DrizzleTeamRepository()
