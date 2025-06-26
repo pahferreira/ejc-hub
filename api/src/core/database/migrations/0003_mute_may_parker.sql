@@ -1,0 +1,1 @@
+ALTER TABLE "team_template" ADD CONSTRAINT "team_template_key_unique" UNIQUE("key");

@@ -8,6 +8,7 @@ import type {
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod/v4'
 import { teamTemplatesApp } from '../application/TeamTemplates.ts'
+import { HttpStatus } from '../../../shared/http-statuses.ts'
 
 type FastifyServerInstance = FastifyInstance<
   RawServerDefault,
@@ -46,7 +47,7 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
         })
 
         return reply
-          .code(201)
+          .code(HttpStatus.Created)
           .header('location', `/teams/templates/${resultId}`)
           .send(resultId)
       }
@@ -61,19 +62,26 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
       },
       async (request, reply) => {
         const { teamTemplateId } = request.params
-        const teamTemplate =
-          await teamTemplatesApp.getTeamTemplateById(teamTemplateId)
+        const teamTemplate = await teamTemplatesApp.findOne(teamTemplateId)
 
         if (!teamTemplate) {
-          return reply.code(404).send({
+          return reply.code(HttpStatus.NotFound).send({
             message: 'Team template not found',
           })
         }
 
-        return reply.code(200).send({
+        return reply.code(HttpStatus.Ok).send({
           teamTemplate,
         })
       }
     )
+
+    server.get('/teams/templates', async (request, reply) => {
+      const teamTemplates = await teamTemplatesApp.listAll()
+
+      return reply.code(HttpStatus.Ok).send({
+        teamTemplates,
+      })
+    })
   }
 }
