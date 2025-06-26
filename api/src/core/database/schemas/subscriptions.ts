@@ -26,9 +26,7 @@ export const subscriptions = pgTable('subscriptions', {
   isNewbie: boolean('is_newbie').notNull().default(false),
   status: subscriptionStatus().notNull().default('pending'),
   availability: subscriptionAvailability().notNull().array().default([]),
-  hasCoordinatorExperience: boolean('has_coordinator_experience')
-    .notNull()
-    .default(false),
+  hasCoordinatorExperience: boolean('has_coordinator_experience').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })

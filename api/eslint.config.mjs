@@ -44,7 +44,7 @@ export default defineConfig([
     },
 
     rules: {
-      'prettier/prettier': 'error',
+      'prettier/prettier': ['error', { printWidth: 100 }],
       'prettier/print-width': 'off',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',

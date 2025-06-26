@@ -13,9 +13,7 @@ export const users = pgTable('users', {
   hasSingingSkills: boolean('has_singing_skills').notNull().default(false),
   hasManualSkills: boolean('has_manual_skills').notNull().default(false),
   hasCookingSkills: boolean('has_cooking_skills').notNull().default(false),
-  hasCommunicationSkills: boolean('has_communication_skills')
-    .notNull()
-    .default(false),
+  hasCommunicationSkills: boolean('has_communication_skills').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
