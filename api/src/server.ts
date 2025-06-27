@@ -1,7 +1,7 @@
 import fastify from 'fastify'
 import { env } from './core/envs/env.ts'
 import Auth0 from '@auth0/auth0-fastify-api'
-import { teamTemplateRoutes } from './features/team/http/team-templates-routes.ts'
+import { teamTemplateRoutes } from './features/team/http/team-templates.routes.ts'
 import {
   serializerCompiler,
   validatorCompiler,
