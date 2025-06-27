@@ -7,6 +7,7 @@ import {
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod'
+import { eventsRoutes } from './features/event/http/events.routes.ts'
 
 const server = fastify({
   logger: true,
@@ -41,6 +42,7 @@ server.register(() => {
 })
 
 server.register(teamTemplateRoutes(server))
+server.register(eventsRoutes(server))
 
 async function startServer() {
   try {

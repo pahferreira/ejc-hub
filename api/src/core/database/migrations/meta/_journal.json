@@ -29,6 +29,20 @@
       "when": 1750952779103,
       "tag": "0003_mute_may_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1751035482699,
+      "tag": "0004_curved_hydra",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1751035533536,
+      "tag": "0005_stale_secret_warriors",
+      "breakpoints": true
     }
   ]
 }

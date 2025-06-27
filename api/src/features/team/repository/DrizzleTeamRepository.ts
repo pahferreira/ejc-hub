@@ -37,6 +37,7 @@ class DrizzleTeamRepository implements TeamRepository {
       .selectDistinct()
       .from(schema.teamTemplates)
       .where(eq(schema.teamTemplates.id, id))
+      .limit(1)
 
     if (result[0]) {
       return result[0]
