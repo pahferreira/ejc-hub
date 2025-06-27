@@ -1,22 +1,7 @@
-import type {
-  FastifyBaseLogger,
-  FastifyInstance,
-  RawReplyDefaultExpression,
-  RawRequestDefaultExpression,
-  RawServerDefault,
-} from 'fastify'
-import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod/v4'
 import { teamTemplatesApp } from '../application/TeamTemplates.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
-
-type FastifyServerInstance = FastifyInstance<
-  RawServerDefault,
-  RawRequestDefaultExpression<RawServerDefault>,
-  RawReplyDefaultExpression<RawServerDefault>,
-  FastifyBaseLogger,
-  ZodTypeProvider
->
+import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 
 const createTeamTemplateBodySchema = z.object({
   description: z.string().optional(),
