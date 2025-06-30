@@ -1,10 +1,11 @@
 import type { EventRepository } from '../domain/EventRepository.ts'
 import { z } from 'zod/v4'
 import { eventRepository } from '../repository/DrizzleEventRepository.ts'
+import { AppError } from '../../../shared/AppError.ts'
 
 const eventInputSchema = z.object({
-  name: z.string(),
-  description: z.string(),
+  name: z.string('event name is required'),
+  description: z.string('event description is required'),
 })
 
 const partialEventInputSchema = eventInputSchema.partial().refine((data) => {
@@ -30,7 +31,7 @@ class Events {
     const event = await this.#eventRepository.findEvent(id)
 
     if (!event) {
-      throw new Error('Event not found')
+      throw new AppError('Event not found')
     }
 
     return event
@@ -40,7 +41,7 @@ class Events {
     const validatedInput = eventInputSchema.safeParse(input)
 
     if (!validatedInput.success) {
-      throw new Error(validatedInput.error.message)
+      throw new AppError(validatedInput.error.message)
     }
 
     const createdEvent = await this.#eventRepository.insertEvent(input)
@@ -51,7 +52,7 @@ class Events {
     const validatedInput = partialEventInputSchema.safeParse(input)
 
     if (!validatedInput.success) {
-      throw new Error(
+      throw new AppError(
         'At least one of the following attributes needs to be present: name, description'
       )
     }
@@ -59,7 +60,7 @@ class Events {
     const eventToUpdate = await this.#eventRepository.findEvent(id)
 
     if (!eventToUpdate) {
-      throw new Error('Event not found, please check the event id.')
+      throw new AppError('Event not found, please check the event id.')
     }
 
     const updatedEvent = await this.#eventRepository.updateEvent(id, input)

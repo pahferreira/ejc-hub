@@ -2,6 +2,7 @@ import { z } from 'zod/v4'
 import { teamTemplatesApp } from '../application/TeamTemplates.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
+import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 
 const createTeamTemplateBodySchema = z.object({
   description: z.string().optional(),
@@ -28,18 +29,22 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
         },
       },
       async (request, reply) => {
-        const { description, key, name } = request.body
+        try {
+          const { description, key, name } = request.body
 
-        const resultId = await teamTemplatesApp.createTeamTemplate({
-          description,
-          key,
-          name,
-        })
+          const resultId = await teamTemplatesApp.createTeamTemplate({
+            description,
+            key,
+            name,
+          })
 
-        return reply
-          .code(HttpStatus.Created)
-          .header('location', `/teams/templates/${resultId}`)
-          .send(resultId)
+          return reply
+            .code(HttpStatus.Created)
+            .header('location', `/teams/templates/${resultId}`)
+            .send(resultId)
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
       }
     )
 
@@ -51,27 +56,29 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
         },
       },
       async (request, reply) => {
-        const { teamTemplateId } = request.params
-        const teamTemplate = await teamTemplatesApp.findOne(teamTemplateId)
+        try {
+          const { teamTemplateId } = request.params
+          const teamTemplate = await teamTemplatesApp.findOne(teamTemplateId)
 
-        if (!teamTemplate) {
-          return reply.code(HttpStatus.NotFound).send({
-            message: 'Team template not found',
+          return reply.code(HttpStatus.Ok).send({
+            teamTemplate,
           })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
         }
-
-        return reply.code(HttpStatus.Ok).send({
-          teamTemplate,
-        })
       }
     )
 
     server.get('/teams/templates', async (_, reply) => {
-      const teamTemplates = await teamTemplatesApp.listAll()
+      try {
+        const teamTemplates = await teamTemplatesApp.listAll()
 
-      return reply.code(HttpStatus.Ok).send({
-        teamTemplates,
-      })
+        return reply.code(HttpStatus.Ok).send({
+          teamTemplates,
+        })
+      } catch (error) {
+        fastifyErrorHandler(reply, error)
+      }
     })
 
     server.patch(
@@ -83,17 +90,20 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
         },
       },
       async (request, reply) => {
-        const { teamTemplateId } = request.params
+        try {
+          const { teamTemplateId } = request.params
 
-        const teamTemplate = await teamTemplatesApp.updateTeamTemplate(teamTemplateId, request.body)
+          const teamTemplate = await teamTemplatesApp.updateTeamTemplate(
+            teamTemplateId,
+            request.body
+          )
 
-        if (!teamTemplate) {
-          throw new Error('Something went wrong while updating this team template')
+          return reply.code(HttpStatus.Ok).send({
+            teamTemplate,
+          })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
         }
-
-        return reply.code(HttpStatus.Ok).send({
-          teamTemplate,
-        })
       }
     )
 
@@ -105,17 +115,17 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
         },
       },
       async (request, reply) => {
-        const { teamTemplateId } = request.params
+        try {
+          const { teamTemplateId } = request.params
 
-        const teamTemplate = await teamTemplatesApp.deleteTeamTemplate(teamTemplateId)
+          const teamTemplate = await teamTemplatesApp.deleteTeamTemplate(teamTemplateId)
 
-        if (!teamTemplate) {
-          throw new Error('Something went wrong while deleting this team template')
+          return reply.code(HttpStatus.Ok).send({
+            message: `${teamTemplate.name} was deleted successfuly.`,
+          })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
         }
-
-        return reply.code(HttpStatus.Ok).send({
-          message: `${teamTemplate.name} was deleted successfuly.`,
-        })
       }
     )
   }

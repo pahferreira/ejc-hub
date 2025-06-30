@@ -1,6 +1,7 @@
 import z from 'zod/v4'
 import type { TeamRepository } from '../domain/TeamRepository.ts'
 import { teamRepository } from '../repository/DrizzleTeamRepository.ts'
+import { AppError } from '../../../shared/AppError.ts'
 
 const updatePayloadSchema = z
   .object({
@@ -27,7 +28,7 @@ class TeamTemplates {
     const teamTemplate = await this.#teamRepository.selectTeamTemplateByKey(input.key)
 
     if (teamTemplate) {
-      throw new Error('Team template key already in use.')
+      throw new AppError('Team template key already in use.')
     }
 
     const result = await this.#teamRepository.insertTeamTemplate(input)
@@ -53,7 +54,7 @@ class TeamTemplates {
     const isInputValid = updatePayloadSchema.safeParse(input).success
 
     if (!isInputValid) {
-      throw new Error(
+      throw new AppError(
         'At least one of the following attributes needs to be present: name, description'
       )
     }
@@ -61,7 +62,7 @@ class TeamTemplates {
     const teamTemplateToUpdate = await this.#teamRepository.selectTeamTemplateById(id)
 
     if (!teamTemplateToUpdate) {
-      throw new Error('Team template not found, please check the team template id.')
+      throw new AppError('Team template not found, please check the team template id.')
     }
 
     const updatedTeamTemplate = await this.#teamRepository.updateTeamTemplate(id, input)
