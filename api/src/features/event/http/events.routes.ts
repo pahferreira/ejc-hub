@@ -1,7 +1,7 @@
 import { z } from 'zod/v4'
 import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
-import { eventsApp } from '../application/Events.ts'
+import { eventsApp } from '../application/events-app.ts'
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 
 const eventIdParamSchema = z.object({
