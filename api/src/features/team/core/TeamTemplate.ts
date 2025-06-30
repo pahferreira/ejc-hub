@@ -1,6 +1,5 @@
 import z from 'zod/v4'
 import type { TeamRepository } from '../domain/TeamRepository.ts'
-import { teamRepository } from '../repository/DrizzleTeamRepository.ts'
 import { AppError } from '../../../shared/AppError.ts'
 
 const updatePayloadSchema = z
@@ -17,7 +16,7 @@ const updatePayloadSchema = z
 
 type UpdateInput = z.infer<typeof updatePayloadSchema>
 
-class TeamTemplates {
+export class TeamTemplate {
   #teamRepository: TeamRepository
 
   constructor(teamRepository: TeamRepository) {
@@ -74,5 +73,3 @@ class TeamTemplates {
     return deleted
   }
 }
-
-export const teamTemplatesApp = new TeamTemplates(teamRepository)

@@ -1,6 +1,5 @@
 import type { EventRepository } from '../domain/EventRepository.ts'
 import { z } from 'zod/v4'
-import { eventRepository } from '../repository/DrizzleEventRepository.ts'
 import { AppError } from '../../../shared/AppError.ts'
 
 const eventInputSchema = z.object({
@@ -15,7 +14,7 @@ const partialEventInputSchema = eventInputSchema.partial().refine((data) => {
 type EventInput = z.infer<typeof eventInputSchema>
 type PartialEventInput = z.infer<typeof partialEventInputSchema>
 
-class Events {
+export class Events {
   #eventRepository: EventRepository
 
   constructor(repository: EventRepository) {
@@ -72,5 +71,3 @@ class Events {
     return deletedEvent
   }
 }
-
-export const eventsApp = new Events(eventRepository)

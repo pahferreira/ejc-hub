@@ -1,5 +1,5 @@
 import { z } from 'zod/v4'
-import { teamTemplatesApp } from '../application/TeamTemplates.ts'
+import { teamTemplateApp } from '../application/team-template.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
@@ -32,7 +32,7 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
         try {
           const { description, key, name } = request.body
 
-          const resultId = await teamTemplatesApp.createTeamTemplate({
+          const resultId = await teamTemplateApp.createTeamTemplate({
             description,
             key,
             name,
@@ -58,7 +58,7 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
       async (request, reply) => {
         try {
           const { teamTemplateId } = request.params
-          const teamTemplate = await teamTemplatesApp.findOne(teamTemplateId)
+          const teamTemplate = await teamTemplateApp.findOne(teamTemplateId)
 
           return reply.code(HttpStatus.Ok).send({
             teamTemplate,
@@ -71,7 +71,7 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
 
     server.get('/teams/templates', async (_, reply) => {
       try {
-        const teamTemplates = await teamTemplatesApp.listAll()
+        const teamTemplates = await teamTemplateApp.listAll()
 
         return reply.code(HttpStatus.Ok).send({
           teamTemplates,
@@ -93,7 +93,7 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
         try {
           const { teamTemplateId } = request.params
 
-          const teamTemplate = await teamTemplatesApp.updateTeamTemplate(
+          const teamTemplate = await teamTemplateApp.updateTeamTemplate(
             teamTemplateId,
             request.body
           )
@@ -118,7 +118,7 @@ export function teamTemplateRoutes(server: FastifyServerInstance) {
         try {
           const { teamTemplateId } = request.params
 
-          const teamTemplate = await teamTemplatesApp.deleteTeamTemplate(teamTemplateId)
+          const teamTemplate = await teamTemplateApp.deleteTeamTemplate(teamTemplateId)
 
           return reply.code(HttpStatus.Ok).send({
             message: `${teamTemplate.name} was deleted successfuly.`,
