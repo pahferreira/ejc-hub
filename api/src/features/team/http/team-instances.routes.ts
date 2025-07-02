@@ -27,5 +27,16 @@ export function teamInstanceRoutes(server: FastifyServerInstance) {
         }
       }
     )
+
+    server.get('/teams/instances', async (_, reply) => {
+      try {
+        const teamInstances = await teamInstanceApp.listTeamInstances()
+        return reply.code(HttpStatus.Ok).send({
+          teamInstances,
+        })
+      } catch (error) {
+        fastifyErrorHandler(reply, error)
+      }
+    })
   }
 }

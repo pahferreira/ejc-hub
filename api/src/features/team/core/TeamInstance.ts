@@ -31,4 +31,9 @@ export class TeamInstance {
 
     return result
   }
+
+  async listTeamInstances() {
+    const teamInstancesWithTemplate = await this.#teamRepository.listTeamInstances()
+    return teamInstancesWithTemplate
+  }
 }
