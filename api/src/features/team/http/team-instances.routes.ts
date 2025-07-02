@@ -6,7 +6,11 @@ import { HttpStatus } from '../../../shared/http-statuses.ts'
 
 const createTeamInstanceBodySchema = z.object({
   templateKey: z.string().nonempty(),
-  eventId: z.uuid().nonempty(),
+  eventId: z.uuid(),
+})
+
+const teamInstanceIdParamSchema = z.object({
+  teamInstanceId: z.uuid(),
 })
 
 export function teamInstanceRoutes(server: FastifyServerInstance) {
@@ -18,6 +22,7 @@ export function teamInstanceRoutes(server: FastifyServerInstance) {
         try {
           const { templateKey, eventId } = request.body
           const teamInstance = await teamInstanceApp.createTeamInstance(templateKey, eventId)
+
           return reply
             .code(HttpStatus.Created)
             .header('location', `/teams/instances/${teamInstance.id}`)
@@ -31,6 +36,7 @@ export function teamInstanceRoutes(server: FastifyServerInstance) {
     server.get('/teams/instances', async (_, reply) => {
       try {
         const teamInstances = await teamInstanceApp.listTeamInstances()
+
         return reply.code(HttpStatus.Ok).send({
           teamInstances,
         })
@@ -38,5 +44,22 @@ export function teamInstanceRoutes(server: FastifyServerInstance) {
         fastifyErrorHandler(reply, error)
       }
     })
+
+    server.get(
+      '/teams/instances/:teamInstanceId',
+      { schema: { params: teamInstanceIdParamSchema } },
+      async (request, reply) => {
+        try {
+          const { teamInstanceId } = request.params
+          const teamInstance = await teamInstanceApp.getTeamInstance(teamInstanceId)
+
+          return reply.code(HttpStatus.Ok).send({
+            teamInstance,
+          })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
   }
 }

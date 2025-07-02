@@ -1,6 +1,5 @@
 import type {
   TeamInstanceInput,
-  TeamInstanceWithTemplateModel,
   TeamInstanceModel,
   TeamTemplateInput,
   TeamTemplateModel,
@@ -16,9 +15,17 @@ export interface TeamRepository {
     input: Partial<TeamTemplateInput>
   ) => Promise<TeamTemplateModel | undefined>
   deleteTeamTemplate: (id: string) => Promise<TeamTemplateModel>
-  // selectTeamInstance: (id: string) => Promise<TeamInstanceWithTemplateModel>
-  listTeamInstances: (eventId?: string) => Promise<TeamInstanceWithTemplateModel[]>
+  selectTeamInstance: (id: string) => Promise<TeamInstanceWithTemplate>
+  listTeamInstances: (eventId?: string) => Promise<TeamInstanceWithTemplate[]>
   insertTeamInstance: (input: TeamInstanceInput) => Promise<TeamInstanceModel>
   // updateTeamInstance: (id: string, input: Partial<TeamInstanceInput>) => Promise<TeamInstanceModel>
   // deleteTeamInstance: (id: string) => Promise<TeamInstanceModel>
+}
+
+export type TeamInstanceWithTemplate = {
+  description?: string | null
+  eventId: string
+  id: string
+  name: string
+  templateKey: string
 }

@@ -91,14 +91,30 @@ class DrizzleTeamRepository implements TeamRepository {
       .selectDistinct({
         id: schema.teamInstances.id,
         eventId: schema.teamInstances.eventId,
+        name: schema.teamTemplates.name,
         templateKey: schema.teamTemplates.key,
-        templateName: schema.teamTemplates.name,
       })
       .from(schema.teamInstances)
       .where(eventId ? eq(schema.teamInstances.id, eventId) : undefined)
       .innerJoin(schema.teamTemplates, eq(schema.teamInstances.templateId, schema.teamTemplates.id))
 
     return results
+  }
+
+  async selectTeamInstance(id: string) {
+    const result = await db
+      .select({
+        id: schema.teamInstances.id,
+        description: schema.teamTemplates.description,
+        eventId: schema.teamInstances.eventId,
+        name: schema.teamTemplates.name,
+        templateKey: schema.teamTemplates.key,
+      })
+      .from(schema.teamInstances)
+      .where(eq(schema.teamInstances.id, id))
+      .innerJoin(schema.teamTemplates, eq(schema.teamInstances.templateId, schema.teamTemplates.id))
+
+    return result[0]
   }
 }
 

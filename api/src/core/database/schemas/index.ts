@@ -25,11 +25,3 @@ export type TeamTemplateInput = InferInsertModel<typeof teamTemplates>
 
 export type TeamInstanceModel = InferSelectModel<typeof teamInstances>
 export type TeamInstanceInput = InferInsertModel<typeof teamInstances>
-
-export type TeamInstanceWithTemplateModel = {
-  description?: string
-  eventId: string
-  id: string
-  templateKey: string
-  templateName: string
-}

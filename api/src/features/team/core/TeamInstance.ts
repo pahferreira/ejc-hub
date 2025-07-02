@@ -36,4 +36,9 @@ export class TeamInstance {
     const teamInstancesWithTemplate = await this.#teamRepository.listTeamInstances()
     return teamInstancesWithTemplate
   }
+
+  async getTeamInstance(id: string) {
+    const detailedTeamInstance = await this.#teamRepository.selectTeamInstance(id)
+    return detailedTeamInstance
+  }
 }
