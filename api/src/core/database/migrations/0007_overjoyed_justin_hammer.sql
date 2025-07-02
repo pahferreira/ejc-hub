@@ -1,0 +1,4 @@
+ALTER TABLE "subscription_options" ADD COLUMN "team_instance_id" uuid;--> statement-breakpoint
+ALTER TABLE "team_memberships" ADD COLUMN "team_instance_id" uuid;--> statement-breakpoint
+ALTER TABLE "subscription_options" ADD CONSTRAINT "subscription_options_team_instance_id_team_instances_id_fk" FOREIGN KEY ("team_instance_id") REFERENCES "public"."team_instances"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "team_memberships" ADD CONSTRAINT "team_memberships_team_instance_id_team_instances_id_fk" FOREIGN KEY ("team_instance_id") REFERENCES "public"."team_instances"("id") ON DELETE no action ON UPDATE no action;

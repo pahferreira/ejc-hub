@@ -73,6 +73,18 @@ class DrizzleTeamRepository implements TeamRepository {
 
     return deleted[0]
   }
+
+  async insertTeamInstance(input: { templateId: string; eventId: string }) {
+    const result = await db
+      .insert(schema.teamInstances)
+      .values({
+        templateId: input.templateId,
+        eventId: input.eventId,
+      })
+      .returning()
+
+    return result[0]
+  }
 }
 
 export const teamRepository = new DrizzleTeamRepository()

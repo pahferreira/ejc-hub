@@ -8,6 +8,7 @@ import {
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod'
 import { eventsRoutes } from './features/event/http/events.routes.ts'
+import { teamInstanceRoutes } from './features/team/http/team-instances.routes.ts'
 
 const server = fastify({
   logger: true,
@@ -41,8 +42,9 @@ server.register(() => {
   )
 })
 
-server.register(teamTemplateRoutes(server))
 server.register(eventsRoutes(server))
+server.register(teamTemplateRoutes(server))
+server.register(teamInstanceRoutes(server))
 
 async function startServer() {
   try {

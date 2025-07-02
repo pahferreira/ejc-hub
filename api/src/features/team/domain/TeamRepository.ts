@@ -1,4 +1,9 @@
-import type { TeamTemplateInput, TeamTemplateModel } from '../../../core/database/schemas/index.ts'
+import type {
+  TeamInstanceInput,
+  TeamInstanceModel,
+  TeamTemplateInput,
+  TeamTemplateModel,
+} from '../../../core/database/schemas/index.ts'
 
 export interface TeamRepository {
   insertTeamTemplate: (input: TeamTemplateInput) => Promise<string>
@@ -10,4 +15,9 @@ export interface TeamRepository {
     input: Partial<TeamTemplateInput>
   ) => Promise<TeamTemplateModel | undefined>
   deleteTeamTemplate: (id: string) => Promise<TeamTemplateModel>
+  // selectTeamInstance: (id: string) => Promise<TeamInstanceModel>
+  // listTeamInstances: (id: string) => Promise<TeamInstanceModel[]>
+  insertTeamInstance: (input: TeamInstanceInput) => Promise<TeamInstanceModel>
+  // updateTeamInstance: (id: string, input: Partial<TeamInstanceInput>) => Promise<TeamInstanceModel>
+  // deleteTeamInstance: (id: string) => Promise<TeamInstanceModel>
 }
