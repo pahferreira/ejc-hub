@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type { TeamRepository } from '../domain/TeamRepository.ts'
@@ -124,6 +124,20 @@ class DrizzleTeamRepository implements TeamRepository {
       .returning()
 
     return deleted[0]
+  }
+
+  async selectInstanceByTemplateAndEvent(templateId: string, eventId: string) {
+    const teamInstance = await db
+      .select()
+      .from(schema.teamInstances)
+      .where(
+        and(
+          eq(schema.teamInstances.eventId, eventId),
+          eq(schema.teamInstances.templateId, templateId)
+        )
+      )
+
+    return teamInstance[0]
   }
 }
 

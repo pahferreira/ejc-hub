@@ -11,6 +11,15 @@ export class TeamInstance {
     this.#eventRepository = eventRepo
   }
 
+  async #checkTeamInstanceExists(templateId: string, eventId: string) {
+    const templateInstance = await this.#teamRepository.selectInstanceByTemplateAndEvent(
+      templateId,
+      eventId
+    )
+
+    return templateInstance ? true : false
+  }
+
   async createTeamInstance(templateKey: string, eventId: string) {
     const event = await this.#eventRepository.findEvent(eventId)
 
@@ -22,6 +31,14 @@ export class TeamInstance {
 
     if (!template) {
       throw new AppError("Team Template doesn't exist")
+    }
+
+    const isInstanceAlreadyCreated = await this.#checkTeamInstanceExists(template.id, eventId)
+
+    if (isInstanceAlreadyCreated) {
+      throw new AppError(
+        `A team instance already exists with "${templateKey}" template key for the event`
+      )
     }
 
     const result = await this.#teamRepository.insertTeamInstance({
