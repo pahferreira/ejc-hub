@@ -41,4 +41,9 @@ export class TeamInstance {
     const detailedTeamInstance = await this.#teamRepository.selectTeamInstance(id)
     return detailedTeamInstance
   }
+
+  async deleteTeamInstance(id: string) {
+    const deleted = await this.#teamRepository.deleteTeamInstance(id)
+    return deleted
+  }
 }

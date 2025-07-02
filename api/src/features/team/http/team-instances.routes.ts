@@ -61,5 +61,22 @@ export function teamInstanceRoutes(server: FastifyServerInstance) {
         }
       }
     )
+
+    server.delete(
+      '/teams/instances/:teamInstanceId',
+      { schema: { params: teamInstanceIdParamSchema } },
+      async (request, reply) => {
+        try {
+          const { teamInstanceId } = request.params
+          const deletedTeamInstance = await teamInstanceApp.deleteTeamInstance(teamInstanceId)
+
+          return reply.code(HttpStatus.Ok).send({
+            message: `Team Instance #${deletedTeamInstance.id.slice(0, 5)} deleted successfuly`,
+          })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
   }
 }

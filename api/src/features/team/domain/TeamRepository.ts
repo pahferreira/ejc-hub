@@ -18,8 +18,7 @@ export interface TeamRepository {
   selectTeamInstance: (id: string) => Promise<TeamInstanceWithTemplate>
   listTeamInstances: (eventId?: string) => Promise<TeamInstanceWithTemplate[]>
   insertTeamInstance: (input: TeamInstanceInput) => Promise<TeamInstanceModel>
-  // updateTeamInstance: (id: string, input: Partial<TeamInstanceInput>) => Promise<TeamInstanceModel>
-  // deleteTeamInstance: (id: string) => Promise<TeamInstanceModel>
+  deleteTeamInstance: (id: string) => Promise<TeamInstanceModel>
 }
 
 export type TeamInstanceWithTemplate = {
