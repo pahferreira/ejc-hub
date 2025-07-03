@@ -1,5 +1,5 @@
 import { z } from 'zod/v4'
-import { teamTemplateApp } from '../application/team-template.ts'
+import { teamTemplateApp } from '../application/team.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'

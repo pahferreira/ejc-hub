@@ -17,8 +17,11 @@ export const schema = {
   users,
 }
 
+export type EventModel = InferSelectModel<typeof events>
+export type EventInput = InferInsertModel<typeof events>
+
 export type TeamTemplateModel = InferSelectModel<typeof teamTemplates>
 export type TeamTemplateInput = InferInsertModel<typeof teamTemplates>
 
-export type EventModel = InferSelectModel<typeof events>
-export type EventInput = InferInsertModel<typeof events>
+export type TeamInstanceModel = InferSelectModel<typeof teamInstances>
+export type TeamInstanceInput = InferInsertModel<typeof teamInstances>

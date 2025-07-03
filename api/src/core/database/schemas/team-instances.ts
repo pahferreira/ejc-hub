@@ -4,9 +4,13 @@ import { users } from './users.ts'
 import { events } from './events.ts'
 
 export const teamInstances = pgTable('team_instances', {
-  id: text('id').primaryKey(),
-  templateId: uuid('template_id').references(() => teamTemplates.id),
-  eventId: uuid('event_id').references(() => events.id),
+  id: uuid('id').defaultRandom().primaryKey(),
+  templateId: uuid('template_id')
+    .references(() => teamTemplates.id)
+    .notNull(),
+  eventId: uuid('event_id')
+    .references(() => events.id)
+    .notNull(),
   firstCoordinatorId: text('first_coordinator_id').references(() => users.id),
   secondCoordinatorId: text('second_coordinator_id').references(() => users.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
