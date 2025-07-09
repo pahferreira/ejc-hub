@@ -3,5 +3,5 @@ import type { UserInput, UserModel } from '../../../core/database/schemas/index.
 export interface UserRepository {
   getUser: (authId: string) => Promise<UserModel>
   createUser: (input: UserInput) => Promise<UserModel>
-  // updateUser: () => Promise<unknown>
+  updateUser: (id: string, input: Partial<UserInput>) => Promise<UserModel>
 }
