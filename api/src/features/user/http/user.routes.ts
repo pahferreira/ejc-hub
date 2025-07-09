@@ -12,9 +12,9 @@ type UserInfo = {
 }
 
 const updateUserInputSchema = z.object({
-  phone: z.string().nullable().optional(),
-  nickname: z.string().nullable().optional(),
-  dateOfBirth: z.string().nullable().optional(),
+  phone: z.string().nonempty('must not be empty').optional(),
+  nickname: z.string().nonempty('must not be empty').optional(),
+  dateOfBirth: z.string().nonempty('must not be empty').optional(),
   hasMusicSkills: z.boolean().optional(),
   hasActingSkills: z.boolean().optional(),
   hasDancingSkills: z.boolean().optional(),

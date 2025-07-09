@@ -5,12 +5,12 @@ import { teamInstanceApp } from '../application/team.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 
 const createTeamInstanceBodySchema = z.object({
-  templateKey: z.string().nonempty(),
-  eventId: z.uuid(),
+  templateKey: z.string().nonempty('must not be empty'),
+  eventId: z.uuid('required'),
 })
 
 const teamInstanceIdParamSchema = z.object({
-  teamInstanceId: z.uuid(),
+  teamInstanceId: z.uuid('must not be empty'),
 })
 
 export function teamInstanceRoutes(server: FastifyServerInstance) {
