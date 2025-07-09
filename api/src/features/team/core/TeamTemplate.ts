@@ -1,21 +1,5 @@
-import z from 'zod/v4'
 import type { TeamRepository } from '../domain/TeamRepository.ts'
 import { AppError } from '../../../shared/AppError.ts'
-
-const updatePayloadSchema = z
-  .object({
-    description: z.string().optional(),
-    name: z.string().optional(),
-  })
-  .refine((data) => {
-    if (!data.description && !data.name) {
-      return false
-    }
-    return true
-  })
-
-type UpdateInput = z.infer<typeof updatePayloadSchema>
-
 export class TeamTemplate {
   #teamRepository: TeamRepository
 
@@ -49,15 +33,7 @@ export class TeamTemplate {
     return teamTemplates
   }
 
-  async updateTeamTemplate(id: string, input: UpdateInput) {
-    const isInputValid = updatePayloadSchema.safeParse(input).success
-
-    if (!isInputValid) {
-      throw new AppError(
-        'At least one of the following attributes needs to be present: name, description'
-      )
-    }
-
+  async updateTeamTemplate(id: string, input: { name?: string; description?: string }) {
     const teamTemplateToUpdate = await this.#teamRepository.selectTeamTemplateById(id)
 
     if (!teamTemplateToUpdate) {

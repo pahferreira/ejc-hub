@@ -5,19 +5,26 @@ import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 
 const createTeamTemplateBodySchema = z.object({
-  description: z.string().optional(),
-  key: z.string(),
-  name: z.string(),
+  description: z.string().nonempty('must not be empty').optional(),
+  key: z.string('required'),
+  name: z.string('required'),
 })
 
 const getTeamTemplateParamSchema = z.object({
-  teamTemplateId: z.uuid(),
+  teamTemplateId: z.uuid('required'),
 })
 
-const updateTeamTemplateBodySchema = z.object({
-  description: z.string().nonempty().optional(),
-  name: z.string().nonempty().optional(),
-})
+const updateTeamTemplateBodySchema = z
+  .object({
+    description: z.string().nonempty('must not be empty').optional(),
+    name: z.string().nonempty('must not be empty').optional(),
+  })
+  .refine((data) => {
+    if (!data.description && !data.name) {
+      return false
+    }
+    return true
+  }, 'at least one of the following attributes are required: name, description')
 
 export function teamTemplateRoutes(server: FastifyServerInstance) {
   return () => {
