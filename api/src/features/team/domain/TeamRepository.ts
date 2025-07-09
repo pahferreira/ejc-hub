@@ -4,6 +4,7 @@ import type {
   TeamTemplateInput,
   TeamTemplateModel,
 } from '../../../core/database/schemas/index.ts'
+import { TeamInstanceWithTemplate } from './team-repository.types.ts'
 
 export interface TeamRepository {
   insertTeamTemplate: (input: TeamTemplateInput) => Promise<string>
@@ -23,12 +24,4 @@ export interface TeamRepository {
     templateId: string,
     eventId: string
   ) => Promise<TeamInstanceModel>
-}
-
-export type TeamInstanceWithTemplate = {
-  description?: string | null
-  eventId: string
-  id: string
-  name: string
-  templateKey: string
 }

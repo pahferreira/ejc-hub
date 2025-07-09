@@ -9,6 +9,7 @@ import {
 } from 'fastify-type-provider-zod'
 import { eventsRoutes } from './features/event/http/events.routes.ts'
 import { teamInstanceRoutes } from './features/team/http/team-instances.routes.ts'
+import { userRoutes } from './features/user/http/user.routes.ts'
 
 const server = fastify({
   logger: true,
@@ -27,21 +28,7 @@ server.get('/ping', () => {
   return { message: 'pong' }
 })
 
-server.register(() => {
-  server.get(
-    '/private',
-    {
-      preHandler: void server.requireAuth(),
-    },
-    (request) => {
-      console.log('user', request.user)
-      return {
-        message: 'private',
-      }
-    }
-  )
-})
-
+server.register(userRoutes(server))
 server.register(eventsRoutes(server))
 server.register(teamTemplateRoutes(server))
 server.register(teamInstanceRoutes(server))

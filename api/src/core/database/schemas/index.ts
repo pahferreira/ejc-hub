@@ -25,3 +25,6 @@ export type TeamTemplateInput = InferInsertModel<typeof teamTemplates>
 
 export type TeamInstanceModel = InferSelectModel<typeof teamInstances>
 export type TeamInstanceInput = InferInsertModel<typeof teamInstances>
+
+export type UserModel = InferSelectModel<typeof users>
+export type UserInput = InferInsertModel<typeof users>
