@@ -4,7 +4,7 @@ import { teamInstances } from './team-instances.ts'
 
 export const teamMemberships = pgTable('team_memberships', {
   id: text('id').primaryKey(),
-  userId: text('user_id').references(() => users.id),
+  userId: uuid('user_id').references(() => users.id),
   teamInstanceId: uuid('team_instance_id').references(() => teamInstances.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
