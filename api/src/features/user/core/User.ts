@@ -1,29 +1,25 @@
-import { z } from 'zod/v4'
 import type { UserRepository } from '../domain/UserRepository.ts'
 import { AppError } from '../../../shared/AppError.ts'
 
-const createUserInputSchema = z.object({
-  authId: z.string('authId is required'),
-  name: z.string('name is required').nonempty('name must not be empty'),
-  email: z.email('email is required'),
-  picture: z.string(),
-})
-type CreateUserInputSchema = z.infer<typeof createUserInputSchema>
+type CreateUserInput = {
+  authId: string
+  name: string
+  email: string
+  picture: string
+}
 
-const updateUserInputSchema = z.object({
-  phone: z.string().nullable().optional(),
-  nickname: z.string().nullable().optional(),
-  dateOfBirth: z.string().nullable().optional(),
-  hasMusicSkills: z.boolean().optional(),
-  hasActingSkills: z.boolean().optional(),
-  hasDancingSkills: z.boolean().optional(),
-  hasSingingSkills: z.boolean().optional(),
-  hasManualSkills: z.boolean().optional(),
-  hasCookingSkills: z.boolean().optional(),
-  hasCommunicationSkills: z.boolean().optional(),
-})
-
-type UpdateUserInputSchema = z.infer<typeof updateUserInputSchema>
+type UpdateUserInput = {
+  phone?: string
+  nickname?: string
+  dateOfBirth?: string
+  hasMusicSkills?: boolean
+  hasActingSkills?: boolean
+  hasDancingSkills?: boolean
+  hasSingingSkills?: boolean
+  hasManualSkills?: boolean
+  hasCookingSkills?: boolean
+  hasCommunicationSkills?: boolean
+}
 
 export class User {
   #userRepository: UserRepository
@@ -32,13 +28,7 @@ export class User {
     this.#userRepository = userRepo
   }
 
-  async createUser(input: CreateUserInputSchema) {
-    const validatedInput = createUserInputSchema.safeParse(input)
-
-    if (!validatedInput.success) {
-      throw new AppError(validatedInput.error.message)
-    }
-
+  async createUser(input: CreateUserInput) {
     const user = await this.#userRepository.getUser(input.authId)
 
     if (user) {
@@ -54,13 +44,7 @@ export class User {
     return createdUser
   }
 
-  async updateUser(authId: string, input: UpdateUserInputSchema) {
-    const validateInput = updateUserInputSchema.safeParse(input)
-
-    if (!validateInput.success) {
-      throw new AppError(validateInput.error.message)
-    }
-
+  async updateUser(authId: string, input: UpdateUserInput) {
     const userToUpdate = await this.#userRepository.getUser(authId)
 
     if (!userToUpdate) {
