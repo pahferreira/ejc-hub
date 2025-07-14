@@ -1,5 +1,4 @@
-@import "tailwindcss";
-@tailwind utilities;
+@import 'tailwindcss';
 
 :root {
   font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -8,4 +7,3 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
