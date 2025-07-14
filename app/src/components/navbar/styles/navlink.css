@@ -1,0 +1,11 @@
+.navlink {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: border-bottom 0.2s ease;
+}
+
+.navlink:hover {
+  border-bottom: 2px solid currentColor; 
+}
