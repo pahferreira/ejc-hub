@@ -139,6 +139,35 @@ class DrizzleTeamRepository implements TeamRepository {
 
     return teamInstance[0]
   }
+
+  async insertTeamMembership(input: { userId: string; teamInstanceId: string }) {
+    const teamMemberships = await db.insert(schema.teamMemberships).values(input).returning()
+
+    return teamMemberships[0]
+  }
+
+  async selectTeamMembership(id: string) {
+    const results = await db
+      .select()
+      .from(schema.teamMemberships)
+      .where(eq(schema.teamMemberships.id, id))
+      .limit(1)
+
+    return results[0]
+  }
+
+  async listTeamMemberships() {
+    const results = await db.select().from(schema.teamMemberships)
+    return results
+  }
+
+  async deleteTeamMembership(id: string) {
+    const results = await db
+      .delete(schema.teamMemberships)
+      .where(eq(schema.teamMemberships.id, id))
+      .returning()
+    return results[0]
+  }
 }
 
 export const teamRepository = new DrizzleTeamRepository()
