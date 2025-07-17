@@ -1,6 +1,8 @@
 import type {
   TeamInstanceInput,
   TeamInstanceModel,
+  TeamMembershipInput,
+  TeamMembershipModel,
   TeamTemplateInput,
   TeamTemplateModel,
 } from '../../../core/database/schemas/index.ts'
@@ -24,4 +26,8 @@ export interface TeamRepository {
     templateId: string,
     eventId: string
   ) => Promise<TeamInstanceModel>
+  insertTeamMembership: (input: TeamMembershipInput) => Promise<TeamMembershipModel | undefined>
+  selectTeamMembership: (id: string) => Promise<TeamMembershipModel | undefined>
+  listTeamMemberships: () => Promise<TeamMembershipModel[]>
+  deleteTeamMembership: (id: string) => Promise<TeamMembershipModel>
 }

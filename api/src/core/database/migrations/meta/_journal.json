@@ -71,6 +71,20 @@
       "when": 1752078945797,
       "tag": "0009_curious_young_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1752784505518,
+      "tag": "0010_special_moonstone",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1752785000801,
+      "tag": "0011_abandoned_scrambler",
+      "breakpoints": true
     }
   ]
 }

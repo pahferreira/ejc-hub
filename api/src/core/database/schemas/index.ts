@@ -28,3 +28,6 @@ export type TeamInstanceInput = InferInsertModel<typeof teamInstances>
 
 export type UserModel = InferSelectModel<typeof users>
 export type UserInput = InferInsertModel<typeof users>
+
+export type TeamMembershipModel = InferSelectModel<typeof teamMemberships>
+export type TeamMembershipInput = InferInsertModel<typeof teamMemberships>
