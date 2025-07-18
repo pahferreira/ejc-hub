@@ -1,10 +1,10 @@
-import { eventRepository } from '../../event/repository/DrizzleEventRepository.ts'
-import { userRepository } from '../../user/repository/DrizzleUserRepository.ts'
-import { TeamInstance } from '../core/TeamInstance.ts'
-import { TeamMembership } from '../core/TeamMembership.ts'
-import { TeamTemplate } from '../core/TeamTemplate.ts'
-import { teamRepository } from '../repository/DrizzleTeamRepository.ts'
+import { Team } from '../core/Team.ts'
+import { teamInstanceRepository } from '../repository/DrizzleTeamInstanceRepository.ts'
+import { teamMembershipRepository } from '../repository/DrizzleTeamMembershipRepository.ts'
+import { teamTemplateRepository } from '../repository/DrizzleTeamTemplateRepository.ts'
 
-export const teamTemplateApp = new TeamTemplate(teamRepository)
-export const teamInstanceApp = new TeamInstance(teamRepository, eventRepository)
-export const teamMembershipApp = new TeamMembership(userRepository, teamRepository)
+export const teamApp = new Team(
+  teamInstanceRepository,
+  teamTemplateRepository,
+  teamMembershipRepository
+)
