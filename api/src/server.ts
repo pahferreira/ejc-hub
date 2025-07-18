@@ -1,15 +1,14 @@
 import fastify from 'fastify'
 import { env } from './core/envs/env.ts'
 import Auth0 from '@auth0/auth0-fastify-api'
-import { teamTemplateRoutes } from './features/team/http/team-templates.routes.ts'
 import {
   serializerCompiler,
   validatorCompiler,
   type ZodTypeProvider,
 } from 'fastify-type-provider-zod'
 import { eventsRoutes } from './features/event/http/events.routes.ts'
-import { teamInstanceRoutes } from './features/team/http/team-instances.routes.ts'
 import { userRoutes } from './features/user/http/user.routes.ts'
+import { teamRoutes } from './features/team/http/team.routes.ts'
 
 const server = fastify({
   logger: true,
@@ -30,8 +29,7 @@ server.get('/ping', () => {
 
 server.register(userRoutes(server))
 server.register(eventsRoutes(server))
-server.register(teamTemplateRoutes(server))
-server.register(teamInstanceRoutes(server))
+server.register(teamRoutes(server))
 
 async function startServer() {
   try {
