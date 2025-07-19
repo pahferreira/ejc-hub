@@ -68,6 +68,15 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
 
     return updated[0]
   }
+
+  async bulkInsertTeamInstances(eventId: string, templateIds: string[]) {
+    const teamInstancesToInsert = templateIds.map((id) => ({
+      eventId,
+      templateId: id,
+    }))
+    const teams = await db.insert(schema.teamInstances).values(teamInstancesToInsert).returning()
+    return teams
+  }
 }
 
 export const teamInstanceRepository = new DrizzleTeamInstanceRepository()
