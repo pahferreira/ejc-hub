@@ -1,24 +1,21 @@
-import type { EventRepository } from '../domain/EventRepository.ts'
-import { z } from 'zod/v4'
 import { AppError } from '../../../shared/AppError.ts'
-
-const eventInputSchema = z.object({
-  name: z.string('event name is required'),
-  description: z.string('event description is required'),
-})
-
-const partialEventInputSchema = eventInputSchema.partial().refine((data) => {
-  return data.name || data.description
-})
-
-type EventInput = z.infer<typeof eventInputSchema>
-type PartialEventInput = z.infer<typeof partialEventInputSchema>
+import type { EventRepository } from '../domain/EventRepository.ts'
+import type { TeamTemplateRepository } from '../../team/domain/TeamTemplateRepository.ts'
+import type { TeamInstanceRepository } from '../../team/domain/TeamInstanceRepository.ts'
 
 export class Events {
   #eventRepository: EventRepository
+  #teamTemplateRepository: TeamTemplateRepository
+  #teamInstanceRepository: TeamInstanceRepository
 
-  constructor(repository: EventRepository) {
-    this.#eventRepository = repository
+  constructor(
+    eventRepo: EventRepository,
+    teamTemplateRepo: TeamTemplateRepository,
+    teamInstanceRepo: TeamInstanceRepository
+  ) {
+    this.#eventRepository = eventRepo
+    this.#teamTemplateRepository = teamTemplateRepo
+    this.#teamInstanceRepository = teamInstanceRepo
   }
 
   async listEvents() {
@@ -36,28 +33,15 @@ export class Events {
     return event
   }
 
-  async createEvent(input: EventInput) {
-    const validatedInput = eventInputSchema.safeParse(input)
-
-    if (!validatedInput.success) {
-      throw new AppError(validatedInput.error.message)
-    }
-
+  async createEvent(input: { name: string; description: string }) {
     const createdEvent = await this.#eventRepository.insertEvent(input)
+    await this.#createEventTeams(createdEvent.id)
+
     return createdEvent
   }
 
-  async updateEvent(id: string, input: PartialEventInput) {
-    const validatedInput = partialEventInputSchema.safeParse(input)
-
-    if (!validatedInput.success) {
-      throw new AppError(
-        'At least one of the following attributes needs to be present: name, description'
-      )
-    }
-
+  async updateEvent(id: string, input: { name?: string; description?: string }) {
     const eventToUpdate = await this.#eventRepository.findEvent(id)
-
     if (!eventToUpdate) {
       throw new AppError('Event not found, please check the event id.')
     }
@@ -69,5 +53,16 @@ export class Events {
   async deleteEvent(id: string) {
     const deletedEvent = await this.#eventRepository.deleteEvent(id)
     return deletedEvent
+  }
+
+  async #createEventTeams(eventId: string) {
+    const teamTemplates = await this.#teamTemplateRepository.listTeamTemplates()
+    const templateIds = teamTemplates.map((template) => template.id)
+    const teamInstances = await this.#teamInstanceRepository.bulkInsertTeamInstances(
+      eventId,
+      templateIds
+    )
+
+    return teamInstances
   }
 }

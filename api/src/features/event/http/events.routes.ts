@@ -9,11 +9,13 @@ const eventIdParamSchema = z.object({
 })
 
 const createEventBodySchema = z.object({
-  name: z.string().nonempty(),
-  description: z.string().nonempty(),
+  name: z.string('required').nonempty(),
+  description: z.string('required').nonempty(),
 })
 
-const updateEventBodySchema = createEventBodySchema.partial()
+const updateEventBodySchema = createEventBodySchema.partial().refine((data) => {
+  return data.name || data.description
+}, 'At least one of the following attributes needs to be present: name, description')
 
 export function eventsRoutes(server: FastifyServerInstance) {
   return () => {
