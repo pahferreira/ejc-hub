@@ -16,7 +16,7 @@ class DrizzleTeamTemplateRepository implements TeamTemplateRepository {
       })
       .returning()
 
-    return result[0].id ?? ''
+    return result[0]
   }
 
   async selectTeamTemplateByKey(key: string) {
