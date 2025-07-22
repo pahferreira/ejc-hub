@@ -9,6 +9,7 @@ import {
 import { eventsRoutes } from './features/event/http/events.routes.ts'
 import { userRoutes } from './features/user/http/user.routes.ts'
 import { teamRoutes } from './features/team/http/team.routes.ts'
+import { controlPanelRoutes } from './features/control-panel/http/control-panel.routes.ts'
 
 const server = fastify({
   logger: true,
@@ -30,6 +31,7 @@ server.get('/ping', () => {
 server.register(userRoutes(server))
 server.register(eventsRoutes(server))
 server.register(teamRoutes(server))
+server.register(controlPanelRoutes(server))
 
 async function startServer() {
   try {
