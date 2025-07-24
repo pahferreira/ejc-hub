@@ -1,4 +1,6 @@
-import { pgTable, text, timestamp, boolean, uuid } from 'drizzle-orm/pg-core'
+import { pgEnum, pgTable, text, timestamp, boolean, uuid } from 'drizzle-orm/pg-core'
+
+export const experienceType = pgEnum('experience_type', ['newbie', 'experienced', 'coordinator'])
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -9,6 +11,8 @@ export const users = pgTable('users', {
   nickname: text('nickname'),
   pictureUrl: text('picture_url'),
   dateOfBirth: timestamp('date_of_birth'),
+  emergencyContactName: text('emergency_contact_name'),
+  emergencyContactPhone: text('emergency_contact_phone'),
   hasMusicSkills: boolean('has_music_skills').notNull().default(false),
   hasActingSkills: boolean('has_acting_skills').notNull().default(false),
   hasDancingSkills: boolean('has_dancing_skills').notNull().default(false),
@@ -16,6 +20,7 @@ export const users = pgTable('users', {
   hasManualSkills: boolean('has_manual_skills').notNull().default(false),
   hasCookingSkills: boolean('has_cooking_skills').notNull().default(false),
   hasCommunicationSkills: boolean('has_communication_skills').notNull().default(false),
+  experienceType: experienceType().notNull().default('experienced'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
