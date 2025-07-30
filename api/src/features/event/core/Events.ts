@@ -79,7 +79,18 @@ export class Events {
     return teamInstances
   }
 
-  async subscribe(eventId: string, input: SubscriptionPayload) {
+  async subscribe(eventId: string, userAuthId: string, input: SubscriptionPayload) {
+    const user = await this.#userRepository.getUser(userAuthId)
+
+    const subscriptionEvent = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
+      user.id,
+      eventId
+    )
+
+    if (subscriptionEvent) {
+      throw new AppError('User already subscribed to this event')
+    }
+
     const teamInstancesToSubscribe = await this.#teamInstanceRepository.listTeamInstances(eventId, {
       keys: input.options,
     })
@@ -89,7 +100,8 @@ export class Events {
     }
 
     const subscriptionInput = {
-      userId: input.user.id,
+      userId: user.id,
+      eventId: eventId,
       availability: input.availability,
     }
 
@@ -112,20 +124,20 @@ export class Events {
       throw new AppError('Failed to create subscription options')
     }
 
-    await this.#userRepository.updateUser(input.user.id, {
+    await this.#userRepository.updateUser(user.id, {
       ...input.skills,
       emergencyContactName: input.user.emergencyContactName,
       emergencyContactPhone: input.user.emergencyContactPhone,
       experienceType: this.#defineExperienceType(
         input.user.isNewbie,
-        input.hasCoordinatorExperience
+        input.user.hasCoordinatorExperience
       ),
     })
 
     return subscription
   }
 
-  #defineExperienceType(isNewbie: boolean, hasCoordinatorExperience: boolean) {
+  #defineExperienceType(isNewbie?: boolean, hasCoordinatorExperience?: boolean) {
     if (hasCoordinatorExperience) {
       return 'coordinator'
     }
@@ -133,5 +145,10 @@ export class Events {
       return 'newbie'
     }
     return 'experienced'
+  }
+
+  async listTeams(eventId: string, teamKeys?: string[]) {
+    const teams = await this.#teamInstanceRepository.listTeamInstances(eventId, { keys: teamKeys })
+    return teams
   }
 }

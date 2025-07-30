@@ -1,15 +1,9 @@
 import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
-import { decodeJwt } from 'jose'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { userApp } from '../application/user.ts'
 import { fastifyRequireAuth } from '../../../shared/fastify-require-auth.ts'
 import z from 'zod/v4'
-
-type UserInfo = {
-  email: string
-  name: string
-  picture: string
-}
+import { extractUserInformationFromToken } from '../../../shared/extract-user-info-from-token.ts'
 
 const updateUserInputSchema = z.object({
   phone: z.string().nonempty('must not be empty').optional(),
@@ -55,16 +49,5 @@ export function userRoutes(server: FastifyServerInstance) {
         }
       }
     )
-  }
-}
-
-function extractUserInformationFromToken(token: string) {
-  const user = decodeJwt<UserInfo>(token)
-
-  return {
-    authId: user.sub as string,
-    email: user.email,
-    name: user.name,
-    picture: user.picture,
   }
 }

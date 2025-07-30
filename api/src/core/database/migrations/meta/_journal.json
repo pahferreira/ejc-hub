@@ -134,6 +134,13 @@
       "when": 1753391443779,
       "tag": "0018_equal_sabra",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1753830877503,
+      "tag": "0019_normal_firestar",
+      "breakpoints": true
     }
   ]
 }

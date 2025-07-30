@@ -1,5 +1,4 @@
 import { and, eq, inArray } from 'drizzle-orm'
-import { QueryBuilder } from 'drizzle-orm/pg-core'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type { TeamInstanceRepository } from '../domain/TeamInstanceRepository.ts'
@@ -18,22 +17,21 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
   }
 
   async listTeamInstances(eventId?: string, queryParams?: { keys?: string[] }) {
-    const query = new QueryBuilder()
-    const results = await query
-      .selectDistinct({
+    const results = await db
+      .select({
         id: schema.teamInstances.id,
         eventId: schema.teamInstances.eventId,
         name: schema.teamTemplates.name,
         templateKey: schema.teamTemplates.key,
       })
       .from(schema.teamInstances)
+      .innerJoin(schema.teamTemplates, eq(schema.teamInstances.templateId, schema.teamTemplates.id))
       .where(
         and(
-          eventId ? eq(schema.teamInstances.id, eventId) : undefined,
+          eventId ? eq(schema.teamInstances.eventId, eventId) : undefined,
           queryParams?.keys ? inArray(schema.teamTemplates.key, queryParams.keys) : undefined
         )
       )
-      .innerJoin(schema.teamTemplates, eq(schema.teamInstances.templateId, schema.teamTemplates.id))
 
     return results
   }

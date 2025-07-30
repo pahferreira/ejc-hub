@@ -9,10 +9,10 @@ type SubscriptionAvailability =
 
 export type SubscriptionPayload = {
   user: {
-    id: string
     emergencyContactName: string
     emergencyContactPhone: string
-    isNewbie: boolean
+    isNewbie?: boolean
+    hasCoordinatorExperience?: boolean
   }
   skills: {
     hasActingSkills?: boolean
@@ -25,7 +25,6 @@ export type SubscriptionPayload = {
     hasDancingSkills?: boolean
     hasSingingSkills?: boolean
   }
-  hasCoordinatorExperience: boolean
   options: string[]
   availability: SubscriptionAvailability[]
 }
