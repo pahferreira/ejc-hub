@@ -31,3 +31,9 @@ export type UserInput = InferInsertModel<typeof users>
 
 export type TeamMembershipModel = InferSelectModel<typeof teamMemberships>
 export type TeamMembershipInput = InferInsertModel<typeof teamMemberships>
+
+export type SubscriptionOptionModel = InferSelectModel<typeof subscriptionOptions>
+export type SubscriptionOptionInput = InferInsertModel<typeof subscriptionOptions>
+
+export type SubscriptionModel = InferSelectModel<typeof subscriptions>
+export type SubscriptionInput = InferInsertModel<typeof subscriptions>
