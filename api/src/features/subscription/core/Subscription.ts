@@ -14,7 +14,8 @@ export class Subscription {
   }
 
   async getSubscription(id: string) {
-    const subscription = await this.#subscriptionRepository.getSubscriptionById(id)
+    const subscription = await this.#subscriptionRepository.getSubscription(id)
+
     if (!subscription) {
       throw new AppError('Subscription not found')
     }

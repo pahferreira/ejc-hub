@@ -9,11 +9,12 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
     return result[0]
   }
 
-  async getSubscriptionById(id: string) {
+  async getSubscription(id: string) {
     const result = await db
       .select()
       .from(schema.subscriptions)
       .where(eq(schema.subscriptions.id, id))
+
     return result[0]
   }
 

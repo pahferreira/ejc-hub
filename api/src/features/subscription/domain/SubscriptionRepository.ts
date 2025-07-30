@@ -2,7 +2,7 @@ import { SubscriptionInput, SubscriptionModel } from '../../../core/database/sch
 
 export interface SubscriptionRepository {
   insertSubscription: (input: SubscriptionInput) => Promise<SubscriptionModel | undefined>
-  getSubscriptionById: (id: string) => Promise<SubscriptionModel | undefined>
+  getSubscription: (id: string) => Promise<SubscriptionModel | undefined>
   listSubscriptions: () => Promise<SubscriptionModel[]>
   getSubscriptionByUserAndEvent: (
     userId: string,
