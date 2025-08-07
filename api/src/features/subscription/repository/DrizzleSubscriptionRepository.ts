@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type { SubscriptionRepository } from '../domain/SubscriptionRepository.ts'
@@ -32,6 +32,28 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
       )
 
     return result[0]
+  }
+
+  async listSubscriptionsByEventId(eventId: string) {
+    const results = await db
+      .select({
+        id: schema.subscriptions.id,
+        status: schema.subscriptions.status,
+        teams: sql<string[]>`array_agg(${schema.subscriptionOptions.teamInstanceId})`,
+        user: {
+          name: schema.users.name,
+          phone: schema.users.phone,
+        },
+      })
+      .from(schema.subscriptions)
+      .innerJoin(schema.users, eq(schema.users.id, schema.subscriptions.userId))
+      .leftJoin(
+        schema.subscriptionOptions,
+        eq(schema.subscriptionOptions.subscriptionId, schema.subscriptions.id)
+      )
+      .groupBy(schema.subscriptions.id, schema.users.name, schema.users.phone)
+      .where(eq(schema.subscriptions.eventId, eventId))
+    return results
   }
 }
 

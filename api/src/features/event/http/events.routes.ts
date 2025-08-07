@@ -59,6 +59,17 @@ const teamKeysQuerystringSchema = z.object({
   }, z.array(z.string()).optional()),
 })
 
+const paginationQuerystringSchema = z.object({
+  page: z.coerce.number().int().min(1).optional(),
+  size: z.coerce.number().int().min(1).optional(),
+})
+
+const listSubscriptionsQuerystringSchema = z.object({
+  name: z.string().optional(),
+  ...teamKeysQuerystringSchema.shape,
+  ...paginationQuerystringSchema.shape,
+})
+
 export function eventsRoutes(server: FastifyServerInstance) {
   return () => {
     server.get('/events', {}, async (_, reply) => {
@@ -167,6 +178,25 @@ export function eventsRoutes(server: FastifyServerInstance) {
           const teams = await eventsApp.listTeams(eventId, teamKeys)
 
           return reply.code(HttpStatus.Ok).send({ teams })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.get(
+      '/events/:eventId/subscriptions',
+      { schema: { params: eventIdParamSchema, querystring: listSubscriptionsQuerystringSchema } },
+      async (request, reply) => {
+        try {
+          const { eventId } = request.params
+          const { teamKeys, name, page, size } = request.query
+          const filtering = { teamKeys, name }
+          const pagination = { page, size }
+
+          const subscriptions = await eventsApp.listSubscriptions(eventId, filtering, pagination)
+
+          return reply.code(HttpStatus.Ok).send({ subscriptions })
         } catch (error) {
           fastifyErrorHandler(reply, error)
         }

@@ -6,6 +6,10 @@ import type { SubscriptionOptionRepository } from '../../subscription/domain/Sub
 import type { UserRepository } from '../../user/domain/UserRepository.ts'
 import type { SubscriptionRepository } from '../../subscription/domain/SubscriptionRepository.ts'
 import type { SubscriptionPayload } from '../domain/subscription-types.ts'
+import type { SubscriptionWithDetails } from '../../subscription/domain/subscription.types.ts'
+
+const DEFAULT_PAGE = 1
+const DEFAULT_SIZE = 10
 
 export class Events {
   #eventRepository: EventRepository
@@ -148,7 +152,83 @@ export class Events {
   }
 
   async listTeams(eventId: string, teamKeys?: string[]) {
-    const teams = await this.#teamInstanceRepository.listTeamInstances(eventId, { keys: teamKeys })
+    const teams = await this.#listTeamInstances(eventId, teamKeys)
     return teams
+  }
+
+  async listSubscriptions(
+    eventId: string,
+    query?: { teamKeys?: string[]; name?: string },
+    pagination?: { page?: number; size?: number }
+  ) {
+    const subscriptions = await this.#subscriptionRepository.listSubscriptionsByEventId(eventId)
+    const teams = await this.#listTeamInstances(eventId, query?.teamKeys)
+    let filteredSubscriptions = new Array<SubscriptionWithDetails>(20)
+    filteredSubscriptions.fill(subscriptions[0])
+
+    if (query?.name) {
+      filteredSubscriptions = this.#filterSubscriptionsByUserName(query.name, filteredSubscriptions)
+    }
+
+    if (query?.teamKeys && query.teamKeys.length > 0) {
+      filteredSubscriptions = this.#filterSubscriptionsByTeams(teams, filteredSubscriptions)
+    }
+
+    filteredSubscriptions = this.#applyPagination(
+      filteredSubscriptions,
+      pagination?.page,
+      pagination?.size
+    )
+
+    return this.#formatSubscriptions(teams, filteredSubscriptions)
+  }
+
+  #filterSubscriptionsByUserName(userName: string, subscriptions: SubscriptionWithDetails[]) {
+    return subscriptions.filter((subscription) =>
+      subscription.user.name.toLowerCase().includes(userName.toLowerCase())
+    )
+  }
+
+  #filterSubscriptionsByTeams(
+    teamInstancesWithKey: { id: string; templateKey: string }[],
+    subscriptions: SubscriptionWithDetails[]
+  ) {
+    const allowedTeamIds = teamInstancesWithKey.map((team) => team.id)
+
+    return subscriptions.filter((subscription) =>
+      subscription.teams.some((team) => allowedTeamIds.includes(team))
+    )
+  }
+
+  #applyPagination(
+    items: SubscriptionWithDetails[],
+    page: number = DEFAULT_PAGE,
+    size: number = DEFAULT_SIZE
+  ) {
+    const startIndex = (page - 1) * size
+    const endIndex = page * size
+    return items.slice(startIndex, endIndex)
+  }
+
+  #formatSubscriptions(
+    teamInstancesWithName: { id: string; name: string }[],
+    subscriptions: SubscriptionWithDetails[]
+  ) {
+    return subscriptions.map((subscription) => ({
+      id: subscription.id,
+      user: subscription.user,
+      status: subscription.status,
+      teams: subscription.teams.map((teamId) => {
+        const team = teamInstancesWithName.find((team) => team.id === teamId)
+        return {
+          id: team?.id,
+          name: team?.name,
+        }
+      }),
+    }))
+  }
+
+  #listTeamInstances(eventId: string, teamKeys?: string[]) {
+    return this.#teamInstanceRepository.listTeamInstances(eventId, { keys: teamKeys })
   }
 }
