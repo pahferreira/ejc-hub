@@ -1,6 +1,4 @@
 import { AppError } from '../../../shared/AppError.ts'
-import type { EventRepository } from '../domain/EventRepository.ts'
-import type { TeamTemplateRepository } from '../../team/domain/TeamTemplateRepository.ts'
 import type { TeamInstanceRepository } from '../../team/domain/TeamInstanceRepository.ts'
 import type { SubscriptionOptionRepository } from '../../subscription/domain/SubscriptionOptionRepository.ts'
 import type { UserRepository } from '../../user/domain/UserRepository.ts'
@@ -12,75 +10,21 @@ const DEFAULT_PAGE = 1
 const DEFAULT_SIZE = 10
 
 export class Events {
-  #eventRepository: EventRepository
-  #teamTemplateRepository: TeamTemplateRepository
   #teamInstanceRepository: TeamInstanceRepository
   #subscriptionRepository: SubscriptionRepository
   #subscriptionOptionRepository: SubscriptionOptionRepository
   #userRepository: UserRepository
 
   constructor(
-    eventRepo: EventRepository,
-    teamTemplateRepo: TeamTemplateRepository,
     teamInstanceRepo: TeamInstanceRepository,
     subscriptionRepo: SubscriptionRepository,
     subscriptionOptionRepo: SubscriptionOptionRepository,
     userRepo: UserRepository
   ) {
-    this.#eventRepository = eventRepo
-    this.#teamTemplateRepository = teamTemplateRepo
     this.#teamInstanceRepository = teamInstanceRepo
     this.#subscriptionRepository = subscriptionRepo
     this.#subscriptionOptionRepository = subscriptionOptionRepo
     this.#userRepository = userRepo
-  }
-
-  async listEvents() {
-    const events = await this.#eventRepository.findAllEvents()
-    return events
-  }
-
-  async getEvent(id: string) {
-    const event = await this.#eventRepository.findEvent(id)
-
-    if (!event) {
-      throw new AppError('Event not found')
-    }
-
-    return event
-  }
-
-  async createEvent(input: { name: string; description: string }) {
-    const createdEvent = await this.#eventRepository.insertEvent(input)
-    await this.#createEventTeams(createdEvent.id)
-
-    return createdEvent
-  }
-
-  async updateEvent(id: string, input: { name?: string; description?: string }) {
-    const eventToUpdate = await this.#eventRepository.findEvent(id)
-    if (!eventToUpdate) {
-      throw new AppError('Event not found, please check the event id.')
-    }
-
-    const updatedEvent = await this.#eventRepository.updateEvent(id, input)
-    return updatedEvent
-  }
-
-  async deleteEvent(id: string) {
-    const deletedEvent = await this.#eventRepository.deleteEvent(id)
-    return deletedEvent
-  }
-
-  async #createEventTeams(eventId: string) {
-    const teamTemplates = await this.#teamTemplateRepository.listTeamTemplates()
-    const templateIds = teamTemplates.map((template) => template.id)
-    const teamInstances = await this.#teamInstanceRepository.bulkInsertTeamInstances(
-      eventId,
-      templateIds
-    )
-
-    return teamInstances
   }
 
   async subscribe(eventId: string, userAuthId: string, input: SubscriptionPayload) {
@@ -141,16 +85,6 @@ export class Events {
     return subscription
   }
 
-  #defineExperienceType(isNewbie?: boolean, hasCoordinatorExperience?: boolean) {
-    if (hasCoordinatorExperience) {
-      return 'coordinator'
-    }
-    if (isNewbie) {
-      return 'newbie'
-    }
-    return 'experienced'
-  }
-
   async listTeams(eventId: string, teamKeys?: string[]) {
     const teams = await this.#listTeamInstances(eventId, teamKeys)
     return teams
@@ -181,6 +115,16 @@ export class Events {
     )
 
     return this.#formatSubscriptions(teams, filteredSubscriptions)
+  }
+
+  #defineExperienceType(isNewbie?: boolean, hasCoordinatorExperience?: boolean) {
+    if (hasCoordinatorExperience) {
+      return 'coordinator'
+    }
+    if (isNewbie) {
+      return 'newbie'
+    }
+    return 'experienced'
   }
 
   #filterSubscriptionsByUserName(userName: string, subscriptions: SubscriptionWithDetails[]) {

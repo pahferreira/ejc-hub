@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, isNull } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../domain/EventRepository.ts'
@@ -16,12 +16,17 @@ class DrizzleEventRepository implements EventRepository {
   }
 
   async findAllEvents() {
-    const events = await db.select().from(schema.events)
+    const events = await db.select().from(schema.events).where(isNull(schema.events.deletedAt))
     return events
   }
 
-  async deleteEvent(id: string) {
-    const deletedEvent = await db.delete(schema.events).where(eq(schema.events.id, id)).returning()
+  async softDeleteEvent(id: string) {
+    const deletedAt = new Date()
+    const deletedEvent = await db
+      .update(schema.events)
+      .set({ deletedAt: deletedAt })
+      .where(eq(schema.events.id, id))
+      .returning()
     return deletedEvent[0]
   }
 
