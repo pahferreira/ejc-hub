@@ -141,6 +141,13 @@
       "when": 1753830877503,
       "tag": "0019_normal_firestar",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1756242380562,
+      "tag": "0020_abandoned_husk",
+      "breakpoints": true
     }
   ]
 }

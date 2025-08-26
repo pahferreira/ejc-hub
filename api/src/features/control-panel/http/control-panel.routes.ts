@@ -14,12 +14,26 @@ export const postTeamTemplateBodySchema = z.object({
   description: z.string().optional(),
 })
 
+const eventIdParamSchema = z.object({
+  eventId: z.uuid(),
+})
+
+const createEventBodySchema = z.object({
+  name: z.string('required').nonempty(),
+  description: z.string('required').nonempty(),
+})
+
+const updateEventBodySchema = createEventBodySchema.partial().refine((data) => {
+  return data.name || data.description
+}, 'At least one of the following attributes needs to be present: name, description')
+
 export const patchTeamTemplateBodySchema = postTeamTemplateBodySchema.partial().refine((data) => {
   return data.name || data.description
 }, 'At least one field (name or description) is required for update')
 
 export function controlPanelRoutes(server: FastifyServerInstance) {
   return () => {
+    // Team Management
     server.get('/control-panel/team-templates', async (request, reply) => {
       try {
         const teamTemplates = await controlPanelApp.listTeamTemplates()
@@ -95,6 +109,82 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
           return reply
             .code(HttpStatus.Ok)
             .send({ message: 'Team template deleted successfully', teamTemplate })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    // Event Management
+    server.get('/control-panel/events', async (_, reply) => {
+      try {
+        const events = await controlPanelApp.listEvents()
+
+        return reply.code(HttpStatus.Ok).send({
+          events,
+        })
+      } catch (error) {
+        fastifyErrorHandler(reply, error)
+      }
+    })
+
+    server.get(
+      '/control-panel/events/:eventId',
+      {
+        schema: {
+          params: eventIdParamSchema,
+        },
+      },
+      async (request, reply) => {
+        try {
+          const { eventId } = request.params
+          const event = await controlPanelApp.getEvent(eventId)
+
+          return reply.code(HttpStatus.Ok).send(event)
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.post(
+      '/control-panel/events',
+      { schema: { body: createEventBodySchema } },
+      async (request, reply) => {
+        try {
+          const event = await controlPanelApp.createEvent(request.body)
+
+          return reply.code(HttpStatus.Ok).header('location', `/events/${event.id}`).send({ event })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.patch(
+      '/control-panel/events/:eventId',
+      { schema: { params: eventIdParamSchema, body: updateEventBodySchema } },
+      async (request, reply) => {
+        try {
+          const { eventId } = request.params
+          const event = await controlPanelApp.updateEvent(eventId, request.body)
+
+          return reply.code(HttpStatus.Ok).send({ event })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.delete(
+      '/control-panel/events/:eventId',
+      { schema: { params: eventIdParamSchema } },
+      async (request, reply) => {
+        try {
+          const { eventId } = request.params
+          const event = await controlPanelApp.deleteEvent(eventId)
+
+          return reply.code(HttpStatus.Ok).send({ message: `${event.name} deleted successfuly.` })
         } catch (error) {
           fastifyErrorHandler(reply, error)
         }
