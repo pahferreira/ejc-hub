@@ -1,4 +1,4 @@
-import { eq, isNull } from 'drizzle-orm'
+import { eq, isNull, not } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../domain/EventRepository.ts'
@@ -38,6 +38,16 @@ class DrizzleEventRepository implements EventRepository {
       .returning()
 
     return updatedEvent[0]
+  }
+
+  async bulkUpdateEvents(idToNotUpdate: string, input: { isCurrent?: boolean | null }) {
+    const updatedEvents = await db
+      .update(schema.events)
+      .set(input)
+      .where(not(eq(schema.events.id, idToNotUpdate)))
+      .returning()
+
+    return updatedEvents
   }
 }
 

@@ -98,18 +98,35 @@ export class ControlPanel {
     return teamInstances
   }
 
-  async updateEvent(id: string, input: { name?: string; description?: string }) {
-    const eventToUpdate = await this.#eventRepository.findEvent(id)
+  async updateEvent(eventId: string, input: { name?: string; description?: string }) {
+    const eventToUpdate = await this.#eventRepository.findEvent(eventId)
     if (!eventToUpdate) {
       throw new AppError('Event not found, please check the event id.')
     }
 
-    const updatedEvent = await this.#eventRepository.updateEvent(id, input)
+    const updatedEvent = await this.#eventRepository.updateEvent(eventId, input)
     return updatedEvent
   }
 
-  async deleteEvent(id: string) {
-    const deletedEvent = await this.#eventRepository.softDeleteEvent(id)
+  async deleteEvent(eventId: string) {
+    const deletedEvent = await this.#eventRepository.softDeleteEvent(eventId)
     return deletedEvent
+  }
+
+  async setCurrentEvent(eventId: string) {
+    const eventToUpdate = await this.#eventRepository.findEvent(eventId)
+    if (!eventToUpdate) {
+      throw new AppError('Event not found, please check the event id.')
+    }
+
+    const updatedEvent = this.#eventRepository.updateEvent(eventId, {
+      isCurrent: true,
+    })
+
+    await this.#eventRepository.bulkUpdateEvents(eventId, {
+      isCurrent: false,
+    })
+
+    return updatedEvent
   }
 }
