@@ -190,5 +190,22 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
         }
       }
     )
+
+    server.post(
+      '/control-panel/events/:eventId/current',
+      { schema: { params: eventIdParamSchema } },
+      async (request, reply) => {
+        try {
+          const { eventId } = request.params
+          const event = await controlPanelApp.setCurrentEvent(eventId)
+
+          return reply.code(HttpStatus.Ok).send({
+            event,
+          })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
   }
 }
