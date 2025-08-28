@@ -28,7 +28,7 @@ export class User {
     this.#userRepository = userRepo
   }
 
-  async createUser(input: CreateUserInput) {
+  async createProfile(input: CreateUserInput) {
     const user = await this.#userRepository.getUser(input.authId)
 
     if (user) {
@@ -44,7 +44,7 @@ export class User {
     return createdUser
   }
 
-  async updateUser(authId: string, input: UpdateUserInput) {
+  async updateProfile(authId: string, input: UpdateUserInput) {
     const userToUpdate = await this.#userRepository.getUser(authId)
 
     if (!userToUpdate) {
