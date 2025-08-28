@@ -28,7 +28,7 @@ export function userRoutes(server: FastifyServerInstance) {
         const token = request.getToken()
         if (token) {
           const { authId, email, name, picture } = extractUserInformationFromToken(token)
-          const user = await userApp.createUser({ authId, name, email, picture })
+          const user = await userApp.createProfile({ authId, name, email, picture })
 
           return reply.code(HttpStatus.Ok).send({ user })
         }
@@ -43,7 +43,7 @@ export function userRoutes(server: FastifyServerInstance) {
         const token = request.getToken()
         if (token) {
           const { authId } = extractUserInformationFromToken(token)
-          const user = await userApp.updateUser(authId, request.body)
+          const user = await userApp.updateProfile(authId, request.body)
 
           return reply.code(HttpStatus.Ok).send({ user })
         }
