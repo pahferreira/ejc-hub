@@ -5,6 +5,7 @@ import type { UserRepository } from '../../user/domain/UserRepository.ts'
 import type { SubscriptionRepository } from '../../subscription/domain/SubscriptionRepository.ts'
 import type { SubscriptionPayload } from '../domain/subscription-types.ts'
 import type { SubscriptionWithDetails } from '../../subscription/domain/subscription.types.ts'
+import type { EventRepository } from '../domain/EventRepository.ts'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_SIZE = 10
@@ -14,17 +15,20 @@ export class Events {
   #subscriptionRepository: SubscriptionRepository
   #subscriptionOptionRepository: SubscriptionOptionRepository
   #userRepository: UserRepository
+  #eventsRepository: EventRepository
 
   constructor(
     teamInstanceRepo: TeamInstanceRepository,
     subscriptionRepo: SubscriptionRepository,
     subscriptionOptionRepo: SubscriptionOptionRepository,
-    userRepo: UserRepository
+    userRepo: UserRepository,
+    eventRepo: EventRepository
   ) {
     this.#teamInstanceRepository = teamInstanceRepo
     this.#subscriptionRepository = subscriptionRepo
     this.#subscriptionOptionRepository = subscriptionOptionRepo
     this.#userRepository = userRepo
+    this.#eventsRepository = eventRepo
   }
 
   async subscribe(eventId: string, userAuthId: string, input: SubscriptionPayload) {
@@ -115,6 +119,16 @@ export class Events {
     )
 
     return this.#formatSubscriptions(teams, filteredSubscriptions)
+  }
+
+  async getCurrentEvent() {
+    const currentEvent = await this.#eventsRepository.findCurrentEvent()
+
+    if (!currentEvent) {
+      throw new AppError('Current event not set')
+    }
+
+    return currentEvent
   }
 
   #defineExperienceType(isNewbie?: boolean, hasCoordinatorExperience?: boolean) {

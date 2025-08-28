@@ -3,10 +3,12 @@ import { teamInstanceRepository } from '../../team/repository/DrizzleTeamInstanc
 import { subscriptionRepository } from '../../subscription/repository/DrizzleSubscriptionRepository.ts'
 import { subscriptionOptionRepository } from '../../subscription/repository/DrizzleSubscriptionOptionRepository.ts'
 import { userRepository } from '../../user/repository/DrizzleUserRepository.ts'
+import { eventRepository } from '../repository/DrizzleEventRepository.ts'
 
 export const eventsApp = new Events(
   teamInstanceRepository,
   subscriptionRepository,
   subscriptionOptionRepository,
-  userRepository
+  userRepository,
+  eventRepository
 )
