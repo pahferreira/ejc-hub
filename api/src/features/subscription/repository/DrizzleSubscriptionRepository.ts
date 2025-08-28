@@ -55,6 +55,21 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
       .where(eq(schema.subscriptions.eventId, eventId))
     return results
   }
+
+  async updateSubscriptionStatus(
+    id: string,
+    status: 'pending' | 'received' | 'completed' | 'waiting_list'
+  ) {
+    const subscription = await db
+      .update(schema.subscriptions)
+      .set({
+        status,
+      })
+      .where(eq(schema.subscriptions.id, id))
+      .returning()
+
+    return subscription[0]
+  }
 }
 
 export const subscriptionRepository = new DrizzleSubscriptionRepository()

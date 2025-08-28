@@ -10,6 +10,11 @@ const eventIdParamSchema = z.object({
   eventId: z.uuid(),
 })
 
+const subscriptionIdParamSchema = z.object({
+  ...eventIdParamSchema.shape,
+  subscriptionId: z.uuid(),
+})
+
 const subscriptionAvailabilityEnum = z.enum([
   'monday',
   'tuesday',
@@ -123,7 +128,7 @@ export function eventsRoutes(server: FastifyServerInstance) {
       }
     )
 
-    server.get('/events/current', async (__dirname, reply) => {
+    server.get('/events/current', async (_, reply) => {
       try {
         const currentEvent = await eventsApp.getCurrentEvent()
 
@@ -132,5 +137,39 @@ export function eventsRoutes(server: FastifyServerInstance) {
         fastifyErrorHandler(reply, error)
       }
     })
+
+    server.post(
+      '/events/:eventId/subscriptions/:subscriptionId/receive',
+      { schema: { params: subscriptionIdParamSchema } },
+      async (request, reply) => {
+        try {
+          const { subscriptionId } = request.params
+          const subscription = await eventsApp.receiveSubscription(subscriptionId)
+
+          return reply.code(HttpStatus.Ok).send({
+            subscription,
+          })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.post(
+      '/events/:eventId/subscriptions/:subscriptionId/wait-list',
+      { schema: { params: subscriptionIdParamSchema } },
+      async (request, reply) => {
+        try {
+          const { subscriptionId } = request.params
+          const subscription = await eventsApp.onHoldSubscription(subscriptionId)
+
+          return reply.code(HttpStatus.Ok).send({
+            subscription,
+          })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
   }
 }

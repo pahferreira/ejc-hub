@@ -101,8 +101,7 @@ export class Events {
   ) {
     const subscriptions = await this.#subscriptionRepository.listSubscriptionsByEventId(eventId)
     const teams = await this.#listTeamInstances(eventId, query?.teamKeys)
-    let filteredSubscriptions = new Array<SubscriptionWithDetails>(20)
-    filteredSubscriptions.fill(subscriptions[0])
+    let filteredSubscriptions = [...subscriptions]
 
     if (query?.name) {
       filteredSubscriptions = this.#filterSubscriptionsByUserName(query.name, filteredSubscriptions)
@@ -129,6 +128,36 @@ export class Events {
     }
 
     return currentEvent
+  }
+
+  async receiveSubscription(subscriptionId: string) {
+    const subscription = await this.#subscriptionRepository.getSubscription(subscriptionId)
+
+    if (!subscription) {
+      throw new AppError('Subscription not found')
+    }
+
+    const updatedSubscription = await this.#subscriptionRepository.updateSubscriptionStatus(
+      subscriptionId,
+      'received'
+    )
+
+    return updatedSubscription
+  }
+
+  async onHoldSubscription(subscriptionId: string) {
+    const subscription = await this.#subscriptionRepository.getSubscription(subscriptionId)
+
+    if (!subscription) {
+      throw new AppError('Subscription not found')
+    }
+
+    const updatedSubscription = await this.#subscriptionRepository.updateSubscriptionStatus(
+      subscriptionId,
+      'waiting_list'
+    )
+
+    return updatedSubscription
   }
 
   #defineExperienceType(isNewbie?: boolean, hasCoordinatorExperience?: boolean) {
@@ -163,6 +192,10 @@ export class Events {
     page: number = DEFAULT_PAGE,
     size: number = DEFAULT_SIZE
   ) {
+    if (items.length === 0) {
+      return []
+    }
+
     const startIndex = (page - 1) * size
     const endIndex = page * size
     return items.slice(startIndex, endIndex)
