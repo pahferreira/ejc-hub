@@ -122,5 +122,15 @@ export function eventsRoutes(server: FastifyServerInstance) {
         }
       }
     )
+
+    server.get('/events/current', async (__dirname, reply) => {
+      try {
+        const currentEvent = await eventsApp.getCurrentEvent()
+
+        return reply.code(HttpStatus.Ok).send({ currentEvent })
+      } catch (error) {
+        fastifyErrorHandler(reply, error)
+      }
+    })
   }
 }

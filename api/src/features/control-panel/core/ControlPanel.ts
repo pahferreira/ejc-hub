@@ -7,6 +7,7 @@ export class ControlPanel {
   #teamTemplateRepository: TeamTemplateRepository
   #eventRepository: EventRepository
   #teamInstanceRepository: TeamInstanceRepository
+  currentEventId: string | null = null
 
   constructor(
     teamTemplateRepo: TeamTemplateRepository,
@@ -119,13 +120,19 @@ export class ControlPanel {
       throw new AppError('Event not found, please check the event id.')
     }
 
-    const updatedEvent = this.#eventRepository.updateEvent(eventId, {
+    if (eventToUpdate.id === this.currentEventId) {
+      return eventToUpdate
+    }
+
+    const updatedEvent = await this.#eventRepository.updateEvent(eventId, {
       isCurrent: true,
     })
 
     await this.#eventRepository.bulkUpdateEvents(eventId, {
       isCurrent: false,
     })
+
+    this.currentEventId = updatedEvent.id
 
     return updatedEvent
   }

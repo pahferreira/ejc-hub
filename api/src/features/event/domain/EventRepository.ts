@@ -7,4 +7,5 @@ export interface EventRepository {
   softDeleteEvent: (id: string) => Promise<EventModel>
   updateEvent: (id: string, input: Partial<EventInput>) => Promise<EventModel>
   bulkUpdateEvents: (id: string, input: Partial<EventInput>) => Promise<EventModel[]>
+  findCurrentEvent: () => Promise<EventModel | undefined>
 }

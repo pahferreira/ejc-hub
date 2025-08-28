@@ -49,6 +49,15 @@ class DrizzleEventRepository implements EventRepository {
 
     return updatedEvents
   }
+
+  async findCurrentEvent() {
+    const currentEvent = await db
+      .select()
+      .from(schema.events)
+      .where(eq(schema.events.isCurrent, true))
+
+    return currentEvent[0]
+  }
 }
 
 export const eventRepository = new DrizzleEventRepository()
