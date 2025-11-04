@@ -1,5 +1,3 @@
-import './SectionTitle.css'
-
 type SectionTitleProps = {
   title: string
   description?: string
