@@ -15,8 +15,8 @@ export function FeatureCard(props: FeatureCardProps) {
   return (
     <Card>
       <div className="flex flex-col items-center gap-2">
-        <figure className="p-3 rounded-lg bg-blue-100 w-fit" aria-hidden>
-          <div className="text-blue-600">{icon}</div>
+        <figure className="p-3 rounded-lg bg-blue-100 w-fit">
+          <div className="text-blue-600" aria-hidden>{icon}</div>
         </figure>
         <div className="flex flex-col">
           <h3 className="m-0 text-lg font-semibold text-gray-900">{props.title}</h3>
