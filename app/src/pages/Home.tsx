@@ -25,7 +25,7 @@ export function Home() {
         />
         <FeatureCard
           title="Montagens Personalizadas"
-          description="Facilidade no processo de montagem"
+          description="Personalize e organize suas montagens de forma prática, garantindo agilidade e controle durante todo o processo."
           icon={<FiFolderPlus size={24} />}
         />
         <FeatureCard
