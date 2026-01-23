@@ -1,8 +1,17 @@
 import { FiFolderPlus, FiUserPlus, FiUsers } from 'react-icons/fi'
 import { Button } from '../components/Button/Button'
 import { FeatureCard } from '../components/FeatureCard/FeatureCard'
+import { useAuth0 } from '@auth0/auth0-react'
+import { useEffect } from 'react'
 
 export function Home() {
+  const { loginWithRedirect, isAuthenticated, user } = useAuth0()
+
+  useEffect(() => {
+    console.log('isAuthenticated', isAuthenticated)
+    console.log('user', user)
+  }, [isAuthenticated, user])
+
   return (
     <main className="flex flex-col gap-3 md:gap-6 justify-center min-h-screen p-8">
       <section>
@@ -13,7 +22,7 @@ export function Home() {
         Uma plataforma com tudo que você precisa saber sobre o EJC Rosário.
       </p>
       <div className="max-w-lg w-full self-center">
-        <Button variant="primary" onClick={() => alert('Clicou!')}>
+        <Button variant="primary" onClick={loginWithRedirect}>
           Entrar!
         </Button>
       </div>
