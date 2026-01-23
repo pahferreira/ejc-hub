@@ -1,12 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import {
-  withRouter,
-  reactRouterParameters,
-} from 'storybook-addon-remix-react-router'
-import { Navbar } from '../components/navbar/Navbar'
+import { withRouter, reactRouterParameters } from 'storybook-addon-remix-react-router'
+import { Navbar } from './Navbar'
 
 const meta = {
-  title: 'Example/Navbar',
+  title: 'UI/Navbar',
   component: Navbar,
   tags: ['autodocs'],
   decorators: [withRouter],
@@ -18,6 +15,15 @@ const meta = {
       routing: { path: '/users/:userId' },
     }),
     layout: 'fullscreen',
+  },
+  args: {
+    title: 'EJC Rosário',
+    imageSrc: '/church.svg',
+    navItems: [
+      { name: 'Inscrição', to: '/registration' },
+      { name: 'Dashboard', to: '/dashboard' },
+      { name: 'Equipes', to: '/teams' },
+    ],
   },
 } satisfies Meta<typeof Navbar>
 

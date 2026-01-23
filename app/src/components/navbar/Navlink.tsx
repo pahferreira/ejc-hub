@@ -1,17 +1,17 @@
-import React from 'react'
 import { Link } from 'react-router'
 
-import './styles/navlink.css'
-
-export interface INavlinkProps {
+export type NavlinkProps = {
   name: string
   to: string
 }
 
-export const Navlink = ({ name, to }: INavlinkProps) => {
+export const Navlink = (props: NavlinkProps) => {
   return (
-    <Link to={to} className='navlink'>
-      {name}
+    <Link
+      to={props.to}
+      className="no-underline cursor-pointer border-b-2 border-transparent transition-[border-bottom] duration-200 ease hover:border-current"
+    >
+      {props.name}
     </Link>
   )
 }
