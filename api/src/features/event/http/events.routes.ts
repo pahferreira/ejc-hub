@@ -3,8 +3,13 @@ import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { eventsApp } from '../application/events-app.ts'
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
-import { fastifyRequireAuth } from '../../../shared/fastify-require-auth.ts'
+import { authGuard } from '../../../shared/fastify-auth-guard.ts'
 import { extractUserInformationFromToken } from '../../../shared/extract-user-info-from-token.ts'
+import {
+  EventPermissions,
+  SubscriptionPermissions,
+  TeamInstancePermissions,
+} from '../../../../../common/permissions/permissions.types.ts'
 
 const eventIdParamSchema = z.object({
   eventId: z.uuid(),
@@ -67,8 +72,8 @@ export function eventsRoutes(server: FastifyServerInstance) {
       '/events/:eventId/subscribe',
       {
         schema: { params: eventIdParamSchema, body: subscribeBodySchema },
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
-        preHandler: fastifyRequireAuth(server),
+
+        preHandler: authGuard(server, { permissions: [SubscriptionPermissions.Create] }),
       },
       async (request, reply) => {
         try {
@@ -90,6 +95,8 @@ export function eventsRoutes(server: FastifyServerInstance) {
       '/events/:eventId/teams',
       {
         schema: { params: eventIdParamSchema, querystring: teamKeysQuerystringSchema },
+
+        preHandler: authGuard(server, { permissions: [TeamInstancePermissions.Read] }),
       },
       async (request, reply) => {
         try {
@@ -106,7 +113,11 @@ export function eventsRoutes(server: FastifyServerInstance) {
 
     server.get(
       '/events/:eventId/subscriptions',
-      { schema: { params: eventIdParamSchema, querystring: listSubscriptionsQuerystringSchema } },
+      {
+        schema: { params: eventIdParamSchema, querystring: listSubscriptionsQuerystringSchema },
+
+        preHandler: authGuard(server, { permissions: [SubscriptionPermissions.Read] }),
+      },
       async (request, reply) => {
         try {
           const { eventId } = request.params
@@ -123,14 +134,20 @@ export function eventsRoutes(server: FastifyServerInstance) {
       }
     )
 
-    server.get('/events/current', async (__dirname, reply) => {
-      try {
-        const currentEvent = await eventsApp.getCurrentEvent()
+    server.get(
+      '/events/current',
+      {
+        preHandler: authGuard(server, { permissions: [EventPermissions.Read] }),
+      },
+      async (__dirname, reply) => {
+        try {
+          const currentEvent = await eventsApp.getCurrentEvent()
 
-        return reply.code(HttpStatus.Ok).send({ currentEvent })
-      } catch (error) {
-        fastifyErrorHandler(reply, error)
+          return reply.code(HttpStatus.Ok).send({ currentEvent })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
       }
-    })
+    )
   }
 }

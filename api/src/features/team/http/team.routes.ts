@@ -3,6 +3,11 @@ import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import { teamApp } from '../application/team.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
+import { authGuard } from '../../../shared/fastify-auth-guard.ts'
+import {
+  TeamInstancePermissions,
+  TeamMembershipPermissions,
+} from '../../../../../common/permissions/permissions.types.ts'
 
 const teamIdParamSchema = z.object({
   teamId: z.uuid('required'),
@@ -36,7 +41,11 @@ export function teamRoutes(server: FastifyServerInstance) {
   return () => {
     server.get(
       '/teams',
-      { schema: { querystring: getTeamsQueryStringSchema } },
+      {
+        schema: { querystring: getTeamsQueryStringSchema },
+
+        preHandler: authGuard(server, { permissions: [TeamInstancePermissions.Read] }),
+      },
       async (request, reply) => {
         try {
           const { eventId } = request.query
@@ -53,7 +62,11 @@ export function teamRoutes(server: FastifyServerInstance) {
 
     server.get(
       '/teams/:teamId',
-      { schema: { params: teamIdParamSchema } },
+      {
+        schema: { params: teamIdParamSchema },
+
+        preHandler: authGuard(server, { permissions: [TeamInstancePermissions.Read] }),
+      },
       async (request, reply) => {
         try {
           const { teamId } = request.params
@@ -66,19 +79,29 @@ export function teamRoutes(server: FastifyServerInstance) {
       }
     )
 
-    server.get('/teams/options', async (request, reply) => {
-      try {
-        const teamOptions = await teamApp.listTeamOptions()
+    server.get(
+      '/teams/options',
+      {
+        preHandler: authGuard(server, { permissions: [TeamInstancePermissions.Read] }),
+      },
+      async (request, reply) => {
+        try {
+          const teamOptions = await teamApp.listTeamOptions()
 
-        return reply.code(HttpStatus.Ok).send({ teamOptions })
-      } catch (error) {
-        fastifyErrorHandler(reply, error)
+          return reply.code(HttpStatus.Ok).send({ teamOptions })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
       }
-    })
+    )
 
     server.post(
       '/teams/:teamId/members',
-      { schema: { body: postTeamMemberBodySchema, params: teamIdParamSchema } },
+      {
+        schema: { body: postTeamMemberBodySchema, params: teamIdParamSchema },
+
+        preHandler: authGuard(server, { permissions: [TeamMembershipPermissions.Create] }),
+      },
       async (request, reply) => {
         try {
           const { teamId } = request.params
@@ -94,7 +117,11 @@ export function teamRoutes(server: FastifyServerInstance) {
 
     server.delete(
       '/teams/:teamId/members/:memberId',
-      { schema: { params: deleteTeamMemberParamSchema } },
+      {
+        schema: { params: deleteTeamMemberParamSchema },
+
+        preHandler: authGuard(server, { permissions: [TeamMembershipPermissions.Delete] }),
+      },
       async (request, reply) => {
         try {
           const { teamId, memberId } = request.params
@@ -109,7 +136,11 @@ export function teamRoutes(server: FastifyServerInstance) {
 
     server.patch(
       '/teams/:teamId',
-      { schema: { body: patchTeamBodySchema, params: teamIdParamSchema } },
+      {
+        schema: { body: patchTeamBodySchema, params: teamIdParamSchema },
+
+        preHandler: authGuard(server, { permissions: [TeamInstancePermissions.Update] }),
+      },
       async (request, reply) => {
         try {
           const { teamId } = request.params

@@ -1,0 +1,1002 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-02-03T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_ejc_hub",
+      "parentId": null,
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "name": "EJC Hub API",
+      "description": "API collection for EJC Hub",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_base",
+      "parentId": "wrk_ejc_hub",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "name": "Base Environment",
+      "data": {
+        "baseUrl": "http://localhost:3000",
+        "authToken": "Bearer YOUR_TOKEN_HERE",
+        "eventId": "00000000-0000-0000-0000-000000000000",
+        "teamId": "00000000-0000-0000-0000-000000000000",
+        "teamTemplateId": "00000000-0000-0000-0000-000000000000",
+        "subscriptionId": "00000000-0000-0000-0000-000000000000",
+        "memberId": "00000000-0000-0000-0000-000000000000"
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "baseUrl",
+          "authToken",
+          "eventId",
+          "teamId",
+          "teamTemplateId",
+          "subscriptionId",
+          "memberId"
+        ]
+      },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1738540800000,
+      "_type": "environment"
+    },
+    {
+      "_id": "fld_general",
+      "parentId": "wrk_ejc_hub",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "name": "General",
+      "description": "General endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1738540800000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_ping",
+      "parentId": "fld_general",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/ping",
+      "name": "Ping",
+      "description": "Health check endpoint",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1738540800000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_users",
+      "parentId": "wrk_ejc_hub",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "name": "Users",
+      "description": "User management endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1738540799000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_users_sync",
+      "parentId": "fld_users",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/users/sync",
+      "name": "Sync User",
+      "description": "Create or sync user profile from Auth0 token",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_sync"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540800000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_users_profile_update",
+      "parentId": "fld_users",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/users/profile",
+      "name": "Update User Profile",
+      "description": "Update user profile information",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"phone\": \"123456789\",\n  \"nickname\": \"johndoe\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"hasMusicSkills\": true,\n  \"hasActingSkills\": false,\n  \"hasDancingSkills\": false,\n  \"hasSingingSkills\": true,\n  \"hasManualSkills\": false,\n  \"hasCookingSkills\": true,\n  \"hasCommunicationSkills\": true\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "id": "pair_content_type_profile"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_profile"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540799000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_events",
+      "parentId": "wrk_ejc_hub",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "name": "Events",
+      "description": "Event endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1738540798000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_events_current",
+      "parentId": "fld_events",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/events/current",
+      "name": "Get Current Event",
+      "description": "Get the current active event",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_current_event"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540800000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_events_subscribe",
+      "parentId": "fld_events",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/events/{{ _.eventId }}/subscribe",
+      "name": "Subscribe to Event",
+      "description": "Subscribe user to an event",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"user\": {\n    \"emergencyContactName\": \"John Doe\",\n    \"emergencyContactPhone\": \"123456789\",\n    \"isNewbie\": true,\n    \"hasCoordinatorExperience\": false\n  },\n  \"skills\": {\n    \"hasActingSkills\": false,\n    \"hasCommunicationSkills\": true,\n    \"hasCookingSkills\": false,\n    \"hasDancingSkills\": false,\n    \"hasManualSkills\": false,\n    \"hasMusicSkills\": true,\n    \"hasSingingSkills\": false\n  },\n  \"options\": [\"option1\", \"option2\", \"option3\"],\n  \"availability\": [\"monday\", \"tuesday\", \"wednesday\"]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "id": "pair_content_type_subscribe"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_subscribe"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540799000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_events_teams",
+      "parentId": "fld_events",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/events/{{ _.eventId }}/teams",
+      "name": "Get Event Teams",
+      "description": "Get teams for an event",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "teamKeys",
+          "value": "",
+          "description": "Comma-separated team keys (optional)",
+          "disabled": true,
+          "id": "pair_team_keys"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_event_teams"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540798000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_events_subscriptions",
+      "parentId": "fld_events",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/events/{{ _.eventId }}/subscriptions",
+      "name": "List Event Subscriptions",
+      "description": "List subscriptions for an event with optional filtering and pagination",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "name",
+          "value": "",
+          "description": "Filter by name (optional)",
+          "disabled": true,
+          "id": "pair_name_filter"
+        },
+        {
+          "name": "teamKeys",
+          "value": "",
+          "description": "Comma-separated team keys (optional)",
+          "disabled": true,
+          "id": "pair_team_keys_subs"
+        },
+        {
+          "name": "page",
+          "value": "1",
+          "description": "Page number (optional)",
+          "disabled": true,
+          "id": "pair_page"
+        },
+        {
+          "name": "size",
+          "value": "10",
+          "description": "Page size (optional)",
+          "disabled": true,
+          "id": "pair_size"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_event_subs"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540797000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_teams",
+      "parentId": "wrk_ejc_hub",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "name": "Teams",
+      "description": "Team management endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1738540797000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_teams_list",
+      "parentId": "fld_teams",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/teams",
+      "name": "List Teams",
+      "description": "Get all teams, optionally filtered by event",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "eventId",
+          "value": "",
+          "description": "Filter by event ID (optional)",
+          "disabled": true,
+          "id": "pair_event_id_filter"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_teams_list"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540800000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_teams_get",
+      "parentId": "fld_teams",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/teams/{{ _.teamId }}",
+      "name": "Get Team",
+      "description": "Get a specific team by ID",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_team_get"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540799000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_teams_options",
+      "parentId": "fld_teams",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/teams/options",
+      "name": "Get Team Options",
+      "description": "Get available team options",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_team_options"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540798000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_teams_add_member",
+      "parentId": "fld_teams",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/teams/{{ _.teamId }}/members",
+      "name": "Add Team Member",
+      "description": "Add a member to a team",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"memberId\": \"{{ _.memberId }}\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "id": "pair_content_type_add_member"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_add_member"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540797000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_teams_remove_member",
+      "parentId": "fld_teams",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/teams/{{ _.teamId }}/members/{{ _.memberId }}",
+      "name": "Remove Team Member",
+      "description": "Remove a member from a team",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_remove_member"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540796000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_teams_update",
+      "parentId": "fld_teams",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/teams/{{ _.teamId }}",
+      "name": "Update Team Coordinators",
+      "description": "Assign coordinators to a team",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"firstCoordinatorId\": \"00000000-0000-0000-0000-000000000000\",\n  \"secondCoordinatorId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "id": "pair_content_type_team_update"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_team_update"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540795000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_subscriptions",
+      "parentId": "wrk_ejc_hub",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "name": "Subscriptions",
+      "description": "Subscription management endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1738540796000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_subscriptions_list",
+      "parentId": "fld_subscriptions",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/subscriptions",
+      "name": "List Subscriptions",
+      "description": "Get all subscriptions",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_subs_list"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540800000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_subscriptions_get",
+      "parentId": "fld_subscriptions",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/subscriptions/{{ _.subscriptionId }}",
+      "name": "Get Subscription",
+      "description": "Get a specific subscription by ID",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_sub_get"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540799000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_control_panel",
+      "parentId": "wrk_ejc_hub",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "name": "Control Panel",
+      "description": "Admin control panel endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1738540795000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_control_panel_team_templates",
+      "parentId": "fld_control_panel",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "name": "Team Templates",
+      "description": "Team template management",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1738540800000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_cp_team_templates_list",
+      "parentId": "fld_control_panel_team_templates",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/control-panel/team-templates",
+      "name": "List Team Templates",
+      "description": "Get all team templates",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_tt_list"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540800000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_cp_team_templates_get",
+      "parentId": "fld_control_panel_team_templates",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/control-panel/team-templates/{{ _.teamTemplateId }}",
+      "name": "Get Team Template",
+      "description": "Get a specific team template by ID",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_tt_get"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540799000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_cp_team_templates_create",
+      "parentId": "fld_control_panel_team_templates",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/control-panel/team-templates",
+      "name": "Create Team Template",
+      "description": "Create a new team template",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"New Team Template\",\n  \"key\": \"new-team-template\",\n  \"description\": \"Description of the team template\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "id": "pair_content_type_tt_create"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_tt_create"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540798000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_cp_team_templates_update",
+      "parentId": "fld_control_panel_team_templates",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/control-panel/team-templates/{{ _.teamTemplateId }}",
+      "name": "Update Team Template",
+      "description": "Update an existing team template",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Updated Team Template Name\",\n  \"description\": \"Updated description\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "id": "pair_content_type_tt_update"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_tt_update"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540797000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_cp_team_templates_delete",
+      "parentId": "fld_control_panel_team_templates",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/control-panel/team-templates/{{ _.teamTemplateId }}",
+      "name": "Delete Team Template",
+      "description": "Delete a team template",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_tt_delete"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540796000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "fld_control_panel_events",
+      "parentId": "fld_control_panel",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "name": "Events Management",
+      "description": "Event management endpoints",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1738540799000,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_cp_events_list",
+      "parentId": "fld_control_panel_events",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/control-panel/events",
+      "name": "List Events",
+      "description": "Get all events",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_cp_events_list"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540800000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_cp_events_get",
+      "parentId": "fld_control_panel_events",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/control-panel/events/{{ _.eventId }}",
+      "name": "Get Event",
+      "description": "Get a specific event by ID",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_cp_event_get"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540799000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_cp_events_create",
+      "parentId": "fld_control_panel_events",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/control-panel/events",
+      "name": "Create Event",
+      "description": "Create a new event",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"New Event\",\n  \"description\": \"Description of the event\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "id": "pair_content_type_cp_event_create"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_cp_event_create"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540798000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_cp_events_update",
+      "parentId": "fld_control_panel_events",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/control-panel/events/{{ _.eventId }}",
+      "name": "Update Event",
+      "description": "Update an existing event",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Updated Event Name\",\n  \"description\": \"Updated event description\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "id": "pair_content_type_cp_event_update"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_cp_event_update"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540797000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_cp_events_delete",
+      "parentId": "fld_control_panel_events",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/control-panel/events/{{ _.eventId }}",
+      "name": "Delete Event",
+      "description": "Delete an event",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_cp_event_delete"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540796000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_cp_events_set_current",
+      "parentId": "fld_control_panel_events",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/control-panel/events/{{ _.eventId }}/current",
+      "name": "Set Current Event",
+      "description": "Set an event as the current active event",
+      "method": "POST",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_cp_event_current"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540795000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    }
+  ]
+}

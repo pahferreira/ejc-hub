@@ -3,6 +3,11 @@ import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { controlPanelApp } from '../application/control-panel.ts'
+import { authGuard } from '../../../shared/fastify-auth-guard.ts'
+import {
+  EventPermissions,
+  TeamTemplatePermissions,
+} from '../../../../../common/permissions/permissions.types.ts'
 
 export const teamTemplateIdParamSchema = z.object({
   teamTemplateId: z.uuid('required'),
@@ -34,21 +39,31 @@ export const patchTeamTemplateBodySchema = postTeamTemplateBodySchema.partial().
 export function controlPanelRoutes(server: FastifyServerInstance) {
   return () => {
     // Team Management
-    server.get('/control-panel/team-templates', async (request, reply) => {
-      try {
-        const teamTemplates = await controlPanelApp.listTeamTemplates()
+    server.get(
+      '/control-panel/team-templates',
+      {
+        preHandler: authGuard(server, { permissions: [TeamTemplatePermissions.Read] }),
+      },
+      async (request, reply) => {
+        try {
+          const teamTemplates = await controlPanelApp.listTeamTemplates()
 
-        return reply.code(HttpStatus.Ok).send({
-          teamTemplates,
-        })
-      } catch (error) {
-        fastifyErrorHandler(reply, error)
+          return reply.code(HttpStatus.Ok).send({
+            teamTemplates,
+          })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
       }
-    })
+    )
 
     server.get(
       '/control-panel/team-templates/:teamTemplateId',
-      { schema: { params: teamTemplateIdParamSchema } },
+      {
+        schema: { params: teamTemplateIdParamSchema },
+
+        preHandler: authGuard(server, { permissions: [TeamTemplatePermissions.Read] }),
+      },
       async (request, reply) => {
         try {
           const { teamTemplateId } = request.params
@@ -63,7 +78,11 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
     server.post(
       '/control-panel/team-templates',
-      { schema: { body: postTeamTemplateBodySchema } },
+      {
+        schema: { body: postTeamTemplateBodySchema },
+
+        preHandler: authGuard(server, { permissions: [TeamTemplatePermissions.Create] }),
+      },
       async (request, reply) => {
         try {
           const { name, key, description } = request.body
@@ -81,7 +100,11 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
     server.patch(
       '/control-panel/team-templates/:teamTemplateId',
-      { schema: { body: patchTeamTemplateBodySchema, params: teamTemplateIdParamSchema } },
+      {
+        schema: { body: patchTeamTemplateBodySchema, params: teamTemplateIdParamSchema },
+
+        preHandler: authGuard(server, { permissions: [TeamTemplatePermissions.Update] }),
+      },
       async (request, reply) => {
         try {
           const { teamTemplateId } = request.params
@@ -100,7 +123,11 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
     server.delete(
       '/control-panel/team-templates/:teamTemplateId',
-      { schema: { params: teamTemplateIdParamSchema } },
+      {
+        schema: { params: teamTemplateIdParamSchema },
+
+        preHandler: authGuard(server, { permissions: [TeamTemplatePermissions.Delete] }),
+      },
       async (request, reply) => {
         try {
           const { teamTemplateId } = request.params
@@ -116,17 +143,23 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
     )
 
     // Event Management
-    server.get('/control-panel/events', async (_, reply) => {
-      try {
-        const events = await controlPanelApp.listEvents()
+    server.get(
+      '/control-panel/events',
+      {
+        preHandler: authGuard(server, { permissions: [EventPermissions.Read] }),
+      },
+      async (_, reply) => {
+        try {
+          const events = await controlPanelApp.listEvents()
 
-        return reply.code(HttpStatus.Ok).send({
-          events,
-        })
-      } catch (error) {
-        fastifyErrorHandler(reply, error)
+          return reply.code(HttpStatus.Ok).send({
+            events,
+          })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
       }
-    })
+    )
 
     server.get(
       '/control-panel/events/:eventId',
@@ -134,6 +167,8 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
         schema: {
           params: eventIdParamSchema,
         },
+
+        preHandler: authGuard(server, { permissions: [EventPermissions.Read] }),
       },
       async (request, reply) => {
         try {
@@ -149,7 +184,11 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
     server.post(
       '/control-panel/events',
-      { schema: { body: createEventBodySchema } },
+      {
+        schema: { body: createEventBodySchema },
+
+        preHandler: authGuard(server, { permissions: [EventPermissions.Create] }),
+      },
       async (request, reply) => {
         try {
           const event = await controlPanelApp.createEvent(request.body)
@@ -163,7 +202,11 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
     server.patch(
       '/control-panel/events/:eventId',
-      { schema: { params: eventIdParamSchema, body: updateEventBodySchema } },
+      {
+        schema: { params: eventIdParamSchema, body: updateEventBodySchema },
+
+        preHandler: authGuard(server, { permissions: [EventPermissions.Update] }),
+      },
       async (request, reply) => {
         try {
           const { eventId } = request.params
@@ -178,7 +221,11 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
     server.delete(
       '/control-panel/events/:eventId',
-      { schema: { params: eventIdParamSchema } },
+      {
+        schema: { params: eventIdParamSchema },
+
+        preHandler: authGuard(server, { permissions: [EventPermissions.Delete] }),
+      },
       async (request, reply) => {
         try {
           const { eventId } = request.params
@@ -193,7 +240,11 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
     server.post(
       '/control-panel/events/:eventId/current',
-      { schema: { params: eventIdParamSchema } },
+      {
+        schema: { params: eventIdParamSchema },
+
+        preHandler: authGuard(server, { permissions: [EventPermissions.Update] }),
+      },
       async (request, reply) => {
         try {
           const { eventId } = request.params
