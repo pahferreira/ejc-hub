@@ -13,13 +13,13 @@ EJC Hub - A event management application for managing events, teams, subscriptio
 - **ORM:** Drizzle ORM with PostgreSQL
 - **Authentication:** Auth0 (`@auth0/auth0-fastify-api`)
 - **Validation:** Zod
-- **Package Manager:** pnpm
+- **Package Manager:** npm
 
 ### App (`/app`)
 
 - **Framework:** React with TypeScript
 - **Build Tool:** Vite
-- **Styling:** CSS
+- **Styling:** Tailwind CSS
 - **Storybook:** For component documentation
 - **Testing:** Vitest
 - **Linting:** ESLint with Prettier
@@ -64,11 +64,11 @@ EJC Hub - A event management application for managing events, teams, subscriptio
 - Use arrow functions for callbacks
 - Use async/await over Promises
 - Keep functions small and focused
+- Use `type` over `interface` for type definitions unless extending
 
 ### API File Naming
 
 - Routes: `*.routes.ts`
-- Use cases: `*.usecase.ts`
 - Repositories: `*.repository.ts`
 - Schemas: `*.schema.ts`
 
@@ -92,6 +92,7 @@ EJC Hub - A event management application for managing events, teams, subscriptio
 - Create Storybook stories for all reusable components
 - Use custom hooks for reusable logic
 - Keep components small and focused
+- Do not destructure props in the function signature, use `props.propName` instead unless it needs a default value
 
 ### Database (API)
 
