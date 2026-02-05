@@ -25,8 +25,8 @@ server.register(Auth0, {
   audience: env.AUTH_AUDIENCE,
 })
 
-server.get('/ping', () => {
-  return { message: 'pong' }
+server.get('/health', () => {
+  return { message: 'OK' }
 })
 
 server.register(userRoutes(server))

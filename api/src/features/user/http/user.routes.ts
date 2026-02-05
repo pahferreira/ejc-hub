@@ -1,7 +1,7 @@
 import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { userApp } from '../application/user.ts'
-import { fastifyRequireAuth } from '../../../shared/fastify-require-auth.ts'
+import { authGuard } from '../../../shared/fastify-auth-guard.ts'
 import z from 'zod/v4'
 import { extractUserInformationFromToken } from '../../../shared/extract-user-info-from-token.ts'
 
@@ -20,25 +20,19 @@ const updateUserInputSchema = z.object({
 
 export function userRoutes(server: FastifyServerInstance) {
   return () => {
-    server.post(
-      '/users/sync',
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      { preHandler: fastifyRequireAuth(server) },
-      async (request, reply) => {
-        const token = request.getToken()
-        if (token) {
-          const { authId, email, name, picture } = extractUserInformationFromToken(token)
-          const user = await userApp.createProfile({ authId, name, email, picture })
+    server.post('/users/sync', { preHandler: authGuard(server) }, async (request, reply) => {
+      const token = request.getToken()
+      if (token) {
+        const { authId, email, name, picture } = extractUserInformationFromToken(token)
+        const user = await userApp.createProfile({ authId, name, email, picture })
 
-          return reply.code(HttpStatus.Ok).send({ user })
-        }
+        return reply.code(HttpStatus.Ok).send({ user })
       }
-    )
+    })
 
     server.patch(
       '/users/profile',
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      { schema: { body: updateUserInputSchema }, preHandler: fastifyRequireAuth(server) },
+      { schema: { body: updateUserInputSchema }, preHandler: authGuard(server) },
       async (request, reply) => {
         const token = request.getToken()
         if (token) {

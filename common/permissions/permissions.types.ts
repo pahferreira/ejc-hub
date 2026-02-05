@@ -6,7 +6,7 @@ export const EventPermissions = {
 } as const;
 
 export const SubscriptionPermissions = {
-  Create: "subscriptions:createa",
+  Create: "subscriptions:create",
   Read: "subscriptions:read",
   Update: "subscriptions:update",
   Delete: "subscriptions:delete",

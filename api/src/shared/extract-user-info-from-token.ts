@@ -4,6 +4,7 @@ type UserInfo = {
   email: string
   name: string
   picture: string
+  permissions?: string[]
 }
 
 export function extractUserInformationFromToken(token: string) {
@@ -14,5 +15,6 @@ export function extractUserInformationFromToken(token: string) {
     email: user.email,
     name: user.name,
     picture: user.picture,
+    permissions: user.permissions ?? [],
   }
 }
