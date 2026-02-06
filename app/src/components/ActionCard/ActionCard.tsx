@@ -9,6 +9,8 @@ export type ActionCardProps = {
   to?: string
   onClick?: () => void
 }
+const baseClasses =
+  'block w-full bg-white px-4 py-4 shadow rounded-lg hover:shadow-md hover:bg-gray-50 transition-all cursor-pointer text-left'
 
 export function ActionCard(props: ActionCardProps) {
   const content = (
@@ -25,9 +27,6 @@ export function ActionCard(props: ActionCardProps) {
       <FiChevronRight className="text-gray-400 shrink-0" size={20} aria-hidden />
     </div>
   )
-
-  const baseClasses =
-    'block w-full bg-white px-4 py-4 shadow rounded-lg hover:shadow-md hover:bg-gray-50 transition-all cursor-pointer text-left'
 
   if (props.to) {
     return (
