@@ -58,7 +58,7 @@ const columns = [
     header: 'Selected Teams',
     cell: (info) => {
       const teams = info.getValue()
-      if (teams.length === 0) return '-'
+
       return (
         <div className="flex flex-wrap gap-1">
           {teams.map((team) => (
@@ -109,7 +109,7 @@ export function useSubscriptionsListTable(subscriptions: SubscriptionWithDetails
 
         return matchesSearch && matchesTeams
       }),
-    [subscriptions, debouncedSearch, selectedTeams],
+    [subscriptions, debouncedSearch, selectedTeams]
   )
 
   const table = useReactTable({
