@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { flexRender } from '@tanstack/react-table'
 import { DashboardSection } from '../../components/DashboardSection/DashboardSection'
 import { SubscriptionSummaryBox } from '../../components/SubscriptionSummaryBox/SubscriptionSummaryBox'
@@ -6,15 +7,24 @@ import { MultiSelector } from '../../components/MultiSelector/MultiSelector'
 import { Table } from '../../components/Table'
 import { useSubscriptions } from './useSubscriptions'
 import { useSubscriptionsListTable } from './useSubscriptionsListTable'
-
-function handleReview(subscriptionId: string): void {
-  alert(`Review subscription: ${subscriptionId}`)
-}
+import { ReviewSubscriptionModal } from './ReviewSubscriptionModal'
+import type { SubscriptionWithDetails, SubscriptionStatus } from './subscription.types'
 
 export function EventSubscriptionsList() {
   const { subscriptions, stats, isLoading, error } = useSubscriptions()
   const { table, searchValue, setSearchValue, selectedTeams, setSelectedTeams, teamOptions } =
     useSubscriptionsListTable(subscriptions)
+  const [reviewingSubscription, setReviewingSubscription] =
+    useState<SubscriptionWithDetails | null>(null)
+
+  function handleReview(subscription: SubscriptionWithDetails) {
+    setReviewingSubscription(subscription)
+  }
+
+  function handleConfirmReview(id: string, newStatus: SubscriptionStatus) {
+    console.log(`Subscription ${id} status changed to ${newStatus}`)
+    setReviewingSubscription(null)
+  }
 
   if (isLoading) {
     return (
@@ -98,7 +108,7 @@ export function EventSubscriptionsList() {
                     ))}
                     <Table.ActionCell
                       actions={[
-                        { label: 'Review', onClick: () => handleReview(row.original.id) },
+                        { label: 'Review', onClick: () => handleReview(row.original) },
                       ]}
                     />
                   </Table.Row>
@@ -108,6 +118,13 @@ export function EventSubscriptionsList() {
           </Table>
         </DashboardSection>
       </div>
+
+      <ReviewSubscriptionModal
+        subscription={reviewingSubscription}
+        open={reviewingSubscription !== null}
+        onClose={() => setReviewingSubscription(null)}
+        onConfirm={handleConfirmReview}
+      />
     </main>
   )
 }
