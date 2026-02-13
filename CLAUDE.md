@@ -1,35 +1,15 @@
-# Copilot Instructions
-
 ## Project Overview
 
 EJC Hub - A event management application for managing events, teams, subscriptions, and users.
 
 ## Tech Stack
 
-### API (`/api`)
-
-- **Runtime:** Node.js with TypeScript
-- **Framework:** Fastify with `fastify-type-provider-zod`
-- **ORM:** Drizzle ORM with PostgreSQL
-- **Authentication:** Auth0 (`@auth0/auth0-fastify-api`)
-- **Validation:** Zod
-- **Package Manager:** npm
-
-### App (`/app`)
-
-- **Framework:** React with TypeScript
-- **Build Tool:** Vite
-- **Styling:** Tailwind CSS
-- **Storybook:** For component documentation
-- **Testing:** Vitest
-- **Linting:** ESLint with Prettier
-- **Authentication:** Auth0
-
-### Common (`/common`)
-
-- **Shared:** TypeScript utilities and types
-- **Permissions:** Permission helpers shared between API and App
-- **Testing:** Jest
+- API (`/api`) - Node.js with TypeScript
+- App (`/app`) - React with TypeScript
+- Common (`/common`)
+  - **Shared:** TypeScript utilities and types
+  - **Permissions:** Permission helpers shared between API and App
+  - **Testing:** Jest
 
 ## Project Structure
 
@@ -66,40 +46,6 @@ EJC Hub - A event management application for managing events, teams, subscriptio
 - Keep functions small and focused
 - Use `type` over `interface` for type definitions unless extending
 
-### API File Naming
-
-- Routes: `*.routes.ts`
-- Repositories: `*.repository.ts`
-- Schemas: `*.schema.ts`
-
-### App File Naming
-
-- Components: `ComponentName/ComponentName.tsx`
-- Stories: `ComponentName/ComponentName.stories.tsx`
-- Hooks: `useHookName.ts` or `useHookName/useHookName.ts`
-- Pages: `PageName.tsx`
-
-### Fastify Patterns (API)
-
-- Use `withTypeProvider<ZodTypeProvider>()` for type-safe routes
-- Register routes using `server.register()`
-- Use `server.authenticate` preHandler for protected routes
-- Use Zod for request/response validation
-
-### React Patterns (App)
-
-- Use functional components with hooks
-- Create Storybook stories for all reusable components
-- Use custom hooks for reusable logic
-- Keep components small and focused
-- Do not destructure props in the function signature, use `props.propName` instead unless it needs a default value
-
-### Database (API)
-
-- Use Drizzle ORM for database operations
-- Repositories handle all database access
-- Use cases orchestrate business logic
-
 ### Permissions (Common)
 
 - Use `hasPermission()` for single permission checks
@@ -108,8 +54,4 @@ EJC Hub - A event management application for managing events, teams, subscriptio
 
 ## Testing
 
-- API: Unit tests for use cases
-- App: Vitest for component and hook tests
-- Common: Jest for utility tests
 - Use descriptive test names
-- Write stories for visual component testing
