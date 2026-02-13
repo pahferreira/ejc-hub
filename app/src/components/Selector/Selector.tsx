@@ -23,14 +23,14 @@ type SelectorProps = {
 }
 
 export function Selector(props: SelectorProps) {
-  const { placeholder = 'Select an option...', disabled = false } = props
+  const { placeholder = 'Select an option...' } = props
 
   return (
     <div className="w-full">
       {props.label && (
         <label className="block mb-2 text-sm font-medium text-gray-700">{props.label}</label>
       )}
-      <Listbox value={props.selected} onChange={props.onChange} disabled={disabled}>
+      <Listbox value={props.selected} onChange={props.onChange} disabled={props.disabled}>
         {({ open }) => (
           <div className="relative">
             <ListboxButton className="relative w-full cursor-pointer bg-white border border-gray-300 rounded-lg py-2.5 pl-3 pr-10 text-left text-sm transition-all hover:border-gray-400 focus:outline-none focus:border-blue-500 focus:ring-3 focus:ring-blue-100 disabled:opacity-50 disabled:cursor-not-allowed">
