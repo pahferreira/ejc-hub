@@ -15,7 +15,7 @@ type InputProps = {
 
 export function Input(props: InputProps) {
   return (
-    <div className="flex flex-col gap-1 w-fit">
+    <div className="flex flex-col gap-1 w-full">
       <label htmlFor={props.name} className="font-semibold text-sm text-gray-700">
         {`${props.label}${props.isRequired ? '*' : ''}`}
       </label>

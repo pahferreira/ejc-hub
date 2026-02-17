@@ -26,6 +26,5 @@ export const routes: Route[] = [
     path: '/subscriptions/new',
     name: 'Subscribe',
     component: EventSubscription,
-    permission: SubscriptionPermissions.Create,
   },
 ]
