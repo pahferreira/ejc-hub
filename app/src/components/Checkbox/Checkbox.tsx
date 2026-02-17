@@ -1,3 +1,5 @@
+import { clsx } from 'clsx'
+
 type CheckboxProps = {
   label: string
   checked?: boolean
@@ -8,10 +10,10 @@ type CheckboxProps = {
 export function Checkbox(props: CheckboxProps) {
   return (
     <label
-      className={[
+      className={clsx(
         'flex items-center gap-2 cursor-pointer select-none text-sm text-gray-700',
-        props.disabled ? 'opacity-50 cursor-not-allowed' : '',
-      ].join(' ')}
+        props.disabled && 'opacity-50 cursor-not-allowed'
+      )}
     >
       <input
         type="checkbox"
