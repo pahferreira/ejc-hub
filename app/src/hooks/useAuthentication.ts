@@ -1,6 +1,7 @@
 import { useAuth0 } from '@auth0/auth0-react'
 import { jwtDecode } from 'jwt-decode'
 import { useEffect, useState } from 'react'
+import { tokenHandler } from '../services/token'
 
 export function useAuthentication() {
   const { isLoading, isAuthenticated, getAccessTokenSilently } = useAuth0()
@@ -10,6 +11,7 @@ export function useAuthentication() {
   getAccessTokenSilently().then((accessToken) => {
     if (accessToken !== token) {
       setToken(accessToken)
+      tokenHandler.setToken(accessToken)
     }
   })
 

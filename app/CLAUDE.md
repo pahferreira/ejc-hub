@@ -11,6 +11,7 @@ The Vite React app that supports EJC Hub - A event management application for ma
 - **Testing:** Vitest
 - **Linting:** ESLint with Prettier
 - **Authentication:** Auth0
+- **Service:** React Query + Axios
 
 ## Code Conventions
 

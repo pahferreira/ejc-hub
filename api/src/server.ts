@@ -1,6 +1,7 @@
 import fastify from 'fastify'
 import { env } from './core/envs/env.ts'
 import Auth0 from '@auth0/auth0-fastify-api'
+import cors from '@fastify/cors'
 import {
   serializerCompiler,
   validatorCompiler,
@@ -19,6 +20,8 @@ const server = fastify({
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 server.setSerializerCompiler(serializerCompiler)
 server.setValidatorCompiler(validatorCompiler)
+
+server.register(cors, {})
 
 server.register(Auth0, {
   domain: env.AUTH_DOMAIN,

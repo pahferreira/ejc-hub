@@ -19,6 +19,7 @@
   "license": "ISC",
   "dependencies": {
     "@auth0/auth0-fastify-api": "^1.0.2",
+    "@fastify/cors": "^11.2.0",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.44.2",
     "fastify": "^5.3.3",
