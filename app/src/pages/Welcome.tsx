@@ -2,9 +2,13 @@ import { FiFolderPlus, FiUserPlus, FiUsers } from 'react-icons/fi'
 import { Button } from '../components/Button/Button'
 import { FeatureCard } from '../components/FeatureCard/FeatureCard'
 import { useAuth0 } from '@auth0/auth0-react'
+import { useHealthCheckQuery } from '../services/general/useHealthCheckQuery'
 
 export function Welcome() {
   const { loginWithRedirect } = useAuth0()
+  const { data } = useHealthCheckQuery()
+
+  console.log('###pages/Welcome.tsx line:11 data###', data)
 
   return (
     <main className="flex flex-col gap-3 md:gap-6 justify-center min-h-screen p-8">
