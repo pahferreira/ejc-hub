@@ -3,16 +3,34 @@ import { Checkbox } from '../../components/Checkbox/Checkbox'
 import { useEventSubscriptionField } from './useEventSubscriptionForm'
 
 const skills = [
-  'JavaScript',
-  'TypeScript',
-  'React',
-  'Python',
-  'Java',
-  'UI/UX Design',
-  'Gestão de Projetos',
-  'Análise de Dados',
-  'Marketing',
-  'Vendas',
+  {
+    label: 'Atuação',
+    value: 'has_acting_skills',
+  },
+  {
+    label: 'Dança',
+    value: 'has_dancing_skills',
+  },
+  {
+    label: 'Canta',
+    value: 'has_singing_skills',
+  },
+  {
+    label: 'Comunicação',
+    value: 'has_communication_skills',
+  },
+  {
+    label: 'Sabe cozinhar',
+    value: 'has_cooking_skills',
+  },
+  {
+    label: 'Habilidades manuais',
+    value: 'has_manual_skills',
+  },
+  {
+    label: 'Toca um instrumento',
+    value: 'has_music_skills',
+  },
 ]
 
 export function SkillsSection() {
@@ -34,10 +52,10 @@ export function SkillsSection() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {skills.map((skill) => (
             <Checkbox
-              key={skill}
-              label={skill}
-              checked={selectedSkills.field.value.includes(skill)}
-              onChange={() => toggle(skill)}
+              key={skill.value}
+              label={skill.label}
+              checked={selectedSkills.field.value.includes(skill.value)}
+              onChange={() => toggle(skill.value)}
             />
           ))}
         </div>

@@ -6,6 +6,7 @@ export function PersonalInformationSection() {
   const fullName = useEventSubscriptionField('fullName')
   const email = useEventSubscriptionField('email')
   const phone = useEventSubscriptionField('phone')
+  const nickname = useEventSubscriptionField('nickname')
 
   return (
     <Card>
@@ -20,6 +21,13 @@ export function PersonalInformationSection() {
           placeholder="Digite seu nome completo"
           value={fullName.field.value}
           onChange={fullName.field.onChange}
+        />
+        <Input
+          label="Apelido"
+          name="nickname"
+          placeholder="Digite seu apelido"
+          value={nickname.field.value}
+          onChange={nickname.field.onChange}
         />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
