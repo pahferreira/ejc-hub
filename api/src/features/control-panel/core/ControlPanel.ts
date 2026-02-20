@@ -90,6 +90,10 @@ export class ControlPanel {
 
   async #createEventTeams(eventId: string) {
     const teamTemplates = await this.#teamTemplateRepository.listTeamTemplates()
+
+    if (teamTemplates.length === 0) {
+      return []
+    }
     const templateIds = teamTemplates.map((template) => template.id)
     const teamInstances = await this.#teamInstanceRepository.bulkInsertTeamInstances(
       eventId,

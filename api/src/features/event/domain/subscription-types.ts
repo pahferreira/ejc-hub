@@ -16,8 +16,6 @@ export type SubscriptionPayload = {
   }
   skills: {
     hasActingSkills?: boolean
-    hasCoordinationSkills?: boolean
-    hasLogisticsSkills?: boolean
     hasCommunicationSkills?: boolean
     hasManualSkills?: boolean
     hasCookingSkills?: boolean
@@ -26,5 +24,19 @@ export type SubscriptionPayload = {
     hasSingingSkills?: boolean
   }
   options: string[]
+  availability: SubscriptionAvailability[]
+}
+
+export type CurrentEventSubscriptionPayload = {
+  fullName: string
+  nickname: string
+  email: string
+  phone: string
+  emergencyContactName: string
+  emergencyContactPhone: string
+  isNewbie?: boolean
+  hasCoordinatorExperience?: boolean
+  selectedSkills: string[]
+  selectedTeams: string[]
   availability: SubscriptionAvailability[]
 }

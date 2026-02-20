@@ -5,13 +5,18 @@ import { z } from 'zod'
 
 export const eventSubscriptionSchema = z.object({
   fullName: z.string(),
+  nickname: z.string(),
   email: z.string(),
   phone: z.string(),
   emergencyContactName: z.string(),
   emergencyContactPhone: z.string(),
   hasPreviousExperience: z.enum(['yes', 'no']),
+  hasCoordinatorExperience: z.enum(['yes', 'no']),
   selectedSkills: z.array(z.string()),
   selectedTeams: z.array(z.string()),
+  selectedAvailability: z.array(z.string()),
+  details: z.string().optional(),
+  selectedPreviousExperienceTeams: z.array(z.string()),
 })
 
 export type EventSubscriptionFormData = z.infer<typeof eventSubscriptionSchema>
@@ -28,6 +33,9 @@ export function EventSubscriptionProvider(props: { children: ReactNode }) {
       hasPreviousExperience: 'no',
       selectedSkills: [],
       selectedTeams: [],
+      selectedAvailability: [],
+      details: '',
+      selectedPreviousExperienceTeams: [],
     },
   })
 

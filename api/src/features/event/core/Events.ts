@@ -3,7 +3,10 @@ import type { TeamInstanceRepository } from '../../team/domain/TeamInstanceRepos
 import type { SubscriptionOptionRepository } from '../../subscription/domain/SubscriptionOptionRepository.ts'
 import type { UserRepository } from '../../user/domain/UserRepository.ts'
 import type { SubscriptionRepository } from '../../subscription/domain/SubscriptionRepository.ts'
-import type { SubscriptionPayload } from '../domain/subscription-types.ts'
+import type {
+  CurrentEventSubscriptionPayload,
+  SubscriptionPayload,
+} from '../domain/subscription-types.ts'
 import type { SubscriptionWithDetails } from '../../subscription/domain/subscription.types.ts'
 import type { EventRepository } from '../domain/EventRepository.ts'
 
@@ -131,6 +134,72 @@ export class Events {
     return currentEvent
   }
 
+  async subscribeCurrentEvent(userAuthId: string, input: CurrentEventSubscriptionPayload) {
+    const user = await this.#userRepository.getUser(userAuthId)
+    const currentEvent = await this.#eventsRepository.findCurrentEvent()
+
+    if (!currentEvent) {
+      throw new AppError('Current event not set')
+    }
+
+    const subscriptionEvent = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
+      user.id,
+      currentEvent.id
+    )
+
+    if (subscriptionEvent) {
+      throw new AppError('User already subscribed to this event')
+    }
+
+    const teamInstancesToSubscribe = await this.#teamInstanceRepository.listTeamInstances(
+      currentEvent.id,
+      {
+        keys: input.selectedTeams,
+      }
+    )
+
+    if (teamInstancesToSubscribe.length === 0) {
+      throw new AppError('No team instances available for this event')
+    }
+
+    const subscriptionInput = {
+      userId: user.id,
+      eventId: currentEvent.id,
+      availability: input.availability,
+    }
+
+    const subscription = await this.#subscriptionRepository.insertSubscription(subscriptionInput)
+
+    if (!subscription) {
+      throw new AppError('Failed to create subscription')
+    }
+
+    const subscriptionOptionsToSubscribe = input.selectedTeams.map((teamOption) => ({
+      subscriptionId: subscription.id,
+      teamInstanceId: teamInstancesToSubscribe.find(
+        (instance) => instance.templateKey === teamOption
+      )?.id as string,
+    }))
+
+    const subscriptionOptions = await this.#subscriptionOptionRepository.insertSubscriptionOptions(
+      subscriptionOptionsToSubscribe
+    )
+    if (!subscriptionOptions) {
+      throw new AppError('Failed to create subscription options')
+    }
+
+    const skills = this.#formatSkillsObject(input.selectedSkills)
+
+    await this.#userRepository.updateUser(user.id, {
+      ...skills,
+      emergencyContactName: input.emergencyContactName,
+      emergencyContactPhone: input.emergencyContactPhone,
+      experienceType: this.#defineExperienceType(input.isNewbie, input.hasCoordinatorExperience),
+    })
+
+    return subscription
+  }
+
   #defineExperienceType(isNewbie?: boolean, hasCoordinatorExperience?: boolean) {
     if (hasCoordinatorExperience) {
       return 'coordinator'
@@ -188,5 +257,19 @@ export class Events {
 
   #listTeamInstances(eventId: string, teamKeys?: string[]) {
     return this.#teamInstanceRepository.listTeamInstances(eventId, { keys: teamKeys })
+  }
+
+  #formatSkillsObject(skills: string[]) {
+    const skillsObject: Record<string, boolean> = {
+      hasActingSkills: skills.includes('has_acting_skills'),
+      hasCommunicationSkills: skills.includes('has_communication_skills'),
+      hasManualSkills: skills.includes('has_manual_skills'),
+      hasCookingSkills: skills.includes('has_cooking_skills'),
+      hasMusicSkills: skills.includes('has_music_skills'),
+      hasDancingSkills: skills.includes('has_dancing_skills'),
+      hasSingingSkills: skills.includes('has_singing_skills'),
+    }
+
+    return skillsObject
   }
 }

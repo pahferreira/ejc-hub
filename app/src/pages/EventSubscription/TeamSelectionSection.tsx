@@ -1,13 +1,15 @@
 import { Card } from '../../components/Card/Card'
 import { TeamBox } from '../../components/TeamBox/TeamBox'
 import { useEventSubscriptionField } from './useEventSubscriptionForm'
-import { mockTeams } from './teams.mock'
 
 const MAX_TEAMS = 3
 
-export function TeamSelectionSection() {
-  const selectedTeams = useEventSubscriptionField('selectedTeams')
+type TeamSelectionSectionProps = {
+  teamOptions: { key: string; name: string; description: string }[]
+}
 
+export function TeamSelectionSection(props: TeamSelectionSectionProps) {
+  const selectedTeams = useEventSubscriptionField('selectedTeams')
   const selectedCount = selectedTeams.field.value.length
   const isMaxSelected = selectedCount >= MAX_TEAMS
 
@@ -34,16 +36,16 @@ export function TeamSelectionSection() {
           interesses e habilidades.
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {mockTeams.map((team) => {
-            const isSelected = selectedTeams.field.value.includes(team.id)
+          {props.teamOptions.map((team) => {
+            const isSelected = selectedTeams.field.value.includes(team.key)
             return (
               <TeamBox
-                key={team.id}
-                title={team.title}
+                key={team.key}
+                title={team.name}
                 description={team.description}
                 selected={isSelected}
                 disabled={!isSelected && isMaxSelected}
-                onToggle={() => toggle(team.id)}
+                onToggle={() => toggle(team.key)}
               />
             )
           })}

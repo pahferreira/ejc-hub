@@ -20,7 +20,6 @@ The Vite React app that supports EJC Hub - A event management application for ma
 - Components: `ComponentName/ComponentName.tsx`
 - Stories: `ComponentName/ComponentName.stories.tsx`
 - Hooks: `useHookName.ts` or `useHookName/useHookName.ts`
-- Pages: `PageName.tsx`
 
 ### React Patterns
 

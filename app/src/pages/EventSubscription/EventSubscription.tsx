@@ -7,12 +7,31 @@ import { SkillsSection } from './SkillsSection'
 import { TeamSelectionSection } from './TeamSelectionSection'
 import { useEventSubscriptionForm } from './useEventSubscriptionForm'
 import type { EventSubscriptionFormData } from './useEventSubscriptionForm'
+import { AvailabilitySection } from './AvailabilitySection'
+import { DetailsSection } from './DetailsSection'
+import { useTeamOptionsQuery } from '../../services/teams/useTeamOptionsQuery'
+import { useCreateEventSubscriptionMutation } from '../../services/events/useCreateEventSubscriptionMutation'
 
 function EventSubscriptionForm() {
   const form = useEventSubscriptionForm()
+  const teamOptions = useTeamOptionsQuery()
+  const createEventSubscription = useCreateEventSubscriptionMutation()
 
-  const onSubmit = (data: EventSubscriptionFormData) => {
-    console.log('Form submitted:', data)
+  const onSubmit = async (data: EventSubscriptionFormData) => {
+    const payload = {
+      ...data,
+      isNewbie: data.hasPreviousExperience === 'no',
+      hasCoordinatorExperience: data.hasCoordinatorExperience === 'yes',
+      availability: data.selectedAvailability,
+      previousExperienceTeams: data.selectedPreviousExperienceTeams,
+    }
+
+    const response = await createEventSubscription.mutateAsync(payload)
+
+    if (response.status === 200 && response.data.id) {
+      // TODO: Show success message and redirect to confirmation page
+      alert('Inscrição realizada com sucesso!')
+    }
   }
 
   return (
@@ -26,10 +45,16 @@ function EventSubscriptionForm() {
       <div className="flex flex-col gap-6 text-left">
         <PersonalInformationSection />
         <EmergencyContactSection />
-        <PreviousExperienceSection />
+        <PreviousExperienceSection teamOptions={teamOptions.data ?? []} />
         <SkillsSection />
-        <TeamSelectionSection />
-        <Button variant="secondary" onClick={form.handleSubmit(onSubmit)}>
+        <AvailabilitySection />
+        <TeamSelectionSection teamOptions={teamOptions.data ?? []} />
+        <DetailsSection />
+        <Button
+          variant="secondary"
+          onClick={form.handleSubmit(onSubmit)}
+          disabled={createEventSubscription.isPending}
+        >
           Inscrever-se no Evento
         </Button>
       </div>

@@ -12,7 +12,8 @@
     "lint:fix": "eslint 'src/**/*.{ts,js}' --fix",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:prepare": "drizzle-kit generate"
   },
   "keywords": [],
   "author": "",

@@ -1,4 +1,3 @@
-import { z } from 'zod/v4'
 import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { eventsApp } from '../application/events-app.ts'
@@ -10,61 +9,13 @@ import {
   SubscriptionPermissions,
   TeamInstancePermissions,
 } from '../../../../../common/permissions/permissions.types.ts'
-
-const eventIdParamSchema = z.object({
-  eventId: z.uuid(),
-})
-
-const subscriptionAvailabilityEnum = z.enum([
-  'monday',
-  'tuesday',
-  'wednesday',
-  'thursday',
-  'friday',
-  'saturday',
-  'sunday',
-])
-
-const subscribeBodySchema = z.object({
-  user: z.object({
-    emergencyContactName: z.string('emergency contact name is required').nonempty(),
-    emergencyContactPhone: z.string('emergency contact phone is required').nonempty(),
-    isNewbie: z.boolean().optional(),
-    hasCoordinatorExperience: z.boolean().optional(),
-  }),
-  skills: z.object({
-    hasActingSkills: z.boolean().optional(),
-    hasCommunicationSkills: z.boolean().optional(),
-    hasCookingSkills: z.boolean().optional(),
-    hasDancingSkills: z.boolean().optional(),
-    hasManualSkills: z.boolean().optional(),
-    hasMusicSkills: z.boolean().optional(),
-    hasSingingSkills: z.boolean().optional(),
-  }),
-  options: z.array(z.string()).length(3, 'Exactly 3 options are required'),
-  availability: z
-    .array(subscriptionAvailabilityEnum)
-    .min(1, 'At least one availability day is required'),
-})
-
-const teamKeysQuerystringSchema = z.object({
-  teamKeys: z.preprocess((value) => {
-    if (typeof value === 'string') {
-      return value.split(',')
-    }
-  }, z.array(z.string()).optional()),
-})
-
-const paginationQuerystringSchema = z.object({
-  page: z.coerce.number().int().min(1).optional(),
-  size: z.coerce.number().int().min(1).optional(),
-})
-
-const listSubscriptionsQuerystringSchema = z.object({
-  name: z.string().optional(),
-  ...teamKeysQuerystringSchema.shape,
-  ...paginationQuerystringSchema.shape,
-})
+import {
+  eventIdParamSchema,
+  listSubscriptionsQuerystringSchema,
+  subscribeBodySchema,
+  subscribeCurrentSchema,
+  teamKeysQuerystringSchema,
+} from './events.schema.ts'
 
 export function eventsRoutes(server: FastifyServerInstance) {
   return () => {
@@ -139,11 +90,32 @@ export function eventsRoutes(server: FastifyServerInstance) {
       {
         preHandler: authGuard(server, { permissions: [EventPermissions.Read] }),
       },
-      async (__dirname, reply) => {
+      async (_, reply) => {
         try {
           const currentEvent = await eventsApp.getCurrentEvent()
 
           return reply.code(HttpStatus.Ok).send({ currentEvent })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.post(
+      '/events/current',
+      {
+        preHandler: authGuard(server),
+        schema: { body: subscribeCurrentSchema },
+      },
+      async (request, reply) => {
+        try {
+          const token = request.getToken()
+          if (token) {
+            const { authId } = extractUserInformationFromToken(token)
+            const subscription = await eventsApp.subscribeCurrentEvent(authId, request.body)
+
+            return reply.code(HttpStatus.Ok).send({ subscription })
+          }
         } catch (error) {
           fastifyErrorHandler(reply, error)
         }
