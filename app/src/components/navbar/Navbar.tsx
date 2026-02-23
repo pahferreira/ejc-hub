@@ -1,9 +1,21 @@
+import { FiLogOut } from 'react-icons/fi'
 import { Navlink } from './Navlink'
+
+type NavbarLogout = {
+  label?: string
+  onClick: () => void
+}
+
+type NavbarItem = {
+  name: string
+  to: string
+}
 
 type NavbarProps = {
   title?: string
   imageSrc?: string
-  navItems?: Array<{ name: string; to: string }>
+  navItems?: NavbarItem[]
+  logout?: NavbarLogout
 }
 
 export const Navbar = (props: NavbarProps) => (
@@ -24,6 +36,15 @@ export const Navbar = (props: NavbarProps) => (
           </li>
         ))}
       </ul>
+      {props.logout && (
+        <button
+          onClick={props.logout.onClick}
+          className="ml-auto flex cursor-pointer items-center gap-2 border-none bg-transparent border-b-2 border-transparent transition-[border-bottom] duration-200 ease hover:border-current"
+        >
+          <FiLogOut />
+          {props.logout.label && <span>{props.logout.label}</span>}
+        </button>
+      )}
     </nav>
   </header>
 )
