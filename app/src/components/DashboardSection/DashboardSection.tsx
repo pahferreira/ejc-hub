@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 export type DashboardSectionProps = {
-  title: string
+  title?: string
   subtitle?: string
   children: ReactNode
 }

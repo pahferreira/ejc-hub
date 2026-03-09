@@ -101,6 +101,22 @@ export function eventsRoutes(server: FastifyServerInstance) {
       }
     )
 
+    server.get(
+      '/events/current/subscriptions',
+      {
+        preHandler: authGuard(server, { permissions: [SubscriptionPermissions.Read] }),
+      },
+      async (_, reply) => {
+        try {
+          const subscriptions = await eventsApp.listCurrentEventSubscriptions()
+
+          return reply.code(HttpStatus.Ok).send({ subscriptions })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
     server.post(
       '/events/current',
       {

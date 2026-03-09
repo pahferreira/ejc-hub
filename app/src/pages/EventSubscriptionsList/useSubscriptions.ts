@@ -1,6 +1,5 @@
-import { useState } from 'react'
-import { mockSubscriptions } from './subscriptions.mock'
-import type { SubscriptionWithDetails, SubscriptionStats } from './subscription.types'
+import { useCurrentEventSubscriptionsQuery } from '../../services/events/useCurrentEventSubscriptionsQuery'
+import type { SubscriptionStats, SubscriptionWithDetails } from './subscription.types'
 
 type UseSubscriptionsReturn = {
   subscriptions: SubscriptionWithDetails[]
@@ -20,12 +19,14 @@ function calculateStats(subscriptions: SubscriptionWithDetails[]): SubscriptionS
 }
 
 export function useSubscriptions(): UseSubscriptionsReturn {
-  // TODO: Replace with actual API calls when backend is ready
-  const [subscriptions] = useState<SubscriptionWithDetails[]>(mockSubscriptions)
-  const [isLoading] = useState(false)
-  const [error] = useState<Error | null>(null)
-
+  const query = useCurrentEventSubscriptionsQuery()
+  const subscriptions = query.data ?? []
   const stats = calculateStats(subscriptions)
 
-  return { subscriptions, stats, isLoading, error }
+  return {
+    subscriptions,
+    stats,
+    isLoading: query.isLoading,
+    error: query.error,
+  }
 }

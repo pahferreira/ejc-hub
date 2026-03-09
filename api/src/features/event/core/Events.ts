@@ -104,8 +104,7 @@ export class Events {
   ) {
     const subscriptions = await this.#subscriptionRepository.listSubscriptionsByEventId(eventId)
     const teams = await this.#listTeamInstances(eventId, query?.teamKeys)
-    let filteredSubscriptions = new Array<SubscriptionWithDetails>(20)
-    filteredSubscriptions.fill(subscriptions[0])
+    let filteredSubscriptions = subscriptions
 
     if (query?.name) {
       filteredSubscriptions = this.#filterSubscriptionsByUserName(query.name, filteredSubscriptions)
@@ -122,6 +121,21 @@ export class Events {
     )
 
     return this.#formatSubscriptions(teams, filteredSubscriptions)
+  }
+
+  async listCurrentEventSubscriptions() {
+    const currentEvent = await this.#eventsRepository.findCurrentEvent()
+
+    if (!currentEvent) {
+      throw new AppError('Current event not set')
+    }
+
+    const subscriptions = await this.#subscriptionRepository.listSubscriptionsByEventId(
+      currentEvent.id
+    )
+    const teams = await this.#listTeamInstances(currentEvent.id)
+
+    return this.#formatSubscriptions(teams, subscriptions)
   }
 
   async getCurrentEvent() {
@@ -245,6 +259,7 @@ export class Events {
       id: subscription.id,
       user: subscription.user,
       status: subscription.status,
+      createdAt: subscription.createdAt,
       teams: subscription.teams.map((teamId) => {
         const team = teamInstancesWithName.find((team) => team.id === teamId)
         return {

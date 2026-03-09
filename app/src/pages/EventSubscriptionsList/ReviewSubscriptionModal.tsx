@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react'
 import { Modal } from '../../components/Modal/Modal'
 import { Selector } from '../../components/Selector/Selector'
 import type { Option } from '../../components/Selector/Selector'
-import type { SubscriptionWithDetails, SubscriptionStatus } from './subscription.types'
+import type {
+  SubscriptionWithDetails,
+  SubscriptionStatus,
+} from '../../services/subscriptions/subscriptions.types'
 
 type ReviewSubscriptionModalProps = {
   subscription: SubscriptionWithDetails | null
@@ -71,7 +74,9 @@ export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
 
         <div>
           <p className="text-sm font-medium text-gray-500 mb-1">Equipes Escolhidas</p>
-          <p className="text-sm text-gray-900">{props.subscription.teams.join(', ')}</p>
+          <p className="text-sm text-gray-900">
+            {props.subscription.teams.map((t) => t.name).join(', ')}
+          </p>
         </div>
 
         <div>

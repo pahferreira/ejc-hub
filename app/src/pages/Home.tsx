@@ -21,7 +21,6 @@ export function Home() {
   const canManageEvents = hasPermission(permissions, EventPermissions.Read)
   const canManageTemplates = hasPermission(permissions, TeamTemplatePermissions.Read)
   const canViewSubscriptions = hasPermission(permissions, SubscriptionPermissions.Read)
-  const canCreateSubscription = hasPermission(permissions, SubscriptionPermissions.Create)
 
   const hasAdminPermissions = hasAnyPermission(permissions, [
     EventPermissions.Read,
@@ -34,8 +33,10 @@ export function Home() {
       <div className="max-w-6xl mx-auto">
         {/* Welcome Section */}
         <header className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 m-0">Bem-vindo ao EJC Hub</h1>
-          <p className="mt-2 text-gray-600">Gerencie suas atividades e acompanhe os eventos</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 m-0">Bem-vindo ao EJC HUB</h1>
+          <p className="mt-2 text-gray-600">
+            Tudo o que você precisa saber sobre o EJC Rosário em um só lugar!
+          </p>
         </header>
 
         <div className="flex flex-col gap-8">
@@ -52,17 +53,13 @@ export function Home() {
               />
             ) : (
               <StatusCard
-                title="EJC 2024"
+                title="EJC 2026"
                 variant="warning"
                 description="Você ainda não se inscreveu no próximo encontro. Não perca essa oportunidade!"
-                action={
-                  canCreateSubscription
-                    ? {
-                        label: 'Fazer Inscrição',
-                        onClick: () => navigate('/subscriptions/new'),
-                      }
-                    : undefined
-                }
+                action={{
+                  label: 'Fazer Inscrição',
+                  onClick: () => navigate('/subscriptions/new'),
+                }}
               />
             )}
           </DashboardSection>
