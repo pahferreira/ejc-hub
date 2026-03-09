@@ -13,3 +13,25 @@ export type CreateEventSubscriptionPayload = {
   availability: string[]
   previousExperienceTeams: string[]
 }
+
+export type SubscriptionStatus = 'pending' | 'received' | 'completed' | 'waiting_list'
+
+export type SubscriptionWithDetails = {
+  id: string
+  status: SubscriptionStatus
+  createdAt: string
+  teams: string[]
+  user: {
+    name: string
+    email: string
+    phone: string | null
+  }
+}
+
+export const eventsQueryKeys = {
+  currentEvent: ['events', 'current'] as const,
+}
+
+export const subscriptionsQueryKeys = {
+  currentEvent: [...eventsQueryKeys.currentEvent, 'subscriptions'] as const,
+}

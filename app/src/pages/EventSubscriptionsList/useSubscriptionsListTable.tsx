@@ -6,7 +6,7 @@ import {
   getSortedRowModel,
   getFilteredRowModel,
 } from '@tanstack/react-table'
-import type { SubscriptionWithDetails } from './subscription.types'
+import type { SubscriptionWithDetails } from '../../services/subscriptions/subscriptions.types'
 import type { Option } from '../../components/MultiSelector/MultiSelector'
 import { Badge } from '../../components/Badge/Badge'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
@@ -21,14 +21,14 @@ const statusVariantMap = {
 } as const
 
 const statusLabelMap: Record<string, string> = {
-  pending: 'Pending',
-  received: 'Approved',
-  completed: 'Completed',
-  waiting_list: 'Waiting List',
+  pending: 'Pendente',
+  received: 'Recebida',
+  completed: 'Montado',
+  waiting_list: 'Lista de Espera',
 }
 
 function formatDate(dateString: string): string {
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat('pt-BR', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -40,7 +40,7 @@ function formatDate(dateString: string): string {
 const columns = [
   columnHelper.accessor('user.name', {
     id: 'subscriber',
-    header: 'Subscriber',
+    header: 'Encontreiro',
     cell: (info) => (
       <div>
         <div className="font-medium text-gray-900">{info.getValue()}</div>
@@ -50,19 +50,19 @@ const columns = [
   }),
   columnHelper.accessor('user.phone', {
     id: 'phone',
-    header: 'Phone',
+    header: 'Telefone',
     cell: (info) => info.getValue() || '-',
   }),
   columnHelper.accessor('teams', {
     id: 'teams',
-    header: 'Selected Teams',
+    header: 'Equipes Selecionadas',
     cell: (info) => {
       const teams = info.getValue()
 
       return (
         <div className="flex flex-wrap gap-1">
           {teams.map((team) => (
-            <Badge key={team}>{team}</Badge>
+            <Badge key={team.id}>{team.name}</Badge>
           ))}
         </div>
       )
@@ -71,7 +71,7 @@ const columns = [
   }),
   columnHelper.accessor('createdAt', {
     id: 'submitted',
-    header: 'Submitted',
+    header: 'Inscrito em',
     cell: (info) => formatDate(info.getValue()),
   }),
   columnHelper.accessor('status', {
@@ -90,9 +90,11 @@ export function useSubscriptionsListTable(subscriptions: SubscriptionWithDetails
   const debouncedSearch = useDebouncedValue(searchValue)
 
   const teamOptions: Option[] = useMemo(() => {
-    const uniqueTeams = new Set<string>()
-    subscriptions.forEach((sub) => sub.teams.forEach((team) => uniqueTeams.add(team)))
-    return Array.from(uniqueTeams).map((team) => ({ label: team, value: team }))
+    const uniqueTeams = new Map<string, string>()
+    subscriptions.forEach((sub) =>
+      sub.teams.forEach((team) => uniqueTeams.set(team.name, team.name))
+    )
+    return Array.from(uniqueTeams.entries()).map(([name]) => ({ label: name, value: name }))
   }, [subscriptions])
 
   const filteredData = useMemo(
@@ -105,7 +107,7 @@ export function useSubscriptionsListTable(subscriptions: SubscriptionWithDetails
 
         const matchesTeams =
           selectedTeams.length === 0 ||
-          subscription.teams.some((team) => selectedTeams.some((t) => t.value === team))
+          subscription.teams.some((team) => selectedTeams.some((t) => t.value === team.name))
 
         return matchesSearch && matchesTeams
       }),

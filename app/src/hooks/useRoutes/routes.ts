@@ -13,18 +13,18 @@ type Route = {
 export const routes: Route[] = [
   {
     path: '/home',
-    name: 'Home',
+    name: 'Início',
     component: Home,
   },
   {
     path: '/subscriptions',
-    name: 'Subscriptions',
+    name: 'Inscrições',
     component: EventSubscriptionsList,
     permission: SubscriptionPermissions.Read,
   },
   {
     path: '/subscriptions/new',
-    name: 'Subscribe',
+    name: 'Inscrever-se',
     component: EventSubscription,
   },
 ]

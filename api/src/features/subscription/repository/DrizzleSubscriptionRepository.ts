@@ -39,9 +39,11 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
       .select({
         id: schema.subscriptions.id,
         status: schema.subscriptions.status,
+        createdAt: schema.subscriptions.createdAt,
         teams: sql<string[]>`array_agg(${schema.subscriptionOptions.teamInstanceId})`,
         user: {
           name: schema.users.name,
+          email: schema.users.email,
           phone: schema.users.phone,
         },
       })
@@ -51,7 +53,13 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
         schema.subscriptionOptions,
         eq(schema.subscriptionOptions.subscriptionId, schema.subscriptions.id)
       )
-      .groupBy(schema.subscriptions.id, schema.users.name, schema.users.phone)
+      .groupBy(
+        schema.subscriptions.id,
+        schema.subscriptions.createdAt,
+        schema.users.name,
+        schema.users.email,
+        schema.users.phone
+      )
       .where(eq(schema.subscriptions.eventId, eventId))
     return results
   }
