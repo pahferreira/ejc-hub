@@ -1,4 +1,4 @@
-type SubscriptionStatus = 'pending' | 'received' | 'completed' | 'waiting_list'
+export type SubscriptionStatus = 'pending' | 'received' | 'completed' | 'waiting_list'
 
 export type SubscriptionWithDetails = {
   id: string

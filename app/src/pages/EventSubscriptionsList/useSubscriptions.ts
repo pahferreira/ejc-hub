@@ -1,5 +1,5 @@
 import { useCurrentEventSubscriptionsQuery } from '../../services/events/useCurrentEventSubscriptionsQuery'
-import type { SubscriptionStats, SubscriptionWithDetails } from './subscription.types'
+import type { SubscriptionStats, SubscriptionWithDetails } from '../../services/subscriptions/subscriptions.types'
 
 type UseSubscriptionsReturn = {
   subscriptions: SubscriptionWithDetails[]

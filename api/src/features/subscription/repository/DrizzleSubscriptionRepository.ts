@@ -2,6 +2,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type { SubscriptionRepository } from '../domain/SubscriptionRepository.ts'
+import type { SubscriptionStatus } from '../domain/subscription.types.ts'
 
 class DrizzleSubscriptionRepository implements SubscriptionRepository {
   async insertSubscription(input: { userId: string; eventId: string }) {
@@ -30,6 +31,16 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
       .where(
         and(eq(schema.subscriptions.userId, userId), eq(schema.subscriptions.eventId, eventId))
       )
+
+    return result[0]
+  }
+
+  async updateSubscriptionStatus(id: string, status: SubscriptionStatus) {
+    const result = await db
+      .update(schema.subscriptions)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(schema.subscriptions.id, id))
+      .returning()
 
     return result[0]
   }

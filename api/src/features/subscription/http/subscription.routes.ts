@@ -45,5 +45,39 @@ export function subscriptionRoutes(server: FastifyServerInstance) {
         }
       }
     )
+    server.post(
+      '/subscriptions/:subscriptionId/confirm',
+      {
+        schema: { params: subscriptionIdParamSchema },
+        preHandler: authGuard(server, { permissions: [SubscriptionPermissions.Update] }),
+      },
+      async (request, reply) => {
+        try {
+          const { subscriptionId } = request.params
+          const subscription = await subscriptionApp.confirmSubscription(subscriptionId)
+
+          return reply.code(HttpStatus.Ok).send({ subscription })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+    server.post(
+      '/subscriptions/:subscriptionId/wait-list',
+      {
+        schema: { params: subscriptionIdParamSchema },
+        preHandler: authGuard(server, { permissions: [SubscriptionPermissions.Update] }),
+      },
+      async (request, reply) => {
+        try {
+          const { subscriptionId } = request.params
+          const subscription = await subscriptionApp.waitListSubscription(subscriptionId)
+
+          return reply.code(HttpStatus.Ok).send({ subscription })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
   }
 }

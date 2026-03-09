@@ -22,4 +22,26 @@ export class Subscription {
 
     return subscription
   }
+
+  async confirmSubscription(id: string) {
+    const subscription = await this.getSubscription(id)
+
+    if (subscription.status !== 'pending' && subscription.status !== 'waiting_list') {
+      throw new AppError('Subscription cannot be confirmed from its current status')
+    }
+
+    const updated = await this.#subscriptionRepository.updateSubscriptionStatus(id, 'received')
+    return updated
+  }
+
+  async waitListSubscription(id: string) {
+    const subscription = await this.getSubscription(id)
+
+    if (subscription.status !== 'pending' && subscription.status !== 'received') {
+      throw new AppError('Subscription cannot be moved to waiting list from its current status')
+    }
+
+    const updated = await this.#subscriptionRepository.updateSubscriptionStatus(id, 'waiting_list')
+    return updated
+  }
 }
