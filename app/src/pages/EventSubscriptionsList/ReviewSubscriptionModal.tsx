@@ -4,6 +4,7 @@ import type {
   SubscriptionWithDetails,
   SubscriptionStatus,
 } from '../../services/subscriptions/subscriptions.types'
+import { formatDate } from '../../utils/formatDate/formatDate'
 
 type ReviewSubscriptionModalProps = {
   subscription: SubscriptionWithDetails | null
@@ -25,16 +26,6 @@ const statusLabelMap: Record<SubscriptionStatus, string> = {
   received: 'Recebida',
   completed: 'Montado',
   waiting_list: 'Lista de Espera',
-}
-
-function formatDate(dateString: string): string {
-  return new Intl.DateTimeFormat('pt-BR', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(dateString))
 }
 
 export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
