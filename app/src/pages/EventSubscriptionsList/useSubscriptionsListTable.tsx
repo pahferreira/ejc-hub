@@ -10,6 +10,7 @@ import type { SubscriptionWithDetails } from '../../services/subscriptions/subsc
 import type { Option } from '../../components/MultiSelector/MultiSelector'
 import { Badge } from '../../components/Badge/Badge'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { formatDate } from '../../utils/formatDate/formatDate'
 
 const columnHelper = createColumnHelper<SubscriptionWithDetails>()
 
@@ -25,16 +26,6 @@ const statusLabelMap: Record<string, string> = {
   received: 'Recebida',
   completed: 'Montado',
   waiting_list: 'Lista de Espera',
-}
-
-function formatDate(dateString: string): string {
-  return new Intl.DateTimeFormat('pt-BR', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(dateString))
 }
 
 const columns = [

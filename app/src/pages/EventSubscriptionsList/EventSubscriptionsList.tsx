@@ -8,10 +8,9 @@ import { Table } from '../../components/Table'
 import { useSubscriptions } from './useSubscriptions'
 import { useSubscriptionsListTable } from './useSubscriptionsListTable'
 import { ReviewSubscriptionModal } from './ReviewSubscriptionModal'
-import type {
-  SubscriptionWithDetails,
-  SubscriptionStatus,
-} from '../../services/subscriptions/subscriptions.types'
+import { useConfirmSubscriptionMutation } from '../../services/subscriptions/useConfirmSubscriptionMutation'
+import { useWaitListSubscriptionMutation } from '../../services/subscriptions/useWaitListSubscriptionMutation'
+import type { SubscriptionWithDetails } from '../../services/subscriptions/subscriptions.types'
 
 export function EventSubscriptionsList() {
   const { subscriptions, stats, isLoading, error } = useSubscriptions()
@@ -20,12 +19,20 @@ export function EventSubscriptionsList() {
   const [reviewingSubscription, setReviewingSubscription] =
     useState<SubscriptionWithDetails | null>(null)
 
+  const confirmMutation = useConfirmSubscriptionMutation()
+  const waitListMutation = useWaitListSubscriptionMutation()
+
   function handleReview(subscription: SubscriptionWithDetails) {
     setReviewingSubscription(subscription)
   }
 
-  function handleConfirmReview(id: string, newStatus: SubscriptionStatus) {
-    console.log(`Subscription ${id} status changed to ${newStatus}`)
+  function handleConfirmSubscription(id: string) {
+    confirmMutation.mutate(id)
+    setReviewingSubscription(null)
+  }
+
+  function handleWaitListSubscription(id: string) {
+    waitListMutation.mutate(id)
     setReviewingSubscription(null)
   }
 
@@ -128,7 +135,8 @@ export function EventSubscriptionsList() {
         subscription={reviewingSubscription}
         open={reviewingSubscription !== null}
         onClose={() => setReviewingSubscription(null)}
-        onConfirm={handleConfirmReview}
+        onConfirm={handleConfirmSubscription}
+        onWaitList={handleWaitListSubscription}
       />
     </main>
   )

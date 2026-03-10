@@ -1,5 +1,5 @@
 import { SubscriptionInput, SubscriptionModel } from '../../../core/database/schemas/index.ts'
-import type { SubscriptionWithDetails } from './subscription.types.ts'
+import type { SubscriptionStatus, SubscriptionWithDetails } from './subscription.types.ts'
 
 export interface SubscriptionRepository {
   insertSubscription: (input: SubscriptionInput) => Promise<SubscriptionModel | undefined>
@@ -9,5 +9,9 @@ export interface SubscriptionRepository {
   getSubscriptionByUserAndEvent: (
     userId: string,
     eventId: string
+  ) => Promise<SubscriptionModel | undefined>
+  updateSubscriptionStatus: (
+    id: string,
+    status: SubscriptionStatus
   ) => Promise<SubscriptionModel | undefined>
 }

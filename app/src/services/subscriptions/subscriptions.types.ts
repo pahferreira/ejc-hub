@@ -1,10 +1,13 @@
-type SubscriptionStatus = 'pending' | 'received' | 'completed' | 'waiting_list'
+export type SubscriptionStatus = 'pending' | 'received' | 'completed' | 'waiting_list'
 
 export type SubscriptionWithDetails = {
   id: string
   status: SubscriptionStatus
   createdAt: string
-  teams: string[]
+  teams: Array<{
+    id: string
+    name: string
+  }>
   user: {
     name: string
     email: string
