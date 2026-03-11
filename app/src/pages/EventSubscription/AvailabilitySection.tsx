@@ -38,7 +38,9 @@ export function AvailabilitySection() {
 
   const toggle = (day: string) => {
     const current = selectedAvailability.field.value
-    const next = current.includes(day) ? current.filter((d) => d !== day) : [...current, day]
+    const next = current.includes(day)
+      ? current.filter((d: string) => d !== day)
+      : [...current, day]
     selectedAvailability.field.onChange(next)
   }
 
@@ -57,9 +59,13 @@ export function AvailabilitySection() {
               label={day.label}
               checked={selectedAvailability.field.value.includes(day.value)}
               onChange={() => toggle(day.value)}
+              error={Boolean(selectedAvailability.fieldState.error)}
             />
           ))}
         </div>
+        {selectedAvailability.fieldState.error?.message && (
+          <p className="text-sm text-red-500">{selectedAvailability.fieldState.error.message}</p>
+        )}
       </div>
     </Card>
   )

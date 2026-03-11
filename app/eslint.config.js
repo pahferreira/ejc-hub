@@ -14,7 +14,7 @@ export default tseslint.config(
     globalIgnores(['dist']),
     {
       files: ['**/*.{ts,tsx}'],
-      plugins: [prettier],
+      plugins: { prettier },
       extends: [
         js.configs.recommended,
         tseslint.configs.recommended,

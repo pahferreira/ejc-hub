@@ -1,8 +1,24 @@
 import { api } from '../api'
 import type { CreateEventSubscriptionPayload, SubscriptionWithDetails } from './events.types'
+import { errorMessage, type ApiError } from '../general/error'
+import { isAxiosError } from 'axios'
 
-function createEventSubscription(payload: CreateEventSubscriptionPayload) {
-  return api.post('/events/current', payload)
+async function createEventSubscription(payload: CreateEventSubscriptionPayload) {
+  try {
+    const response = await api.post('/events/current', payload)
+    return response
+  } catch (error: unknown) {
+    if (isAxiosError(error) && error.response) {
+      const apiError = error as ApiError
+      const errorCode = apiError.response.data?.code
+      const appErrorMessage = errorCode
+        ? (errorMessage[errorCode] ?? apiError.response.data.message)
+        : 'Error ao criar inscrição para o evento'
+
+      throw new Error(appErrorMessage)
+    }
+    throw new Error('Error ao criar inscrição para o evento')
+  }
 }
 
 async function getCurrentEventSubscriptionsList() {

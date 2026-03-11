@@ -13,6 +13,8 @@ export type TeamBoxProps = {
   disabled?: boolean
   /** Callback when selection toggles */
   onToggle?: (selected?: boolean) => void
+  /** Display error state */
+  error?: boolean
 }
 
 function generateRandomPastelColor() {
@@ -46,6 +48,7 @@ export function TeamBox(props: TeamBoxProps) {
         'w-full flex items-start gap-3 rounded-md bg-white p-4 text-left shadow border transition-colors cursor-pointer',
         'disabled:opacity-60 disabled:cursor-not-allowed',
         isSelected ? 'border-blue-500' : 'border-gray-200 hover:border-gray-300',
+        props.error && 'border-red-200 hover:border-red-300',
       ].join(' ')}
     >
       <span

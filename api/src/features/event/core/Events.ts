@@ -1,4 +1,4 @@
-import { AppError } from '../../../shared/AppError.ts'
+import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import type { TeamInstanceRepository } from '../../team/domain/TeamInstanceRepository.ts'
 import type { SubscriptionOptionRepository } from '../../subscription/domain/SubscriptionOptionRepository.ts'
 import type { UserRepository } from '../../user/domain/UserRepository.ts'
@@ -43,7 +43,10 @@ export class Events {
     )
 
     if (subscriptionEvent) {
-      throw new AppError('User already subscribed to this event')
+      throw new AppError(
+        'User already subscribed to this event',
+        AppErrorCode.UserAlreadySubscribed
+      )
     }
 
     const teamInstancesToSubscribe = await this.#teamInstanceRepository.listTeamInstances(eventId, {
@@ -162,7 +165,10 @@ export class Events {
     )
 
     if (subscriptionEvent) {
-      throw new AppError('User already subscribed to this event')
+      throw new AppError(
+        'User already subscribed to this event',
+        AppErrorCode.UserAlreadySubscribed
+      )
     }
 
     const teamInstancesToSubscribe = await this.#teamInstanceRepository.listTeamInstances(

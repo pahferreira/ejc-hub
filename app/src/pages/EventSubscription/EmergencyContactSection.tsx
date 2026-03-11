@@ -19,6 +19,7 @@ export function EmergencyContactSection() {
           placeholder="Digite o nome do contato"
           value={contactName.field.value}
           onChange={contactName.field.onChange}
+          error={contactName.fieldState.error?.message}
         />
         <Input
           label="Telefone do Contato"
@@ -27,6 +28,7 @@ export function EmergencyContactSection() {
           placeholder="Digite o telefone do contato"
           value={contactPhone.field.value}
           onChange={contactPhone.field.onChange}
+          error={contactPhone.fieldState.error?.message}
         />
       </div>
     </Card>
