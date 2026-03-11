@@ -16,7 +16,7 @@ export function TeamSelectionSection(props: TeamSelectionSectionProps) {
   const toggle = (teamId: string) => {
     const current = selectedTeams.field.value
     if (current.includes(teamId)) {
-      selectedTeams.field.onChange(current.filter((t) => t !== teamId))
+      selectedTeams.field.onChange(current.filter((t: string) => t !== teamId))
     } else if (!isMaxSelected) {
       selectedTeams.field.onChange([...current, teamId])
     }
@@ -46,10 +46,14 @@ export function TeamSelectionSection(props: TeamSelectionSectionProps) {
                 selected={isSelected}
                 disabled={!isSelected && isMaxSelected}
                 onToggle={() => toggle(team.key)}
+                error={Boolean(selectedTeams.fieldState.error?.message) && !isSelected}
               />
             )
           })}
         </div>
+        {selectedTeams.fieldState.error?.message && (
+          <p className="text-sm text-red-500">{selectedTeams.fieldState.error.message}</p>
+        )}
       </div>
     </Card>
   )

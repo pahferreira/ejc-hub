@@ -82,7 +82,7 @@ export function teamRoutes(server: FastifyServerInstance) {
     server.get(
       '/teams/options',
       {
-        preHandler: authGuard(server, { permissions: [TeamInstancePermissions.Read] }),
+        preHandler: authGuard(server),
       },
       async (request, reply) => {
         try {

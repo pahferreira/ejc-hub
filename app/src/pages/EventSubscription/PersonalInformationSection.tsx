@@ -21,6 +21,7 @@ export function PersonalInformationSection() {
           placeholder="Digite seu nome completo"
           value={fullName.field.value}
           onChange={fullName.field.onChange}
+          error={fullName.fieldState.error?.message}
         />
         <Input
           label="Apelido"
@@ -28,6 +29,7 @@ export function PersonalInformationSection() {
           placeholder="Digite seu apelido"
           value={nickname.field.value}
           onChange={nickname.field.onChange}
+          error={nickname.fieldState.error?.message}
         />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
@@ -37,6 +39,7 @@ export function PersonalInformationSection() {
             placeholder="Digite seu telefone"
             value={phone.field.value}
             onChange={phone.field.onChange}
+            error={phone.fieldState.error?.message}
           />
           <Input
             label="Email"
@@ -45,6 +48,7 @@ export function PersonalInformationSection() {
             placeholder="Digite seu email"
             value={email.field.value}
             onChange={email.field.onChange}
+            error={email.fieldState.error?.message}
           />
         </div>
       </div>

@@ -11,6 +11,7 @@ import { AvailabilitySection } from './AvailabilitySection'
 import { DetailsSection } from './DetailsSection'
 import { useTeamOptionsQuery } from '../../services/teams/useTeamOptionsQuery'
 import { useCreateEventSubscriptionMutation } from '../../services/events/useCreateEventSubscriptionMutation'
+import { toastPromise } from '../../utils/toast/toast'
 
 function EventSubscriptionForm() {
   const form = useEventSubscriptionForm()
@@ -26,12 +27,13 @@ function EventSubscriptionForm() {
       previousExperienceTeams: data.selectedPreviousExperienceTeams,
     }
 
-    const response = await createEventSubscription.mutateAsync(payload)
-
-    if (response.status === 200 && response.data.id) {
-      // TODO: Show success message and redirect to confirmation page
-      alert('Inscrição realizada com sucesso!')
-    }
+    const response = createEventSubscription.mutateAsync(payload)
+    toastPromise(response, {
+      message: 'Inscrição realizada com sucesso!',
+      callback: () => {
+        form.reset()
+      },
+    })
   }
 
   return (
@@ -55,7 +57,7 @@ function EventSubscriptionForm() {
           onClick={form.handleSubmit(onSubmit)}
           disabled={createEventSubscription.isPending}
         >
-          Inscrever-se no Evento
+          {createEventSubscription.isPending ? 'Aguarde...' : 'Inscrever-se no Evento'}
         </Button>
       </div>
     </div>
