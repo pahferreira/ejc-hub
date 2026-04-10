@@ -1,9 +1,124 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 @import 'tailwindcss';
 
 :root {
-  font-family: 'Nunito Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Colors */
+  --white: #ffffff;
+  --black: #191208;
+  --blue: #2e1602;
+  --green: #2e7d32;
+  --red: #800020;
+  --background: 30 20% 97%; /* Off-white with light brown touch */
+  --primary: #6b2737;
+  --primary-foreground: #ffffff;
+  --secondary: #e8d5c4;
+  --secondary-foreground: #3e2723;
+}
+
+@theme {
+  /* Typography */
+  --font-size: 16px;
+  --font-sans:
+    'Inter', 'Nunito Sans', Roboto, --aple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-serif: 'Playfair Display', serif;
+  /* Colors */
+  --color-white: var(--white);
+  --color-black: var(--black);
+  --color-blue: var(--blue);
+  --color-green: var(--green);
+  --color-red: var(--red);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-background: var(--background);
+}
+
+@layer utilities {
+  .bg-welcome-gradient {
+    background: linear-gradient(135deg, #f5e6d3 0%, #ffffff 100%);
+  }
+
+  .shadow-warm {
+    box-shadow: 0 4px 20px rgba(92, 64, 51, 0.1);
+  }
+}
+
+body {
+  background-color: var(--color-offwhite-bg);
+  color: var(--color-black);
+}
+
+@layer base {
+  body {
+    @apply bg-background text-black;
+  }
+
+  /* Override browser autofill styles */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 9999px #ffffff inset !important;
+    -webkit-text-fill-color: #2e1602 !important;
+    caret-color: #2e1602;
+  }
+
+  /**
+  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
+  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
+  */
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  h1 {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.3;
+    @apply font-serif;
+  }
+
+  h2 {
+    font-size: var(--text-xl);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.4;
+    @apply font-serif;
+  }
+
+  h3 {
+    font-size: var(--text-lg);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+    @apply font-serif;
+  }
+
+  h4 {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  label {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  button {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.5;
+  }
+
+  input {
+    font-size: var(--text-base);
+    font-weight: var(--font-weight-normal);
+    line-height: 1.5;
+  }
 }
