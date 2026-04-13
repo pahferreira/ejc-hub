@@ -1,28 +1,33 @@
+import clsx from 'clsx'
 import type { ReactNode } from 'react'
 
 type ButtonProps = {
   children: ReactNode
   disabled?: boolean
   onClick?: () => void
-  variant?: 'primary' | 'secondary' | 'tertiary'
+  variant?: 'primary' | 'secondary'
 }
 
-const colorVariant = {
-  primary: 'bg-blue-500 text-white disabled:bg-blue-300',
-  secondary: 'bg-black text-white disabled:bg-gray-400',
-  tertiary:
-    'bg-transparent text-gray-800 border border-gray-800 disabled:text-gray-400 disabled:border-gray-400',
+const foregroundVariant = {
+  primary: 'bg-primary text-white',
+  secondary: 'bg-secondary text-black',
 }
 
 export function Button(props: ButtonProps) {
-  const buttonVariant = props.variant || 'primary'
+  const variant = props.variant || 'primary'
   return (
-    <button
-      onClick={props.onClick}
-      disabled={props.disabled}
-      className={`w-full p-4 cursor-pointer rounded-md text-center font-bold capitalize disabled:cursor-not-allowed ${colorVariant[buttonVariant]}`}
-    >
-      {props.children}
-    </button>
+    <div className="relative w-full pb-1">
+      <div className="absolute inset-0 rounded-lg bg-dark-brown" />
+      <button
+        onClick={props.onClick}
+        disabled={props.disabled}
+        className={clsx(
+          'relative w-full cursor-pointer rounded-lg border border-dark-brown p-4 text-center font-bold capitalize hover:-translate-y-1 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50',
+          foregroundVariant[variant]
+        )}
+      >
+        {props.children}
+      </button>
+    </div>
   )
 }

@@ -1,3 +1,5 @@
+import clsx from 'clsx'
+
 type TextAreaProps = {
   label: string
   name: string
@@ -11,20 +13,25 @@ type TextAreaProps = {
 
 export function TextArea(props: TextAreaProps) {
   return (
-    <div className="flex flex-col gap-1 w-full">
-      <label htmlFor={props.name} className="font-semibold text-sm text-gray-700">
+    <div className="flex w-full flex-col gap-1">
+      <label htmlFor={props.name} className="text-sm font-semibold text-dark-brown">
         {`${props.label}${props.isRequired ? '*' : ''}`}
       </label>
       <textarea
         name={props.name}
         required={props.isRequired}
-        className={`border py-2 px-3 rounded ${props.error ? 'border-red-400' : 'border-gray-400'} text-md text-black placeholder:text-gray-400 focus:outline-none focus:border-blue-500 resize-none`}
+        className={clsx(
+          'w-full resize-none rounded-lg border bg-white px-3 py-2 text-black placeholder:text-secondary focus:outline-none',
+          props.error
+            ? 'border-red focus:shadow-[1px_1px_1px_1px_var(--red)]'
+            : 'border-primary focus:border-dark-brown focus:shadow-[1px_1px_1px_1px_var(--dark-brown)]'
+        )}
         placeholder={props.placeholder}
         value={props.value}
         onChange={(event) => props.onChange?.(event.target.value)}
         rows={props.rows ?? 4}
       />
-      {props.error && <p className="text-sm text-red-500">{props.error}</p>}
+      {props.error && <p className="text-sm text-red">{props.error}</p>}
     </div>
   )
 }

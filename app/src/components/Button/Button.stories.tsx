@@ -29,12 +29,4 @@ export const Secondary = {
   },
 } satisfies StoryObj<typeof Button>
 
-export const Tertiary = {
-  args: {
-    children: 'Add member',
-    disabled: false,
-    variant: 'tertiary',
-  },
-} satisfies StoryObj<typeof Button>
-
 export default meta

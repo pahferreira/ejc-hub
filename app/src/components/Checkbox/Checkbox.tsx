@@ -12,9 +12,8 @@ export function Checkbox(props: CheckboxProps) {
   return (
     <label
       className={clsx(
-        'flex items-center gap-2 cursor-pointer select-none text-sm text-gray-700',
-        props.disabled && 'opacity-50 cursor-not-allowed',
-        props.error ? ' text-red-500 focus:ring-red-500' : ' text-blue-500 focus:ring-blue-500'
+        'flex cursor-pointer select-none items-center gap-2 text-sm text-dark-brown',
+        props.disabled && 'cursor-not-allowed opacity-50'
       )}
     >
       <input
@@ -22,7 +21,10 @@ export function Checkbox(props: CheckboxProps) {
         checked={props.checked}
         disabled={props.disabled}
         onChange={(event) => props.onChange?.(event.target.checked)}
-        className={clsx('h-4 w-4 rounded cursor-pointer  disabled:cursor-not-allowed')}
+        className={clsx(
+          'h-4 w-4 cursor-pointer rounded border accent-primary disabled:cursor-not-allowed',
+          props.error ? 'border-red' : 'border-primary'
+        )}
       />
       {props.label}
     </label>
