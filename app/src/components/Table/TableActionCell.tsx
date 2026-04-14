@@ -13,15 +13,15 @@ type TableActionCellProps = {
 }
 
 const variantStyles = {
-  default: 'text-gray-700 hover:bg-gray-100',
-  danger: 'text-red-600 hover:bg-red-50',
+  default: 'text-dark-brown hover:bg-tertiary',
+  danger: 'text-red hover:bg-red/10',
 }
 
 function ActionButton(props: { action: Action }) {
   return (
     <button
       onClick={props.action.onClick}
-      className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium border border-gray-300 bg-white hover:bg-gray-50 h-9 rounded-md px-3 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+      className="inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-dark-brown bg-white px-3 py-2 text-sm font-medium text-dark-brown transition-colors hover:bg-tertiary focus:outline-none"
     >
       {props.action.label}
     </button>
@@ -31,8 +31,8 @@ function ActionButton(props: { action: Action }) {
 function ActionMenu(props: { actions: Action[] }) {
   return (
     <Menu as="div" className="relative inline-block text-left">
-      <MenuButton className="inline-flex items-center justify-center p-2 rounded-md hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-        <FiMoreVertical className="w-5 h-5 text-gray-500" />
+      <MenuButton className="inline-flex items-center justify-center rounded-lg p-2 text-dark-brown transition-colors hover:bg-tertiary focus:outline-none">
+        <FiMoreVertical className="h-5 w-5" />
       </MenuButton>
       <Transition
         as={Fragment}
@@ -43,13 +43,13 @@ function ActionMenu(props: { actions: Action[] }) {
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
       >
-        <MenuItems className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <MenuItems className="absolute right-0 z-10 mt-2 w-40 origin-top-right rounded-lg border border-primary bg-white shadow-lg focus:outline-none">
           <div className="py-1">
             {props.actions.map((action, index) => (
               <MenuItem key={index}>
                 <button
                   onClick={action.onClick}
-                  className={`block w-full text-left px-4 py-2 text-sm ${variantStyles[action.variant || 'default']}`}
+                  className={`block w-full px-4 py-2 text-left text-sm ${variantStyles[action.variant || 'default']}`}
                 >
                   {action.label}
                 </button>

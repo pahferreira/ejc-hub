@@ -19,6 +19,7 @@
   --secondary: #e6c5a5;
   --secondary-foreground: #3e2723;
   --tertiary: #f2dcc4;
+  --tertiary-foreground: #fbfbfb;
 }
 
 @theme {
@@ -39,6 +40,7 @@
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-tertiary: var(--tertiary);
+  --color-tertiary-foreground: var(--tertiary-foreground);
   --color-background: var(--background);
 }
 

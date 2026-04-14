@@ -5,5 +5,5 @@ type TableHeaderProps = {
 }
 
 export function TableHeader(props: TableHeaderProps) {
-  return <thead className="bg-gray-200">{props.children}</thead>
+  return <thead className="bg-tertiary">{props.children}</thead>
 }

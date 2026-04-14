@@ -36,11 +36,9 @@ export const Default: Story = {
     children: (
       <>
         <Table.Header>
-          <Table.Row>
-            <Table.HeaderCell>Name</Table.HeaderCell>
-            <Table.HeaderCell>Email</Table.HeaderCell>
-            <Table.HeaderCell>Status</Table.HeaderCell>
-          </Table.Row>
+          <Table.HeaderCell>Name</Table.HeaderCell>
+          <Table.HeaderCell>Email</Table.HeaderCell>
+          <Table.HeaderCell>Status</Table.HeaderCell>
         </Table.Header>
         <Table.Body>
           {sampleData.map((row) => (
