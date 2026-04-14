@@ -20,14 +20,14 @@ export function RadioGroup(props: RadioGroupProps) {
   return (
     <fieldset className="flex flex-col gap-3">
       <div>
-        <legend className="font-semibold text-sm text-gray-700">{props.label}</legend>
-        {props.description && <p className="text-sm text-gray-500">{props.description}</p>}
+        <legend className="text-sm font-semibold text-dark-brown">{props.label}</legend>
+        {props.description && <p className="text-sm text-primary italic">{props.description}</p>}
       </div>
       <div className={props.variant === 'stacked' ? 'flex flex-col gap-2' : 'flex gap-4'}>
         {props.options.map((option) => (
           <label
             key={option.value}
-            className="flex items-center gap-2 cursor-pointer text-sm text-gray-700"
+            className="flex cursor-pointer items-center gap-2 text-sm text-dark-brown"
           >
             <input
               type="radio"
@@ -35,7 +35,7 @@ export function RadioGroup(props: RadioGroupProps) {
               value={option.value}
               checked={props.selected === option.value}
               onChange={() => props.onChange?.(option.value)}
-              className="h-4 w-4 border-gray-300 text-blue-500 focus:ring-blue-500 cursor-pointer"
+              className="h-3.5 w-3.5 cursor-pointer appearance-none rounded-full border border-primary checked:border-4 checked:border-primary"
             />
             {option.label}
           </label>

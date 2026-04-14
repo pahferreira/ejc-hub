@@ -13,10 +13,12 @@
   --green: #2e7d32;
   --red: #800020;
   --background: 30 20% 97%; /* Off-white with light brown touch */
-  --primary: #6b2737;
+  --dark-brown: #2e1602;
+  --primary: #612c02;
   --primary-foreground: #ffffff;
-  --secondary: #e8d5c4;
+  --secondary: #e6c5a5;
   --secondary-foreground: #3e2723;
+  --tertiary: #f2dcc4;
 }
 
 @theme {
@@ -31,16 +33,22 @@
   --color-blue: var(--blue);
   --color-green: var(--green);
   --color-red: var(--red);
+  --color-dark-brown: var(--dark-brown);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
+  --color-tertiary: var(--tertiary);
   --color-background: var(--background);
 }
 
 @layer utilities {
   .bg-welcome-gradient {
     background: linear-gradient(135deg, #f5e6d3 0%, #ffffff 100%);
+  }
+
+  .input-focus {
+    box-shadow: 1px 1px 1px 1px var(--dark-brown);
   }
 
   .shadow-warm {

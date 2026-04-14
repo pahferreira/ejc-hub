@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import type { HTMLInputTypeAttribute } from 'react'
 
 type InputType = Exclude<HTMLInputTypeAttribute, 'button' | 'checkbox' | 'radio'>
@@ -15,20 +16,25 @@ type InputProps = {
 
 export function Input(props: InputProps) {
   return (
-    <div className="flex flex-col gap-1 w-full">
-      <label htmlFor={props.name} className="font-semibold text-sm text-gray-700">
+    <div className="flex w-full flex-col gap-1">
+      <label htmlFor={props.name} className="text-sm font-semibold text-dark-brown">
         {`${props.label}${props.isRequired ? '*' : ''}`}
       </label>
       <input
         name={props.name}
         required={props.isRequired}
-        className={`border py-2 px-3 rounded ${props.error ? 'border-red-400' : 'border-gray-400'} text-md text-black placeholder:text-gray-400 focus:outline-none focus:border-blue-500`}
+        className={clsx(
+          'w-full rounded-lg border bg-white px-3 py-2 text-black placeholder:text-secondary focus:outline-none',
+          props.error
+            ? 'border-red focus:shadow-[1px_1px_1px_1px_var(--red)]'
+            : 'border-primary focus:border-dark-brown focus:shadow-[1px_1px_1px_1px_var(--dark-brown)]'
+        )}
         placeholder={props.placeholder}
         value={props.value}
         onChange={(event) => props.onChange?.(event.target.value)}
         type={props.type}
       />
-      {props.error && <p className="text-sm text-red-500">{props.error}</p>}
+      {props.error && <p className="text-sm text-red">{props.error}</p>}
     </div>
   )
 }
