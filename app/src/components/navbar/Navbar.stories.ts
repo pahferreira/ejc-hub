@@ -18,13 +18,10 @@ const meta = {
     layout: 'fullscreen',
   },
   args: {
-    title: 'EJC Rosário',
+    titleLight: 'Ponto',
+    title: 'EJC',
     imageSrc: '/church.svg',
-    navItems: [
-      { name: 'Inscrição', to: '/registration' },
-      { name: 'Dashboard', to: '/dashboard' },
-      { name: 'Equipes', to: '/teams' },
-    ],
+    navItems: [{ name: 'Inscreva-se!', to: '/registration' }],
   },
 } satisfies Meta<typeof Navbar>
 

@@ -21,7 +21,7 @@ const ModalWrapper = (args: any) => {
     <div>
       <button
         onClick={() => setOpen(true)}
-        className="rounded-md bg-blue-500 px-4 py-2 text-white text-sm font-medium hover:bg-blue-600"
+        className="rounded-md bg-primary px-4 py-2 text-white text-sm font-medium hover:bg-dark-brown transition-colors"
       >
         Open Modal
       </button>

@@ -5,5 +5,5 @@ type TableBodyProps = {
 }
 
 export function TableBody(props: TableBodyProps) {
-  return <tbody className="bg-white divide-y divide-gray-200">{props.children}</tbody>
+  return <tbody className="divide-y divide-gray-200 bg-white">{props.children}</tbody>
 }

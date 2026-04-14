@@ -9,7 +9,7 @@ export const Navlink = (props: NavlinkProps) => {
   return (
     <Link
       to={props.to}
-      className="no-underline cursor-pointer border-b-2 border-transparent transition-[border-bottom] duration-200 ease hover:border-current"
+      className="w-fit no-underline cursor-pointer border-b-2 border-transparent transition-[border-bottom] duration-200 ease hover:border-dark-brown"
     >
       {props.name}
     </Link>
