@@ -17,17 +17,28 @@ export type TeamBoxProps = {
   error?: boolean
 }
 
-function generateRandomPastelColor() {
-  const hue = Math.floor(Math.random() * 360)
-  const saturation = 70
-  const lightness = 60
-  return `hsl(${hue} ${saturation}% ${lightness}%)`
+const BROWN_COLORS = [
+  '#2e1602',
+  '#612c02',
+  '#763d0e',
+  '#8b4513',
+  '#d5a67b',
+  '#e0b993',
+  '#e6c5a5',
+  '#ecd1b5',
+  '#f2dcc4',
+]
+
+function selectRandomColor() {
+  const randomIndex = Math.floor(Math.random() * BROWN_COLORS.length)
+  const color = BROWN_COLORS[randomIndex]
+  return color
 }
 
 export function TeamBox(props: TeamBoxProps) {
   const [internalSelected, setInternalSelected] = useState<boolean>(props.defaultSelected ?? false)
   const isSelected = props.selected ?? internalSelected
-  const dotColor = useMemo(() => generateRandomPastelColor(), [])
+  const dotColor = useMemo(() => selectRandomColor(), [])
 
   const handleClick = () => {
     setInternalSelected((prevState) => {
@@ -46,9 +57,11 @@ export function TeamBox(props: TeamBoxProps) {
       value="test"
       className={[
         'w-full flex items-start gap-3 rounded-md bg-white p-4 text-left shadow border transition-colors cursor-pointer',
-        'disabled:opacity-60 disabled:cursor-not-allowed',
-        isSelected ? 'border-blue-500' : 'border-gray-200 hover:border-gray-300',
-        props.error && 'border-red-200 hover:border-red-300',
+        'disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:border-gray-300 focus-visible:outline-none',
+        isSelected
+          ? 'shadow-[1px_1px_1px_1px_var(--dark-brown)]'
+          : 'border-gray-300 hover:border-dark-brown',
+        props.error && 'border-red hover:border-red-300',
       ].join(' ')}
     >
       <span

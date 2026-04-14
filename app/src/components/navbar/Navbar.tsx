@@ -13,23 +13,29 @@ type NavbarItem = {
 
 type NavbarProps = {
   title?: string
+  titleLight?: string
   imageSrc?: string
   navItems?: NavbarItem[]
   logout?: NavbarLogout
 }
 
 export const Navbar = (props: NavbarProps) => (
-  <header className="border-b border-slate-300/10">
-    <nav className="flex items-center px-14 py-4">
-      <div className="flex items-center">
+  <header className="border-b border-slate-300/10 w-full bg-tertiary">
+    <nav className="flex items-center p-4 w-full max-w-7xl mx-auto justify-between gap-4">
+      <div className="flex items-center w-full">
         {props.imageSrc && (
           <figure>
             <img src={props.imageSrc || '/church.svg'} alt="Igreja" className="mr-3" />
           </figure>
         )}
-        {props.title && <h1 className="m-0 text-xl font-bold leading-none">{props.title}</h1>}
+        {props.title && (
+          <span className="m-0 text-xl font-bold leading-none font-serif text-white">
+            {props.titleLight}
+            <span className="text-primary">{props.title}</span>
+          </span>
+        )}
       </div>
-      <ul className="ml-[54px] flex gap-8 list-none">
+      <ul className="flex w-full justify-end gap-8 list-none">
         {props.navItems?.map((item) => (
           <li key={item.to}>
             <Navlink to={item.to} name={item.name} />
@@ -39,7 +45,7 @@ export const Navbar = (props: NavbarProps) => (
       {props.logout && (
         <button
           onClick={props.logout.onClick}
-          className="ml-auto flex cursor-pointer items-center gap-2 border-none bg-transparent border-b-2 border-transparent transition-[border-bottom] duration-200 ease hover:border-current"
+          className="ml-auto flex cursor-pointer items-center gap-2 bg-transparent border border-dark-brown rounded-md px-2 py-1"
         >
           <FiLogOut />
           {props.logout.label && <span>{props.logout.label}</span>}
