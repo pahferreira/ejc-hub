@@ -22,10 +22,10 @@ export const Pending: StoryObj<typeof Badge> = {
   },
 }
 
-export const Approved: StoryObj<typeof Badge> = {
+export const Received: StoryObj<typeof Badge> = {
   args: {
-    children: 'Approved',
-    variant: 'approved',
+    children: 'Received',
+    variant: 'received',
   },
 }
 

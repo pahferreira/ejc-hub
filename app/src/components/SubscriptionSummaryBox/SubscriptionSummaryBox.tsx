@@ -7,13 +7,13 @@ type SummaryBoxProps = {
   value: string | number
   description?: string
   icon?: ReactNode
-  variant?: 'total' | 'approved' | 'pending'
+  variant?: 'total' | 'approved' | 'pending' | 'waitlist'
 }
 
 const variantStyles = {
   total: {
-    iconBg: 'bg-blue-100',
-    iconColor: 'text-blue-600',
+    iconBg: 'bg-purple-100',
+    iconColor: 'text-purple-600',
     defaultIcon: <FiUsers size="20px" />,
   },
   approved: {
@@ -22,8 +22,13 @@ const variantStyles = {
     defaultIcon: <FiCheck size="20px" />,
   },
   pending: {
-    iconBg: 'bg-yellow-100',
-    iconColor: 'text-yellow-600',
+    iconBg: 'bg-red-100',
+    iconColor: 'text-red-500',
+    defaultIcon: <FiClock size="20px" />,
+  },
+  waitlist: {
+    iconBg: 'bg-amber-100',
+    iconColor: 'text-amber-600',
     defaultIcon: <FiClock size="20px" />,
   },
 }
@@ -33,18 +38,19 @@ export function SubscriptionSummaryBox(props: SummaryBoxProps) {
   const variantConfig = variantStyles[variant]
 
   return (
-    <Card>
-      <div className="flex items-center gap-4">
+    <Card className="max-w-xs">
+      <div className="flex items-start justify-between">
+        <span className="text-sm font-medium text-gray-700">{props.title}</span>
         <figure
           className={`flex items-center justify-center p-2 rounded-lg ${variantConfig.iconBg}`}
         >
           <div className={variantConfig.iconColor}>{props.icon || variantConfig.defaultIcon}</div>
         </figure>
-        <div className="flex flex-col">
-          <label className="text-xs text-gray-500">{props.title}</label>
-          <span className="text-2xl font-bold text-gray-900">{props.value}</span>
-        </div>
       </div>
+      <div className="mt-2">
+        <span className="text-3xl font-bold text-gray-900">{props.value}</span>
+      </div>
+      {props.description && <p className="mt-1 text-xs text-gray-500">{props.description}</p>}
     </Card>
   )
 }

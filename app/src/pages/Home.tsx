@@ -1,4 +1,4 @@
-import { FiCalendar, FiFileText, FiList } from 'react-icons/fi'
+import { FiCalendar, FiFileText, FiList, FiPenTool } from 'react-icons/fi'
 import { useNavigate } from 'react-router'
 import { ActionCard } from '../components/ActionCard/ActionCard'
 import { StatusCard } from '../components/StatusCard/StatusCard'
@@ -48,18 +48,16 @@ export function Home() {
             {isSubscribedToCurrentEvent ? (
               <StatusCard
                 title="EJC 2024"
+                value="Confirmada"
                 variant="success"
-                description="Você já está inscrito no próximo encontro. Sua inscrição foi confirmada!"
+                description="Você já está inscrito no próximo encontro."
               />
             ) : (
-              <StatusCard
-                title="EJC 2026"
-                variant="warning"
+              <ActionCard
+                icon={<FiPenTool size={20} />}
+                title="Fazer Inscrição no EJC 2026"
                 description="Você ainda não se inscreveu no próximo encontro. Não perca essa oportunidade!"
-                action={{
-                  label: 'Fazer Inscrição',
-                  onClick: () => navigate('/subscriptions/new'),
-                }}
+                onClick={() => navigate('/subscriptions/new')}
               />
             )}
           </DashboardSection>

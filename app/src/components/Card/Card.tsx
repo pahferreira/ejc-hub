@@ -2,8 +2,15 @@ import type { ReactNode } from 'react'
 
 type CardProps = {
   children: ReactNode
+  className?: string
 }
 
 export function Card(props: CardProps) {
-  return <section className="w-full bg-white px-6 py-4 shadow">{props.children}</section>
+  return (
+    <section
+      className={`w-full bg-white px-6 py-4 rounded border border-tertiary shadow-warm shadow-md ${props.className ?? ''}`}
+    >
+      {props.children}
+    </section>
+  )
 }
