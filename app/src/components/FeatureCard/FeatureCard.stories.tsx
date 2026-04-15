@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { FeatureCard } from './FeatureCard'
-import { FiZap, FiShield, FiTrendingUp } from 'react-icons/fi'
+import { FiClipboard, FiUsers, FiSettings, FiShoppingBag, FiStar, FiMessageCircle } from 'react-icons/fi'
 
 const meta = {
   title: 'UI/FeatureCard',
@@ -15,26 +15,53 @@ export default meta
 
 export const Default = {
   args: {
-    title: 'Lightning Fast',
-    description:
-      'Experience blazing fast performance with our optimized infrastructure and cutting-edge technology stack.',
-    icon: <FiZap size="20px" />,
+    title: 'Inscrições',
+    description: 'Coleta de dados, habilidades e preferências de equipe',
+    icon: <FiClipboard size="20px" />,
+    number: 1,
   },
 } satisfies StoryObj<typeof FeatureCard>
 
-export const Secure = {
+export const WithoutNumber = {
   args: {
-    title: 'Enterprise-grade Security',
-    description: 'Built-in best practices and ongoing monitoring keep your data safe.',
-    icon: <FiShield size="20px" />,
+    title: 'Montagem de Equipes',
+    description: 'Formação das equipes respeitando prioridades e capacidades',
+    icon: <FiUsers size="20px" />,
   },
 } satisfies StoryObj<typeof FeatureCard>
 
-export const Growth = {
+export const Preparation = {
   args: {
-    title: 'Built for Growth',
-    description:
-      'Scale confidently with resilient architecture and excellent developer ergonomics.',
-    icon: <FiTrendingUp size="20px" />,
+    title: 'Preparação',
+    description: 'Reuniões, controle de presença e financeiro',
+    icon: <FiSettings size="20px" />,
+    number: 3,
+  },
+} satisfies StoryObj<typeof FeatureCard>
+
+export const Uniform = {
+  args: {
+    title: 'Uniforme',
+    description: 'Pedido e controle de pagamento das camisetas',
+    icon: <FiShoppingBag size="20px" />,
+    number: 4,
+  },
+} satisfies StoryObj<typeof FeatureCard>
+
+export const EventDay = {
+  args: {
+    title: 'O Grande Dia!',
+    description: 'Execução do evento com cronograma em tempo real',
+    icon: <FiStar size="20px" />,
+    number: 5,
+  },
+} satisfies StoryObj<typeof FeatureCard>
+
+export const Feedback = {
+  args: {
+    title: 'Feedback',
+    description: 'Avaliação de líderes e membros para melhoria contínua',
+    icon: <FiMessageCircle size="20px" />,
+    number: 6,
   },
 } satisfies StoryObj<typeof FeatureCard>

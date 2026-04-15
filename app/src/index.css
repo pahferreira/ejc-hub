@@ -9,9 +9,10 @@
   /* Colors */
   --white: #ffffff;
   --black: #191208;
-  --blue: #2e1602;
-  --green: #2e7d32;
-  --red: #800020;
+  --blue: #030764;
+  --green: #155221;
+  --red: #6d0303;
+  --orange: #d97706;
   --background: 30 20% 97%; /* Off-white with light brown touch */
   --dark-brown: #2e1602;
   --primary: #612c02;
@@ -34,6 +35,7 @@
   --color-blue: var(--blue);
   --color-green: var(--green);
   --color-red: var(--red);
+  --color-orange: var(--orange);
   --color-dark-brown: var(--dark-brown);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);

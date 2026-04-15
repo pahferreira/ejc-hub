@@ -7,27 +7,39 @@ const meta = {
   tags: ['autodocs'],
 } satisfies Meta<typeof SubscriptionSummaryBox>
 
-export const Total = {
+export const Approved = {
   args: {
-    title: 'Total Subscriptions',
-    value: '3',
-    variant: 'total',
+    title: 'Concluído',
+    value: 2,
+    variant: 'approved',
+    description: 'Pessoas alocadas',
   },
 } satisfies StoryObj<typeof SubscriptionSummaryBox>
 
 export const Pending = {
   args: {
-    title: 'Pending Review',
-    value: '2',
+    title: 'Pendente',
+    value: 1,
     variant: 'pending',
+    description: 'Aguardando revisão',
   },
 } satisfies StoryObj<typeof SubscriptionSummaryBox>
 
-export const Approved = {
+export const Waitlist = {
   args: {
-    title: 'Approved',
-    value: '1',
-    variant: 'approved',
+    title: 'Lista de Espera',
+    value: 1,
+    variant: 'waitlist',
+    description: 'Em espera',
+  },
+} satisfies StoryObj<typeof SubscriptionSummaryBox>
+
+export const Total = {
+  args: {
+    title: 'Total',
+    value: 5,
+    variant: 'total',
+    description: 'Todas as inscrições',
   },
 } satisfies StoryObj<typeof SubscriptionSummaryBox>
 

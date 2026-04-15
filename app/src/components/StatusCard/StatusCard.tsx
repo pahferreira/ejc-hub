@@ -1,71 +1,55 @@
-import { FiCheckCircle, FiAlertCircle, FiInfo } from 'react-icons/fi'
-import { Link } from 'react-router'
+import type { ReactNode } from 'react'
+import { FiCheckCircle, FiAlertCircle, FiUsers, FiTrendingUp } from 'react-icons/fi'
+import { Card } from '../Card/Card'
 
 export type StatusCardProps = {
   title: string
-  variant: 'success' | 'warning' | 'info' | 'neutral'
+  value: string | number
+  variant: 'neutral' | 'success' | 'error' | 'info'
   description?: string
-  action?: {
-    label: string
-    onClick?: () => void
-    to?: string
-  }
+  icon?: ReactNode
 }
 
 const variantConfig = {
-  success: {
-    status: 'bg-green-100 text-green-800',
-    icon: { bg: 'bg-green-100', text: 'text-green-600', component: FiCheckCircle },
+  neutral: {
+    iconBg: 'bg-dark-brown',
+    defaultIcon: <FiUsers size="24px" />,
   },
-  warning: {
-    status: 'bg-yellow-100 text-yellow-800',
-    icon: { bg: 'bg-blue-100', text: 'text-blue-600', component: FiAlertCircle },
+  success: {
+    iconBg: 'bg-green',
+    defaultIcon: <FiCheckCircle size="24px" />,
+  },
+  error: {
+    iconBg: 'bg-red',
+    defaultIcon: <FiAlertCircle size="24px" />,
   },
   info: {
-    status: 'bg-blue-100 text-blue-800',
-    icon: { bg: 'bg-blue-100', text: 'text-blue-600', component: FiInfo },
-  },
-  neutral: {
-    status: 'bg-gray-100 text-gray-800',
-    icon: null,
+    iconBg: 'bg-blue',
+    defaultIcon: <FiTrendingUp size="24px" />,
   },
 }
 
 export function StatusCard(props: StatusCardProps) {
   const config = variantConfig[props.variant]
-  const IconComponent = config.icon?.component
-
-  const actionClassName =
-    'w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 bg-blue-500 text-white font-medium rounded-md hover:bg-blue-600 transition-colors cursor-pointer border-0 no-underline text-center'
 
   return (
-    <div className="w-full bg-white px-6 py-5 shadow rounded-lg md:flex md:justify-between md:items-center">
-      <div className="flex flex-col items-center md:flex-row gap-4">
-        {IconComponent && config.icon && (
-          <figure className={`p-3 rounded-lg ${config.icon.bg} shrink-0`}>
-            <div className={config.icon.text} aria-hidden>
-              <IconComponent size={24} />
-            </div>
-          </figure>
-        )}
-        <div className="flex flex-col flex-1 min-w-0">
-          <h3 className="m-0 text-lg md:text-left font-semibold text-gray-900">{props.title}</h3>
-          {props.description && <p className="m-0 text-sm text-gray-600">{props.description}</p>}
-        </div>
-      </div>
-      {props.action && (
-        <div className="mt-4">
-          {props.action.to ? (
-            <Link to={props.action.to} className={actionClassName}>
-              {props.action.label}
-            </Link>
-          ) : (
-            <button type="button" onClick={props.action.onClick} className={actionClassName}>
-              {props.action.label}
-            </button>
+    <Card className="max-w-xs">
+      <div className="flex items-center gap-4">
+        <figure
+          className={`flex items-center justify-center p-3 rounded-xl ${config.iconBg} shrink-0`}
+        >
+          <div className="text-white" aria-hidden>
+            {props.icon || config.defaultIcon}
+          </div>
+        </figure>
+        <div className="flex flex-col min-w-0">
+          <span className="text-xs text-gray-500">{props.title}</span>
+          <span className="text-3xl font-bold text-gray-900">{props.value}</span>
+          {props.description && (
+            <span className="text-xs text-gray-500">{props.description}</span>
           )}
         </div>
-      )}
-    </div>
+      </div>
+    </Card>
   )
 }

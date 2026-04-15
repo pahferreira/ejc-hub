@@ -14,9 +14,9 @@ export const Primary = {
         <h1 className="text-lg font-semibold mb-2">Card Example</h1>
         <p className="text-md">Here is a card example with some content on it.</p>
         <div className="flex gap-2 mt-4">
-          <button className="px-4 py-2 border border-red-500 text-red-500 rounded">Delete</button>
-          <button className="px-4 py-2 border border-blue-500 text-blue-500 rounded">Cancel</button>
-          <button className="px-4 py-2 border bg-blue-500 text-white rounded">Confirm</button>
+          <button className="px-4 py-2 border border-red text-red rounded">Delete</button>
+          <button className="px-4 py-2 border border-blue text-blue rounded">Cancel</button>
+          <button className="px-4 py-2 border bg-green text-white rounded">Confirm</button>
         </div>
       </div>
     ),
