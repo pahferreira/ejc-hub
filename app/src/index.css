@@ -54,10 +54,6 @@
   .input-focus {
     box-shadow: 1px 1px 1px 1px var(--dark-brown);
   }
-
-  .shadow-warm {
-    box-shadow: 0 4px 20px rgba(92, 64, 51, 0.1);
-  }
 }
 
 body {
