@@ -53,7 +53,7 @@ export function EventSubscriptionsList() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 m-0">Lista de Inscrições</h1>
@@ -138,6 +138,6 @@ export function EventSubscriptionsList() {
         onConfirm={handleConfirmSubscription}
         onWaitList={handleWaitListSubscription}
       />
-    </main>
+    </div>
   )
 }

@@ -1,24 +1,15 @@
 import { Outlet } from 'react-router'
-import { Navbar } from './components/Navbar/Navbar'
-import { useAuthentication } from './hooks/useAuthentication'
+import { Sidebar } from './components/Sidebar/Sidebar'
 import { Toaster } from 'sonner'
 
-type AppLayoutProps = {
-  routes?: Array<{ name: string; to: string }>
-}
-
-export function AppLayout(props: AppLayoutProps) {
-  const { logout } = useAuthentication()
-
+export function AppLayout() {
   return (
-    <>
-      <Navbar
-        title="EJC Rosário"
-        navItems={props.routes}
-        logout={{ label: 'Sair', onClick: logout }}
-      />
-      <Toaster />
-      <Outlet />
-    </>
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <main className="flex-1 overflow-auto">
+        <Toaster />
+        <Outlet />
+      </main>
+    </div>
   )
 }

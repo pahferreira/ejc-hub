@@ -5,7 +5,7 @@ import { tokenHandler } from '../services/token'
 import { useSyncUserMutation } from '../services/users/useSyncUserMutation'
 
 export function useAuthentication() {
-  const { isLoading, isAuthenticated, getAccessTokenSilently, logout } = useAuth0()
+  const { isLoading, isAuthenticated, getAccessTokenSilently, logout, user } = useAuth0()
   const [token, setToken] = useState('')
   const userSynced = useRef(false)
   const [permissions, setPermissions] = useState<string[]>([])
@@ -40,6 +40,7 @@ export function useAuthentication() {
     isAuthenticated: !isLoading && isAuthenticated,
     permissions,
     token,
+    user,
     logout: handleLogout,
   }
 }
