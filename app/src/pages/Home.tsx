@@ -29,7 +29,7 @@ export function Home() {
   ])
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Welcome Section */}
         <header className="mb-8">
@@ -98,6 +98,6 @@ export function Home() {
           )}
         </div>
       </div>
-    </main>
+    </div>
   )
 }

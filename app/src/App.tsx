@@ -18,7 +18,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Welcome />} />
-        <Route element={<AppLayout routes={routes.map((r) => ({ name: r.name, to: r.path }))} />}>
+        <Route element={<AppLayout />}>
           {routes.map((route) => (
             <Route key={route.path} path={route.path} element={<route.component />} />
           ))}

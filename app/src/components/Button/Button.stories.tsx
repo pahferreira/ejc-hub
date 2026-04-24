@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Button } from './Button'
-import { expect, fn } from 'storybook/internal/test'
+import { expect, fn } from 'storybook/test'
 
 const meta = {
   title: 'UI/Button',
