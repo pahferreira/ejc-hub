@@ -1,7 +1,7 @@
 import { AppError } from '../../../shared/AppError.ts'
-import type { TeamInstanceRepository } from '../domain/TeamInstanceRepository.ts'
-import type { TeamMembershipRepository } from '../domain/TeamMembershipRepository.ts'
-import type { TeamTemplateRepository } from '../domain/TeamTemplateRepository.ts'
+import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
+import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
+import type { TeamTemplateRepository } from '../../../modules/team-template/domain/TeamTemplateRepository.ts'
 
 export class Team {
   #teamInstanceRepository: TeamInstanceRepository

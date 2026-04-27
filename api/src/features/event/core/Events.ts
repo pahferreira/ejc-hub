@@ -1,14 +1,14 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
-import type { TeamInstanceRepository } from '../../team/domain/TeamInstanceRepository.ts'
-import type { SubscriptionOptionRepository } from '../../subscription/domain/SubscriptionOptionRepository.ts'
-import type { UserRepository } from '../../user/domain/UserRepository.ts'
-import type { SubscriptionRepository } from '../../subscription/domain/SubscriptionRepository.ts'
+import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
+import type { SubscriptionOptionRepository } from '../../../modules/subscription-option/domain/SubscriptionOptionRepository.ts'
+import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
+import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
 import type {
   CurrentEventSubscriptionPayload,
   SubscriptionPayload,
+  SubscriptionWithDetails,
 } from '../domain/subscription-types.ts'
-import type { SubscriptionWithDetails } from '../../subscription/domain/subscription.types.ts'
-import type { EventRepository } from '../domain/EventRepository.ts'
+import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_SIZE = 10

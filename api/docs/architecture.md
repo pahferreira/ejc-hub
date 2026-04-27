@@ -24,12 +24,53 @@ api/src/
 │   └── envs/
 │       └── env.ts                 # Environment variables (PORT, DATABASE_URL, AUTH_*)
 │
+├── modules/                       # Single-table data access (repository interfaces + Drizzle impls)
+│   ├── event/
+│   │   ├── domain/EventRepository.ts
+│   │   └── repository/DrizzleEventRepository.ts
+│   ├── subscription/
+│   │   ├── domain/SubscriptionRepository.ts
+│   │   ├── domain/subscription.types.ts   # SubscriptionStatus const + type
+│   │   └── repository/DrizzleSubscriptionRepository.ts
+│   ├── subscription-option/
+│   │   ├── domain/SubscriptionOptionRepository.ts
+│   │   └── repository/DrizzleSubscriptionOptionRepository.ts
+│   ├── team-instance/
+│   │   ├── domain/TeamInstanceRepository.ts
+│   │   └── repository/DrizzleTeamInstanceRepository.ts
+│   ├── team-membership/
+│   │   ├── domain/TeamMembershipRepository.ts
+│   │   └── repository/DrizzleTeamMembershipRepository.ts
+│   ├── team-template/
+│   │   ├── domain/TeamTemplateRepository.ts
+│   │   └── repository/DrizzleTeamTemplateRepository.ts
+│   └── user/
+│       ├── domain/UserRepository.ts
+│       └── repository/DrizzleUserRepository.ts
+│
 ├── features/
 │   ├── control-panel/             # Admin operations (events & team templates CRUD)
+│   │   ├── core/ControlPanel.ts
+│   │   ├── application/control-panel.ts
+│   │   └── http/control-panel.routes.ts
 │   ├── event/                     # Event subscriptions, team listing, current event
+│   │   ├── core/Events.ts
+│   │   ├── application/events-app.ts
+│   │   ├── domain/subscription-types.ts           # HTTP payload types
+│   │   ├── domain/subscription-with-details.types.ts  # JOIN-derived type (derived from module)
+│   │   └── http/
 │   ├── subscription/              # Subscription queries
+│   │   ├── core/Subscription.ts
+│   │   ├── application/subscription.ts
+│   │   └── http/subscription.routes.ts
 │   ├── team/                      # Team management and memberships
+│   │   ├── core/Team.ts
+│   │   ├── application/team.ts
+│   │   └── http/team.routes.ts
 │   └── user/                      # User sync and profile updates
+│       ├── core/User.ts
+│       ├── application/user.ts
+│       └── http/user.routes.ts
 │
 ├── shared/
 │   ├── AppError.ts                # Custom business logic error class
@@ -45,26 +86,46 @@ api/src/
 
 ## Architecture Layers
 
-Each feature module follows a consistent layered structure:
+### Modules vs Features
+
+**Modules** (`src/modules/`) are the data-access layer. Each module corresponds to a single database table and contains:
+
+- A repository interface (`domain/`) describing the available data operations.
+- A Drizzle ORM implementation (`repository/`) that fulfills the interface.
+
+Rules for modules:
+
+- Modules represent single-table shapes. Methods that execute JOINs inline the result row shape directly in the method signature rather than extracting a named type.
+- Modules **never** import from features.
+- Modules own the types that belong to a single table (e.g. `SubscriptionStatus` lives in `modules/subscription/domain/subscription.types.ts`).
+
+**Features** (`src/features/`) contain all business logic, HTTP routing, and feature-specific types. Each feature follows this layered structure:
 
 ```
 feature/
-├── domain/          # Repository interfaces (contracts)
+├── domain/          # Feature-specific types (HTTP payloads, JOIN-derived types)
 ├── core/            # Business logic classes
-├── repository/      # Drizzle ORM implementations of domain interfaces
 ├── application/     # Wiring layer — instantiates core classes with concrete repositories
 └── http/            # Route definitions, request/response Zod schemas
 ```
 
-**Domain** — Defines repository interfaces that describe what data operations are available, without specifying how they are implemented.
+Rules for features:
 
-**Core** — Contains business logic classes that depend only on domain interfaces. This is where validation rules, orchestration, and domain-specific decisions live.
+- Features depend on modules for data access; they **never** depend on another feature's data-access layer.
+- JOIN-derived types that are consumed by a single feature live in that feature's `domain/` folder, derived via `Awaited<ReturnType<Repository['method']>>[number]`.
+- HTTP payload types (request/response shapes) always stay in the feature's `domain/` folder.
 
-**Repository** — Drizzle ORM implementations of the domain interfaces. All database queries and mutations happen here.
+### Layer Descriptions
 
-**Application** — Instantiates the core class with concrete repository implementations, exporting a ready-to-use singleton.
+**Modules/Domain** — Repository interfaces that describe available data operations for a single table, without specifying how they are implemented.
 
-**HTTP** — Fastify route handlers that parse requests (using Zod schemas), call into the application layer, and return responses.
+**Modules/Repository** — Drizzle ORM implementations of the module domain interfaces. All database queries and mutations happen here.
+
+**Features/Core** — Business logic classes that depend only on module domain interfaces. This is where validation rules, orchestration, and domain-specific decisions live.
+
+**Features/Application** — Instantiates core classes with concrete repository implementations, exporting a ready-to-use singleton.
+
+**Features/HTTP** — Fastify route handlers that parse requests (using Zod schemas), call into the application layer, and return responses.
 
 ## Core Infrastructure
 
@@ -98,8 +159,8 @@ Validated variables:
 
 ## Design Patterns
 
-- **Clean Architecture** — Domain interfaces → Core business logic → Repository persistence → HTTP transport. Each layer depends only on the layer above it.
-- **Repository Pattern** — All database access is abstracted behind interfaces, making it easy to test core logic in isolation.
+- **Clean Architecture** — Module interfaces → Feature core logic → HTTP transport. Each layer depends only on the layer above it.
+- **Repository Pattern** — All database access is abstracted behind interfaces in `modules/`, making it easy to test core logic in isolation.
 - **Dependency Injection** — Core classes receive repository interfaces via constructor; the application layer wires concrete implementations.
 - **Type-safe Validation** — Zod schemas validate all incoming requests through Fastify's `ZodTypeProvider`, ensuring runtime and compile-time safety.
 - **Soft Deletes** — Events use a `deleted_at` timestamp instead of hard deletes.

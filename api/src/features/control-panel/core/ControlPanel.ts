@@ -1,7 +1,7 @@
 import { AppError } from '../../../shared/AppError.ts'
-import type { EventRepository } from '../../event/domain/EventRepository.ts'
-import type { TeamInstanceRepository } from '../../team/domain/TeamInstanceRepository.ts'
-import type { TeamTemplateRepository } from '../../team/domain/TeamTemplateRepository.ts'
+import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
+import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
+import type { TeamTemplateRepository } from '../../../modules/team-template/domain/TeamTemplateRepository.ts'
 
 export class ControlPanel {
   #teamTemplateRepository: TeamTemplateRepository
