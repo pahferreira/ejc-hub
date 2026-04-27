@@ -1,3 +1,5 @@
+import { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
+
 type SubscriptionAvailability =
   | 'monday'
   | 'tuesday'
@@ -39,4 +41,16 @@ export type CurrentEventSubscriptionPayload = {
   selectedSkills: string[]
   selectedTeams: string[]
   availability: SubscriptionAvailability[]
+}
+
+export type SubscriptionWithDetails = {
+  id: string
+  status: SubscriptionStatus
+  createdAt: Date
+  teams: string[]
+  user: {
+    name: string
+    email: string
+    phone: string | null
+  }
 }

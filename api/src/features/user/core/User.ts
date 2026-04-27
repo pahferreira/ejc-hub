@@ -1,4 +1,4 @@
-import type { UserRepository } from '../domain/UserRepository.ts'
+import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
 import { AppError } from '../../../shared/AppError.ts'
 
 type CreateUserInput = {

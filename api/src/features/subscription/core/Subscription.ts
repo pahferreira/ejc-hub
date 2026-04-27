@@ -1,6 +1,6 @@
 import { AppError } from '../../../shared/AppError.ts'
-import type { SubscriptionRepository } from '../domain/SubscriptionRepository.ts'
-import { SubscriptionStatus } from '../domain/subscription.types.ts'
+import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
+import { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
 
 export class Subscription {
   #subscriptionRepository: SubscriptionRepository
