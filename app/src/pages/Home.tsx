@@ -1,7 +1,7 @@
 import { FiCalendar, FiFileText, FiList, FiPenTool } from 'react-icons/fi'
 import { useNavigate } from 'react-router'
 import { ActionCard } from '../components/ActionCard/ActionCard'
-import { StatusCard } from '../components/StatusCard/StatusCard'
+import { StatusCard, type StatusCardProps } from '../components/StatusCard/StatusCard'
 import { DashboardSection } from '../components/DashboardSection/DashboardSection'
 import { useAuthentication } from '../hooks/useAuthentication'
 import { hasPermission, hasAnyPermission } from '../../../common/permissions'
@@ -10,13 +10,39 @@ import {
   TeamTemplatePermissions,
   SubscriptionPermissions,
 } from '../../../common/permissions'
+import { useCurrentEventSubscriptionStatusQuery } from '../services/events/useCurrentEventSubscriptionStatusQuery'
+import type { SubscriptionStatus } from '../services/events/events.types'
 
-// Hardcoded flag for testing - change to simulate different states
-const isSubscribedToCurrentEvent = false
+const subscriptionStatusDisplay: Record<
+  SubscriptionStatus,
+  { label: string; variant: StatusCardProps['variant']; description: string }
+> = {
+  pending: {
+    label: 'Pendente',
+    variant: 'pending',
+    description: 'Sua inscrição foi enviada e logo mais será confirmada.',
+  },
+  received: {
+    label: 'Recebida',
+    variant: 'success',
+    description: 'Agora é com a gente! Aguarde o processo de montagem.',
+  },
+  completed: {
+    label: 'Confirmada',
+    variant: 'success',
+    description: 'Você foi montado! Aguarde o contato de seu coordenador.',
+  },
+  waiting_list: {
+    label: 'Lista de Espera',
+    variant: 'pending',
+    description: 'Você está na lista de espera.',
+  },
+}
 
 export function Home() {
   const { permissions } = useAuthentication()
   const navigate = useNavigate()
+  const subscriptionStatusQuery = useCurrentEventSubscriptionStatusQuery()
 
   const canManageEvents = hasPermission(permissions, EventPermissions.Read)
   const canManageTemplates = hasPermission(permissions, TeamTemplatePermissions.Read)
@@ -28,12 +54,21 @@ export function Home() {
     SubscriptionPermissions.Read,
   ])
 
+  const subscriptionStatus = subscriptionStatusQuery.data?.subscriptionStatus ?? null
+  const eventName = subscriptionStatusQuery.data?.eventName
+  const statusDisplay = subscriptionStatus ? subscriptionStatusDisplay[subscriptionStatus] : null
+  const subscriptionSectionSubtitle = eventName
+    ? `Como está a sua participação no ${eventName}.`
+    : 'Como está a sua participação no próximo encontro.'
+
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
         {/* Welcome Section */}
         <header className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 m-0">Bem-vindo ao EJC HUB</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-black m-0">
+            Bem-vindo ao <span className="font-serif text-dark-brown">Ponto EJC</span>
+          </h1>
           <p className="mt-2 text-gray-600">
             Tudo o que você precisa saber sobre o EJC Rosário em um só lugar!
           </p>
@@ -41,21 +76,19 @@ export function Home() {
 
         <div className="flex flex-col gap-8">
           {/* User Subscription Status */}
-          <DashboardSection
-            title="Sua Inscrição"
-            subtitle="Status da sua participação no próximo encontro"
-          >
-            {isSubscribedToCurrentEvent ? (
+          <DashboardSection title="Sua Inscrição" subtitle={subscriptionSectionSubtitle}>
+            {subscriptionStatusQuery.isLoading ? (
+              <div className="h-24 max-w-xs rounded-xl bg-gray-200 animate-pulse" />
+            ) : statusDisplay ? (
               <StatusCard
-                title="EJC 2024"
-                value="Confirmada"
-                variant="success"
-                description="Você já está inscrito no próximo encontro."
+                value={statusDisplay.label}
+                variant={statusDisplay.variant}
+                description={statusDisplay.description}
               />
             ) : (
               <ActionCard
                 icon={<FiPenTool size={20} />}
-                title="Fazer Inscrição no EJC 2026"
+                title={eventName ? `Fazer Inscrição no ${eventName}` : 'Fazer Inscrição'}
                 description="Você ainda não se inscreveu no próximo encontro. Não perca essa oportunidade!"
                 onClick={() => navigate('/subscriptions/new')}
               />

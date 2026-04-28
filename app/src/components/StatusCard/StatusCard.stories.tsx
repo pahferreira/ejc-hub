@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react'
+import type { Meta, StoryObj } from '@storybook/react-vite'
 import { StatusCard } from './StatusCard'
 
 const meta = {
@@ -46,5 +46,14 @@ export const Info: Story = {
     value: '81%',
     variant: 'info',
     description: '22 de 27 membros',
+  },
+}
+
+export const Pending: Story = {
+  args: {
+    title: 'Pedidos em processamento',
+    value: '10',
+    variant: 'pending',
+    description: '10/100',
   },
 }

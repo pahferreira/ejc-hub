@@ -137,5 +137,25 @@ export function eventsRoutes(server: FastifyServerInstance) {
         }
       }
     )
+
+    server.get(
+      '/events/current/subscription/me',
+      {
+        preHandler: authGuard(server),
+      },
+      async (request, reply) => {
+        try {
+          const token = request.getToken()
+          if (token) {
+            const { authId } = extractUserInformationFromToken(token)
+            const result = await eventsApp.getCurrentEventSubscriptionStatus(authId)
+
+            return reply.code(HttpStatus.Ok).send(result)
+          }
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
   }
 }

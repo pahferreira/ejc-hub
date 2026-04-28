@@ -31,10 +31,16 @@ export type SubscriptionWithDetails = {
   }
 }
 
+export type CurrentEventSubscriptionStatus = {
+  eventName: string
+  subscriptionStatus: SubscriptionStatus | null
+}
+
 export const eventsQueryKeys = {
   currentEvent: ['events', 'current'] as const,
 }
 
 export const subscriptionsQueryKeys = {
   currentEvent: [...eventsQueryKeys.currentEvent, 'subscriptions'] as const,
+  currentEventForMe: [...eventsQueryKeys.currentEvent, 'subscription', 'me'] as const,
 }

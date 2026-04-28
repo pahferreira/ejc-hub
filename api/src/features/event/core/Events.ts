@@ -151,6 +151,25 @@ export class Events {
     return currentEvent
   }
 
+  async getCurrentEventSubscriptionStatus(userAuthId: string) {
+    const user = await this.#userRepository.getUser(userAuthId)
+    const currentEvent = await this.#eventsRepository.findCurrentEvent()
+
+    if (!currentEvent) {
+      throw new AppError('Current event not set')
+    }
+
+    const subscription = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
+      user.id,
+      currentEvent.id
+    )
+
+    return {
+      eventName: currentEvent.name,
+      subscriptionStatus: subscription?.status ?? null,
+    }
+  }
+
   async subscribeCurrentEvent(userAuthId: string, input: CurrentEventSubscriptionPayload) {
     const user = await this.#userRepository.getUser(userAuthId)
     const currentEvent = await this.#eventsRepository.findCurrentEvent()

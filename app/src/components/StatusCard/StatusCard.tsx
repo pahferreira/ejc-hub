@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
-import { FiCheckCircle, FiAlertCircle, FiUsers, FiTrendingUp } from 'react-icons/fi'
+import { FiCheckCircle, FiAlertCircle, FiUsers, FiTrendingUp, FiClock } from 'react-icons/fi'
 import { Card } from '../Card/Card'
 
 export type StatusCardProps = {
-  title: string
+  title?: string
   value: string | number
-  variant: 'neutral' | 'success' | 'error' | 'info'
+  variant: 'neutral' | 'success' | 'error' | 'info' | 'pending'
   description?: string
   icon?: ReactNode
 }
@@ -27,13 +27,17 @@ const variantConfig = {
     iconBg: 'bg-blue',
     defaultIcon: <FiTrendingUp size="24px" />,
   },
+  pending: {
+    iconBg: 'bg-dark-brown',
+    defaultIcon: <FiClock size="24px" />,
+  },
 }
 
 export function StatusCard(props: StatusCardProps) {
   const config = variantConfig[props.variant]
 
   return (
-    <Card className="max-w-xs">
+    <Card className="max-w-md">
       <div className="flex items-center gap-4">
         <figure
           className={`flex items-center justify-center p-3 rounded-xl ${config.iconBg} shrink-0`}
@@ -43,10 +47,10 @@ export function StatusCard(props: StatusCardProps) {
           </div>
         </figure>
         <div className="flex flex-col min-w-0">
-          <span className="text-xs text-gray-500">{props.title}</span>
-          <span className="text-3xl font-bold text-gray-900">{props.value}</span>
+          <span className="text-xs text-black">{props.title}</span>
+          <span className="text-3xl font-bold text-dark-brown">{props.value}</span>
           {props.description && (
-            <span className="text-xs text-gray-500">{props.description}</span>
+            <span className="text-xs text-black font-light">{props.description}</span>
           )}
         </div>
       </div>

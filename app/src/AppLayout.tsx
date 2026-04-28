@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router'
-import { Sidebar } from './components/Sidebar/Sidebar'
+import { Sidebar } from './components/Sidebar/Sidebar.tsx'
 import { Toaster } from 'sonner'
 
 export function AppLayout() {
