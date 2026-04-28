@@ -1,5 +1,9 @@
 import { api } from '../api'
-import type { CreateEventSubscriptionPayload, SubscriptionWithDetails } from './events.types'
+import type {
+  CreateEventSubscriptionPayload,
+  CurrentEventSubscriptionStatus,
+  SubscriptionWithDetails,
+} from './events.types'
 import { errorMessage, type ApiError } from '../general/error'
 import { isAxiosError } from 'axios'
 
@@ -29,7 +33,14 @@ async function getCurrentEventSubscriptionsList() {
   return response.data.subscriptions
 }
 
+async function getCurrentEventSubscriptionStatus() {
+  const response = await api.get<CurrentEventSubscriptionStatus>('/events/current/subscription/me')
+
+  return response.data
+}
+
 export const eventsApi = {
   createEventSubscription,
   getCurrentEventSubscriptionsList,
+  getCurrentEventSubscriptionStatus,
 }
