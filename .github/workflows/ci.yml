@@ -7,8 +7,33 @@ on:
       - main
 
 jobs:
+  changes:
+    name: Detect changed packages
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      app: ${{ steps.filter.outputs.app }}
+      common: ${{ steps.filter.outputs.common }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Filter changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'api/**'
+            app:
+              - 'app/**'
+            common:
+              - 'common/**'
+
   api-code-quality:
     name: API Code Quality Checks
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,3 +52,95 @@ jobs:
         run: npm install
       - name: Run ESLint
         run: npm run lint
+
+  api-test:
+    name: API Tests
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./api
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ./api/package-lock.json
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm test -- --passWithNoTests
+
+  app-code-quality:
+    name: App Code Quality Checks
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ./app/package-lock.json
+      - name: Install dependencies
+        run: npm install
+      - name: Run ESLint
+        run: npm run lint
+
+  app-test:
+    name: App Tests
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ./app/package-lock.json
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm test -- --passWithNoTests
+
+  common-test:
+    name: Common Tests
+    needs: changes
+    if: needs.changes.outputs.common == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./common
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ./common/package-lock.json
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm test -- --passWithNoTests
