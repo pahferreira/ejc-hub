@@ -1,20 +1,8 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
+import type { UserInput } from '../../../core/database/schemas/index.ts'
 import type { UserRepository } from '../domain/UserRepository.ts'
-
-type UpdateUserInput = {
-  phone?: string | null
-  nickname?: string | null
-  dateOfBirth?: Date | null
-  hasMusicSkills?: boolean
-  hasActingSkills?: boolean
-  hasDancingSkills?: boolean
-  hasSingingSkills?: boolean
-  hasManualSkills?: boolean
-  hasCookingSkills?: boolean
-  hasCommunicationSkills?: boolean
-}
 
 class DrizzleUserRepository implements UserRepository {
   async createUser(input: { email: string; name: string; authId: string; picture?: string }) {
@@ -27,7 +15,7 @@ class DrizzleUserRepository implements UserRepository {
     return results[0]
   }
 
-  async updateUser(id: string, input: UpdateUserInput) {
+  async updateUser(id: string, input: Partial<UserInput>) {
     const results = await db
       .update(schema.users)
       .set(input)

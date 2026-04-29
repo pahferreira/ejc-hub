@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { fn } from 'storybook/internal/test'
+import { fn } from 'storybook/test'
 import { Selector, type Option } from './Selector'
 
 const meta = {
@@ -22,7 +22,7 @@ const sampleOptions: Option[] = [
   { label: 'Waiting List', value: 'waiting_list' },
 ]
 
-const SelectorWrapper = (args: any) => {
+const SelectorWrapper = (args: React.ComponentProps<typeof Selector>) => {
   const [selected, setSelected] = useState<Option | null>(args.selected || null)
 
   return (

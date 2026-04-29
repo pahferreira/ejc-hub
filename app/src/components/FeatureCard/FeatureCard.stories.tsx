@@ -1,6 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { FeatureCard } from './FeatureCard'
-import { FiClipboard, FiUsers, FiSettings, FiShoppingBag, FiStar, FiMessageCircle } from 'react-icons/fi'
+import {
+  FiClipboard,
+  FiUsers,
+  FiSettings,
+  FiShoppingBag,
+  FiStar,
+  FiMessageCircle,
+} from 'react-icons/fi'
 
 const meta = {
   title: 'UI/FeatureCard',

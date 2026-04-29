@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { hasAnyPermission } from "./hasAnyPermission";
 
 describe("hasAnyPermission", () => {

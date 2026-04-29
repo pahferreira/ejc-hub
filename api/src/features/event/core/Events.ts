@@ -86,10 +86,8 @@ export class Events {
       ...input.skills,
       emergencyContactName: input.user.emergencyContactName,
       emergencyContactPhone: input.user.emergencyContactPhone,
-      experienceType: this.#defineExperienceType(
-        input.user.isNewbie,
-        input.user.hasCoordinatorExperience
-      ),
+      experienceType: input.user.experienceType,
+      hasCoordinatorExperience: input.user.hasCoordinatorExperience ?? false,
     })
 
     return subscription
@@ -233,20 +231,11 @@ export class Events {
       ...skills,
       emergencyContactName: input.emergencyContactName,
       emergencyContactPhone: input.emergencyContactPhone,
-      experienceType: this.#defineExperienceType(input.isNewbie, input.hasCoordinatorExperience),
+      experienceType: input.experienceType,
+      hasCoordinatorExperience: input.hasCoordinatorExperience ?? false,
     })
 
     return subscription
-  }
-
-  #defineExperienceType(isNewbie?: boolean, hasCoordinatorExperience?: boolean) {
-    if (hasCoordinatorExperience) {
-      return 'coordinator'
-    }
-    if (isNewbie) {
-      return 'newbie'
-    }
-    return 'experienced'
   }
 
   #filterSubscriptionsByUserName(userName: string, subscriptions: SubscriptionWithDetails[]) {

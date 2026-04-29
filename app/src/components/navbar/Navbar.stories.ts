@@ -32,24 +32,24 @@ export const NavbarExample: Story = {}
 
 export const WithLogout: Story = {
   args: {
-    logout: { label: 'Sair', onClick: fn() },
+    button: { label: 'Sair', onClick: fn() },
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
     const logoutButton = canvas.getByRole('button')
     await userEvent.click(logoutButton)
-    expect(args.logout!.onClick).toHaveBeenCalled()
+    expect(args.button!.onClick).toHaveBeenCalled()
   },
 }
 
 export const WithLogoutIconOnly: Story = {
   args: {
-    logout: { onClick: fn() },
+    button: { onClick: fn() },
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
     const logoutButton = canvas.getByRole('button')
     await userEvent.click(logoutButton)
-    expect(args.logout!.onClick).toHaveBeenCalled()
+    expect(args.button!.onClick).toHaveBeenCalled()
   },
 }

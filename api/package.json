@@ -13,7 +13,9 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "db:migrate": "drizzle-kit migrate",
-    "db:prepare": "drizzle-kit generate"
+    "db:prepare": "drizzle-kit generate",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -44,6 +46,7 @@
     "prettier": "^3.5.3",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.33.1"
+    "typescript-eslint": "^8.33.1",
+    "vitest": "^2.1.8"
   }
 }

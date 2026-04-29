@@ -14,7 +14,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-const ModalWrapper = (args: any) => {
+const ModalWrapper = (args: React.ComponentProps<typeof Modal>) => {
   const [open, setOpen] = useState(false)
 
   return (

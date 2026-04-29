@@ -1,5 +1,7 @@
 import { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
 
+export type ExperienceType = 'newbie' | 'experienced' | 'experienced_outsider'
+
 type SubscriptionAvailability =
   | 'monday'
   | 'tuesday'
@@ -13,7 +15,7 @@ export type SubscriptionPayload = {
   user: {
     emergencyContactName: string
     emergencyContactPhone: string
-    isNewbie?: boolean
+    experienceType: ExperienceType
     hasCoordinatorExperience?: boolean
   }
   skills: {
@@ -36,7 +38,7 @@ export type CurrentEventSubscriptionPayload = {
   phone: string
   emergencyContactName: string
   emergencyContactPhone: string
-  isNewbie?: boolean
+  experienceType: ExperienceType
   hasCoordinatorExperience?: boolean
   selectedSkills: string[]
   selectedTeams: string[]
