@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent, within } from 'storybook/internal/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 import { SearchInput } from './SearchInput'
 
 const meta = {

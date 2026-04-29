@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { expect, fn } from 'storybook/internal/test'
+import { expect, fn } from 'storybook/test'
 import { MultiSelector, type Option } from './MultiSelector'
 
 const meta = {
@@ -24,7 +24,7 @@ const sampleOptions: Option[] = [
 ]
 
 // Interactive wrapper component
-const MultiSelectorWrapper = (args: any) => {
+const MultiSelectorWrapper = (args: React.ComponentProps<typeof MultiSelector>) => {
   const [selected, setSelected] = useState<Option[]>(args.selected || [])
 
   return (
