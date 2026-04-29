@@ -19,10 +19,13 @@ function EventSubscriptionForm() {
   const createEventSubscription = useCreateEventSubscriptionMutation()
 
   const onSubmit = async (data: EventSubscriptionFormData) => {
+    const experienceType =
+      data.hasPreviousExperience === 'no' ? ('newbie' as const) : ('experienced' as const)
+    const hasCoordinatorExperience = data.hasCoordinatorExperience === 'yes'
     const payload = {
       ...data,
-      isNewbie: data.hasPreviousExperience === 'no',
-      hasCoordinatorExperience: data.hasCoordinatorExperience === 'yes',
+      experienceType,
+      hasCoordinatorExperience,
       availability: data.selectedAvailability,
       previousExperienceTeams: data.selectedPreviousExperienceTeams,
     }

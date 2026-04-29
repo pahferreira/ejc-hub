@@ -1,6 +1,10 @@
 import { pgEnum, pgTable, text, timestamp, boolean, uuid } from 'drizzle-orm/pg-core'
 
-export const experienceType = pgEnum('experience_type', ['newbie', 'experienced', 'coordinator'])
+export const experienceType = pgEnum('experience_type', [
+  'newbie',
+  'experienced',
+  'experienced_outsider',
+])
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -20,6 +24,7 @@ export const users = pgTable('users', {
   hasManualSkills: boolean('has_manual_skills').notNull().default(false),
   hasMusicSkills: boolean('has_music_skills').notNull().default(false),
   hasSingingSkills: boolean('has_singing_skills').notNull().default(false),
+  hasCoordinatorExperience: boolean('has_coordinator_experience').notNull().default(false),
   experienceType: experienceType().notNull().default('experienced'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),

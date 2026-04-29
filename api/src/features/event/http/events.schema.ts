@@ -1,5 +1,7 @@
 import { z } from 'zod/v4'
 
+const experienceTypeEnum = z.enum(['newbie', 'experienced', 'experienced_outsider'])
+
 export const eventIdParamSchema = z.object({
   eventId: z.uuid(),
 })
@@ -18,7 +20,7 @@ export const subscribeBodySchema = z.object({
   user: z.object({
     emergencyContactName: z.string('emergency contact name is required').nonempty(),
     emergencyContactPhone: z.string('emergency contact phone is required').nonempty(),
-    isNewbie: z.boolean().optional(),
+    experienceType: experienceTypeEnum,
     hasCoordinatorExperience: z.boolean().optional(),
   }),
   skills: z.object({
@@ -64,7 +66,7 @@ export const subscribeCurrentSchema = z.object({
   phone: z.string('Phone number is required').nonempty(),
   emergencyContactName: z.string('Emergency contact name is required').nonempty(),
   emergencyContactPhone: z.string('Emergency contact phone is required').nonempty(),
-  isNewbie: z.boolean().optional(),
+  experienceType: experienceTypeEnum,
   hasCoordinatorExperience: z.boolean().optional(),
   selectedSkills: z.array(z.string()),
   selectedTeams: z.array(z.string()),

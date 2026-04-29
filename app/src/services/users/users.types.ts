@@ -16,7 +16,8 @@ export type SyncedUser = {
   hasManualSkills: boolean
   hasMusicSkills: boolean
   hasSingingSkills: boolean
-  experienceType: 'newbie' | 'experienced' | 'coordinator'
+  hasCoordinatorExperience: boolean
+  experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
   createdAt: string
   updatedAt: string
 }
