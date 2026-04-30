@@ -1,10 +1,14 @@
 import { type ReactNode } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { eventSubscriptionSchema, type EventSubscriptionFormData } from './eventSubscription.schema'
+import {
+  eventSubscriptionSchema,
+  type EventSubscriptionFormInput,
+  type EventSubscriptionFormOutput,
+} from './eventSubscription.schema'
 
 export function EventSubscriptionProvider(props: { children: ReactNode }) {
-  const form = useForm<EventSubscriptionFormData>({
+  const form = useForm<EventSubscriptionFormInput, unknown, EventSubscriptionFormOutput>({
     resolver: zodResolver(eventSubscriptionSchema),
     defaultValues: {
       fullName: '',

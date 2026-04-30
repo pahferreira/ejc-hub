@@ -1,19 +1,22 @@
-import { Card } from '../../components/Card/Card'
-import { Input } from '../../components/Input/Input'
-import { useEventSubscriptionField } from './useEventSubscriptionForm'
+import { Input } from '../../../../components/Input/Input'
+import { useEventSubscriptionField } from '../../useEventSubscriptionForm'
 
-export function PersonalInformationSection() {
+export function PersonalDataStep() {
   const fullName = useEventSubscriptionField('fullName')
   const email = useEventSubscriptionField('email')
   const phone = useEventSubscriptionField('phone')
   const nickname = useEventSubscriptionField('nickname')
+  const contactName = useEventSubscriptionField('emergencyContactName')
+  const contactPhone = useEventSubscriptionField('emergencyContactPhone')
 
   return (
-    <Card>
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
         <div>
           <h3 className="text-lg font-bold text-gray-900">Informações Pessoais</h3>
-          <p className="text-sm text-gray-500">Por favor, forneça seus dados de contato</p>
+          <p className="text-sm text-black font-light italic">
+            Por favor, forneça seus dados pessoais
+          </p>
         </div>
         <Input
           label="Nome Completo"
@@ -52,6 +55,34 @@ export function PersonalInformationSection() {
           />
         </div>
       </div>
-    </Card>
+      <hr className="border-t border-secondary" />
+      <div>
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-gray-900">Contato de Emergência</h3>
+          <p className="text-sm text-black font-light italic">
+            Quem devemos contatar em caso de emergência?
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Nome do Contato"
+            name="emergencyContactName"
+            placeholder="Digite o nome do contato"
+            value={contactName.field.value}
+            onChange={contactName.field.onChange}
+            error={contactName.fieldState.error?.message}
+          />
+          <Input
+            label="Telefone do Contato"
+            name="emergencyContactPhone"
+            type="tel"
+            placeholder="Digite o telefone do contato"
+            value={contactPhone.field.value}
+            onChange={contactPhone.field.onChange}
+            error={contactPhone.fieldState.error?.message}
+          />
+        </div>
+      </div>
+    </div>
   )
 }
