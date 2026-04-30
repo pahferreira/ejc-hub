@@ -1,39 +1,48 @@
-import { Button } from '../../components/Button/Button'
 import { EventSubscriptionProvider } from './useEventSubscriptionForm'
-import { PersonalInformationSection } from './PersonalInformationSection'
-import { EmergencyContactSection } from './EmergencyContactSection'
-import { PreviousExperienceSection } from './PreviousExperienceSection'
-import { SkillsSection } from './SkillsSection'
-import { TeamSelectionSection } from './TeamSelectionSection'
 import { useEventSubscriptionForm } from './useEventSubscriptionForm'
-import type { EventSubscriptionFormData } from './useEventSubscriptionForm'
-import { AvailabilitySection } from './AvailabilitySection'
-import { DetailsSection } from './DetailsSection'
+import type { EventSubscriptionFormOutput } from './useEventSubscriptionForm'
+import { SubscriptionWizardProvider, useSubscriptionWizard, STEPS } from './useSubscriptionWizard'
+import {
+  useSubscriptionFormPersistence,
+  updatePersistedStep,
+} from './useSubscriptionFormPersistence'
+import { WizardStepper } from '../../components/WizardStepper'
+import { WizardFooter } from '../../components/WizardFooter'
+import { PersonalDataStep } from './steps/PersonalDataStep'
+import { ProfileStep } from './steps/ProfileStep'
+import { TeamsStep } from './steps/TeamsStep'
+import { ConfirmationStep } from './steps/ConfirmationStep'
+import { Card } from '../../components/Card/Card'
 import { useTeamOptionsQuery } from '../../services/teams/useTeamOptionsQuery'
 import { useCreateEventSubscriptionMutation } from '../../services/events/useCreateEventSubscriptionMutation'
 import { toastPromise } from '../../utils/toast/toast'
 
-function EventSubscriptionForm() {
+const STEP_LABELS: Record<(typeof STEPS)[number], string> = {
+  personal: 'Dados Pessoais',
+  profile: 'Perfil',
+  teams: 'Equipes',
+  confirm: 'Confirmação',
+}
+
+const wizardSteps = STEPS.map((id) => ({ id, label: STEP_LABELS[id] }))
+
+type EventSubscriptionFormProps = {
+  clearPersistence: () => void
+}
+
+function EventSubscriptionForm(props: EventSubscriptionFormProps) {
   const form = useEventSubscriptionForm()
   const teamOptions = useTeamOptionsQuery()
   const createEventSubscription = useCreateEventSubscriptionMutation()
+  const { currentStep, isFirst, isLast, isNavigating, maxReachedStep, goNext, goPrev, goTo } =
+    useSubscriptionWizard()
 
-  const onSubmit = async (data: EventSubscriptionFormData) => {
-    const experienceType =
-      data.hasPreviousExperience === 'no' ? ('newbie' as const) : ('experienced' as const)
-    const hasCoordinatorExperience = data.hasCoordinatorExperience === 'yes'
-    const payload = {
-      ...data,
-      experienceType,
-      hasCoordinatorExperience,
-      availability: data.selectedAvailability,
-      previousExperienceTeams: data.selectedPreviousExperienceTeams,
-    }
-
-    const response = createEventSubscription.mutateAsync(payload)
+  const onSubmit = async (data: EventSubscriptionFormOutput) => {
+    const response = createEventSubscription.mutateAsync(data)
     toastPromise(response, {
       message: 'Inscrição realizada com sucesso!',
       callback: () => {
+        props.clearPersistence()
         form.reset()
       },
     })
@@ -47,30 +56,51 @@ function EventSubscriptionForm() {
           Preencha seus dados e selecione suas equipes preferidas
         </p>
       </div>
-      <div className="flex flex-col gap-6 text-left">
-        <PersonalInformationSection />
-        <EmergencyContactSection />
-        <PreviousExperienceSection teamOptions={teamOptions.data ?? []} />
-        <SkillsSection />
-        <AvailabilitySection />
-        <TeamSelectionSection teamOptions={teamOptions.data ?? []} />
-        <DetailsSection />
-        <Button
-          variant="secondary"
-          onClick={form.handleSubmit(onSubmit)}
-          disabled={createEventSubscription.isPending}
-        >
-          {createEventSubscription.isPending ? 'Aguarde...' : 'Inscrever-se no Evento'}
-        </Button>
-      </div>
+      <WizardStepper
+        steps={wizardSteps}
+        currentStep={currentStep}
+        maxReachedStepIndex={maxReachedStep}
+        onStepClick={goTo}
+      />
+      <Card className="!bg-tertiary/50 ">
+        <div className="flex flex-col gap-6 text-left">
+          {currentStep === 'personal' && <PersonalDataStep />}
+          {currentStep === 'profile' && <ProfileStep teamOptions={teamOptions.data ?? []} />}
+          {currentStep === 'teams' && <TeamsStep teamOptions={teamOptions.data ?? []} />}
+          {currentStep === 'confirm' && <ConfirmationStep />}
+          <WizardFooter
+            isFirst={isFirst}
+            isLast={isLast}
+            isNavigating={isNavigating}
+            isSubmitting={form.formState.isSubmitting}
+            onBack={goPrev}
+            onNext={goNext}
+            onSubmit={form.handleSubmit(onSubmit)}
+          />
+        </div>
+      </Card>
     </div>
+  )
+}
+
+function EventSubscriptionWizardShell() {
+  const form = useEventSubscriptionForm()
+  const { initialStep, clearPersistence } = useSubscriptionFormPersistence(form)
+
+  return (
+    <SubscriptionWizardProvider
+      initialStep={initialStep ?? undefined}
+      onStepChange={updatePersistedStep}
+    >
+      <EventSubscriptionForm clearPersistence={clearPersistence} />
+    </SubscriptionWizardProvider>
   )
 }
 
 export function EventSubscription() {
   return (
     <EventSubscriptionProvider>
-      <EventSubscriptionForm />
+      <EventSubscriptionWizardShell />
     </EventSubscriptionProvider>
   )
 }

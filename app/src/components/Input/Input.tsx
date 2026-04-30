@@ -24,10 +24,10 @@ export function Input(props: InputProps) {
         name={props.name}
         required={props.isRequired}
         className={clsx(
-          'w-full rounded-lg border bg-white px-3 py-2 text-black placeholder:text-secondary focus:outline-none',
+          'w-full rounded-lg border bg-white px-3 py-2 text-black focus:outline-none',
           props.error
-            ? 'border-red focus:shadow-[1px_1px_1px_1px_var(--red)]'
-            : 'border-primary focus:border-dark-brown focus:shadow-[1px_1px_1px_1px_var(--dark-brown)]'
+            ? 'border-red placeholder:text-red/80 focus:shadow-[1px_1px_1px_1px_var(--red)]'
+            : 'border-primary focus:border-dark-brown focus:shadow-[1px_1px_1px_1px_var(--dark-brown)] placeholder:text-black/50'
         )}
         placeholder={props.placeholder}
         value={props.value}
