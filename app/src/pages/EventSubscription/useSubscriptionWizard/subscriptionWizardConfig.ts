@@ -1,8 +1,8 @@
 import type { EventSubscriptionFormInput } from '../useEventSubscriptionForm/eventSubscription.schema'
 
-export type StepId = 'personal' | 'profile' | 'teams' | 'confirm'
+export type StepId = 'personal' | 'profile' | 'teams' | 'additional' | 'confirm'
 
-export const STEPS: StepId[] = ['personal', 'profile', 'teams', 'confirm']
+export const STEPS: StepId[] = ['personal', 'profile', 'teams', 'additional', 'confirm']
 
 export const STEP_FIELDS: Record<StepId, (keyof EventSubscriptionFormInput)[]> = {
   personal: [
@@ -22,5 +22,6 @@ export const STEP_FIELDS: Record<StepId, (keyof EventSubscriptionFormInput)[]> =
     'selectedAvailability',
   ],
   teams: ['selectedTeams'],
-  confirm: ['details'],
+  additional: ['details'],
+  confirm: [],
 }
