@@ -14,7 +14,8 @@ export const STEP_FIELDS: Record<StepId, (keyof EventSubscriptionFormInput)[]> =
     'emergencyContactPhone',
   ],
   profile: [
-    'hasPreviousExperience',
+    'experienceType',
+    'circle',
     'hasCoordinatorExperience',
     'selectedPreviousExperienceTeams',
     'selectedSkills',
