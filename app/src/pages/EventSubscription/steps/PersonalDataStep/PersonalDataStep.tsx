@@ -1,4 +1,5 @@
 import { Input } from '../../../../components/Input/Input'
+import { SectionTitle } from '../../../../components/SectionTitle/SectionTitle'
 import { useEventSubscriptionField } from '../../useEventSubscriptionForm'
 
 export function PersonalDataStep() {
@@ -12,12 +13,10 @@ export function PersonalDataStep() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
-        <div>
-          <h3 className="text-lg font-bold text-gray-900">Informações Pessoais</h3>
-          <p className="text-sm text-black font-light italic">
-            Por favor, forneça seus dados pessoais
-          </p>
-        </div>
+        <SectionTitle
+          title="Informações Pessoais"
+          description="Por favor, forneça seus dados pessoais"
+        />
         <Input
           label="Nome Completo"
           name="fullName"
@@ -56,13 +55,11 @@ export function PersonalDataStep() {
         </div>
       </div>
       <hr className="border-t border-secondary" />
-      <div>
-        <div className="mb-4">
-          <h3 className="text-lg font-bold text-gray-900">Contato de Emergência</h3>
-          <p className="text-sm text-black font-light italic">
-            Quem devemos contatar em caso de emergência?
-          </p>
-        </div>
+      <div className="flex flex-col gap-4">
+        <SectionTitle
+          title="Contato de Emergência"
+          description="Quem devemos contatar em caso de emergência?"
+        />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Nome do Contato"

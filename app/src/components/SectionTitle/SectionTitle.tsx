@@ -6,8 +6,10 @@ type SectionTitleProps = {
 export function SectionTitle(props: SectionTitleProps) {
   return (
     <div>
-      <h1 className="text-2xl font-bold m-0">{props.title}</h1>
-      <p className="text-base not-italic font-normal my-2">{props.description}</p>
+      <h3 className="text-lg font-bold text-gray-900">{props.title}</h3>
+      {props.description && (
+        <p className="text-sm text-black font-light italic">{props.description}</p>
+      )}
     </div>
   )
 }

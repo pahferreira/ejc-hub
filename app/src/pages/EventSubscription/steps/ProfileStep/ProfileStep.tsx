@@ -1,5 +1,6 @@
 import { Checkbox } from '../../../../components/Checkbox/Checkbox'
 import { RadioGroup } from '../../../../components/RadioGroup/RadioGroup'
+import { SectionTitle } from '../../../../components/SectionTitle/SectionTitle'
 import { useEventSubscriptionField } from '../../useEventSubscriptionForm'
 
 const experienceOptions = [
@@ -72,10 +73,7 @@ export function ProfileStep(props: ProfileStepProps) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
-        <div>
-          <h3 className="text-lg font-bold text-gray-900">Perfil</h3>
-          <p className="text-sm text-black font-light italic">Experiência e habilidades</p>
-        </div>
+        <SectionTitle title="Perfil" description="Experiência e habilidades" />
         <RadioGroup
           label="Experiência com EJC"
           options={experienceOptions}
@@ -102,21 +100,16 @@ export function ProfileStep(props: ProfileStepProps) {
         )}
         {hasServed && (
           <div className="flex flex-col gap-4">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Experiências Anteriores</h3>
-              <p className="text-sm text-black font-light italic">
-                Conte-nos um pouco mais sobre suas experiências com o EJC.
-              </p>
-            </div>
-            <p className="text-sm text-black font-bold">Em quais equipes você já participou?</p>
+            <SectionTitle
+              title="Experiências Anteriores"
+              description="Conte-nos um pouco mais sobre suas experiências com o EJC."
+            />
             <Checkbox
               label="Tenho experiência como coordenador/líder de equipe"
               checked={hasCoordinatorExperience.field.value}
               onChange={hasCoordinatorExperience.field.onChange}
             />
-            <div>
-              <p className="text-sm text-black font-bold">Em quais equipes você já participou?</p>
-            </div>
+            <p className="text-sm text-black font-bold">Em quais equipes você já participou?</p>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {props.teamOptions.map((team) => (
                 <Checkbox
@@ -134,12 +127,10 @@ export function ProfileStep(props: ProfileStepProps) {
       <hr className="border-t border-secondary" />
 
       <div className="flex flex-col gap-4">
-        <div>
-          <h3 className="text-lg font-bold text-gray-900">Habilidades</h3>
-          <p className="text-sm text-black font-light italic">
-            Selecione as habilidades que melhor descrevem sua experiência
-          </p>
-        </div>
+        <SectionTitle
+          title="Habilidades"
+          description="Selecione as habilidades que melhor descrevem sua experiência"
+        />
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {skills.map((skill) => (
             <Checkbox
@@ -155,13 +146,10 @@ export function ProfileStep(props: ProfileStepProps) {
       <hr className="border-t border-secondary" />
 
       <div className="flex flex-col gap-4">
-        <div>
-          <h3 className="text-lg font-bold text-gray-900">Sua disponibilidade durante a semana</h3>
-          <p className="text-sm text-black font-light italic">
-            Dia de semana contam como disponíveis apenas o horário da noite (após as 19h) e finais
-            de semana contam como disponíveis a maior parte do dia.
-          </p>
-        </div>
+        <SectionTitle
+          title="Sua disponibilidade durante a semana"
+          description="Dia de semana contam como disponíveis apenas o horário da noite (após as 19h) e finais de semana contam como disponíveis a maior parte do dia."
+        />
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {availability.map((day) => (
             <Checkbox
