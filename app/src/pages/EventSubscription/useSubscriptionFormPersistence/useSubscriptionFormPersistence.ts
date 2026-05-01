@@ -4,8 +4,8 @@ import type { EventSubscriptionFormInput } from '../useEventSubscriptionForm/eve
 import type { StepId } from '../useSubscriptionWizard/subscriptionWizardConfig'
 import { STEPS } from '../useSubscriptionWizard/subscriptionWizardConfig'
 
-const STORAGE_KEY = 'ejc-subscription-form-v1'
-const VERSION = 'v1'
+const STORAGE_KEY = 'ejc-subscription-form-v2'
+const VERSION = 'v2'
 
 type PersistedData = {
   version: string

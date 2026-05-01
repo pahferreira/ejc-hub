@@ -6,6 +6,7 @@ export type CreateEventSubscriptionPayload = {
   emergencyContactName: string
   emergencyContactPhone: string
   experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
+  circle?: 'red' | 'green' | 'blue'
   hasCoordinatorExperience: boolean
   selectedSkills: string[]
   selectedTeams: string[]

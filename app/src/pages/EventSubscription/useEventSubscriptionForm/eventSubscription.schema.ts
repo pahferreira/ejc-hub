@@ -9,8 +9,9 @@ export const eventSubscriptionSchema = z
     phone: z.string().nonempty('Telefone é obrigatório'),
     emergencyContactName: z.string().nonempty('Nome do contato de emergência é obrigatório'),
     emergencyContactPhone: z.string().nonempty('Telefone do contato de emergência é obrigatório'),
-    hasPreviousExperience: z.enum(['yes', 'no']),
-    hasCoordinatorExperience: z.enum(['yes', 'no']),
+    experienceType: z.enum(['newbie', 'experienced', 'experienced_outsider']),
+    circle: z.enum(['red', 'green', 'blue']).optional(),
+    hasCoordinatorExperience: z.boolean(),
     selectedSkills: z.array(z.string()).optional(),
     selectedTeams: z.array(z.string()).min(3, 'Selecione pelo menos 3 equipes.'),
     selectedAvailability: z
@@ -19,6 +20,10 @@ export const eventSubscriptionSchema = z
     details: z.string().optional(),
     selectedPreviousExperienceTeams: z.array(z.string()).optional(),
   })
+  .refine((data) => !(data.experienceType === 'newbie' && !data.circle), {
+    message: 'Selecione o círculo que você participou',
+    path: ['circle'],
+  })
   .transform((data) => ({
     fullName: data.fullName,
     nickname: data.nickname,
@@ -26,15 +31,15 @@ export const eventSubscriptionSchema = z
     phone: data.phone,
     emergencyContactName: data.emergencyContactName,
     emergencyContactPhone: data.emergencyContactPhone,
-    experienceType: (data.hasPreviousExperience === 'no' ? 'newbie' : 'experienced') as
-      | 'newbie'
-      | 'experienced',
-    hasCoordinatorExperience: data.hasCoordinatorExperience === 'yes',
+    experienceType: data.experienceType,
+    circle: data.experienceType === 'newbie' ? data.circle : undefined,
+    hasCoordinatorExperience: data.hasCoordinatorExperience,
     selectedSkills: data.selectedSkills ?? [],
     selectedTeams: data.selectedTeams,
     details: data.details,
     availability: data.selectedAvailability,
-    previousExperienceTeams: data.selectedPreviousExperienceTeams ?? [],
+    previousExperienceTeams:
+      data.experienceType === 'newbie' ? [] : (data.selectedPreviousExperienceTeams ?? []),
   }))
 
 export type EventSubscriptionFormInput = z.input<typeof eventSubscriptionSchema>
