@@ -1,7 +1,7 @@
-import { Checkbox } from '../../../../components/Checkbox/Checkbox'
-import { RadioGroup } from '../../../../components/RadioGroup/RadioGroup'
-import { SectionTitle } from '../../../../components/SectionTitle/SectionTitle'
-import { useEventSubscriptionField } from '../../useEventSubscriptionForm'
+import { Checkbox } from '../../../components/Checkbox/Checkbox'
+import { RadioGroup } from '../../../components/RadioGroup/RadioGroup'
+import { SectionTitle } from '../../../components/SectionTitle/SectionTitle'
+import { useEventSubscriptionField } from '../useEventSubscriptionForm'
 
 const experienceOptions = [
   { label: 'Encontreiro Rosário', value: 'experienced' },

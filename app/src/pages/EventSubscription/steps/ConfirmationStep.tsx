@@ -1,4 +1,4 @@
-import { DetailsSection } from '../../DetailsSection'
+import { DetailsSection } from '../DetailsSection'
 
 export function ConfirmationStep() {
   return (

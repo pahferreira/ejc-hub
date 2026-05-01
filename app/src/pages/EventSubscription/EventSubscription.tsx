@@ -16,11 +16,13 @@ import { Card } from '../../components/Card/Card'
 import { useTeamOptionsQuery } from '../../services/teams/useTeamOptionsQuery'
 import { useCreateEventSubscriptionMutation } from '../../services/events/useCreateEventSubscriptionMutation'
 import { toastPromise } from '../../utils/toast/toast'
+import { AdditionalInfoStep } from './steps/AdditionalInfoStep'
 
 const STEP_LABELS: Record<(typeof STEPS)[number], string> = {
   personal: 'Dados Pessoais',
   profile: 'Perfil',
   teams: 'Equipes',
+  additional: 'Observações',
   confirm: 'Confirmação',
 }
 
@@ -67,6 +69,7 @@ function EventSubscriptionForm(props: EventSubscriptionFormProps) {
           {currentStep === 'personal' && <PersonalDataStep />}
           {currentStep === 'profile' && <ProfileStep teamOptions={teamOptions.data ?? []} />}
           {currentStep === 'teams' && <TeamsStep teamOptions={teamOptions.data ?? []} />}
+          {currentStep === 'additional' && <AdditionalInfoStep />}
           {currentStep === 'confirm' && <ConfirmationStep />}
           <WizardFooter
             isFirst={isFirst}

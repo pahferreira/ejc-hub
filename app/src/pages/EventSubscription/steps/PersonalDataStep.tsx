@@ -1,6 +1,6 @@
-import { Input } from '../../../../components/Input/Input'
-import { SectionTitle } from '../../../../components/SectionTitle/SectionTitle'
-import { useEventSubscriptionField } from '../../useEventSubscriptionForm'
+import { Input } from '../../../components/Input/Input'
+import { SectionTitle } from '../../../components/SectionTitle/SectionTitle'
+import { useEventSubscriptionField } from '../useEventSubscriptionForm'
 
 export function PersonalDataStep() {
   const fullName = useEventSubscriptionField('fullName')
