@@ -1,4 +1,4 @@
-import { pgTable, timestamp, pgEnum, uuid, text } from 'drizzle-orm/pg-core'
+import { pgTable, timestamp, pgEnum, uuid, text, unique } from 'drizzle-orm/pg-core'
 import { users } from './users.ts'
 import { events } from './events.ts'
 
@@ -19,18 +19,22 @@ export const subscriptionAvailability = pgEnum('subscription_availability', [
   'sunday',
 ])
 
-export const subscriptions = pgTable('subscriptions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id')
-    .references(() => users.id)
-    .notNull(),
-  eventId: uuid('event_id')
-    .references(() => events.id)
-    .notNull(),
-  status: subscriptionStatus().notNull().default('pending'),
-  availability: subscriptionAvailability().notNull().array().default([]),
-  details: text('details').default(''),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
-  previousExperienceTeams: text('previous_experience_teams').notNull().array().default([]),
-})
+export const subscriptions = pgTable(
+  'subscriptions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .references(() => users.id)
+      .notNull(),
+    eventId: uuid('event_id')
+      .references(() => events.id)
+      .notNull(),
+    status: subscriptionStatus().notNull().default('pending'),
+    availability: subscriptionAvailability().notNull().array().default([]),
+    details: text('details').default(''),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    previousExperienceTeams: text('previous_experience_teams').notNull().array().default([]),
+  },
+  (table) => [unique('subscriptions_user_id_event_id_unique').on(table.userId, table.eventId)]
+)

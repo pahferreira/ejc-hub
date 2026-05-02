@@ -169,6 +169,13 @@
       "when": 1777476089567,
       "tag": "0023_huge_true_believers",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1777733588266,
+      "tag": "0024_heavy_praxagora",
+      "breakpoints": true
     }
   ]
 }
