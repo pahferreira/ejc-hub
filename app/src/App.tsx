@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router'
+import { Route, Routes } from 'react-router'
 import './App.css'
 import { Welcome } from './pages/Welcome'
 import { NotFound } from './pages/NotFound'
@@ -15,17 +15,15 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Welcome />} />
-        <Route element={<AppLayout />}>
-          {routes.map((route) => (
-            <Route key={route.path} path={route.path} element={<route.component />} />
-          ))}
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Welcome />} />
+      <Route element={<AppLayout />}>
+        {routes.map((route) => (
+          <Route key={route.path} path={route.path} element={<route.component />} />
+        ))}
+      </Route>
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   )
 }
 
