@@ -12,7 +12,7 @@ const variantClasses: Record<BadgeVariant, string> = {
   received: 'border-blue bg-blue/10 text-blue',
   completed: 'border-green bg-green/10 text-green',
   waiting_list: 'border-orange bg-orange/10 text-orange',
-  default: 'border-black bg-white text-black',
+  default: 'border-dark-brown bg-secondary text-dark-brown',
 }
 
 export function Badge({ children, variant = 'default' }: BadgeProps) {

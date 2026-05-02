@@ -70,7 +70,7 @@ function EventSubscriptionForm(props: EventSubscriptionFormProps) {
           {currentStep === 'profile' && <ProfileStep teamOptions={teamOptions.data ?? []} />}
           {currentStep === 'teams' && <TeamsStep teamOptions={teamOptions.data ?? []} />}
           {currentStep === 'additional' && <AdditionalInfoStep />}
-          {currentStep === 'confirm' && <ConfirmationStep />}
+          {currentStep === 'confirm' && <ConfirmationStep teamOptions={teamOptions.data ?? []} />}
           <WizardFooter
             isFirst={isFirst}
             isLast={isLast}
