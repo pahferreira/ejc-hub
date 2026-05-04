@@ -16,10 +16,7 @@ import { useAuth0 } from '@auth0/auth0-react'
 export function Welcome() {
   const { loginWithRedirect } = useAuth0()
 
-  const handleLogin = () =>
-    loginWithRedirect({
-      appState: { returnTo: '/home' },
-    })
+  const handleLogin = () => loginWithRedirect()
 
   return (
     <div className="bg-welcome-gradient">

@@ -1,3 +1,8 @@
+import { FiX } from 'react-icons/fi'
+import { useNavigate } from 'react-router'
+import { useCurrentEventSubscriptionStatusQuery } from '../../services/events/useCurrentEventSubscriptionStatusQuery'
+import { ROUTE_PATHS } from '../../constants/routePaths'
+import { AlreadySubscribed } from './AlreadySubscribed'
 import { EventSubscriptionProvider } from './useEventSubscriptionForm'
 import { useEventSubscriptionForm } from './useEventSubscriptionForm'
 import type { EventSubscriptionFormOutput } from './useEventSubscriptionForm'
@@ -36,8 +41,12 @@ function EventSubscriptionForm(props: EventSubscriptionFormProps) {
   const form = useEventSubscriptionForm()
   const teamOptions = useTeamOptionsQuery()
   const createEventSubscription = useCreateEventSubscriptionMutation()
+  const statusQuery = useCurrentEventSubscriptionStatusQuery()
+  const navigate = useNavigate()
   const { currentStep, isFirst, isLast, isNavigating, maxReachedStep, goNext, goPrev, goTo } =
     useSubscriptionWizard()
+
+  const handleClose = () => navigate(ROUTE_PATHS.HOME)
 
   const onSubmit = async (data: EventSubscriptionFormOutput) => {
     const response = createEventSubscription.mutateAsync(data)
@@ -51,9 +60,19 @@ function EventSubscriptionForm(props: EventSubscriptionFormProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-4xl mx-auto py-8 px-4 relative">
+      <button
+        type="button"
+        onClick={handleClose}
+        aria-label="Fechar"
+        className="absolute top-8 right-4 p-2 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"
+      >
+        <FiX size={24} />
+      </button>
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Participe do Nosso Evento</h1>
+        <h1 className="text-3xl font-bold text-gray-900">
+          Participe do {statusQuery.data?.eventName}
+        </h1>
         <p className="mt-2 text-gray-500">
           Preencha seus dados e selecione suas equipes preferidas
         </p>
@@ -100,7 +119,24 @@ function EventSubscriptionWizardShell() {
   )
 }
 
+function SubscriptionPageLoading() {
+  return (
+    <div className="max-w-4xl mx-auto py-8 px-4">
+      <div className="h-24 rounded-xl bg-gray-200 animate-pulse" />
+    </div>
+  )
+}
+
 export function EventSubscription() {
+  const statusQuery = useCurrentEventSubscriptionStatusQuery()
+
+  if (statusQuery.isLoading) return <SubscriptionPageLoading />
+
+  const status = statusQuery.data?.subscriptionStatus
+  if (status) {
+    return <AlreadySubscribed status={status} eventName={statusQuery.data?.eventName} />
+  }
+
   return (
     <EventSubscriptionProvider>
       <EventSubscriptionWizardShell />

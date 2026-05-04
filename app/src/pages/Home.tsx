@@ -1,7 +1,7 @@
 import { FiCalendar, FiFileText, FiList, FiPenTool } from 'react-icons/fi'
 import { useNavigate } from 'react-router'
 import { ActionCard } from '../components/ActionCard/ActionCard'
-import { StatusCard, type StatusCardProps } from '../components/StatusCard/StatusCard'
+import { StatusCard } from '../components/StatusCard/StatusCard'
 import { DashboardSection } from '../components/DashboardSection/DashboardSection'
 import { useAuthentication } from '../hooks/useAuthentication'
 import { hasPermission, hasAnyPermission } from '../../../common/permissions'
@@ -11,33 +11,7 @@ import {
   SubscriptionPermissions,
 } from '../../../common/permissions'
 import { useCurrentEventSubscriptionStatusQuery } from '../services/events/useCurrentEventSubscriptionStatusQuery'
-import type { SubscriptionStatus } from '../services/events/events.types'
-
-const subscriptionStatusDisplay: Record<
-  SubscriptionStatus,
-  { label: string; variant: StatusCardProps['variant']; description: string }
-> = {
-  pending: {
-    label: 'Pendente',
-    variant: 'pending',
-    description: 'Sua inscrição foi enviada e logo mais será confirmada.',
-  },
-  received: {
-    label: 'Recebida',
-    variant: 'success',
-    description: 'Agora é com a gente! Aguarde o processo de montagem.',
-  },
-  completed: {
-    label: 'Confirmada',
-    variant: 'success',
-    description: 'Você foi montado! Aguarde o contato de seu coordenador.',
-  },
-  waiting_list: {
-    label: 'Lista de Espera',
-    variant: 'pending',
-    description: 'Você está na lista de espera.',
-  },
-}
+import { subscriptionStatusDisplay } from '../services/events/subscriptionStatusDisplay'
 
 export function Home() {
   const { permissions } = useAuthentication()
