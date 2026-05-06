@@ -81,6 +81,10 @@ export function useSubscriptionFormPersistence(
   }
 }
 
+export function clearSubscriptionFormPersistence() {
+  localStorage.removeItem(STORAGE_KEY)
+}
+
 export function updatePersistedStep(step: StepId) {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
