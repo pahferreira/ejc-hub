@@ -54,6 +54,16 @@
   .input-focus {
     box-shadow: 1px 1px 1px 1px var(--dark-brown);
   }
+
+  .button-shadow {
+    @apply shadow-[0_4px_0_0_#2e1602];
+    &:hover:not(:disabled) {
+      @apply shadow-[0_6px_0_0_#2e1602] -translate-y-[2px];
+    }
+    &:active:not(:disabled) {
+      @apply shadow-[0_2px_0_0_#2e1602] translate-y-[1px];
+    }
+  }
 }
 
 body {
