@@ -6,6 +6,7 @@ import { SidebarNavGroup } from './SidebarNavGroup'
 import { SidebarUserInfo } from './SidebarUserInfo'
 import { sidebarNavGroups } from './sidebar'
 import type { SidebarNavGroup as SidebarNavGroupType } from './sidebar'
+import { Logo } from '../Logo/Logo'
 
 const STORAGE_KEY = 'ejc-sidebar-collapsed'
 const MOBILE_BREAKPOINT = '(max-width: 767px)'
@@ -41,12 +42,7 @@ export function SidebarView(props: SidebarViewProps) {
       {/* Logo */}
       <div className={`p-4 border-b border-secondary/30 ${props.isCollapsed ? 'px-3' : ''}`}>
         <div className={`flex items-center gap-2 ${props.isCollapsed ? 'justify-center' : ''}`}>
-          <div className="w-8 h-8 rounded-lg bg-dark-brown flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-xs">.EJC</span>
-          </div>
-          {!props.isCollapsed && (
-            <span className="font-serif text-lg font-bold text-dark-brown">Ponto EJC</span>
-          )}
+          <Logo iconOnly={props.isCollapsed} />
         </div>
       </div>
 

@@ -22,12 +22,7 @@ export function Welcome() {
     <div className="bg-welcome-gradient">
       {/* Section 1 — Hero */}
       <div className="flex min-h-screen flex-col">
-        <Navbar
-          titleLight="Ponto "
-          title="EJC"
-          navItems={[]}
-          button={{ label: 'Inscreva-se', onClick: handleLogin }}
-        />
+        <Navbar navItems={[]} button={{ label: 'Inscreva-se', onClick: handleLogin }} />
 
         <main className="flex flex-1 flex-col gap-10 max-w-7xl mx-auto items-center justify-center p-8">
           <section className="flex w-full flex-col gap-8">
@@ -35,8 +30,8 @@ export function Welcome() {
               <span className="text-xs uppercase tracking-widest text-black font-light">
                 EJC Rosário 2026
               </span>
-              <h1 className="font-serif text-6xl leading-tight text-white md:text-7xl">
-                Ponto <span className="font-bold text-dark-brown">EJC</span>
+              <h1 className="font-serif text-6xl leading-tight text-primary md:text-7xl font-bold">
+                ponto<span className="font-extrabold text-dark-brown">EJC</span>
               </h1>
               <p className="max-w-xl text-base text-left leading-relaxed text-black font-medium">
                 Gerencie inscrições, equipes e todo o processo do seu EJC em um só lugar. Sem papel,

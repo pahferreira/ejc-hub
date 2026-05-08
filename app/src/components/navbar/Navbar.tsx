@@ -1,4 +1,5 @@
 import { Button } from '../Button/Button'
+import { Logo } from '../Logo/Logo'
 import { Navlink } from './Navlink'
 
 type NavbarButton = {
@@ -12,8 +13,6 @@ type NavbarItem = {
 }
 
 type NavbarProps = {
-  title?: string
-  titleLight?: string
   imageSrc?: string
   navItems?: NavbarItem[]
   button?: NavbarButton
@@ -28,12 +27,7 @@ export const Navbar = (props: NavbarProps) => (
             <img src={props.imageSrc || '/church.svg'} alt="Igreja" className="mr-3" />
           </figure>
         )}
-        {props.title && (
-          <span className="m-0 text-xl font-bold leading-none font-serif text-white">
-            {props.titleLight}
-            <span className="text-dark-brown">{props.title}</span>
-          </span>
-        )}
+        <Logo />
       </div>
       {props.navItems && props.navItems.length > 0 && (
         <ul className="flex w-full justify-end gap-8 list-none">
