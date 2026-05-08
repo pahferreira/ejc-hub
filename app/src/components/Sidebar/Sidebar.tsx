@@ -8,10 +8,15 @@ import { sidebarNavGroups } from './sidebar'
 import type { SidebarNavGroup as SidebarNavGroupType } from './sidebar'
 
 const STORAGE_KEY = 'ejc-sidebar-collapsed'
+const MOBILE_BREAKPOINT = '(max-width: 767px)'
 
-function getInitialCollapsed(): boolean {
+const getInitialCollapsed = (): boolean => {
   try {
-    return localStorage.getItem(STORAGE_KEY) === 'true'
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored !== null) {
+      return stored === 'true'
+    }
+    return window.matchMedia(MOBILE_BREAKPOINT).matches
   } catch {
     return false
   }
