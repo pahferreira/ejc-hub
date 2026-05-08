@@ -18,8 +18,6 @@ const meta = {
     layout: 'fullscreen',
   },
   args: {
-    titleLight: 'Ponto',
-    title: 'EJC',
     imageSrc: '/church.svg',
     navItems: [{ name: 'Inscreva-se!', to: '/registration' }],
   },
