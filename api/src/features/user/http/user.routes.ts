@@ -24,7 +24,7 @@ export function userRoutes(server: FastifyServerInstance) {
       const token = request.getToken()
       if (token) {
         const { authId, email, name, picture } = extractUserInformationFromToken(token)
-        const user = await userApp.createProfile({ authId, name, email, picture })
+        const user = await userApp.syncProfile({ authId, name, email, picture })
 
         return reply.code(HttpStatus.Ok).send({ user })
       }

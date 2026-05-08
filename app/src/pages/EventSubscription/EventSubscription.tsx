@@ -1,6 +1,7 @@
 import { FiX } from 'react-icons/fi'
 import { useNavigate } from 'react-router'
 import { useCurrentEventSubscriptionStatusQuery } from '../../services/events/useCurrentEventSubscriptionStatusQuery'
+import { useCurrentUserQuery } from '../../services/users/useCurrentUserQuery'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import { AlreadySubscribed } from './AlreadySubscribed'
 import { EventSubscriptionProvider } from './useEventSubscriptionForm'
@@ -129,8 +130,9 @@ function SubscriptionPageLoading() {
 
 export function EventSubscription() {
   const statusQuery = useCurrentEventSubscriptionStatusQuery()
+  const currentUser = useCurrentUserQuery()
 
-  if (statusQuery.isLoading) return <SubscriptionPageLoading />
+  if (statusQuery.isLoading || !currentUser.isReady) return <SubscriptionPageLoading />
 
   const status = statusQuery.data?.subscriptionStatus
   if (status) {
@@ -138,7 +140,7 @@ export function EventSubscription() {
   }
 
   return (
-    <EventSubscriptionProvider>
+    <EventSubscriptionProvider initialUser={currentUser.data!}>
       <EventSubscriptionWizardShell />
     </EventSubscriptionProvider>
   )

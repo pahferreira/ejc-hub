@@ -3,6 +3,7 @@ import { jwtDecode } from 'jwt-decode'
 import { useEffect, useRef, useState } from 'react'
 import { tokenHandler } from '../services/token'
 import { useSyncUserMutation } from '../services/users/useSyncUserMutation'
+import { clearSubscriptionFormPersistence } from '../pages/EventSubscription/useSubscriptionFormPersistence/useSubscriptionFormPersistence'
 
 export function useAuthentication() {
   const { isLoading, isAuthenticated, getAccessTokenSilently, logout, user } = useAuth0()
@@ -31,6 +32,7 @@ export function useAuthentication() {
 
   const handleLogout = () => {
     tokenHandler.clearToken()
+    clearSubscriptionFormPersistence()
     userSynced.current = false
     logout({ logoutParams: { returnTo: window.location.origin } })
   }
