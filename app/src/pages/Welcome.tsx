@@ -44,9 +44,11 @@ export function Welcome() {
               </p>
             </div>
 
-            <Button variant="primary" onClick={handleLogin}>
-              Inscrever-se →
-            </Button>
+            <div>
+              <Button variant="primary" onClick={handleLogin}>
+                Inscrever-se →
+              </Button>
+            </div>
 
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
               <FeatureCard
