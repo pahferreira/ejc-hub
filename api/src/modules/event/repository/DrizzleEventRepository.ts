@@ -1,10 +1,11 @@
 import { eq, isNull, not } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
+import type { EventInput } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../domain/EventRepository.ts'
 
 class DrizzleEventRepository implements EventRepository {
-  async insertEvent(input: { name: string; description: string }) {
+  async insertEvent(input: EventInput) {
     const createdEvent = await db.insert(schema.events).values(input).returning()
 
     return createdEvent[0]
@@ -30,7 +31,7 @@ class DrizzleEventRepository implements EventRepository {
     return deletedEvent[0]
   }
 
-  async updateEvent(id: string, input: { name?: string; description?: string }) {
+  async updateEvent(id: string, input: Partial<EventInput>) {
     const updatedEvent = await db
       .update(schema.events)
       .set(input)
@@ -40,7 +41,7 @@ class DrizzleEventRepository implements EventRepository {
     return updatedEvent[0]
   }
 
-  async bulkUpdateEvents(idToNotUpdate: string, input: { isCurrent?: boolean | null }) {
+  async bulkUpdateEvents(idToNotUpdate: string, input: Partial<EventInput>) {
     const updatedEvents = await db
       .update(schema.events)
       .set(input)

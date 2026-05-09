@@ -32,9 +32,37 @@ export type SubscriptionWithDetails = {
   }
 }
 
+export type CurrentEvent = {
+  id: string
+  name: string
+  description: string
+  startsAt: string | null
+  endsAt: string | null
+  location: string | null
+  isCurrent: boolean
+}
+
+export type AssignedTeam = {
+  id: string
+  name: string
+  description: string | null
+  coordinators: Array<{
+    id: string
+    name: string
+    phone: string | null
+  }>
+}
+
+export type TeamPreference = {
+  key: string
+  name: string
+}
+
 export type CurrentEventSubscriptionStatus = {
   eventName: string
   subscriptionStatus: SubscriptionStatus | null
+  assignedTeam: AssignedTeam | null
+  preferences: TeamPreference[]
 }
 
 export const eventsQueryKeys = {

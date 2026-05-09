@@ -5,7 +5,6 @@ import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
 import { extractUserInformationFromToken } from '../../../shared/extract-user-info-from-token.ts'
 import {
-  EventPermissions,
   SubscriptionPermissions,
   TeamInstancePermissions,
 } from '../../../../../common/permissions/permissions.types.ts'
@@ -88,7 +87,7 @@ export function eventsRoutes(server: FastifyServerInstance) {
     server.get(
       '/events/current',
       {
-        preHandler: authGuard(server, { permissions: [EventPermissions.Read] }),
+        preHandler: authGuard(server),
       },
       async (_, reply) => {
         try {

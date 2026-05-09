@@ -20,6 +20,23 @@ class DrizzleSubscriptionOptionRepository implements SubscriptionOptionRepositor
 
     return result[0]
   }
+
+  async listTeamOptionsBySubscription(subscriptionId: string) {
+    const results = await db
+      .select({
+        key: schema.teamTemplates.key,
+        name: schema.teamTemplates.name,
+      })
+      .from(schema.subscriptionOptions)
+      .innerJoin(
+        schema.teamInstances,
+        eq(schema.subscriptionOptions.teamInstanceId, schema.teamInstances.id)
+      )
+      .innerJoin(schema.teamTemplates, eq(schema.teamInstances.templateId, schema.teamTemplates.id))
+      .where(eq(schema.subscriptionOptions.subscriptionId, subscriptionId))
+
+    return results
+  }
 }
 
 export const subscriptionOptionRepository = new DrizzleSubscriptionOptionRepository()

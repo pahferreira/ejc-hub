@@ -1,5 +1,8 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
-import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
+import type {
+  TeamCoordinator,
+  TeamInstanceRepository,
+} from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type { SubscriptionOptionRepository } from '../../../modules/subscription-option/domain/SubscriptionOptionRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
@@ -162,9 +165,31 @@ export class Events {
       currentEvent.id
     )
 
+    if (!subscription) {
+      return {
+        eventName: currentEvent.name,
+        subscriptionStatus: null,
+        assignedTeam: null,
+        preferences: [],
+      }
+    }
+
+    const team = await this.#teamInstanceRepository.findUserTeamForEvent(user.id, currentEvent.id)
+    const preferences = await this.#subscriptionOptionRepository.listTeamOptionsBySubscription(
+      subscription.id
+    )
+
+    let coordinators: TeamCoordinator[] = []
+
+    if (team) {
+      coordinators = await this.#teamInstanceRepository.listTeamCoordinators(team.id)
+    }
+
     return {
       eventName: currentEvent.name,
-      subscriptionStatus: subscription?.status ?? null,
+      subscriptionStatus: subscription.status,
+      assignedTeam: team ? { ...team, coordinators } : null,
+      preferences,
     }
   }
 

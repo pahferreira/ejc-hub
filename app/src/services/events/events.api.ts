@@ -1,6 +1,7 @@
 import { api } from '../api'
 import type {
   CreateEventSubscriptionPayload,
+  CurrentEvent,
   CurrentEventSubscriptionStatus,
   SubscriptionWithDetails,
 } from './events.types'
@@ -39,8 +40,15 @@ async function getCurrentEventSubscriptionStatus() {
   return response.data
 }
 
+async function getCurrentEvent() {
+  const response = await api.get<{ currentEvent: CurrentEvent }>('/events/current')
+
+  return response.data.currentEvent
+}
+
 export const eventsApi = {
   createEventSubscription,
   getCurrentEventSubscriptionsList,
   getCurrentEventSubscriptionStatus,
+  getCurrentEvent,
 }

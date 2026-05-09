@@ -176,6 +176,13 @@
       "when": 1777733588266,
       "tag": "0024_heavy_praxagora",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1778266085131,
+      "tag": "0025_ancient_norman_osborn",
+      "breakpoints": true
     }
   ]
 }

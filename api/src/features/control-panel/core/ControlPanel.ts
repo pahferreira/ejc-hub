@@ -81,8 +81,20 @@ export class ControlPanel {
     return event
   }
 
-  async createEvent(input: { name: string; description: string }) {
-    const createdEvent = await this.#eventRepository.insertEvent(input)
+  async createEvent(input: {
+    name: string
+    description: string
+    startsAt?: string
+    endsAt?: string
+    location?: string
+  }) {
+    const createdEvent = await this.#eventRepository.insertEvent({
+      name: input.name,
+      description: input.description,
+      startsAt: input.startsAt ? new Date(input.startsAt) : undefined,
+      endsAt: input.endsAt ? new Date(input.endsAt) : undefined,
+      location: input.location,
+    })
     await this.#createEventTeams(createdEvent.id)
 
     return createdEvent
@@ -103,13 +115,28 @@ export class ControlPanel {
     return teamInstances
   }
 
-  async updateEvent(eventId: string, input: { name?: string; description?: string }) {
+  async updateEvent(
+    eventId: string,
+    input: {
+      name?: string
+      description?: string
+      startsAt?: string
+      endsAt?: string
+      location?: string
+    }
+  ) {
     const eventToUpdate = await this.#eventRepository.findEvent(eventId)
     if (!eventToUpdate) {
       throw new AppError('Event not found, please check the event id.')
     }
 
-    const updatedEvent = await this.#eventRepository.updateEvent(eventId, input)
+    const updatedEvent = await this.#eventRepository.updateEvent(eventId, {
+      name: input.name,
+      description: input.description,
+      startsAt: input.startsAt ? new Date(input.startsAt) : undefined,
+      endsAt: input.endsAt ? new Date(input.endsAt) : undefined,
+      location: input.location,
+    })
     return updatedEvent
   }
 
