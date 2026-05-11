@@ -1,7 +1,11 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
-import type { TeamInstanceRepository } from '../domain/TeamInstanceRepository.ts'
+import type {
+  AssignedTeamForUser,
+  TeamCoordinator,
+  TeamInstanceRepository,
+} from '../domain/TeamInstanceRepository.ts'
 
 class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
   async insertTeamInstance(input: { templateId: string; eventId: string }) {
@@ -34,6 +38,67 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
       )
 
     return results
+  }
+
+  async findUserTeamForEvent(
+    userId: string,
+    eventId: string
+  ): Promise<AssignedTeamForUser | undefined> {
+    const teamRows = await db
+      .select({
+        id: schema.teamInstances.id,
+        name: schema.teamTemplates.name,
+        description: schema.teamTemplates.description,
+      })
+      .from(schema.teamMemberships)
+      .innerJoin(
+        schema.teamInstances,
+        eq(schema.teamMemberships.teamInstanceId, schema.teamInstances.id)
+      )
+      .innerJoin(schema.teamTemplates, eq(schema.teamInstances.templateId, schema.teamTemplates.id))
+      .where(
+        and(eq(schema.teamMemberships.userId, userId), eq(schema.teamInstances.eventId, eventId))
+      )
+      .limit(1)
+
+    return teamRows[0]
+  }
+
+  async listTeamCoordinators(teamInstanceId: string): Promise<TeamCoordinator[]> {
+    const teamInstance = await db
+      .select({
+        firstCoordinatorId: schema.teamInstances.firstCoordinatorId,
+        secondCoordinatorId: schema.teamInstances.secondCoordinatorId,
+      })
+      .from(schema.teamInstances)
+      .where(eq(schema.teamInstances.id, teamInstanceId))
+      .limit(1)
+
+    const row = teamInstance[0]
+    if (!row) {
+      return []
+    }
+
+    const coordinatorIds = [row.firstCoordinatorId, row.secondCoordinatorId].filter(
+      (id): id is string => id !== null
+    )
+
+    if (coordinatorIds.length === 0) {
+      return []
+    }
+
+    const coordinators = await db
+      .select({
+        id: schema.users.id,
+        name: schema.users.name,
+        phone: schema.users.phone,
+      })
+      .from(schema.users)
+      .where(inArray(schema.users.id, coordinatorIds))
+
+    return coordinatorIds
+      .map((id) => coordinators.find((coordinator) => coordinator.id === id))
+      .filter((coordinator): coordinator is TeamCoordinator => coordinator !== undefined)
   }
 
   async selectTeamInstance(id: string) {

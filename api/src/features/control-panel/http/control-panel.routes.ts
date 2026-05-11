@@ -26,6 +26,9 @@ const eventIdParamSchema = z.object({
 const createEventBodySchema = z.object({
   name: z.string('required').nonempty(),
   description: z.string('required').nonempty(),
+  startsAt: z.string().optional(),
+  endsAt: z.string().optional(),
+  location: z.string().optional(),
 })
 
 const updateEventBodySchema = createEventBodySchema.partial().refine((data) => {
