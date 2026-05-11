@@ -20,6 +20,7 @@
   --secondary: #e6c5a5;
   --secondary-foreground: #3e2723;
   --tertiary: #f2dcc4;
+  --tertiary-background: #f8f0e9;
   --tertiary-foreground: #fbfbfb;
 }
 
@@ -43,6 +44,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-tertiary: var(--tertiary);
   --color-tertiary-foreground: var(--tertiary-foreground);
+  --color-tertiary-background: var(--tertiary-background);
   --color-background: var(--background);
 }
 
