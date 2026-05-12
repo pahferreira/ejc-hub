@@ -22,7 +22,7 @@ export function Button(props: ButtonProps) {
       disabled={props.disabled}
       className={clsx(
         foregroundVariant[variant],
-        'px-3 py-1.5 text-xs font-medium gap-2 border-2 border-dark-brown rounded-lg button-shadow hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
+        'px-3 py-1.5 text-sm font-medium gap-2 border-2 border-dark-brown rounded-lg button-shadow hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
       )}
     >
       {props.children}

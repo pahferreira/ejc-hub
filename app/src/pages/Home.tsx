@@ -1,110 +1,119 @@
-import { FiCalendar, FiFileText, FiList, FiPenTool } from 'react-icons/fi'
 import { useNavigate } from 'react-router'
-import { ActionCard } from '../components/ActionCard/ActionCard'
-import { StatusCard } from '../components/StatusCard/StatusCard'
-import { DashboardSection } from '../components/DashboardSection/DashboardSection'
-import { useAuthentication } from '../hooks/useAuthentication'
-import { hasPermission, hasAnyPermission } from '../../../common/permissions'
-import {
-  EventPermissions,
-  TeamTemplatePermissions,
-  SubscriptionPermissions,
-} from '../../../common/permissions'
+import { EventBanner } from '../components/EventBanner/EventBanner'
+import { InscriptionCard } from '../components/InscriptionCard/InscriptionCard'
+import { SubscribeCard } from '../components/SubscribeCard/SubscribeCard'
+import { TeamCard } from '../components/TeamCard/TeamCard'
+import { ROUTE_PATHS } from '../constants/routePaths'
+import { useCurrentEventQuery } from '../services/events/useCurrentEventQuery'
 import { useCurrentEventSubscriptionStatusQuery } from '../services/events/useCurrentEventSubscriptionStatusQuery'
-import { subscriptionStatusDisplay } from '../services/events/subscriptionStatusDisplay'
+import type { SubscriptionStatus, TeamPreference } from '../services/events/events.types'
+import { useCurrentUserQuery } from '../services/users/useCurrentUserQuery'
+import { getHomeView, type HomeView } from './getHomeView'
 
 export function Home() {
-  const { permissions } = useAuthentication()
   const navigate = useNavigate()
+  const currentEventQuery = useCurrentEventQuery()
   const subscriptionStatusQuery = useCurrentEventSubscriptionStatusQuery()
+  const { data: user } = useCurrentUserQuery()
 
-  const canManageEvents = hasPermission(permissions, EventPermissions.Read)
-  const canManageTemplates = hasPermission(permissions, TeamTemplatePermissions.Read)
-  const canViewSubscriptions = hasPermission(permissions, SubscriptionPermissions.Read)
+  const greetingName = user?.nickname ?? user?.name ?? ''
+  const isLoading = currentEventQuery.isLoading || subscriptionStatusQuery.isLoading
+  const isError = currentEventQuery.isError || subscriptionStatusQuery.isError
 
-  const hasAdminPermissions = hasAnyPermission(permissions, [
-    EventPermissions.Read,
-    TeamTemplatePermissions.Read,
-    SubscriptionPermissions.Read,
-  ])
-
+  const event = currentEventQuery.data
   const subscriptionStatus = subscriptionStatusQuery.data?.subscriptionStatus ?? null
-  const eventName = subscriptionStatusQuery.data?.eventName
-  const statusDisplay = subscriptionStatus ? subscriptionStatusDisplay[subscriptionStatus] : null
-  const subscriptionSectionSubtitle = eventName
-    ? `Como está a sua participação no ${eventName}.`
-    : 'Como está a sua participação no próximo encontro.'
+  const assignedTeam = subscriptionStatusQuery.data?.assignedTeam ?? null
+  const preferences = subscriptionStatusQuery.data?.preferences ?? []
 
   return (
     <div className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Welcome Section */}
-        <header className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-black m-0">
-            Bem-vindo ao <span className="font-serif text-dark-brown">Ponto EJC</span>
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-6">
+          <h1 className="m-0 text-2xl font-bold text-black sm:text-3xl">
+            Bem-vindo{greetingName ? `, ${greetingName}` : ''}! 👋
           </h1>
           <p className="mt-2 text-gray-600">
-            Tudo o que você precisa saber sobre o EJC Rosário em um só lugar!
+            Aqui está um resumo do seu evento atual e status de inscrição.
           </p>
         </header>
 
-        <div className="flex flex-col gap-8">
-          {/* User Subscription Status */}
-          <DashboardSection title="Sua Inscrição" subtitle={subscriptionSectionSubtitle}>
-            {subscriptionStatusQuery.isLoading ? (
-              <div className="h-24 max-w-xs rounded-xl bg-gray-200 animate-pulse" />
-            ) : statusDisplay ? (
-              <StatusCard
-                value={statusDisplay.label}
-                variant={statusDisplay.variant}
-                description={statusDisplay.description}
-              />
-            ) : (
-              <ActionCard
-                icon={<FiPenTool size={20} />}
-                title={eventName ? `Fazer Inscrição no ${eventName}` : 'Fazer Inscrição'}
-                description="Você ainda não se inscreveu no próximo encontro. Não perca essa oportunidade!"
-                onClick={() => navigate('/subscriptions/new')}
-              />
-            )}
-          </DashboardSection>
+        {isLoading ? (
+          <LoadingSkeleton />
+        ) : isError || !event ? (
+          <ErrorState />
+        ) : (
+          <div className="flex flex-col gap-6">
+            <EventBanner
+              name={event.name}
+              description={event.description}
+              startsAt={event.startsAt}
+              endsAt={event.endsAt}
+              location={event.location}
+            />
 
-          {/* Admin Section - Only visible with admin permissions */}
-          {hasAdminPermissions && (
-            <DashboardSection
-              title="Administração"
-              subtitle="Gerencie eventos, equipes e inscrições"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {canManageEvents && (
-                  <ActionCard
-                    icon={<FiCalendar size={20} />}
-                    title="Gerenciar Eventos"
-                    description="Crie e gerencie os eventos do EJC"
-                    to="/events"
-                  />
-                )}
-                {canManageTemplates && (
-                  <ActionCard
-                    icon={<FiFileText size={20} />}
-                    title="Gerenciar Templates"
-                    description="Configure templates de equipes"
-                    to="/templates"
-                  />
-                )}
-                {canViewSubscriptions && (
-                  <ActionCard
-                    icon={<FiList size={20} />}
-                    title="Listar Inscrições"
-                    description="Visualize todas as inscrições"
-                    to="/subscriptions"
-                  />
-                )}
-              </div>
-            </DashboardSection>
-          )}
-        </div>
+            <HomeBody
+              view={getHomeView(subscriptionStatus, assignedTeam)}
+              eventName={event.name}
+              subscriptionStatus={subscriptionStatus}
+              preferences={preferences}
+              onSubscribe={() => navigate(ROUTE_PATHS.SUBSCRIPTIONS_NEW)}
+            />
+          </div>
+        )}
       </div>
+    </div>
+  )
+}
+
+type HomeBodyProps = {
+  view: HomeView
+  eventName: string
+  subscriptionStatus: SubscriptionStatus | null
+  preferences: TeamPreference[]
+  onSubscribe: () => void
+}
+
+function HomeBody(props: HomeBodyProps) {
+  if (props.view.kind === 'subscribe') {
+    return <SubscribeCard eventName={props.eventName} onSubscribe={props.onSubscribe} />
+  }
+
+  if (!props.subscriptionStatus) {
+    return null
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <InscriptionCard subscriptionStatus={props.subscriptionStatus} />
+      {props.view.kind === 'assignedTeam' && <TeamCard variant="assigned" team={props.view.team} />}
+      {props.view.kind === 'pendingTeam' && (
+        <TeamCard variant="pending" preferences={props.preferences} />
+      )}
+      {props.view.kind === 'waitingList' && (
+        <TeamCard variant="waitingList" preferences={props.preferences} />
+      )}
+    </div>
+  )
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="h-40 w-full animate-pulse rounded-2xl bg-tertiary" />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="h-72 w-full animate-pulse rounded-xl bg-tertiary" />
+        <div className="h-72 w-full animate-pulse rounded-xl bg-tertiary" />
+      </div>
+    </div>
+  )
+}
+
+function ErrorState() {
+  return (
+    <div className="rounded-xl border border-tertiary bg-white px-6 py-8 text-center shadow-md">
+      <p className="m-0 text-sm text-gray-600">
+        Não foi possível carregar as informações do evento. Tente novamente em alguns instantes.
+      </p>
     </div>
   )
 }
