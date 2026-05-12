@@ -2,6 +2,7 @@ import { FiAlertCircle, FiArrowRight, FiClock, FiUsers } from 'react-icons/fi'
 import { Button } from '../Button/Button'
 import { CoordinatorRow } from '../CoordinatorRow/CoordinatorRow'
 import { Pill } from '../Pill/Pill'
+import clsx from 'clsx'
 
 type TeamCoordinator = {
   id: string
@@ -39,16 +40,20 @@ type WaitingListVariantProps = {
 
 export type TeamCardProps = AssignedVariantProps | PendingVariantProps | WaitingListVariantProps
 
-const containerBaseClasses = 'overflow-hidden rounded-xl bg-white shadow-md'
 const containerByVariant: Record<TeamCardProps['variant'], string> = {
   assigned: 'border border-tertiary',
-  pending: 'border-2 border-blue',
-  waitingList: 'border-2 border-blue',
+  pending: 'border border-blue',
+  waitingList: 'border border-blue',
 }
 
 export function TeamCard(props: TeamCardProps) {
   return (
-    <section className={`${containerBaseClasses} ${containerByVariant[props.variant]}`}>
+    <section
+      className={clsx(
+        'overflow-hidden rounded-xl bg-white shadow-md',
+        containerByVariant[props.variant]
+      )}
+    >
       <Header variant={props.variant} />
       <div className="flex flex-col gap-5 px-6 py-4">
         {props.variant === 'assigned' && <AssignedBody {...props} />}
