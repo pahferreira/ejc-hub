@@ -7,11 +7,11 @@ const meta = {
   tags: ['autodocs'],
 } satisfies Meta<typeof SubscriptionSummaryBox>
 
-export const Approved = {
+export const Completed = {
   args: {
     title: 'Concluído',
     value: 2,
-    variant: 'approved',
+    variant: 'completed',
     description: 'Pessoas alocadas',
   },
 } satisfies StoryObj<typeof SubscriptionSummaryBox>
@@ -31,6 +31,15 @@ export const Waitlist = {
     value: 1,
     variant: 'waitlist',
     description: 'Em espera',
+  },
+} satisfies StoryObj<typeof SubscriptionSummaryBox>
+
+export const Received = {
+  args: {
+    title: 'Recebido',
+    value: 3,
+    variant: 'received',
+    description: 'Inscrições recebidas',
   },
 } satisfies StoryObj<typeof SubscriptionSummaryBox>
 

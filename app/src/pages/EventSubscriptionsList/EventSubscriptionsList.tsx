@@ -61,12 +61,12 @@ export function EventSubscriptionsList() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <SubscriptionSummaryBox title="Montados" value={stats.completed} variant="approved" />
+          <SubscriptionSummaryBox title="Montados" value={stats.completed} variant="completed" />
           <SubscriptionSummaryBox title="Pendentes" value={stats.pending} variant="pending" />
           <SubscriptionSummaryBox
             title="Lista de Espera"
             value={stats.waitingList}
-            variant="pending"
+            variant="waitlist"
           />
           <SubscriptionSummaryBox title="Total de Inscrições" value={stats.total} variant="total" />
         </div>
