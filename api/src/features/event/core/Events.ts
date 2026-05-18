@@ -254,6 +254,7 @@ export class Events {
 
     await this.#userRepository.updateUser(user.id, {
       ...skills,
+      phone: input.phone,
       emergencyContactName: input.emergencyContactName,
       emergencyContactPhone: input.emergencyContactPhone,
       experienceType: input.experienceType,

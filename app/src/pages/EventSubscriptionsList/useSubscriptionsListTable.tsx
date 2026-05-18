@@ -9,61 +9,62 @@ import {
 import type { SubscriptionWithDetails } from '../../services/subscriptions/subscriptions.types'
 import type { Option } from '../../components/MultiSelector/MultiSelector'
 import { Badge } from '../../components/Badge/Badge'
+import { TeamAvatar } from '../../components/TeamAvatar/TeamAvatar'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
-import { formatDate } from '../../utils/formatDate/formatDate'
+import { experienceOptions, getOptionLabel } from '../EventSubscription/profileOptions'
 
 const columnHelper = createColumnHelper<SubscriptionWithDetails>()
 
 const statusVariantMap = {
   pending: 'pending',
-  received: 'approved',
+  received: 'received',
   completed: 'completed',
   waiting_list: 'waiting_list',
 } as const
 
 const statusLabelMap: Record<string, string> = {
   pending: 'Pendente',
-  received: 'Recebida',
-  completed: 'Montado',
+  received: 'Recebido',
+  completed: 'Concluído',
   waiting_list: 'Lista de Espera',
+}
+
+function formatShortDate(dateString: string): string {
+  return new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(dateString))
 }
 
 const columns = [
   columnHelper.accessor('user.name', {
     id: 'subscriber',
-    header: 'Encontreiro',
+    header: 'Nome',
     cell: (info) => (
       <div>
         <div className="font-medium text-gray-900">{info.getValue()}</div>
-        <div className="text-sm text-gray-500">{info.row.original.user.email}</div>
+        <div className="text-sm text-gray-500">
+          {getOptionLabel(info.row.original.user.experienceType, experienceOptions)}
+        </div>
       </div>
     ),
   }),
   columnHelper.accessor('user.phone', {
     id: 'phone',
-    header: 'Telefone',
-    cell: (info) => info.getValue() || '-',
-  }),
-  columnHelper.accessor('teams', {
-    id: 'teams',
-    header: 'Equipes Selecionadas',
-    cell: (info) => {
-      const teams = info.getValue()
-
-      return (
-        <div className="flex flex-wrap gap-1">
-          {teams.map((team) => (
-            <Badge key={team.id}>{team.name}</Badge>
-          ))}
-        </div>
-      )
-    },
-    enableSorting: false,
+    header: 'Contato',
+    cell: (info) => (
+      <div>
+        <div className="text-gray-900">{info.getValue() || '-'}</div>
+        <div className="text-sm text-gray-500">{info.row.original.user.email}</div>
+      </div>
+    ),
   }),
   columnHelper.accessor('createdAt', {
     id: 'submitted',
-    header: 'Inscrito em',
-    cell: (info) => formatDate(info.getValue()),
+    header: 'Data',
+    cell: (info) => formatShortDate(info.getValue()),
   }),
   columnHelper.accessor('status', {
     id: 'status',
@@ -72,6 +73,22 @@ const columns = [
       const status = info.getValue()
       return <Badge variant={statusVariantMap[status]}>{statusLabelMap[status] || status}</Badge>
     },
+  }),
+  columnHelper.accessor('teams', {
+    id: 'teams',
+    header: 'Equipes Selecionadas',
+    cell: (info) => {
+      const teams = info.getValue()
+
+      return (
+        <div className="flex space-x-1">
+          {teams.map((team) => (
+            <TeamAvatar name={team.name} />
+          ))}
+        </div>
+      )
+    },
+    enableSorting: false,
   }),
 ]
 

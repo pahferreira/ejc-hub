@@ -29,6 +29,7 @@ export type SubscriptionWithDetails = {
     name: string
     email: string
     phone: string | null
+    experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
   }
 }
 

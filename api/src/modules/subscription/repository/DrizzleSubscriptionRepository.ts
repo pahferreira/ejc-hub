@@ -56,6 +56,7 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
           name: schema.users.name,
           email: schema.users.email,
           phone: schema.users.phone,
+          experienceType: schema.users.experienceType,
         },
       })
       .from(schema.subscriptions)
@@ -69,7 +70,8 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
         schema.subscriptions.createdAt,
         schema.users.name,
         schema.users.email,
-        schema.users.phone
+        schema.users.phone,
+        schema.users.experienceType
       )
       .where(eq(schema.subscriptions.eventId, eventId))
     return results
