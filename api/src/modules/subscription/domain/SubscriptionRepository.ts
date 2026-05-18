@@ -11,7 +11,12 @@ export interface SubscriptionRepository {
       status: SubscriptionStatus
       createdAt: Date
       teams: string[]
-      user: { name: string; email: string; phone: string | null }
+      user: {
+        name: string
+        email: string
+        phone: string | null
+        experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
+      }
     }[]
   >
   getSubscriptionByUserAndEvent: (

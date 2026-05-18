@@ -5,6 +5,7 @@ import { SubscriptionSummaryBox } from '../../components/SubscriptionSummaryBox/
 import { SearchInput } from '../../components/SearchInput/SearchInput'
 import { MultiSelector } from '../../components/MultiSelector/MultiSelector'
 import { Table } from '../../components/Table'
+import { Button } from '../../components/Button/Button'
 import { useSubscriptions } from './useSubscriptions'
 import { useSubscriptionsListTable } from './useSubscriptionsListTable'
 import { ReviewSubscriptionModal } from './ReviewSubscriptionModal'
@@ -120,9 +121,11 @@ export function EventSubscriptionsList() {
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </Table.Cell>
                     ))}
-                    <Table.ActionCell
-                      actions={[{ label: 'Revisar', onClick: () => handleReview(row.original) }]}
-                    />
+                    <Table.Cell>
+                      <Button variant="secondary" onClick={() => handleReview(row.original)}>
+                        Revisar
+                      </Button>
+                    </Table.Cell>
                   </Table.Row>
                 ))
               )}

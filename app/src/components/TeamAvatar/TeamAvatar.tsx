@@ -15,7 +15,7 @@ export function TeamAvatar(props: TeamAvatarProps) {
     <figure title={props.name} aria-label={props.name} className="inline-flex cursor-default">
       <span
         aria-hidden
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-dark-brown text-sm font-semibold text-white"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-dark-brown text-sm font-semibold text-white"
       >
         {initials}
       </span>
