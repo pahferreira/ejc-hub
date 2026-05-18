@@ -5,5 +5,9 @@ type TableBodyProps = {
 }
 
 export function TableBody(props: TableBodyProps) {
-  return <tbody className="divide-y divide-gray-200 bg-white">{props.children}</tbody>
+  return (
+    <tbody className="divide-y divide-gray-200 bg-white [&>tr]:hover:bg-table-highlight">
+      {props.children}
+    </tbody>
+  )
 }

@@ -1,10 +1,13 @@
 import { Modal } from '../../components/Modal/Modal'
 import { Badge } from '../../components/Badge/Badge'
+import { Button } from '../../components/Button/Button'
+import { TeamAvatar } from '../../components/TeamAvatar/TeamAvatar'
 import type {
   SubscriptionWithDetails,
   SubscriptionStatus,
 } from '../../services/subscriptions/subscriptions.types'
 import { formatDate } from '../../utils/formatDate/formatDate'
+import { experienceOptions, getOptionLabel } from '../EventSubscription/profileOptions'
 
 type ReviewSubscriptionModalProps = {
   subscription: SubscriptionWithDetails | null
@@ -16,15 +19,15 @@ type ReviewSubscriptionModalProps = {
 
 const statusVariantMap = {
   pending: 'pending',
-  received: 'approved',
+  received: 'received',
   completed: 'completed',
   waiting_list: 'waiting_list',
 } as const
 
 const statusLabelMap: Record<SubscriptionStatus, string> = {
   pending: 'Pendente',
-  received: 'Recebida',
-  completed: 'Montado',
+  received: 'Recebido',
+  completed: 'Concluído',
   waiting_list: 'Lista de Espera',
 }
 
@@ -42,6 +45,12 @@ export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
             <p className="text-sm text-gray-900">{props.subscription.user.name}</p>
           </div>
           <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Experiência</p>
+            <p className="text-sm text-gray-900">
+              {getOptionLabel(props.subscription.user.experienceType, experienceOptions)}
+            </p>
+          </div>
+          <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Email</p>
             <p className="text-sm text-gray-900">{props.subscription.user.email}</p>
           </div>
@@ -50,40 +59,35 @@ export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
             <p className="text-sm text-gray-900">{props.subscription.user.phone || '-'}</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-500 mb-1">Data de Criação</p>
+            <p className="text-sm font-medium text-gray-500 mb-1">Data de Inscrição</p>
             <p className="text-sm text-gray-900">{formatDate(props.subscription.createdAt)}</p>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
+            <Badge variant={statusVariantMap[status]}>{statusLabelMap[status]}</Badge>
           </div>
         </div>
 
         <div>
-          <p className="text-sm font-medium text-gray-500 mb-1">Equipes Escolhidas</p>
-          <p className="text-sm text-gray-900">
-            {props.subscription.teams.map((t) => t.name).join(', ')}
-          </p>
-        </div>
-
-        <div>
-          <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
-          <Badge variant={statusVariantMap[status]}>{statusLabelMap[status]}</Badge>
+          <p className="text-sm font-medium text-gray-500 mb-2">Equipes Escolhidas</p>
+          <div className="flex space-x-1">
+            {props.subscription.teams.map((team) => (
+              <TeamAvatar key={team.id} name={team.name} />
+            ))}
+          </div>
         </div>
 
         {status !== 'completed' && (
           <div className="flex flex-col gap-3">
             {(status === 'pending' || status === 'waiting_list') && (
-              <button
-                onClick={() => props.onConfirm(props.subscription!.id)}
-                className="bg-blue-500 text-white font-bold rounded-md text-center capitalize cursor-pointer w-auto px-6 py-2.5 hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
+              <Button onClick={() => props.onConfirm(props.subscription!.id)}>
                 Confirmar Recebimento
-              </button>
+              </Button>
             )}
             {(status === 'pending' || status === 'received') && (
-              <button
-                onClick={() => props.onWaitList(props.subscription!.id)}
-                className="bg-gray-500 text-white font-bold rounded-md text-center capitalize cursor-pointer w-auto px-6 py-2.5 hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              >
+              <Button variant="secondary" onClick={() => props.onWaitList(props.subscription!.id)}>
                 Mover para Lista de Espera
-              </button>
+              </Button>
             )}
           </div>
         )}

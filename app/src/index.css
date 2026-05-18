@@ -14,6 +14,8 @@
   --red: #6d0303;
   --orange: #d97706;
   --background: 30 20% 97%; /* Off-white with light brown touch */
+  --dashboard-background: #ffffff;
+  --sidebar-background: #f2e2d130;
   --dark-brown: #2e1602;
   --primary: #612c02;
   --primary-foreground: #ffffff;
@@ -22,6 +24,8 @@
   --tertiary: #f2dcc4;
   --tertiary-background: #f8f0e9;
   --tertiary-foreground: #fbfbfb;
+  --sidebar-highlight: #f9edda;
+  --table-highlight: #fcf6ea;
 }
 
 @theme {
@@ -46,6 +50,10 @@
   --color-tertiary-foreground: var(--tertiary-foreground);
   --color-tertiary-background: var(--tertiary-background);
   --color-background: var(--background);
+  --color-dashboard-background: var(--dashboard-background);
+  --color-sidebar-background: var(--sidebar-background);
+  --color-sidebar-highlight: var(--sidebar-highlight);
+  --color-table-highlight: var(--table-highlight);
 }
 
 @layer utilities {

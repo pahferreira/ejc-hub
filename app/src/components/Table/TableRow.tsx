@@ -5,5 +5,5 @@ type TableRowProps = {
 }
 
 export function TableRow(props: TableRowProps) {
-  return <tr className="hover:bg-tertiary-foreground">{props.children}</tr>
+  return <tr>{props.children}</tr>
 }
