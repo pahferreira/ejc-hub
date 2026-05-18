@@ -83,7 +83,7 @@ const columns = [
       return (
         <div className="flex space-x-1">
           {teams.map((team) => (
-            <TeamAvatar name={team.name} />
+            <TeamAvatar key={team.id} name={team.name} />
           ))}
         </div>
       )

@@ -35,7 +35,7 @@ export type SidebarViewProps = {
 export function SidebarView(props: SidebarViewProps) {
   return (
     <aside
-      className={`sticky top-0 h-screen bg-white border-r border-secondary/30 flex flex-col transition-all duration-200 shrink-0 overflow-hidden ${
+      className={`sticky top-0 h-screen bg-sidebar-background border-r border-secondary/30 flex flex-col transition-all duration-200 shrink-0 overflow-hidden ${
         props.isCollapsed ? 'w-16' : 'w-64'
       }`}
     >
@@ -86,7 +86,7 @@ export function SidebarView(props: SidebarViewProps) {
           type="button"
           onClick={props.onToggleCollapse}
           title={props.isCollapsed ? 'Expandir menu' : 'Recolher menu'}
-          className="p-2 rounded-lg text-sm text-secondary-foreground/60 hover:bg-tertiary/50 transition-colors cursor-pointer border-0 bg-transparent"
+          className="p-2 rounded-lg text-sm text-secondary-foreground/60 hover:bg-sidebar-highlight transition-colors cursor-pointer border-0 bg-transparent"
         >
           <FiSidebar size={18} />
         </button>

@@ -19,7 +19,7 @@ export function SidebarNavLink(props: SidebarNavLinkProps) {
         `flex items-center py-2 rounded-lg text-sm transition-colors no-underline ${
           isActive
             ? 'bg-tertiary text-dark-brown font-medium'
-            : 'text-secondary-foreground/80 hover:bg-tertiary/50'
+            : 'text-secondary-foreground/80 hover:bg-sidebar-highlight'
         } ${props.isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'}`
       }
     >
