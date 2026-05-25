@@ -6,6 +6,7 @@ type ButtonProps = {
   disabled?: boolean
   onClick?: () => void
   variant?: 'primary' | 'secondary'
+  ariaLabel?: string
 }
 
 const foregroundVariant = {
@@ -20,6 +21,7 @@ export function Button(props: ButtonProps) {
     <button
       onClick={props.onClick}
       disabled={props.disabled}
+      aria-label={props.ariaLabel}
       className={clsx(
         foregroundVariant[variant],
         'px-3 py-1.5 text-sm font-medium gap-2 border-2 border-dark-brown rounded-lg button-shadow hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'

@@ -109,8 +109,11 @@ export function eventsRoutes(server: FastifyServerInstance) {
       },
       async (request, reply) => {
         try {
-          const { teamKeys, name, status } = request.query
-          const result = await eventsApp.listCurrentEventSubscriptions({ teamKeys, name, status })
+          const { teamKeys, name, status, page, pageSize } = request.query
+          const result = await eventsApp.listCurrentEventSubscriptions(
+            { teamKeys, name, status },
+            { page, pageSize }
+          )
 
           return reply.code(HttpStatus.Ok).send(result)
         } catch (error) {

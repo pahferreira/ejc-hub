@@ -72,9 +72,16 @@ export type SubscriptionListFilters = {
   name?: string
 }
 
+export type SubscriptionListPagination = {
+  page?: number
+  pageSize?: number
+}
+
 export type SubscriptionListResponse = {
   items: SubscriptionWithDetails[]
   total: number
+  page: number
+  pageSize: number
 }
 
 export type SubscriptionStatsResponse = Record<SubscriptionStatus, number>
@@ -85,8 +92,10 @@ export const eventsQueryKeys = {
 
 export const subscriptionsQueryKeys = {
   currentEvent: [...eventsQueryKeys.currentEvent, 'subscriptions'] as const,
-  currentEventListSubscriptions: (filters: SubscriptionListFilters) =>
-    [...eventsQueryKeys.currentEvent, 'subscriptions', 'list', filters] as const,
+  currentEventListSubscriptions: (
+    filters: SubscriptionListFilters,
+    pagination: SubscriptionListPagination
+  ) => [...eventsQueryKeys.currentEvent, 'subscriptions', 'list', filters, pagination] as const,
   currentEventStats: [...eventsQueryKeys.currentEvent, 'subscriptions', 'stats'] as const,
   currentEventForMe: [...eventsQueryKeys.currentEvent, 'subscription', 'me'] as const,
 }

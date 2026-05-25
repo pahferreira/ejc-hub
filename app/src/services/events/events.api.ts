@@ -4,6 +4,7 @@ import type {
   CurrentEvent,
   CurrentEventSubscriptionStatus,
   SubscriptionListFilters,
+  SubscriptionListPagination,
   SubscriptionListResponse,
   SubscriptionStatsResponse,
 } from './events.types'
@@ -28,7 +29,10 @@ async function createEventSubscription(payload: CreateEventSubscriptionPayload) 
   }
 }
 
-async function getCurrentEventSubscriptionsList(filters: SubscriptionListFilters = {}) {
+async function getCurrentEventSubscriptionsList(
+  filters: SubscriptionListFilters = {},
+  pagination: SubscriptionListPagination = {}
+) {
   const params = new URLSearchParams()
 
   if (filters.name) {
@@ -45,6 +49,14 @@ async function getCurrentEventSubscriptionsList(filters: SubscriptionListFilters
     for (const s of filters.status) {
       params.append('status', s)
     }
+  }
+
+  if (pagination.page !== undefined) {
+    params.set('page', String(pagination.page))
+  }
+
+  if (pagination.pageSize !== undefined) {
+    params.set('pageSize', String(pagination.pageSize))
   }
 
   const response = await api.get<SubscriptionListResponse>('/events/current/subscriptions', {
