@@ -45,6 +45,32 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
     return result[0]
   }
 
+  async countSubscriptionsByStatusForEvent(
+    eventId: string
+  ): Promise<Record<SubscriptionStatus, number>> {
+    const results = await db
+      .select({
+        status: schema.subscriptions.status,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(schema.subscriptions)
+      .where(eq(schema.subscriptions.eventId, eventId))
+      .groupBy(schema.subscriptions.status)
+
+    const counts: Record<SubscriptionStatus, number> = {
+      pending: 0,
+      received: 0,
+      completed: 0,
+      waiting_list: 0,
+    }
+
+    for (const row of results) {
+      counts[row.status] = row.count
+    }
+
+    return counts
+  }
+
   async listSubscriptionsByEventId(eventId: string) {
     const results = await db
       .select({

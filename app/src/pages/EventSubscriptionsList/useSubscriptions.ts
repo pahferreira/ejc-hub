@@ -1,35 +1,46 @@
 import { useCurrentEventSubscriptionsQuery } from '../../services/events/useCurrentEventSubscriptionsQuery'
+import { useCurrentEventSubscriptionStatsQuery } from '../../services/events/useCurrentEventSubscriptionStatsQuery'
 import type {
-  SubscriptionStats,
-  SubscriptionWithDetails,
-} from '../../services/subscriptions/subscriptions.types'
+  SubscriptionListFilters,
+  SubscriptionStatsResponse,
+} from '../../services/events/events.types'
+import type { SubscriptionWithDetails } from '../../services/subscriptions/subscriptions.types'
+
+type UseSubscriptionsArgs = {
+  filters: SubscriptionListFilters
+}
 
 type UseSubscriptionsReturn = {
   subscriptions: SubscriptionWithDetails[]
-  stats: SubscriptionStats
+  total: number
+  totalCount: number
+  stats: SubscriptionStatsResponse
   isLoading: boolean
   error: Error | null
+  isStatsLoading: boolean
+  statsError: Error | null
 }
 
-function calculateStats(subscriptions: SubscriptionWithDetails[]): SubscriptionStats {
-  return {
-    total: subscriptions.length,
-    pending: subscriptions.filter((s) => s.status === 'pending').length,
-    approved: subscriptions.filter((s) => s.status === 'received').length,
-    completed: subscriptions.filter((s) => s.status === 'completed').length,
-    waitingList: subscriptions.filter((s) => s.status === 'waiting_list').length,
-  }
+const defaultStats: SubscriptionStatsResponse = {
+  pending: 0,
+  received: 0,
+  completed: 0,
+  waiting_list: 0,
 }
 
-export function useSubscriptions(): UseSubscriptionsReturn {
-  const query = useCurrentEventSubscriptionsQuery()
-  const subscriptions = query.data ?? []
-  const stats = calculateStats(subscriptions)
+export function useSubscriptions(args: UseSubscriptionsArgs): UseSubscriptionsReturn {
+  const listQuery = useCurrentEventSubscriptionsQuery(args.filters)
+  const statsQuery = useCurrentEventSubscriptionStatsQuery()
+  const stats = statsQuery.data ?? defaultStats
 
   return {
-    subscriptions,
+    subscriptions: listQuery.data?.items ?? [],
+    total: listQuery.data?.total ?? 0,
+    totalCount: stats.pending + stats.received + stats.completed + stats.waiting_list,
     stats,
-    isLoading: query.isLoading,
-    error: query.error,
+    isLoading: listQuery.isLoading,
+    error: listQuery.error,
+    isStatsLoading: statsQuery.isLoading,
+    statsError: statsQuery.error,
   }
 }

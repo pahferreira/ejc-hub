@@ -1,27 +1,89 @@
-import { useState } from 'react'
-import { flexRender } from '@tanstack/react-table'
+import { useState, useMemo } from 'react'
+import {
+  flexRender,
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+} from '@tanstack/react-table'
 import { DashboardSection } from '../../components/DashboardSection/DashboardSection'
 import { SubscriptionSummaryBox } from '../../components/SubscriptionSummaryBox/SubscriptionSummaryBox'
 import { SearchInput } from '../../components/SearchInput/SearchInput'
 import { MultiSelector } from '../../components/MultiSelector/MultiSelector'
+import type { Option } from '../../components/MultiSelector/MultiSelector'
 import { Table } from '../../components/Table'
 import { Button } from '../../components/Button/Button'
 import { useSubscriptions } from './useSubscriptions'
-import { useSubscriptionsListTable } from './useSubscriptionsListTable'
+import { subscriptionColumns } from './columns'
 import { ReviewSubscriptionModal } from './ReviewSubscriptionModal'
 import { useConfirmSubscriptionMutation } from '../../services/subscriptions/useConfirmSubscriptionMutation'
 import { useWaitListSubscriptionMutation } from '../../services/subscriptions/useWaitListSubscriptionMutation'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { useTeamOptionsQuery } from '../../services/teams/useTeamOptionsQuery'
 import type { SubscriptionWithDetails } from '../../services/subscriptions/subscriptions.types'
+import type {
+  SubscriptionStatus,
+  SubscriptionListFilters,
+} from '../../services/events/events.types'
+import { subscriptionStatusOptions } from '../../services/events/subscriptionStatusDisplay'
 
 export function EventSubscriptionsList() {
-  const { subscriptions, stats, isLoading, error } = useSubscriptions()
-  const { table, searchValue, setSearchValue, selectedTeams, setSelectedTeams, teamOptions } =
-    useSubscriptionsListTable(subscriptions)
+  const [searchValue, setSearchValue] = useState('')
+  const [selectedTeamKeys, setSelectedTeamKeys] = useState<string[]>([])
+  const [selectedStatuses, setSelectedStatuses] = useState<SubscriptionStatus[]>([])
+
+  const debouncedSearch = useDebouncedValue(searchValue, 300)
+
+  const filters: SubscriptionListFilters = {
+    ...(debouncedSearch ? { name: debouncedSearch } : {}),
+    ...(selectedTeamKeys.length > 0 ? { teamKeys: selectedTeamKeys } : {}),
+    ...(selectedStatuses.length > 0 ? { status: selectedStatuses } : {}),
+  }
+
+  const { subscriptions, stats, totalCount, isLoading, error } = useSubscriptions({ filters })
+  const teamOptionsQuery = useTeamOptionsQuery()
+
   const [reviewingSubscription, setReviewingSubscription] =
     useState<SubscriptionWithDetails | null>(null)
 
   const confirmMutation = useConfirmSubscriptionMutation()
   const waitListMutation = useWaitListSubscriptionMutation()
+
+  const teamOptions: Option[] = useMemo(
+    () => (teamOptionsQuery.data ?? []).map((t) => ({ value: t.key, label: t.name })),
+    [teamOptionsQuery.data]
+  )
+
+  const selectedTeamOptions: Option[] = teamOptions.filter((o) =>
+    selectedTeamKeys.includes(o.value)
+  )
+
+  const selectedStatusOptions: Option[] = subscriptionStatusOptions.filter((o) =>
+    selectedStatuses.includes(o.value as SubscriptionStatus)
+  )
+
+  function handleTeamOptionsChange(options: Option[]) {
+    setSelectedTeamKeys(options.map((o) => o.value))
+  }
+
+  function handleStatusOptionsChange(options: Option[]) {
+    setSelectedStatuses(options.map((o) => o.value as SubscriptionStatus))
+  }
+
+  function toggleStatusFilter(status: SubscriptionStatus) {
+    setSelectedStatuses((prev) => {
+      if (prev.length === 1 && prev[0] === status) {
+        return []
+      }
+      return [status]
+    })
+  }
+
+  const table = useReactTable({
+    data: subscriptions,
+    columns: subscriptionColumns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  })
 
   function handleReview(subscription: SubscriptionWithDetails) {
     setReviewingSubscription(subscription)
@@ -62,14 +124,28 @@ export function EventSubscriptionsList() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <SubscriptionSummaryBox title="Montados" value={stats.completed} variant="completed" />
-          <SubscriptionSummaryBox title="Pendentes" value={stats.pending} variant="pending" />
+          <SubscriptionSummaryBox
+            title="Montados"
+            value={stats.completed}
+            variant="completed"
+            active={selectedStatuses.includes('completed')}
+            onClick={() => toggleStatusFilter('completed')}
+          />
+          <SubscriptionSummaryBox
+            title="Pendentes"
+            value={stats.pending}
+            variant="pending"
+            active={selectedStatuses.includes('pending')}
+            onClick={() => toggleStatusFilter('pending')}
+          />
           <SubscriptionSummaryBox
             title="Lista de Espera"
-            value={stats.waitingList}
+            value={stats.waiting_list}
             variant="waitlist"
+            active={selectedStatuses.includes('waiting_list')}
+            onClick={() => toggleStatusFilter('waiting_list')}
           />
-          <SubscriptionSummaryBox title="Total de Inscrições" value={stats.total} variant="total" />
+          <SubscriptionSummaryBox title="Total de Inscrições" value={totalCount} variant="total" />
         </div>
 
         <DashboardSection>
@@ -84,9 +160,17 @@ export function EventSubscriptionsList() {
             <div className="sm:w-64">
               <MultiSelector
                 options={teamOptions}
-                selected={selectedTeams}
-                onChange={setSelectedTeams}
+                selected={selectedTeamOptions}
+                onChange={handleTeamOptionsChange}
                 placeholder="Todas as equipes"
+              />
+            </div>
+            <div className="sm:w-64">
+              <MultiSelector
+                options={subscriptionStatusOptions}
+                selected={selectedStatusOptions}
+                onChange={handleStatusOptionsChange}
+                placeholder="Todos os status"
               />
             </div>
           </div>

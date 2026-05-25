@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { eventsApi } from './events.api'
-import { subscriptionsQueryKeys } from './events.types'
+import { subscriptionsQueryKeys, type SubscriptionListFilters } from './events.types'
 
-export function useCurrentEventSubscriptionsQuery() {
+export function useCurrentEventSubscriptionsQuery(filters: SubscriptionListFilters = {}) {
   const query = useQuery({
-    queryKey: subscriptionsQueryKeys.currentEvent,
-    queryFn: eventsApi.getCurrentEventSubscriptionsList,
+    queryKey: subscriptionsQueryKeys.currentEventListSubscriptions(filters),
+    queryFn: () => eventsApi.getCurrentEventSubscriptionsList(filters),
+    placeholderData: (prev) => prev,
   })
 
   return query

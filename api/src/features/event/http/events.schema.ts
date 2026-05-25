@@ -1,4 +1,5 @@
 import { z } from 'zod/v4'
+import { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
 
 const experienceTypeEnum = z.enum(['newbie', 'experienced', 'experienced_outsider'])
 
@@ -55,6 +56,28 @@ export const listSubscriptionsQuerystringSchema = z.object({
   name: z.string().optional(),
   ...teamKeysQuerystringSchema.shape,
   ...paginationQuerystringSchema.shape,
+})
+
+export const subscriptionStatusEnum = z.enum([
+  SubscriptionStatus.Pending,
+  SubscriptionStatus.Received,
+  SubscriptionStatus.Completed,
+  SubscriptionStatus.WaitingList,
+])
+
+export const statusQuerystringSchema = z.object({
+  status: z.preprocess((value) => {
+    if (typeof value === 'string') {
+      return [value]
+    }
+    return value
+  }, z.array(subscriptionStatusEnum).optional()),
+})
+
+export const listCurrentSubscriptionsQuerystringSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  ...teamKeysQuerystringSchema.shape,
+  ...statusQuerystringSchema.shape,
 })
 
 // TODO: this schema is currently duplicated with the one in the frontend, we should find a way to share it.

@@ -27,4 +27,7 @@ export interface SubscriptionRepository {
     id: string,
     status: SubscriptionStatus
   ) => Promise<SubscriptionModel | undefined>
+  countSubscriptionsByStatusForEvent: (
+    eventId: string
+  ) => Promise<Record<SubscriptionStatus, number>>
 }

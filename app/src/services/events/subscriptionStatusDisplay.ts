@@ -1,4 +1,5 @@
 import type { StatusCardProps } from '../../components/StatusCard/StatusCard'
+import type { Option } from '../../components/MultiSelector/MultiSelector'
 import type { SubscriptionStatus } from './events.types'
 
 export type SubscriptionStatusDisplay = {
@@ -29,3 +30,7 @@ export const subscriptionStatusDisplay: Record<SubscriptionStatus, SubscriptionS
     description: 'Você está na lista de espera.',
   },
 }
+
+export const subscriptionStatusOptions: Option[] = (
+  Object.entries(subscriptionStatusDisplay) as [SubscriptionStatus, SubscriptionStatusDisplay][]
+).map(([value, display]) => ({ value, label: display.label }))
