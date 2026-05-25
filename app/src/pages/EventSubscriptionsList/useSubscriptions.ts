@@ -2,12 +2,14 @@ import { useCurrentEventSubscriptionsQuery } from '../../services/events/useCurr
 import { useCurrentEventSubscriptionStatsQuery } from '../../services/events/useCurrentEventSubscriptionStatsQuery'
 import type {
   SubscriptionListFilters,
+  SubscriptionListPagination,
   SubscriptionStatsResponse,
 } from '../../services/events/events.types'
 import type { SubscriptionWithDetails } from '../../services/subscriptions/subscriptions.types'
 
 type UseSubscriptionsArgs = {
   filters: SubscriptionListFilters
+  pagination: SubscriptionListPagination
 }
 
 type UseSubscriptionsReturn = {
@@ -29,7 +31,7 @@ const defaultStats: SubscriptionStatsResponse = {
 }
 
 export function useSubscriptions(args: UseSubscriptionsArgs): UseSubscriptionsReturn {
-  const listQuery = useCurrentEventSubscriptionsQuery(args.filters)
+  const listQuery = useCurrentEventSubscriptionsQuery(args.filters, args.pagination)
   const statsQuery = useCurrentEventSubscriptionStatsQuery()
   const stats = statsQuery.data ?? defaultStats
 

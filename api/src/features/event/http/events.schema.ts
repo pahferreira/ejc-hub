@@ -47,6 +47,8 @@ export const teamKeysQuerystringSchema = z.object({
   }, z.array(z.string()).optional()),
 })
 
+export const MAX_PAGE_SIZE = 100
+
 export const paginationQuerystringSchema = z.object({
   page: z.coerce.number().int().min(1).optional(),
   size: z.coerce.number().int().min(1).optional(),
@@ -74,10 +76,16 @@ export const statusQuerystringSchema = z.object({
   }, z.array(subscriptionStatusEnum).optional()),
 })
 
+export const currentSubscriptionsPaginationQuerystringSchema = z.object({
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).optional(),
+})
+
 export const listCurrentSubscriptionsQuerystringSchema = z.object({
   name: z.string().trim().min(1).optional(),
   ...teamKeysQuerystringSchema.shape,
   ...statusQuerystringSchema.shape,
+  ...currentSubscriptionsPaginationQuerystringSchema.shape,
 })
 
 // TODO: this schema is currently duplicated with the one in the frontend, we should find a way to share it.

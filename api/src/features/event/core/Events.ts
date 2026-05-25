@@ -16,6 +16,7 @@ import type { SubscriptionStatus } from '../../../modules/subscription/domain/su
 
 const DEFAULT_PAGE = 1
 const DEFAULT_SIZE = 10
+const DEFAULT_PAGE_SIZE = 20
 
 export class Events {
   #teamInstanceRepository: TeamInstanceRepository
@@ -128,11 +129,14 @@ export class Events {
     return this.#formatSubscriptions(teams, filteredSubscriptions)
   }
 
-  async listCurrentEventSubscriptions(filters?: {
-    teamKeys?: string[]
-    name?: string
-    status?: SubscriptionStatus[]
-  }) {
+  async listCurrentEventSubscriptions(
+    filters?: {
+      teamKeys?: string[]
+      name?: string
+      status?: SubscriptionStatus[]
+    },
+    pagination?: { page?: number; pageSize?: number }
+  ) {
     const currentEvent = await this.#eventsRepository.findCurrentEvent()
 
     if (!currentEvent) {
@@ -165,9 +169,15 @@ export class Events {
       )
     }
 
-    const items = this.#formatSubscriptions(allTeams, filteredSubscriptions, filters?.teamKeys)
+    const total = filteredSubscriptions.length
+    const page = pagination?.page ?? DEFAULT_PAGE
+    const pageSize = pagination?.pageSize ?? DEFAULT_PAGE_SIZE
 
-    return { items, total: items.length }
+    const paginatedSubscriptions = this.#applyPagination(filteredSubscriptions, page, pageSize)
+
+    const items = this.#formatSubscriptions(allTeams, paginatedSubscriptions, filters?.teamKeys)
+
+    return { items, total, page, pageSize }
   }
 
   async getCurrentEventSubscriptionStats(): Promise<Record<SubscriptionStatus, number>> {

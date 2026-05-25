@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   flexRender,
   useReactTable,
@@ -12,12 +12,14 @@ import { MultiSelector } from '../../components/MultiSelector/MultiSelector'
 import type { Option } from '../../components/MultiSelector/MultiSelector'
 import { Table } from '../../components/Table'
 import { Button } from '../../components/Button/Button'
+import { Pagination } from '../../components/Pagination/Pagination'
 import { useSubscriptions } from './useSubscriptions'
 import { subscriptionColumns } from './columns'
 import { ReviewSubscriptionModal } from './ReviewSubscriptionModal'
 import { useConfirmSubscriptionMutation } from '../../services/subscriptions/useConfirmSubscriptionMutation'
 import { useWaitListSubscriptionMutation } from '../../services/subscriptions/useWaitListSubscriptionMutation'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { usePagination } from '../../hooks/usePagination'
 import { useTeamOptionsQuery } from '../../services/teams/useTeamOptionsQuery'
 import type { SubscriptionWithDetails } from '../../services/subscriptions/subscriptions.types'
 import type {
@@ -32,6 +34,7 @@ export function EventSubscriptionsList() {
   const [selectedStatuses, setSelectedStatuses] = useState<SubscriptionStatus[]>([])
 
   const debouncedSearch = useDebouncedValue(searchValue, 300)
+  const { page, pageSize, nextPage, prevPage, resetPage } = usePagination()
 
   const filters: SubscriptionListFilters = {
     ...(debouncedSearch ? { name: debouncedSearch } : {}),
@@ -39,7 +42,14 @@ export function EventSubscriptionsList() {
     ...(selectedStatuses.length > 0 ? { status: selectedStatuses } : {}),
   }
 
-  const { subscriptions, stats, totalCount, isLoading, error } = useSubscriptions({ filters })
+  useEffect(() => {
+    resetPage()
+  }, [debouncedSearch, selectedTeamKeys, selectedStatuses, resetPage])
+
+  const { subscriptions, total, stats, totalCount, isLoading, error } = useSubscriptions({
+    filters,
+    pagination: { page, pageSize },
+  })
   const teamOptionsQuery = useTeamOptionsQuery()
 
   const [reviewingSubscription, setReviewingSubscription] =
@@ -175,6 +185,16 @@ export function EventSubscriptionsList() {
             </div>
           </div>
 
+          <div className="mb-4 flex justify-end">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPrev={prevPage}
+              onNext={nextPage}
+            />
+          </div>
+
           <Table>
             <Table.Header>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -215,6 +235,16 @@ export function EventSubscriptionsList() {
               )}
             </Table.Body>
           </Table>
+
+          <div className="mt-4 flex justify-end">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPrev={prevPage}
+              onNext={nextPage}
+            />
+          </div>
         </DashboardSection>
       </div>
 
