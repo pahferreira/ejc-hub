@@ -14,6 +14,10 @@
     "format:fix": "prettier --write .",
     "db:migrate": "drizzle-kit migrate",
     "db:prepare": "drizzle-kit generate",
+    "db:seed": "node --env-file=.env --experimental-strip-types --no-warnings src/core/database/seeds/index.ts",
+    "db:seed:team-templates": "npm run db:seed -- team-templates",
+    "db:seed:subscriptions": "npm run db:seed -- subscriptions",
+    "db:seed:all": "npm run db:seed -- all",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -33,6 +37,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
+    "@faker-js/faker": "^10.4.0",
     "@tsconfig/node24": "^24.0.1",
     "@types/node": "^22.15.29",
     "@types/pg": "^8.15.4",

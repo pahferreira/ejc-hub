@@ -12,6 +12,7 @@ api/src/
 │   ├── database/
 │   │   ├── client.ts              # Drizzle ORM connection setup
 │   │   ├── migrations/            # SQL migration files
+│   │   ├── seeds/                 # Idempotent seed scripts (run via `npm run db:seed`)
 │   │   └── schemas/               # Drizzle table definitions
 │   │       ├── events.ts
 │   │       ├── subscriptions.ts
@@ -135,6 +136,7 @@ Rules for features:
 - **Connection:** Configured via `DATABASE_URL` environment variable
 - **Casing:** Snake-case column mapping (`casing: 'snake_case'`)
 - **Migrations:** Sequential SQL files in `core/database/migrations/`
+- **Seeds:** Idempotent scripts in `core/database/seeds/` (executed via `npm run db:seed`). Seeds use `ON CONFLICT DO NOTHING` on natural keys so they are safe to re-run.
 
 ### Environment
 
