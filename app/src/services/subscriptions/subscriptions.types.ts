@@ -15,11 +15,3 @@ export type SubscriptionWithDetails = {
     experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
   }
 }
-
-export type SubscriptionStats = {
-  total: number
-  pending: number
-  approved: number
-  completed: number
-  waitingList: number
-}

@@ -12,6 +12,7 @@ import type {
   SubscriptionWithDetails,
 } from '../domain/subscription-types.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
+import type { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_SIZE = 10
@@ -127,7 +128,11 @@ export class Events {
     return this.#formatSubscriptions(teams, filteredSubscriptions)
   }
 
-  async listCurrentEventSubscriptions() {
+  async listCurrentEventSubscriptions(filters?: {
+    teamKeys?: string[]
+    name?: string
+    status?: SubscriptionStatus[]
+  }) {
     const currentEvent = await this.#eventsRepository.findCurrentEvent()
 
     if (!currentEvent) {
@@ -137,9 +142,42 @@ export class Events {
     const subscriptions = await this.#subscriptionRepository.listSubscriptionsByEventId(
       currentEvent.id
     )
-    const teams = await this.#listTeamInstances(currentEvent.id)
+    const allTeams = await this.#listTeamInstances(currentEvent.id)
 
-    return this.#formatSubscriptions(teams, subscriptions)
+    let filteredSubscriptions = subscriptions
+
+    if (filters?.name) {
+      filteredSubscriptions = this.#filterSubscriptionsByUserName(
+        filters.name,
+        filteredSubscriptions
+      )
+    }
+
+    if (filters?.teamKeys && filters.teamKeys.length > 0) {
+      const allowedTeams = allTeams.filter((team) => filters.teamKeys!.includes(team.templateKey))
+      filteredSubscriptions = this.#filterSubscriptionsByTeams(allowedTeams, filteredSubscriptions)
+    }
+
+    if (filters?.status && filters.status.length > 0) {
+      filteredSubscriptions = this.#filterSubscriptionsByStatus(
+        filters.status,
+        filteredSubscriptions
+      )
+    }
+
+    const items = this.#formatSubscriptions(allTeams, filteredSubscriptions, filters?.teamKeys)
+
+    return { items, total: items.length }
+  }
+
+  async getCurrentEventSubscriptionStats(): Promise<Record<SubscriptionStatus, number>> {
+    const currentEvent = await this.#eventsRepository.findCurrentEvent()
+
+    if (!currentEvent) {
+      throw new AppError('Current event not set')
+    }
+
+    return this.#subscriptionRepository.countSubscriptionsByStatusForEvent(currentEvent.id)
   }
 
   async getCurrentEvent() {
@@ -264,6 +302,13 @@ export class Events {
     return subscription
   }
 
+  #filterSubscriptionsByStatus(
+    statuses: SubscriptionStatus[],
+    subscriptions: SubscriptionWithDetails[]
+  ) {
+    return subscriptions.filter((subscription) => statuses.includes(subscription.status))
+  }
+
   #filterSubscriptionsByUserName(userName: string, subscriptions: SubscriptionWithDetails[]) {
     return subscriptions.filter((subscription) =>
       subscription.user.name.toLowerCase().includes(userName.toLowerCase())
@@ -292,22 +337,37 @@ export class Events {
   }
 
   #formatSubscriptions(
-    teamInstancesWithName: { id: string; name: string }[],
-    subscriptions: SubscriptionWithDetails[]
+    teamInstancesWithName: { id: string; name: string; templateKey: string }[],
+    subscriptions: SubscriptionWithDetails[],
+    priorityTeamKeys?: string[]
   ) {
-    return subscriptions.map((subscription) => ({
-      id: subscription.id,
-      user: subscription.user,
-      status: subscription.status,
-      createdAt: subscription.createdAt,
-      teams: subscription.teams.map((teamId) => {
-        const team = teamInstancesWithName.find((team) => team.id === teamId)
-        return {
-          id: team?.id,
-          name: team?.name,
-        }
-      }),
-    }))
+    const priorityIds = new Set(
+      priorityTeamKeys?.length
+        ? teamInstancesWithName
+            .filter((t) => priorityTeamKeys.includes(t.templateKey))
+            .map((t) => t.id)
+        : []
+    )
+
+    return subscriptions.map((subscription) => {
+      const teams = subscription.teams
+        .map((teamId) => teamInstancesWithName.find((team) => team.id === teamId))
+        .filter((team): team is { id: string; name: string; templateKey: string } => Boolean(team))
+        .sort((a, b) => {
+          const aPriority = priorityIds.has(a.id) ? 0 : 1
+          const bPriority = priorityIds.has(b.id) ? 0 : 1
+          return aPriority - bPriority
+        })
+        .map((team) => ({ id: team.id, name: team.name }))
+
+      return {
+        id: subscription.id,
+        user: subscription.user,
+        status: subscription.status,
+        createdAt: subscription.createdAt,
+        teams,
+      }
+    })
   }
 
   #listTeamInstances(eventId: string, teamKeys?: string[]) {

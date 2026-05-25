@@ -52,4 +52,26 @@ export const Total = {
   },
 } satisfies StoryObj<typeof SubscriptionSummaryBox>
 
+export const ClickableInactive = {
+  args: {
+    title: 'Pendente',
+    value: 3,
+    variant: 'pending',
+    description: 'Aguardando revisão',
+    onClick: () => {},
+    active: false,
+  },
+} satisfies StoryObj<typeof SubscriptionSummaryBox>
+
+export const ClickableActive = {
+  args: {
+    title: 'Pendente',
+    value: 3,
+    variant: 'pending',
+    description: 'Aguardando revisão',
+    onClick: () => {},
+    active: true,
+  },
+} satisfies StoryObj<typeof SubscriptionSummaryBox>
+
 export default meta

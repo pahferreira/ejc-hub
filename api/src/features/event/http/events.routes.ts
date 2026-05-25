@@ -10,6 +10,7 @@ import {
 } from '../../../../../common/permissions/permissions.types.ts'
 import {
   eventIdParamSchema,
+  listCurrentSubscriptionsQuerystringSchema,
   listSubscriptionsQuerystringSchema,
   subscribeBodySchema,
   subscribeCurrentSchema,
@@ -103,13 +104,31 @@ export function eventsRoutes(server: FastifyServerInstance) {
     server.get(
       '/events/current/subscriptions',
       {
+        schema: { querystring: listCurrentSubscriptionsQuerystringSchema },
+        preHandler: authGuard(server, { permissions: [SubscriptionPermissions.Read] }),
+      },
+      async (request, reply) => {
+        try {
+          const { teamKeys, name, status } = request.query
+          const result = await eventsApp.listCurrentEventSubscriptions({ teamKeys, name, status })
+
+          return reply.code(HttpStatus.Ok).send(result)
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.get(
+      '/events/current/subscriptions/stats',
+      {
         preHandler: authGuard(server, { permissions: [SubscriptionPermissions.Read] }),
       },
       async (_, reply) => {
         try {
-          const subscriptions = await eventsApp.listCurrentEventSubscriptions()
+          const stats = await eventsApp.getCurrentEventSubscriptionStats()
 
-          return reply.code(HttpStatus.Ok).send({ subscriptions })
+          return reply.code(HttpStatus.Ok).send(stats)
         } catch (error) {
           fastifyErrorHandler(reply, error)
         }
