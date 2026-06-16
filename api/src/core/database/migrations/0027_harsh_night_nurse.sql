@@ -1,0 +1,1 @@
+ALTER TABLE "team_templates" ADD COLUMN "max_capacity" integer DEFAULT 0 NOT NULL;
