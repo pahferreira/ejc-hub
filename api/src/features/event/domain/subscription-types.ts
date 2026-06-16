@@ -2,6 +2,8 @@ import { SubscriptionStatus } from '../../../modules/subscription/domain/subscri
 
 export type ExperienceType = 'newbie' | 'experienced' | 'experienced_outsider'
 
+export type Gender = 'male' | 'female'
+
 type SubscriptionAvailability =
   | 'monday'
   | 'tuesday'
@@ -15,6 +17,7 @@ export type SubscriptionPayload = {
   user: {
     emergencyContactName: string
     emergencyContactPhone: string
+    gender: Gender
     experienceType: ExperienceType
     hasCoordinatorExperience?: boolean
   }
@@ -38,6 +41,7 @@ export type CurrentEventSubscriptionPayload = {
   phone: string
   emergencyContactName: string
   emergencyContactPhone: string
+  gender: Gender
   experienceType: ExperienceType
   hasCoordinatorExperience?: boolean
   selectedSkills: string[]

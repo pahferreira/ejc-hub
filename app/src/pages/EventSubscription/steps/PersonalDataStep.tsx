@@ -1,5 +1,7 @@
 import { Input } from '../../../components/Input/Input'
+import { RadioGroup } from '../../../components/RadioGroup/RadioGroup'
 import { SectionTitle } from '../../../components/SectionTitle/SectionTitle'
+import { genderOptions } from '../profileOptions'
 import { useEventSubscriptionField } from '../useEventSubscriptionForm'
 
 export function PersonalDataStep() {
@@ -7,6 +9,7 @@ export function PersonalDataStep() {
   const email = useEventSubscriptionField('email')
   const phone = useEventSubscriptionField('phone')
   const nickname = useEventSubscriptionField('nickname')
+  const gender = useEventSubscriptionField('gender')
   const contactName = useEventSubscriptionField('emergencyContactName')
   const contactPhone = useEventSubscriptionField('emergencyContactPhone')
 
@@ -33,6 +36,18 @@ export function PersonalDataStep() {
           onChange={nickname.field.onChange}
           error={nickname.fieldState.error?.message}
         />
+        <div className="flex flex-col gap-1">
+          <RadioGroup
+            label="Gênero"
+            options={genderOptions}
+            selected={gender.field.value}
+            onChange={gender.field.onChange}
+            variant="inline"
+          />
+          {gender.fieldState.error?.message && (
+            <p className="text-sm text-red-500">{gender.fieldState.error.message}</p>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Telefone"

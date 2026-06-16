@@ -4,6 +4,11 @@ export const experienceOptions = [
   { label: 'Encontrista Rosário', value: 'newbie' },
 ]
 
+export const genderOptions = [
+  { label: 'Masculino', value: 'male' },
+  { label: 'Feminino', value: 'female' },
+]
+
 export const circleOptions = [
   { label: 'Vermelho', value: 'red' },
   { label: 'Verde', value: 'green' },
