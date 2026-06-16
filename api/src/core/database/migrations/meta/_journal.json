@@ -197,6 +197,13 @@
       "when": 1781619985208,
       "tag": "0027_harsh_night_nurse",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1781621192616,
+      "tag": "0028_uneven_rhino",
+      "breakpoints": true
     }
   ]
 }
