@@ -2,6 +2,7 @@ import { z } from 'zod/v4'
 import { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
 
 const experienceTypeEnum = z.enum(['newbie', 'experienced', 'experienced_outsider'])
+const genderEnum = z.enum(['male', 'female'])
 
 export const eventIdParamSchema = z.object({
   eventId: z.uuid(),
@@ -21,6 +22,7 @@ export const subscribeBodySchema = z.object({
   user: z.object({
     emergencyContactName: z.string('emergency contact name is required').nonempty(),
     emergencyContactPhone: z.string('emergency contact phone is required').nonempty(),
+    gender: genderEnum,
     experienceType: experienceTypeEnum,
     hasCoordinatorExperience: z.boolean().optional(),
   }),
@@ -97,6 +99,7 @@ export const subscribeCurrentSchema = z.object({
   phone: z.string('Phone number is required').nonempty(),
   emergencyContactName: z.string('Emergency contact name is required').nonempty(),
   emergencyContactPhone: z.string('Emergency contact phone is required').nonempty(),
+  gender: genderEnum,
   experienceType: experienceTypeEnum,
   hasCoordinatorExperience: z.boolean().optional(),
   selectedSkills: z.array(z.string()),

@@ -91,6 +91,7 @@ export class Events {
       ...input.skills,
       emergencyContactName: input.user.emergencyContactName,
       emergencyContactPhone: input.user.emergencyContactPhone,
+      gender: input.user.gender,
       experienceType: input.user.experienceType,
       hasCoordinatorExperience: input.user.hasCoordinatorExperience ?? false,
     })
@@ -305,6 +306,7 @@ export class Events {
       phone: input.phone,
       emergencyContactName: input.emergencyContactName,
       emergencyContactPhone: input.emergencyContactPhone,
+      gender: input.gender,
       experienceType: input.experienceType,
       hasCoordinatorExperience: input.hasCoordinatorExperience ?? false,
     })

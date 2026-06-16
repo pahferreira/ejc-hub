@@ -5,6 +5,7 @@ export type CreateEventSubscriptionPayload = {
   phone: string
   emergencyContactName: string
   emergencyContactPhone: string
+  gender: 'male' | 'female'
   experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
   circle?: 'red' | 'green' | 'blue'
   hasCoordinatorExperience: boolean
