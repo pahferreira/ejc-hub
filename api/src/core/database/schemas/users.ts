@@ -6,6 +6,8 @@ export const experienceType = pgEnum('experience_type', [
   'experienced_outsider',
 ])
 
+export const gender = pgEnum('gender', ['male', 'female'])
+
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   authId: text('auth_id').notNull(),
@@ -26,6 +28,7 @@ export const users = pgTable('users', {
   hasSingingSkills: boolean('has_singing_skills').notNull().default(false),
   hasCoordinatorExperience: boolean('has_coordinator_experience').notNull().default(false),
   experienceType: experienceType().notNull().default('experienced'),
+  gender: gender(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
