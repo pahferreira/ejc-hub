@@ -7,6 +7,7 @@ export const subscriptionStatus = pgEnum('subscription_status', [
   'received',
   'completed',
   'waiting_list',
+  'cancelled',
 ])
 
 export const subscriptionAvailability = pgEnum('subscription_availability', [

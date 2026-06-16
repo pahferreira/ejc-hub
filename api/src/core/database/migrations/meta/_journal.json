@@ -183,6 +183,13 @@
       "when": 1778266085131,
       "tag": "0025_ancient_norman_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1781566341571,
+      "tag": "0026_wakeful_sister_grimm",
+      "breakpoints": true
     }
   ]
 }
