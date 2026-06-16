@@ -211,6 +211,13 @@
       "when": 1781622278777,
       "tag": "0029_wonderful_the_renegades",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1781623749520,
+      "tag": "0030_curly_doctor_strange",
+      "breakpoints": true
     }
   ]
 }

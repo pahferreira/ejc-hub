@@ -5,6 +5,7 @@ import { subscriptions } from './subscriptions.ts'
 import { events } from './events.ts'
 import { teamMemberships } from './team-memberships.ts'
 import { teamTemplates } from './team-templates.ts'
+import { teamAssignmentAudit } from './team-assignment-audit.ts'
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm'
 
 export const schema = {
@@ -14,6 +15,7 @@ export const schema = {
   teamInstances,
   teamMemberships,
   teamTemplates,
+  teamAssignmentAudit,
   users,
 }
 
@@ -37,3 +39,6 @@ export type SubscriptionOptionInput = InferInsertModel<typeof subscriptionOption
 
 export type SubscriptionModel = InferSelectModel<typeof subscriptions>
 export type SubscriptionInput = InferInsertModel<typeof subscriptions>
+
+export type TeamAssignmentAuditModel = InferSelectModel<typeof teamAssignmentAudit>
+export type TeamAssignmentAuditInput = InferInsertModel<typeof teamAssignmentAudit>
