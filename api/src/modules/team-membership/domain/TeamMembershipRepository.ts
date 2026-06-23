@@ -12,4 +12,5 @@ export interface TeamMembershipRepository {
     teamId: string,
     memberId: string
   ) => Promise<TeamMembershipModel | undefined>
+  listMemberUserIdsByTeamInstanceIds: (teamInstanceIds: string[]) => Promise<Map<string, string[]>>
 }

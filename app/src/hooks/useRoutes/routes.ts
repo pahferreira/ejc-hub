@@ -3,9 +3,11 @@ import { EventSubscriptionsList } from '../../pages/EventSubscriptionsList'
 import {
   EventPermissions,
   SubscriptionPermissions,
+  TeamInstancePermissions,
   TeamTemplatePermissions,
 } from '../../../../common/permissions'
 import { Home } from '../../pages/Home'
+import { TeamsPage } from '../../pages/TeamsPage'
 import { Placeholder } from '../../pages/Placeholder/Placeholder'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 
@@ -42,8 +44,8 @@ export const routes: Route[] = [
   {
     path: ROUTE_PATHS.TEAMS,
     name: 'Equipes',
-    component: Placeholder,
-    permission: SubscriptionPermissions.Read,
+    component: TeamsPage,
+    permission: TeamInstancePermissions.Read,
   },
   {
     path: ROUTE_PATHS.TEAM_TEMPLATES,

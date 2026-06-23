@@ -3,6 +3,7 @@ import { FiHome, FiList, FiUsers, FiCalendar, FiLayers } from 'react-icons/fi'
 import {
   EventPermissions,
   SubscriptionPermissions,
+  TeamInstancePermissions,
   TeamTemplatePermissions,
 } from '../../../../common/permissions'
 import { ROUTE_PATHS } from '../../constants/routePaths'
@@ -43,7 +44,7 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         label: 'Equipes',
         path: ROUTE_PATHS.TEAMS,
         icon: FiUsers,
-        permission: SubscriptionPermissions.Read,
+        permission: TeamInstancePermissions.Read,
       },
       {
         label: 'Eventos',

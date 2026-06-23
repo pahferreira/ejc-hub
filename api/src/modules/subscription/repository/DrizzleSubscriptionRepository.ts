@@ -62,6 +62,7 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
       received: 0,
       completed: 0,
       waiting_list: 0,
+      cancelled: 0,
     }
 
     for (const row of results) {

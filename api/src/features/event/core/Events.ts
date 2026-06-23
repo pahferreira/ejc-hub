@@ -3,6 +3,7 @@ import type {
   TeamCoordinator,
   TeamInstanceRepository,
 } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
+import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { SubscriptionOptionRepository } from '../../../modules/subscription-option/domain/SubscriptionOptionRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
@@ -11,8 +12,11 @@ import type {
   SubscriptionPayload,
   SubscriptionWithDetails,
 } from '../domain/subscription-types.ts'
+import type { TeamOverview, TeamsOverviewStats } from '../domain/team-overview.types.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
+import { getTeamSummaryBucket } from './team-summary.ts'
+import { getTeamStatus, type TeamStatus } from './team-status.ts'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_SIZE = 10
@@ -20,6 +24,7 @@ const DEFAULT_PAGE_SIZE = 20
 
 export class Events {
   #teamInstanceRepository: TeamInstanceRepository
+  #teamMembershipRepository: TeamMembershipRepository
   #subscriptionRepository: SubscriptionRepository
   #subscriptionOptionRepository: SubscriptionOptionRepository
   #userRepository: UserRepository
@@ -30,13 +35,15 @@ export class Events {
     subscriptionRepo: SubscriptionRepository,
     subscriptionOptionRepo: SubscriptionOptionRepository,
     userRepo: UserRepository,
-    eventRepo: EventRepository
+    eventRepo: EventRepository,
+    teamMembershipRepo: TeamMembershipRepository
   ) {
     this.#teamInstanceRepository = teamInstanceRepo
     this.#subscriptionRepository = subscriptionRepo
     this.#subscriptionOptionRepository = subscriptionOptionRepo
     this.#userRepository = userRepo
     this.#eventsRepository = eventRepo
+    this.#teamMembershipRepository = teamMembershipRepo
   }
 
   async subscribe(eventId: string, userAuthId: string, input: SubscriptionPayload) {
@@ -102,6 +109,115 @@ export class Events {
   async listTeams(eventId: string, teamKeys?: string[]) {
     const teams = await this.#listTeamInstances(eventId, teamKeys)
     return teams
+  }
+
+  async getCurrentEventTeams(filters?: {
+    name?: string
+    status?: TeamStatus
+  }): Promise<TeamOverview[]> {
+    const currentEvent = await this.#eventsRepository.findCurrentEvent()
+
+    if (!currentEvent) {
+      throw new AppError('Current event not set')
+    }
+
+    const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(
+      currentEvent.id
+    )
+    const teamInstanceIds = instances.map((instance) => instance.id)
+
+    const [membershipUserIdsByTeam, coordinatorsByTeam] = await Promise.all([
+      this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds(teamInstanceIds),
+      this.#teamInstanceRepository.listCoordinatorsByTeamInstanceIds(teamInstanceIds),
+    ])
+
+    const teams: TeamOverview[] = instances.map((instance) => {
+      const coordinators = coordinatorsByTeam.get(instance.id) ?? []
+      const memberCount = this.#countDistinctMembers(
+        membershipUserIdsByTeam.get(instance.id) ?? [],
+        coordinators.map((coordinator) => coordinator.id)
+      )
+
+      return {
+        id: instance.id,
+        templateKey: instance.templateKey,
+        templateName: instance.templateName,
+        templateDescription: instance.templateDescription,
+        memberCount,
+        maxCapacity: instance.maxCapacity,
+        coordinators,
+      }
+    })
+
+    return this.#filterTeams(teams, filters)
+  }
+
+  #filterTeams(teams: TeamOverview[], filters?: { name?: string; status?: TeamStatus }) {
+    let filtered = teams
+
+    if (filters?.status) {
+      filtered = filtered.filter(
+        (team) => getTeamStatus(team.memberCount, team.maxCapacity) === filters.status
+      )
+    }
+
+    if (filters?.name) {
+      const query = filters.name.trim().toLowerCase()
+      filtered = filtered.filter(
+        (team) =>
+          team.templateName.toLowerCase().includes(query) ||
+          team.coordinators.some((coordinator) => coordinator.name.toLowerCase().includes(query))
+      )
+    }
+
+    return filtered
+  }
+
+  async getCurrentEventTeamsOverview(): Promise<{ stats: TeamsOverviewStats }> {
+    const currentEvent = await this.#eventsRepository.findCurrentEvent()
+
+    if (!currentEvent) {
+      throw new AppError('Current event not set')
+    }
+
+    const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(
+      currentEvent.id
+    )
+    const teamInstanceIds = instances.map((instance) => instance.id)
+
+    // The summary only needs how many distinct people fill each team, so it
+    // resolves coordinator ids (which count towards the total) but not their
+    // names.
+    const [membershipUserIdsByTeam, coordinatorIdsByTeam] = await Promise.all([
+      this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds(teamInstanceIds),
+      this.#teamInstanceRepository.listCoordinatorIdsByTeamInstanceIds(teamInstanceIds),
+    ])
+
+    const stats = instances.reduce<TeamsOverviewStats>(
+      (acc, instance) => {
+        const memberCount = this.#countDistinctMembers(
+          membershipUserIdsByTeam.get(instance.id) ?? [],
+          coordinatorIdsByTeam.get(instance.id) ?? []
+        )
+        const bucket = getTeamSummaryBucket(memberCount, instance.maxCapacity)
+        acc[bucket] += 1
+        acc.total += 1
+        return acc
+      },
+      { completed: 0, partiallyCompleted: 0, inRisk: 0, total: 0 }
+    )
+
+    return { stats }
+  }
+
+  // Coordinators count as members, deduped against memberships so the same
+  // person is never counted twice.
+  #countDistinctMembers(membershipUserIds: string[], coordinatorIds: string[]) {
+    const memberIds = new Set(membershipUserIds)
+    for (const coordinatorId of coordinatorIds) {
+      memberIds.add(coordinatorId)
+    }
+    return memberIds.size
   }
 
   async listSubscriptions(

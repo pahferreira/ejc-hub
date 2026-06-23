@@ -4,6 +4,7 @@ import { schema } from '../../../core/database/schemas/index.ts'
 import type {
   AssignedTeamForUser,
   TeamCoordinator,
+  TeamCoordinatorSummary,
   TeamInstanceRepository,
 } from '../domain/TeamInstanceRepository.ts'
 
@@ -38,6 +39,83 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
       )
 
     return results
+  }
+
+  async listTeamInstancesWithDetails(eventId: string) {
+    return db
+      .select({
+        id: schema.teamInstances.id,
+        eventId: schema.teamInstances.eventId,
+        templateKey: schema.teamTemplates.key,
+        templateName: schema.teamTemplates.name,
+        templateDescription: schema.teamTemplates.description,
+        maxCapacity: schema.teamTemplates.maxCapacity,
+      })
+      .from(schema.teamInstances)
+      .innerJoin(schema.teamTemplates, eq(schema.teamInstances.templateId, schema.teamTemplates.id))
+      .where(eq(schema.teamInstances.eventId, eventId))
+  }
+
+  async listCoordinatorIdsByTeamInstanceIds(teamInstanceIds: string[]) {
+    const coordinatorIdsByTeam = new Map<string, string[]>()
+
+    if (teamInstanceIds.length === 0) {
+      return coordinatorIdsByTeam
+    }
+
+    const instances = await db
+      .select({
+        id: schema.teamInstances.id,
+        firstCoordinatorId: schema.teamInstances.firstCoordinatorId,
+        secondCoordinatorId: schema.teamInstances.secondCoordinatorId,
+        thirdCoordinatorId: schema.teamInstances.thirdCoordinatorId,
+      })
+      .from(schema.teamInstances)
+      .where(inArray(schema.teamInstances.id, teamInstanceIds))
+
+    for (const instance of instances) {
+      const coordinatorIds = [
+        instance.firstCoordinatorId,
+        instance.secondCoordinatorId,
+        instance.thirdCoordinatorId,
+      ].filter((id): id is string => id !== null)
+
+      if (coordinatorIds.length > 0) {
+        coordinatorIdsByTeam.set(instance.id, coordinatorIds)
+      }
+    }
+
+    return coordinatorIdsByTeam
+  }
+
+  async listCoordinatorsByTeamInstanceIds(teamInstanceIds: string[]) {
+    const coordinatorsByTeam = new Map<string, TeamCoordinatorSummary[]>()
+    const coordinatorIdsByTeam = await this.listCoordinatorIdsByTeamInstanceIds(teamInstanceIds)
+
+    const coordinatorIds = [...coordinatorIdsByTeam.values()].flat()
+
+    if (coordinatorIds.length === 0) {
+      return coordinatorsByTeam
+    }
+
+    const users = await db
+      .select({ id: schema.users.id, name: schema.users.name })
+      .from(schema.users)
+      .where(inArray(schema.users.id, coordinatorIds))
+
+    const usersById = new Map(users.map((user) => [user.id, user]))
+
+    for (const [teamInstanceId, ids] of coordinatorIdsByTeam) {
+      const coordinators = ids
+        .map((id) => usersById.get(id))
+        .filter((user): user is TeamCoordinatorSummary => user !== undefined)
+
+      if (coordinators.length > 0) {
+        coordinatorsByTeam.set(teamInstanceId, coordinators)
+      }
+    }
+
+    return coordinatorsByTeam
   }
 
   async findUserTeamForEvent(

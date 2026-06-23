@@ -69,12 +69,12 @@ export function SubscriptionSummaryBox(props: SummaryBoxProps) {
         onClick={props.onClick}
         className="max-w-xs w-full text-left rounded-xl transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
       >
-        <Card focused={props.active} className="max-w-xs">
+        <Card focused={props.active} className="max-w-xl">
           {content}
         </Card>
       </button>
     )
   }
 
-  return <Card className="max-w-xs">{content}</Card>
+  return <Card className="max-w-xl">{content}</Card>
 }

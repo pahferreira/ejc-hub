@@ -41,6 +41,13 @@ export const subscribeBodySchema = z.object({
     .min(1, 'At least one availability day is required'),
 })
 
+export const teamStatusEnum = z.enum(['needsMembers', 'spotsAvailable', 'complete'])
+
+export const listCurrentTeamsQuerystringSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  status: teamStatusEnum.optional(),
+})
+
 export const teamKeysQuerystringSchema = z.object({
   teamKeys: z.preprocess((value) => {
     if (typeof value === 'string') {

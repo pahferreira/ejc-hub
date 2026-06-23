@@ -1,5 +1,17 @@
+export type TeamStatus = 'needsMembers' | 'spotsAvailable' | 'complete'
+
 export const teamOptionsQueryKeys = {
   all: ['team-options'] as const,
+}
+
+export type TeamsListFilters = {
+  name?: string
+  status?: Extract<TeamStatus, 'needsMembers' | 'complete'>
+}
+
+export const teamsOverviewQueryKeys = {
+  stats: ['teams', 'overview', 'stats'] as const,
+  list: (filters: TeamsListFilters = {}) => ['teams', 'overview', 'list', filters] as const,
 }
 
 export type TeamOption = {
@@ -7,8 +19,6 @@ export type TeamOption = {
   name: string
   description: string
 }
-
-export type TeamStatus = 'needsMembers' | 'spotsAvailable' | 'complete'
 
 export type TeamCoordinatorSummary = {
   id: string
@@ -23,4 +33,11 @@ export type TeamOverview = {
   memberCount: number
   maxCapacity: number
   coordinators: TeamCoordinatorSummary[]
+}
+
+export type TeamsOverviewStats = {
+  completed: number
+  partiallyCompleted: number
+  inRisk: number
+  total: number
 }
