@@ -11,6 +11,7 @@ import {
 import {
   eventIdParamSchema,
   listCurrentSubscriptionsQuerystringSchema,
+  listCurrentTeamsQuerystringSchema,
   listSubscriptionsQuerystringSchema,
   subscribeBodySchema,
   subscribeCurrentSchema,
@@ -132,6 +133,40 @@ export function eventsRoutes(server: FastifyServerInstance) {
           const stats = await eventsApp.getCurrentEventSubscriptionStats()
 
           return reply.code(HttpStatus.Ok).send(stats)
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.get(
+      '/events/current/teams',
+      {
+        schema: { querystring: listCurrentTeamsQuerystringSchema },
+        preHandler: authGuard(server, { permissions: [TeamInstancePermissions.Read] }),
+      },
+      async (request, reply) => {
+        try {
+          const { name, status } = request.query
+          const teams = await eventsApp.getCurrentEventTeams({ name, status })
+
+          return reply.code(HttpStatus.Ok).send({ teams })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.get(
+      '/events/current/teams/overview',
+      {
+        preHandler: authGuard(server, { permissions: [TeamInstancePermissions.Read] }),
+      },
+      async (_, reply) => {
+        try {
+          const result = await eventsApp.getCurrentEventTeamsOverview()
+
+          return reply.code(HttpStatus.Ok).send(result)
         } catch (error) {
           fastifyErrorHandler(reply, error)
         }

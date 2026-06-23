@@ -3,6 +3,7 @@ export const SubscriptionStatus = {
   Received: 'received',
   Completed: 'completed',
   WaitingList: 'waiting_list',
+  Cancelled: 'cancelled',
 } as const
 
 export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus]

@@ -12,6 +12,20 @@ export type TeamCoordinator = {
   phone: string | null
 }
 
+export type TeamCoordinatorSummary = {
+  id: string
+  name: string
+}
+
+export type TeamInstanceWithDetails = {
+  id: string
+  eventId: string
+  templateKey: string
+  templateName: string
+  templateDescription: string | null
+  maxCapacity: number
+}
+
 export interface TeamInstanceRepository {
   selectTeamInstance: (id: string) => Promise<{
     id: string
@@ -31,11 +45,16 @@ export interface TeamInstanceRepository {
       templateKey: string
     }[]
   >
+  listTeamInstancesWithDetails: (eventId: string) => Promise<TeamInstanceWithDetails[]>
   findUserTeamForEvent: (
     userId: string,
     eventId: string
   ) => Promise<AssignedTeamForUser | undefined>
   listTeamCoordinators: (teamInstanceId: string) => Promise<TeamCoordinator[]>
+  listCoordinatorIdsByTeamInstanceIds: (teamInstanceIds: string[]) => Promise<Map<string, string[]>>
+  listCoordinatorsByTeamInstanceIds: (
+    teamInstanceIds: string[]
+  ) => Promise<Map<string, TeamCoordinatorSummary[]>>
   insertTeamInstance: (input: TeamInstanceInput) => Promise<TeamInstanceModel>
   deleteTeamInstance: (id: string) => Promise<TeamInstanceModel>
   updateTeamInstance: (id: string, input: Partial<TeamInstanceInput>) => Promise<TeamInstanceModel>
