@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router'
 import { DashboardSection } from '../../components/DashboardSection/DashboardSection'
 import { SubscriptionSummaryBox } from '../../components/SubscriptionSummaryBox/SubscriptionSummaryBox'
 import { Button } from '../../components/Button/Button'
@@ -12,9 +13,11 @@ import {
 import { useCurrentEventTeamsQuery } from '../../services/teams/useCurrentEventTeamsQuery'
 import { useTeamsOverviewQuery } from '../../services/teams/useTeamsOverviewQuery'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
+import { ROUTE_PATHS } from '../../constants/routePaths'
 import type { TeamsListFilters } from '../../services/teams/teams.types'
 
 export function TeamsPage() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<TeamsStatusFilter>('all')
   const [sort, setSort] = useState<TeamsSortOption>('name_asc')
@@ -63,7 +66,7 @@ export function TeamsPage() {
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-8xl mx-auto">
         <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 m-0">Equipes</h1>
@@ -71,8 +74,7 @@ export function TeamsPage() {
               Acompanhe a montagem das equipes do próximo encontro
             </p>
           </div>
-          {/* Montagem flow lands in a later ticket; the slot is reserved here. */}
-          <Button>Montagem</Button>
+          <Button onClick={() => navigate(ROUTE_PATHS.TEAMS_TEAM_BUILDING)}>Montagem</Button>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-8">

@@ -1,5 +1,5 @@
 import { and, eq, sql } from 'drizzle-orm'
-import { db } from '../../../core/database/client.ts'
+import { db, type DbExecutor } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type { SubscriptionRepository } from '../domain/SubscriptionRepository.ts'
 import type { SubscriptionStatus } from '../domain/subscription.types.ts'
@@ -35,8 +35,12 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
     return result[0]
   }
 
-  async updateSubscriptionStatus(id: string, status: SubscriptionStatus) {
-    const result = await db
+  async updateSubscriptionStatus(
+    id: string,
+    status: SubscriptionStatus,
+    executor: DbExecutor = db
+  ) {
+    const result = await executor
       .update(schema.subscriptions)
       .set({ status, updatedAt: new Date() })
       .where(eq(schema.subscriptions.id, id))
@@ -76,14 +80,23 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
     const results = await db
       .select({
         id: schema.subscriptions.id,
+        userId: schema.subscriptions.userId,
         status: schema.subscriptions.status,
         createdAt: schema.subscriptions.createdAt,
         teams: sql<string[]>`array_agg(${schema.subscriptionOptions.teamInstanceId})`,
         user: {
           name: schema.users.name,
+          nickname: schema.users.nickname,
           email: schema.users.email,
           phone: schema.users.phone,
           experienceType: schema.users.experienceType,
+          hasActingSkills: schema.users.hasActingSkills,
+          hasCommunicationSkills: schema.users.hasCommunicationSkills,
+          hasCookingSkills: schema.users.hasCookingSkills,
+          hasDancingSkills: schema.users.hasDancingSkills,
+          hasManualSkills: schema.users.hasManualSkills,
+          hasMusicSkills: schema.users.hasMusicSkills,
+          hasSingingSkills: schema.users.hasSingingSkills,
         },
       })
       .from(schema.subscriptions)
@@ -94,11 +107,20 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
       )
       .groupBy(
         schema.subscriptions.id,
+        schema.subscriptions.userId,
         schema.subscriptions.createdAt,
         schema.users.name,
+        schema.users.nickname,
         schema.users.email,
         schema.users.phone,
-        schema.users.experienceType
+        schema.users.experienceType,
+        schema.users.hasActingSkills,
+        schema.users.hasCommunicationSkills,
+        schema.users.hasCookingSkills,
+        schema.users.hasDancingSkills,
+        schema.users.hasManualSkills,
+        schema.users.hasMusicSkills,
+        schema.users.hasSingingSkills
       )
       .where(eq(schema.subscriptions.eventId, eventId))
     return results

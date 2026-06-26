@@ -17,6 +17,8 @@ export type TeamBuildingColumnProps = {
   variant?: TeamBuildingColumnVariant
   /** Placeholder text shown when the column has no children. */
   emptyLabel?: string
+  /** Optional drag handle rendered at the start of the header (e.g. for reordering). */
+  dragHandle?: ReactNode
   /** Member cards. When empty, the placeholder is shown instead. */
   children?: ReactNode
 }
@@ -48,11 +50,14 @@ export function TeamBuildingColumn({
       />
 
       <header className="flex items-start justify-between gap-3">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h3 className="font-semibold text-dark-brown">{props.title}</h3>
-          {props.description && (
-            <p className="m-0 text-sm text-secondary-foreground">{props.description}</p>
-          )}
+        <div className="flex min-w-0 items-start gap-2">
+          {props.dragHandle}
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <h3 className="font-semibold text-dark-brown">{props.title}</h3>
+            {props.description && (
+              <p className="m-0 text-sm text-secondary-foreground">{props.description}</p>
+            )}
+          </div>
         </div>
 
         <span className="shrink-0 text-sm font-semibold text-dark-brown">

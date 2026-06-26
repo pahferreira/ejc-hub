@@ -27,7 +27,7 @@ export function Home() {
 
   return (
     <div className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-8xl">
         <header className="mb-6">
           <h1 className="m-0 text-2xl font-bold text-black sm:text-3xl">
             Bem-vindo{greetingName ? `, ${greetingName}` : ''}! 👋

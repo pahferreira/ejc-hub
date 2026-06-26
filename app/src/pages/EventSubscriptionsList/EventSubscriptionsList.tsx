@@ -127,7 +127,7 @@ export function EventSubscriptionsList() {
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-8xl mx-auto">
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 m-0">Lista de Inscrições</h1>
           <p className="mt-2 text-gray-600">Todos os encontreiros inscritos no próximo encontro</p>
