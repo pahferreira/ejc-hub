@@ -61,7 +61,9 @@ export class TeamBuilding {
         this.#teamInstanceRepository.listTeamInstancesWithDetails(event.id),
       ])
 
-      const instanceNameById = new Map(instances.map((instance) => [instance.id, instance.templateName]))
+      const instanceNameById = new Map(
+        instances.map((instance) => [instance.id, instance.templateName])
+      )
       const membershipUserIdsByTeam =
         await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds(
           instances.map((instance) => instance.id)

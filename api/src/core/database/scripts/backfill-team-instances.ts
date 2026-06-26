@@ -37,12 +37,16 @@ async function main() {
 
   const inserted = await db
     .insert(schema.teamInstances)
-    .values(missingTemplates.map((template) => ({ eventId: currentEvent.id, templateId: template.id })))
+    .values(
+      missingTemplates.map((template) => ({ eventId: currentEvent.id, templateId: template.id }))
+    )
     .returning({ id: schema.teamInstances.id, templateId: schema.teamInstances.templateId })
 
   const nameById = new Map(templates.map((template) => [template.id, template.name]))
   console.log(`Created ${inserted.length} team instance(s):`)
-  inserted.forEach((instance) => console.log(`  - ${nameById.get(instance.templateId)} (${instance.id})`))
+  inserted.forEach((instance) =>
+    console.log(`  - ${nameById.get(instance.templateId)} (${instance.id})`)
+  )
 }
 
 main()

@@ -4,7 +4,10 @@ import { schema } from '../../../core/database/schemas/index.ts'
 import type { TeamMembershipRepository } from '../domain/TeamMembershipRepository.ts'
 
 class DrizzleTeamMembershipRepository implements TeamMembershipRepository {
-  async insertTeamMembership(input: { userId: string; teamInstanceId: string }, executor: DbExecutor = db) {
+  async insertTeamMembership(
+    input: { userId: string; teamInstanceId: string },
+    executor: DbExecutor = db
+  ) {
     const teamMemberships = await executor.insert(schema.teamMemberships).values(input).returning()
 
     return teamMemberships[0]

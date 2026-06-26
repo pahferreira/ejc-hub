@@ -18,8 +18,8 @@ describe('formatAreas', () => {
 
   it('maps active skills to their labels in a stable order', () => {
     expect(formatAreas({ ...noSkills, hasSingingSkills: true, hasMusicSkills: true })).toEqual([
-      'Música',
-      'Canto',
+      'Toca violão',
+      'Canta',
     ])
   })
 })

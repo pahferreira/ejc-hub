@@ -55,10 +55,7 @@ function buildInstance(id: string, name: string) {
   }
 }
 
-function makeRepos(opts: {
-  subscriptions: Sub[]
-  memberships: Map<string, string[]>
-}) {
+function makeRepos(opts: { subscriptions: Sub[]; memberships: Map<string, string[]> }) {
   const eventRepository = {
     findCurrentEvent: vi.fn().mockResolvedValue({ id: EVENT_ID }),
   } as unknown as EventRepository
@@ -83,7 +80,12 @@ function makeRepos(opts: {
     deleteByMemberAndTeam: vi.fn().mockResolvedValue(undefined),
   } as unknown as TeamMembershipRepository
 
-  return { eventRepository, subscriptionRepository, teamInstanceRepository, teamMembershipRepository }
+  return {
+    eventRepository,
+    subscriptionRepository,
+    teamInstanceRepository,
+    teamMembershipRepository,
+  }
 }
 
 describe('TeamBuilding.getCurrentEventBoard', () => {
@@ -134,8 +136,18 @@ describe('TeamBuilding.getCurrentEventBoard', () => {
 
   it('falls back to the first name when the user has no nickname', async () => {
     const subscriptions = [
-      buildSub({ id: 's1', userId: 'u1', status: 'received', user: { name: 'Alice Ribeiro', nickname: null } as Sub['user'] }),
-      buildSub({ id: 's2', userId: 'u2', status: 'received', user: { name: 'Bruno Carvalho', nickname: 'Bru' } as Sub['user'] }),
+      buildSub({
+        id: 's1',
+        userId: 'u1',
+        status: 'received',
+        user: { name: 'Alice Ribeiro', nickname: null } as Sub['user'],
+      }),
+      buildSub({
+        id: 's2',
+        userId: 'u2',
+        status: 'received',
+        user: { name: 'Bruno Carvalho', nickname: 'Bru' } as Sub['user'],
+      }),
     ]
     const repos = makeRepos({ subscriptions, memberships: new Map() })
     const teamBuilding = new TeamBuilding(
