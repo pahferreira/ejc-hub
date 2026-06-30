@@ -24,7 +24,7 @@ export function Welcome() {
       <div className="flex min-h-screen flex-col">
         <Navbar navItems={[]} button={{ label: 'Inscreva-se', onClick: handleLogin }} />
 
-        <main className="flex flex-1 flex-col gap-10 max-w-7xl mx-auto items-center justify-center p-8">
+        <main className="flex flex-1 flex-col gap-10 max-w-8xl mx-auto items-center justify-center p-8">
           <section className="flex w-full flex-col gap-8">
             <div className="w-full flex flex-col items-start gap-2">
               <span className="text-xs uppercase tracking-widest text-black font-light">

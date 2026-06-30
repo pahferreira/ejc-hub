@@ -1,4 +1,5 @@
 import { SubscriptionInput, SubscriptionModel } from '../../../core/database/schemas/index.ts'
+import type { DbExecutor } from '../../../core/database/client.ts'
 import type { SubscriptionStatus } from './subscription.types.ts'
 
 export interface SubscriptionRepository {
@@ -8,14 +9,23 @@ export interface SubscriptionRepository {
   listSubscriptionsByEventId: (eventId: string) => Promise<
     {
       id: string
+      userId: string
       status: SubscriptionStatus
       createdAt: Date
       teams: string[]
       user: {
         name: string
+        nickname: string | null
         email: string
         phone: string | null
         experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
+        hasActingSkills: boolean
+        hasCommunicationSkills: boolean
+        hasCookingSkills: boolean
+        hasDancingSkills: boolean
+        hasManualSkills: boolean
+        hasMusicSkills: boolean
+        hasSingingSkills: boolean
       }
     }[]
   >
@@ -25,7 +35,8 @@ export interface SubscriptionRepository {
   ) => Promise<SubscriptionModel | undefined>
   updateSubscriptionStatus: (
     id: string,
-    status: SubscriptionStatus
+    status: SubscriptionStatus,
+    executor?: DbExecutor
   ) => Promise<SubscriptionModel | undefined>
   countSubscriptionsByStatusForEvent: (
     eventId: string

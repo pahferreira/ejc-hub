@@ -26,13 +26,14 @@ export function TeamHealthCard(props: TeamHealthCardProps) {
   const status = getTeamStatus(props.team.memberCount, props.team.maxCapacity)
   const statusDisplay = teamStatusDisplay[status]
   const remaining = Math.max(0, props.team.maxCapacity - props.team.memberCount)
+  const isFull = remaining === 0
   const statusFillClass =
     status === 'needsMembers' ? 'bg-red' : status === 'spotsAvailable' ? 'bg-blue' : 'bg-green'
 
   return (
-    <section className="overflow-hidden rounded-xl bg-white shadow-md border border-tertiary">
+    <section className="flex h-full flex-col overflow-hidden rounded-xl bg-white shadow-md border border-tertiary">
       <div className={`h-1.5 ${statusFillClass}`} aria-hidden />
-      <div className="flex flex-col gap-4 px-6 py-5">
+      <div className="flex flex-1 flex-col gap-4 px-6 py-5">
         <div className="flex items-start justify-between gap-3">
           <h3 className="m-0 font-serif text-xl text-dark-brown">{props.team.templateName}</h3>
           <Badge variant={statusDisplay.badgeVariant}>{statusDisplay.label}</Badge>
@@ -117,7 +118,11 @@ export function TeamHealthCard(props: TeamHealthCardProps) {
           </span>
         </div>
 
-        <Button onClick={props.onAdd}>+ Adicionar</Button>
+        <div className="mt-auto flex flex-col">
+          <Button onClick={props.onAdd} disabled={isFull}>
+            + Adicionar
+          </Button>
+        </div>
       </div>
     </section>
   )

@@ -51,13 +51,22 @@ export type CurrentEventSubscriptionPayload = {
 
 export type SubscriptionWithDetails = {
   id: string
+  userId: string
   status: SubscriptionStatus
   createdAt: Date
   teams: string[]
   user: {
     name: string
+    nickname: string | null
     email: string
     phone: string | null
     experienceType: ExperienceType
+    hasActingSkills: boolean
+    hasCommunicationSkills: boolean
+    hasCookingSkills: boolean
+    hasDancingSkills: boolean
+    hasManualSkills: boolean
+    hasMusicSkills: boolean
+    hasSingingSkills: boolean
   }
 }

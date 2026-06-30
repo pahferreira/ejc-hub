@@ -20,7 +20,7 @@ type NavbarProps = {
 
 export const Navbar = (props: NavbarProps) => (
   <header className="border-b border-slate-300/10 w-full bg-tertiary">
-    <nav className="flex items-center p-4 w-full max-w-7xl mx-auto justify-between gap-4">
+    <nav className="flex items-center p-4 w-full max-w-8xl mx-auto justify-between gap-4">
       <div className="flex items-center">
         {props.imageSrc && (
           <figure>

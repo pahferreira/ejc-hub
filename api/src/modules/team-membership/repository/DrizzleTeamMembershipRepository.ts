@@ -1,11 +1,14 @@
 import { and, eq, inArray } from 'drizzle-orm'
-import { db } from '../../../core/database/client.ts'
+import { db, type DbExecutor } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type { TeamMembershipRepository } from '../domain/TeamMembershipRepository.ts'
 
 class DrizzleTeamMembershipRepository implements TeamMembershipRepository {
-  async insertTeamMembership(input: { userId: string; teamInstanceId: string }) {
-    const teamMemberships = await db.insert(schema.teamMemberships).values(input).returning()
+  async insertTeamMembership(
+    input: { userId: string; teamInstanceId: string },
+    executor: DbExecutor = db
+  ) {
+    const teamMemberships = await executor.insert(schema.teamMemberships).values(input).returning()
 
     return teamMemberships[0]
   }
@@ -25,8 +28,8 @@ class DrizzleTeamMembershipRepository implements TeamMembershipRepository {
     return results
   }
 
-  async deleteTeamMembership(id: string) {
-    const results = await db
+  async deleteTeamMembership(id: string, executor: DbExecutor = db) {
+    const results = await executor
       .delete(schema.teamMemberships)
       .where(eq(schema.teamMemberships.id, id))
       .returning()
@@ -43,6 +46,20 @@ class DrizzleTeamMembershipRepository implements TeamMembershipRepository {
           eq(schema.teamMemberships.teamInstanceId, teamId)
         )
       )
+
+    return results[0]
+  }
+
+  async deleteByMemberAndTeam(teamId: string, memberId: string, executor: DbExecutor = db) {
+    const results = await executor
+      .delete(schema.teamMemberships)
+      .where(
+        and(
+          eq(schema.teamMemberships.userId, memberId),
+          eq(schema.teamMemberships.teamInstanceId, teamId)
+        )
+      )
+      .returning()
 
     return results[0]
   }

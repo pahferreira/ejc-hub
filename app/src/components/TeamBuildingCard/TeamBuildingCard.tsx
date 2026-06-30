@@ -1,12 +1,16 @@
-import { FiPhone } from 'react-icons/fi'
+import { FiPhone, FiUser } from 'react-icons/fi'
 import { Card } from '../Card/Card'
 import { Pill } from '../Pill/Pill'
+import clsx from 'clsx'
 
 export type TeamBuildingCardProps = {
   /** Person's full name. Used for the title and to derive the avatar initials. */
   name: string
+  /** Nickname shown next to the name (e.g. "Lili"). Hidden when blank. */
+  nickname: string
   /** Optional badge label shown next to the name (e.g. "Novo"). Hidden when absent. */
   badge?: string
+  badgeVariant?: 'blue' | 'red' | 'green'
   /** Optional phone number. The phone line is hidden when absent. */
   phone?: string
   /** Inline attributes joined by a pipe (e.g. ["Música", "Teatro"]). Line hidden when empty. */
@@ -27,6 +31,12 @@ function getInitials(name: string) {
   return (first + last).toUpperCase()
 }
 
+const badgeVariantBackground = {
+  blue: 'bg-blue',
+  red: 'bg-red',
+  green: 'bg-green',
+}
+
 export function TeamBuildingCard(props: TeamBuildingCardProps) {
   const initials = getInitials(props.name)
   const hasAttributes = (props.attributes?.length ?? 0) > 0
@@ -35,7 +45,7 @@ export function TeamBuildingCard(props: TeamBuildingCardProps) {
   return (
     <Card className="cursor-grab transition-shadow hover:shadow-lg active:cursor-grabbing">
       <div className="flex flex-col gap-3">
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary text-sm font-semibold text-dark-brown">
             {props.avatarUrl ? (
               <img src={props.avatarUrl} alt="" className="size-full object-cover" />
@@ -44,31 +54,36 @@ export function TeamBuildingCard(props: TeamBuildingCardProps) {
             )}
           </span>
 
-          <div className="flex min-w-0 flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-semibold text-dark-brown">{props.name}</span>
-              {props.badge && (
-                <span className="inline-flex items-center rounded-full bg-blue px-2.5 py-0.5 text-xs font-medium text-white">
-                  {props.badge}
-                </span>
-              )}
-            </div>
-
-            {props.phone && (
-              <a
-                href={`tel:${props.phone}`}
-                className="inline-flex w-fit items-center gap-1.5 text-sm text-black no-underline hover:underline"
+          <div className="flex min-w-0 flex-col">
+            <span className="font-semibold text-dark-brown">{props.nickname}</span>
+            {props.badge && (
+              <span
+                className={clsx(
+                  'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white w-fit',
+                  props.badgeVariant ? badgeVariantBackground[props.badgeVariant] : 'bg-green'
+                )}
               >
-                <FiPhone className="shrink-0" size={14} aria-hidden="true" />
-                {props.phone}
-              </a>
+                {props.badge}
+              </span>
             )}
           </div>
         </div>
 
-        {hasAttributes && (
-          <p className="m-0 text-sm text-secondary-foreground">{props.attributes?.join(' | ')}</p>
-        )}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-1">
+            <FiUser size={12} />
+            <p className="m-0 text-xs text-secondary-foreground font-medium">{props.name}</p>
+          </div>
+          {props.phone && (
+            <div className="flex items-center gap-1">
+              <FiPhone size={12} />
+              <p className="m-0 text-xs text-secondary-foreground font-medium">{props.phone}</p>
+            </div>
+          )}
+          {hasAttributes && (
+            <p className="m-0 text-xs text-secondary-foreground">{props.attributes?.join(' | ')}</p>
+          )}
+        </div>
 
         {hasPreferences && (
           <>
@@ -79,7 +94,9 @@ export function TeamBuildingCard(props: TeamBuildingCardProps) {
               </span>
               <div className="flex flex-wrap gap-2">
                 {props.preferences?.map((preference) => (
-                  <Pill key={preference}>{preference}</Pill>
+                  <Pill key={preference} variant="primary">
+                    {preference}
+                  </Pill>
                 ))}
               </div>
             </div>

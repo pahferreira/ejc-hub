@@ -8,6 +8,7 @@ import {
 } from '../../../../common/permissions'
 import { Home } from '../../pages/Home'
 import { TeamsPage } from '../../pages/TeamsPage'
+import { TeamBuildingPage } from '../../pages/TeamBuildingPage'
 import { Placeholder } from '../../pages/Placeholder/Placeholder'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 
@@ -45,6 +46,12 @@ export const routes: Route[] = [
     path: ROUTE_PATHS.TEAMS,
     name: 'Equipes',
     component: TeamsPage,
+    permission: TeamInstancePermissions.Read,
+  },
+  {
+    path: ROUTE_PATHS.TEAMS_TEAM_BUILDING,
+    name: 'Montagem',
+    component: TeamBuildingPage,
     permission: TeamInstancePermissions.Read,
   },
   {
