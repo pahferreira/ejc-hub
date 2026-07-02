@@ -27,16 +27,6 @@ const deleteTeamMemberParamSchema = teamIdParamSchema.and(
   })
 )
 
-const patchTeamBodySchema = z
-  .object({
-    firstCoordinatorId: z.uuid().optional(),
-    secondCoordinatorId: z.uuid().optional(),
-  })
-  .refine(
-    (data) => data.firstCoordinatorId || data.secondCoordinatorId,
-    'At least one coordinator is required'
-  )
-
 export function teamRoutes(server: FastifyServerInstance) {
   return () => {
     server.get(
@@ -134,27 +124,5 @@ export function teamRoutes(server: FastifyServerInstance) {
       }
     )
 
-    server.patch(
-      '/teams/:teamId',
-      {
-        schema: { body: patchTeamBodySchema, params: teamIdParamSchema },
-
-        preHandler: authGuard(server, { permissions: [TeamInstancePermissions.Update] }),
-      },
-      async (request, reply) => {
-        try {
-          const { teamId } = request.params
-          const { firstCoordinatorId, secondCoordinatorId } = request.body
-          const team = await teamApp.assignCoordinators(teamId, {
-            firstCoordId: firstCoordinatorId,
-            secondCoordId: secondCoordinatorId,
-          })
-
-          return reply.code(HttpStatus.Ok).send({ team })
-        } catch (error) {
-          fastifyErrorHandler(reply, error)
-        }
-      }
-    )
   }
 }

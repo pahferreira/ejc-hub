@@ -47,3 +47,32 @@ export type AssignmentChange = {
 // Statuses that surface on the board when the member has no team membership.
 export const UNASSIGNED_STATUS: SubscriptionStatus = 'received'
 export const WAITING_LIST_STATUS: SubscriptionStatus = 'waiting_list'
+
+// Coordinator slots for a team instance — three nullable positional slots.
+export type CoordinatorSlots = {
+  first: string | null
+  second: string | null
+  third: string | null
+}
+
+// A person eligible to be selected as a coordinator for a given team.
+export type Candidate = {
+  userId: string
+  name: string
+  /** Nickname, falling back to the user's first name when unset. */
+  nickname: string
+  experienceType: ExperienceType
+  /** Skill-derived labels (e.g. ["Música", "Canto"]). */
+  areas: string[]
+  /** Raw team-instance IDs from the subscription's team preferences. */
+  preferenceTeamIds: string[]
+  /** Resolved names for preferenceTeamIds. */
+  preferences: string[]
+}
+
+export type CandidateListResult = {
+  team: { id: string; name: string }
+  /** Current coordinator slots with positional nulls preserved. */
+  currentCoordinators: CoordinatorSlots
+  candidates: Candidate[]
+}

@@ -15,9 +15,12 @@ import { useTeamsOverviewQuery } from '../../services/teams/useTeamsOverviewQuer
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import type { TeamsListFilters } from '../../services/teams/teams.types'
+import { useAssignCoordinatorDrawer } from './useAssignCoordinatorDrawer'
+import { AssignCoordinatorDrawer } from './AssignCoordinatorDrawer'
 
 export function TeamsPage() {
   const navigate = useNavigate()
+  const drawer = useAssignCoordinatorDrawer()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<TeamsStatusFilter>('all')
   const [sort, setSort] = useState<TeamsSortOption>('name_asc')
@@ -118,12 +121,18 @@ export function TeamsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {visibleTeams.map((team) => (
-                <TeamHealthCard key={team.id} team={team} />
+                <TeamHealthCard
+                  key={team.id}
+                  team={team}
+                  onAssignCoordinator={() => drawer.open({ id: team.id, name: team.templateName })}
+                />
               ))}
             </div>
           )}
         </DashboardSection>
       </div>
+
+      <AssignCoordinatorDrawer {...drawer} />
     </div>
   )
 }

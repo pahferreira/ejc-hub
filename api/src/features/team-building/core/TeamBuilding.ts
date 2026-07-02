@@ -10,6 +10,8 @@ import {
   UNASSIGNED_STATUS,
   WAITING_LIST_STATUS,
   type AssignmentChange,
+  type Candidate,
+  type CandidateListResult,
   type TeamBoard,
   type TeamBoardColumn,
   type TeamBoardMember,
@@ -240,5 +242,124 @@ export class TeamBuilding {
     })
 
     return this.getCurrentEventBoard()
+  }
+
+  // Returns the list of users who subscribed to the event and are not assigned to a team.
+  async listCandidates(teamInstanceId: string): Promise<CandidateListResult> {
+    return this.#withCurrentEvent(async (event) => {
+      const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(event.id)
+      const instanceIds = new Set(instances.map((i) => i.id))
+
+      if (!instanceIds.has(teamInstanceId)) {
+        throw new AppError(`Team instance ${teamInstanceId} does not belong to the current event`)
+      }
+
+      const targetInstance = instances.find((i) => i.id === teamInstanceId)!
+
+      // Build member exclusion set — everyone who has a team membership in the event.
+      const membershipUserIdsByTeam =
+        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds])
+      const memberExclusionSet = new Set<string>()
+      for (const [, userIds] of membershipUserIdsByTeam) {
+        for (const userId of userIds) {
+          memberExclusionSet.add(userId)
+        }
+      }
+
+      // Build coordinator exclusion set from OTHER teams only, and capture the
+      // target team's own coordinator IDs for force-include.
+      const coordinatorIdsByTeam =
+        await this.#teamInstanceRepository.listCoordinatorIdsByTeamInstanceIds([...instanceIds])
+      const otherTeamCoordinatorSet = new Set<string>()
+      const targetCoordinatorSet = new Set<string>()
+      for (const [tid, coordIds] of coordinatorIdsByTeam) {
+        if (tid === teamInstanceId) {
+          for (const id of coordIds) targetCoordinatorSet.add(id)
+        } else {
+          for (const id of coordIds) otherTeamCoordinatorSet.add(id)
+        }
+      }
+
+      const subscriptions = await this.#subscriptionRepository.listSubscriptionsByEventId(event.id)
+      const instanceNameById = new Map(instances.map((i) => [i.id, i.templateName]))
+
+      const candidates: Candidate[] = subscriptions
+        .filter((sub) => {
+          // Always include the target team's own current coordinators.
+          if (targetCoordinatorSet.has(sub.userId)) return true
+          // Exclude members of any team.
+          if (memberExclusionSet.has(sub.userId)) return false
+          // Exclude coordinators of other teams.
+          if (otherTeamCoordinatorSet.has(sub.userId)) return false
+          return true
+        })
+        .map((sub) => ({
+          userId: sub.userId,
+          name: sub.user.name,
+          nickname: resolveNickname(sub.user.name, sub.user.nickname),
+          experienceType: sub.user.experienceType,
+          areas: formatAreas(sub.user),
+          preferenceTeamIds: sub.teams ?? [],
+          preferences: (sub.teams ?? [])
+            .map((tid) => instanceNameById.get(tid))
+            .filter((name): name is string => Boolean(name)),
+        }))
+
+      const currentCoordinators =
+        await this.#teamInstanceRepository.getCoordinatorSlots(teamInstanceId)
+
+      return {
+        team: { id: targetInstance.id, name: targetInstance.templateName },
+        currentCoordinators,
+        candidates,
+      }
+    })
+  }
+
+  // Sets the coordinator slots for a team instance atomically.
+  // `coordinatorUserIds` is positional (index 0 → first slot, etc.).
+  // Passing an empty array clears all slots.
+  async assignCoordinators(teamInstanceId: string, coordinatorUserIds: string[]): Promise<void> {
+    await this.#withCurrentEvent(async (event) => {
+      const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(event.id)
+      const instanceIds = new Set(instances.map((i) => i.id))
+
+      if (!instanceIds.has(teamInstanceId)) {
+        throw new AppError(`Team instance ${teamInstanceId} does not belong to the current event`)
+      }
+
+      // Dedupe while preserving order, then enforce max-3.
+      const seen = new Set<string>()
+      const deduped: string[] = []
+      for (const id of coordinatorUserIds) {
+        if (!seen.has(id)) {
+          seen.add(id)
+          deduped.push(id)
+        }
+      }
+
+      if (deduped.length > 3) {
+        throw new AppError('A team can have at most 3 coordinators')
+      }
+
+      // Each userId must have a subscription in the current event.
+      for (const userId of deduped) {
+        const subscription = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
+          userId,
+          event.id
+        )
+        if (!subscription) {
+          throw new AppError(`No subscription found for user ${userId} in the current event`)
+        }
+      }
+
+      const slots = {
+        first: deduped[0] ?? null,
+        second: deduped[1] ?? null,
+        third: deduped[2] ?? null,
+      }
+
+      await this.#teamInstanceRepository.setCoordinators(teamInstanceId, slots)
+    })
   }
 }

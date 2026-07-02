@@ -147,6 +147,7 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
       .select({
         firstCoordinatorId: schema.teamInstances.firstCoordinatorId,
         secondCoordinatorId: schema.teamInstances.secondCoordinatorId,
+        thirdCoordinatorId: schema.teamInstances.thirdCoordinatorId,
       })
       .from(schema.teamInstances)
       .where(eq(schema.teamInstances.id, teamInstanceId))
@@ -157,9 +158,11 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
       return []
     }
 
-    const coordinatorIds = [row.firstCoordinatorId, row.secondCoordinatorId].filter(
-      (id): id is string => id !== null
-    )
+    const coordinatorIds = [
+      row.firstCoordinatorId,
+      row.secondCoordinatorId,
+      row.thirdCoordinatorId,
+    ].filter((id): id is string => id !== null)
 
     if (coordinatorIds.length === 0) {
       return []
@@ -206,7 +209,11 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
 
   async updateTeamInstance(
     id: string,
-    input: { firstCoordinatorId?: string | null; secondCoordinatorId?: string | null }
+    input: {
+      firstCoordinatorId?: string | null
+      secondCoordinatorId?: string | null
+      thirdCoordinatorId?: string | null
+    }
   ) {
     const updated = await db
       .update(schema.teamInstances)
@@ -224,6 +231,43 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
     }))
     const teams = await db.insert(schema.teamInstances).values(teamInstancesToInsert).returning()
     return teams
+  }
+
+  async getCoordinatorSlots(teamInstanceId: string) {
+    const rows = await db
+      .select({
+        firstCoordinatorId: schema.teamInstances.firstCoordinatorId,
+        secondCoordinatorId: schema.teamInstances.secondCoordinatorId,
+        thirdCoordinatorId: schema.teamInstances.thirdCoordinatorId,
+      })
+      .from(schema.teamInstances)
+      .where(eq(schema.teamInstances.id, teamInstanceId))
+      .limit(1)
+
+    const row = rows[0]
+    if (!row) {
+      return { first: null, second: null, third: null }
+    }
+
+    return {
+      first: row.firstCoordinatorId,
+      second: row.secondCoordinatorId,
+      third: row.thirdCoordinatorId,
+    }
+  }
+
+  async setCoordinators(
+    teamInstanceId: string,
+    slots: { first: string | null; second: string | null; third: string | null }
+  ) {
+    await db
+      .update(schema.teamInstances)
+      .set({
+        firstCoordinatorId: slots.first,
+        secondCoordinatorId: slots.second,
+        thirdCoordinatorId: slots.third,
+      })
+      .where(eq(schema.teamInstances.id, teamInstanceId))
   }
 }
 
