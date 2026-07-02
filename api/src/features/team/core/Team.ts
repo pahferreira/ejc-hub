@@ -58,5 +58,4 @@ export class Team {
 
     return removedTeamMembership
   }
-
 }

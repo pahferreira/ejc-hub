@@ -123,6 +123,5 @@ export function teamRoutes(server: FastifyServerInstance) {
         }
       }
     )
-
   }
 }
