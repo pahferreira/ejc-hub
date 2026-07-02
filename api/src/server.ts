@@ -22,7 +22,9 @@ const server = fastify({
 server.setSerializerCompiler(serializerCompiler)
 server.setValidatorCompiler(validatorCompiler)
 
-server.register(cors, {})
+server.register(cors, {
+  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
+})
 
 server.register(Auth0, {
   domain: env.AUTH_DOMAIN,

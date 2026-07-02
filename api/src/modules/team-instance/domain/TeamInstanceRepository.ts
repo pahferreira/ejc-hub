@@ -59,4 +59,13 @@ export interface TeamInstanceRepository {
   deleteTeamInstance: (id: string) => Promise<TeamInstanceModel>
   updateTeamInstance: (id: string, input: Partial<TeamInstanceInput>) => Promise<TeamInstanceModel>
   bulkInsertTeamInstances: (eventId: string, templateIds: string[]) => Promise<TeamInstanceModel[]>
+  getCoordinatorSlots: (teamInstanceId: string) => Promise<{
+    first: string | null
+    second: string | null
+    third: string | null
+  }>
+  setCoordinators: (
+    teamInstanceId: string,
+    slots: { first: string | null; second: string | null; third: string | null }
+  ) => Promise<void>
 }

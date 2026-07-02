@@ -58,42 +58,4 @@ export class Team {
 
     return removedTeamMembership
   }
-
-  async assignCoordinators(
-    teamId: string,
-    input: { firstCoordId?: string; secondCoordId?: string }
-  ) {
-    if (input.firstCoordId) {
-      const firstCoordMembershipExists = await this.#verifyCoordMembership(
-        teamId,
-        input.firstCoordId
-      )
-      if (!firstCoordMembershipExists) {
-        throw new AppError('first coordinator must be member of the team')
-      }
-    }
-
-    if (input.secondCoordId) {
-      const secondCoordMembershipExists = await this.#verifyCoordMembership(
-        teamId,
-        input.secondCoordId
-      )
-      if (!secondCoordMembershipExists) {
-        throw new AppError('second coordinator must be member of the team')
-      }
-    }
-
-    const updatedTeam = await this.#teamInstanceRepository.updateTeamInstance(teamId, {
-      firstCoordinatorId: input.firstCoordId,
-      secondCoordinatorId: input.secondCoordId,
-    })
-
-    return updatedTeam
-  }
-
-  async #verifyCoordMembership(teamId: string, coordId: string) {
-    const membership = await this.#teamMembershipRepository.selectByMemberAndTeam(teamId, coordId)
-
-    return membership != null
-  }
 }

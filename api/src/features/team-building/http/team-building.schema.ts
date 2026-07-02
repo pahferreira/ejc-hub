@@ -18,3 +18,11 @@ export const applyAssignmentsBodySchema = z.object({
 })
 
 export type ApplyAssignmentsBody = z.infer<typeof applyAssignmentsBodySchema>
+
+export const teamInstanceParamsSchema = z.object({
+  teamInstanceId: z.uuid(),
+})
+
+export const setCoordinatorsBodySchema = z.object({
+  coordinatorIds: z.array(z.uuid()).max(3),
+})
