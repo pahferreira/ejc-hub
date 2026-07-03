@@ -1,0 +1,11 @@
+# Build context is the repo root (see api/Dockerfile) — keep it lean and never
+# bake secrets or local installs into the image.
+.git
+.github
+**/node_modules
+**/.env
+**/.env.*
+**/dist
+**/coverage
+app
+*.md

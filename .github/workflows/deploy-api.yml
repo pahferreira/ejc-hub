@@ -98,10 +98,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Context is the repo root: the api imports ../common via relative paths,
+      # so the image must contain both packages (see api/Dockerfile).
       - name: Build & push arm64 image
         uses: docker/build-push-action@v6
         with:
-          context: ./api
+          context: .
           file: ./api/Dockerfile
           platforms: linux/arm64
           push: true

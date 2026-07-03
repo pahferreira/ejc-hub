@@ -1,28 +1,30 @@
+# Build context must be the REPO ROOT (not api/): the api imports shared code
+# from ../common via relative paths, so the image needs both packages laid out
+# exactly like the repo (/app/api + /app/common).
 FROM node:24-alpine AS base
 
 # -------------
 
 FROM base AS deps
-WORKDIR /app
+WORKDIR /app/api
 
-COPY package*.json ./
+COPY api/package*.json ./
 
 RUN npm install --omit=dev
 
 # -------------
 
 FROM base AS runner
-WORKDIR /app
+WORKDIR /app/api
 
 ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 api
 
-RUN chown api:nodejs .
-
-COPY --chown=api:nodejs . .
-COPY --from=deps /app/node_modules ./node_modules
+COPY --chown=api:nodejs api/ /app/api/
+COPY --chown=api:nodejs common/ /app/common/
+COPY --from=deps --chown=api:nodejs /app/api/node_modules ./node_modules
 
 USER api
 
@@ -31,4 +33,6 @@ EXPOSE 3333
 ENV PORT=3333
 ENV HOSTNAME="0.0.0.0"
 
-ENTRYPOINT ["npm", "run", "start"]
+# CMD (not ENTRYPOINT) so one-off commands can replace it, e.g.
+# `docker compose run --rm api npm run db:migrate`.
+CMD ["npm", "run", "start"]
