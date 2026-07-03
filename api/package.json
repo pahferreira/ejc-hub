@@ -14,8 +14,9 @@
     "format:fix": "prettier --write .",
     "db:migrate": "drizzle-kit migrate",
     "db:prepare": "drizzle-kit generate",
-    "db:seed": "node --env-file=.env --experimental-strip-types --no-warnings src/core/database/seeds/index.ts",
+    "db:seed": "node --env-file-if-exists=.env --experimental-strip-types --no-warnings src/core/database/seeds/index.ts",
     "db:seed:team-templates": "npm run db:seed -- team-templates",
+    "db:seed:events": "npm run db:seed -- events",
     "db:seed:subscriptions": "npm run db:seed -- subscriptions",
     "db:seed:all": "npm run db:seed -- all",
     "test": "vitest run",
@@ -26,6 +27,7 @@
   "license": "ISC",
   "dependencies": {
     "@auth0/auth0-fastify-api": "^1.0.2",
+    "@faker-js/faker": "^10.4.0",
     "@fastify/cors": "^11.2.0",
     "dotenv": "^16.5.0",
     "drizzle-kit": "^0.31.1",
@@ -38,7 +40,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
-    "@faker-js/faker": "^10.4.0",
     "@tsconfig/node24": "^24.0.1",
     "@types/node": "^22.15.29",
     "@types/pg": "^8.15.4",

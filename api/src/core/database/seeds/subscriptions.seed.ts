@@ -1,8 +1,9 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import { faker } from '@faker-js/faker/locale/pt_BR'
 import { db } from '../client.ts'
 import { schema } from '../schemas/index.ts'
 import { TEAM_TEMPLATE_KEYS } from './team-templates.seed.ts'
+import { TEST_EVENT_NAME } from './events.seed.ts'
 
 const TOTAL_USERS = 300
 const TEAM_PICKS_PER_SUBSCRIPTION = 3
@@ -48,29 +49,43 @@ function buildRandomPreviousExperienceTeams(): string[] {
 }
 
 export async function seedSubscriptions() {
-  const [currentEvent] = await db
+  const [testEvent] = await db
     .select({ id: schema.events.id, name: schema.events.name })
     .from(schema.events)
-    .where(eq(schema.events.isCurrent, true))
+    .where(and(eq(schema.events.name, TEST_EVENT_NAME), isNull(schema.events.deletedAt)))
     .limit(1)
 
-  if (!currentEvent) {
-    throw new Error(
-      'No current event found. Create an event and mark it as `is_current = true` before seeding subscriptions.'
-    )
+  if (!testEvent) {
+    throw new Error(`Test event "${TEST_EVENT_NAME}" not found. Run the events seed first.`)
+  }
+
+  // This seed is not row-idempotent (every run generates new random users), so
+  // skip entirely once the test event has any subscription.
+  const [existingSubscription] = await db
+    .select({ id: schema.subscriptions.id })
+    .from(schema.subscriptions)
+    .where(eq(schema.subscriptions.eventId, testEvent.id))
+    .limit(1)
+
+  if (existingSubscription) {
+    return {
+      eventId: testEvent.id,
+      eventName: testEvent.name,
+      skipped: true,
+      reason: 'Test event already has subscriptions.',
+    }
   }
 
   const teamInstances = await db
     .select({ id: schema.teamInstances.id })
     .from(schema.teamInstances)
-    .where(eq(schema.teamInstances.eventId, currentEvent.id))
+    .where(eq(schema.teamInstances.eventId, testEvent.id))
 
   if (teamInstances.length < TEAM_PICKS_PER_SUBSCRIPTION) {
     throw new Error(
-      `Found ${teamInstances.length} team instance(s) for event "${currentEvent.name}" (${currentEvent.id}). ` +
+      `Found ${teamInstances.length} team instance(s) for event "${testEvent.name}" (${testEvent.id}). ` +
         `Subscriptions require ${TEAM_PICKS_PER_SUBSCRIPTION} distinct team picks each. ` +
-        `Please create the team instances for this event via the team feature flow before running this seed ` +
-        `(the seed will not auto-create them).`
+        `Run the events seed first (it creates the team instances for the test event).`
     )
   }
 
@@ -119,7 +134,7 @@ export async function seedSubscriptions() {
 
   const subscriptionsToInsert = insertedUsers.map((user) => ({
     userId: user.id,
-    eventId: currentEvent.id,
+    eventId: testEvent.id,
     status: faker.helpers.arrayElement<StatusOption>([...STATUS_OPTIONS]),
     availability: buildRandomAvailability(),
     details: faker.helpers.maybe(() => faker.lorem.sentence(), { probability: 0.3 }) ?? '',
@@ -145,8 +160,8 @@ export async function seedSubscriptions() {
   }
 
   return {
-    eventId: currentEvent.id,
-    eventName: currentEvent.name,
+    eventId: testEvent.id,
+    eventName: testEvent.name,
     usersInserted: insertedUsers.length,
     subscriptionsInserted: insertedSubscriptions.length,
     subscriptionOptionsInserted: subscriptionOptionsToInsert.length,

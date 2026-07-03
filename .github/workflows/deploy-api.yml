@@ -144,6 +144,14 @@ jobs:
           .github/scripts/ssm-run.sh "${{ steps.instance.outputs.id }}" \
             "cd /opt/app && docker compose run --rm api npm run db:migrate"
 
+      # Seed baseline data: team templates, the "Evento de Teste" event (+ its
+      # team instances) and fake subscriptions. Safe to re-run — templates and
+      # event are idempotent, subscriptions skip once the test event has any.
+      - name: Seed database (SSM)
+        run: |
+          .github/scripts/ssm-run.sh "${{ steps.instance.outputs.id }}" \
+            "cd /opt/app && docker compose run --rm api npm run db:seed:all"
+
       # Recreate the api container on the new image.
       - name: Restart service (SSM)
         run: |
