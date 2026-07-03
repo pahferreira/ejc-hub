@@ -103,7 +103,7 @@ export async function seedSubscriptions() {
       email,
       phone: faker.phone.number(),
       name: `${firstName} ${lastName}`,
-      nickname: faker.helpers.maybe(() => faker.person.firstName(), { probability: 0.4 }) ?? null,
+      nickname: firstName,
       pictureUrl: faker.helpers.maybe(() => faker.image.avatar(), { probability: 0.5 }) ?? null,
       dateOfBirth: faker.date.birthdate({ min: 18, max: 60, mode: 'age' }),
       emergencyContactName: faker.person.fullName(),
