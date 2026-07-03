@@ -28,6 +28,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
+  ECR_REGISTRY: 872583281810.dkr.ecr.us-east-1.amazonaws.com
   ECR_REPOSITORY: 872583281810.dkr.ecr.us-east-1.amazonaws.com/ponto-ejc-prod-api
   INSTANCE_TAG_NAME: ponto-ejc-prod-instance
   HEALTHCHECK_URL: https://api.pontoejc.com/health
@@ -131,11 +132,13 @@ jobs:
           echo "id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
 
       # Pull the freshly built :latest onto the instance FIRST so migrations run
-      # from the new image, not the stale locally-cached one.
+      # from the new image, not the stale locally-cached one. ECR auth tokens
+      # expire after 12h, so the instance's boot-time docker login is stale by
+      # deploy time — re-authenticate (with the instance role) before pulling.
       - name: Pull new image (SSM)
         run: |
           .github/scripts/ssm-run.sh "${{ steps.instance.outputs.id }}" \
-            "cd /opt/app && docker compose pull"
+            "aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }} && cd /opt/app && docker compose pull"
 
       # Run drizzle migrations BEFORE flipping the service. Keep them
       # expand/contract (backward compatible) — there is a brief version overlap.
