@@ -1,3 +1,4 @@
+import type { DefaultValues } from 'react-hook-form'
 import type { SyncedUser } from '../../../services/users/users.types'
 import type { EventSubscriptionFormInput } from './eventSubscription.schema'
 
@@ -13,7 +14,11 @@ function syncedUserSkillsToFormValues(user: SyncedUser): string[] {
   return out
 }
 
-export function syncedUserToFormDefaults(user: SyncedUser): EventSubscriptionFormInput {
+// DefaultValues (deep-partial) rather than the full input type: gender is a
+// required form field the synced user doesn't carry — the subscriber picks it.
+export function syncedUserToFormDefaults(
+  user: SyncedUser
+): DefaultValues<EventSubscriptionFormInput> {
   return {
     fullName: user.name ?? '',
     nickname: user.nickname ?? '',

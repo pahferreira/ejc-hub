@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
-import type { EventSubscriptionFormInput } from '../useEventSubscriptionForm/eventSubscription.schema'
+import type {
+  EventSubscriptionFormInput,
+  EventSubscriptionFormOutput,
+} from '../useEventSubscriptionForm/eventSubscription.schema'
 import type { StepId } from '../useSubscriptionWizard/subscriptionWizardConfig'
 import { STEPS } from '../useSubscriptionWizard/subscriptionWizardConfig'
 
@@ -19,7 +22,7 @@ type UseSubscriptionFormPersistenceReturn = {
 }
 
 function loadPersistedData(
-  form: UseFormReturn<EventSubscriptionFormInput>,
+  form: UseFormReturn<EventSubscriptionFormInput, unknown, EventSubscriptionFormOutput>,
   currentStepRef: React.MutableRefObject<StepId>
 ): StepId | null {
   try {
@@ -40,7 +43,7 @@ function loadPersistedData(
 }
 
 export function useSubscriptionFormPersistence(
-  form: UseFormReturn<EventSubscriptionFormInput>
+  form: UseFormReturn<EventSubscriptionFormInput, unknown, EventSubscriptionFormOutput>
 ): UseSubscriptionFormPersistenceReturn {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const currentStepRef = useRef<StepId>('personal')

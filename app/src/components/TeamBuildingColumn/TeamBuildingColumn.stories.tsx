@@ -25,10 +25,16 @@ const members = (
   <>
     <TeamBuildingCard
       name="Alice Ribeiro"
+      nickname="Alice"
       phone="(41) 90427-7888"
       attributes={['Música', 'Teatro']}
     />
-    <TeamBuildingCard name="Bruno Carvalho" phone="(41) 91234-5678" attributes={['Cozinha']} />
+    <TeamBuildingCard
+      name="Bruno Carvalho"
+      nickname="Bruno"
+      phone="(41) 91234-5678"
+      attributes={['Cozinha']}
+    />
   </>
 )
 

@@ -1,4 +1,4 @@
-import { Permission } from "../permissions.types";
+import type { Permission } from "../permissions.types";
 
 /**
  * Helper function to check if user has permission

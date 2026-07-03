@@ -23,7 +23,7 @@ const sampleOptions: Option[] = [
 ]
 
 const SelectorWrapper = (args: React.ComponentProps<typeof Selector>) => {
-  const [selected, setSelected] = useState<Option | null>(args.selected || null)
+  const [selected, setSelected] = useState<Option | undefined>(args.selected)
 
   return (
     <div style={{ width: '320px' }}>
