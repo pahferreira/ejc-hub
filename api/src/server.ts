@@ -44,7 +44,7 @@ server.register(teamBuildingRoutes(server))
 
 async function startServer() {
   try {
-    await server.listen({ port: env.PORT })
+    await server.listen({ port: env.PORT, host: '0.0.0.0' })
     server.log.info(`Server is running on http://localhost:${env.PORT}`)
   } catch (err) {
     server.log.error(err)
