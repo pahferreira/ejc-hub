@@ -19,6 +19,12 @@ WORKDIR /app/api
 
 ENV NODE_ENV=production
 
+# RDS serves certificates signed by Amazon's RDS CA, which is not in Node's
+# default trust store — without this, sslmode=require fails chain verification
+# (SELF_SIGNED_CERT_IN_CHAIN). NODE_EXTRA_CA_CERTS appends it process-wide.
+ADD --chmod=444 https://truststore.pki.rds.amazonaws.com/us-east-1/us-east-1-bundle.pem /etc/ssl/certs/rds-us-east-1-bundle.pem
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/rds-us-east-1-bundle.pem
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 api
 
