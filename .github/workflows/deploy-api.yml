@@ -1,0 +1,165 @@
+name: Deploy API
+run-name: Deploy API (${{ github.sha }})
+
+# Deploys the Fastify API to the prod EC2 (Graviton/arm64) instance.
+# Triggers on merges to main that touch the API or the shared package.
+# NOTE: common/** MUST be here — otherwise shared-code changes deploy stale.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/**'
+      - 'common/**'
+      - '.github/workflows/deploy-api.yml'
+      - '.github/scripts/ssm-run.sh'
+  # Allow manual redeploys / rollbacks from the Actions tab.
+  workflow_dispatch:
+
+# One API deploy at a time. Do not cancel an in-flight deploy (a half-applied
+# migration + image flip is worse than waiting).
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # required for AWS OIDC
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: 872583281810.dkr.ecr.us-east-1.amazonaws.com/ponto-ejc-prod-api
+  INSTANCE_TAG_NAME: ponto-ejc-prod-instance
+  HEALTHCHECK_URL: https://api.pontoejc.com/health
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # CI gates — re-run lint + tests on main before we ship. Self-contained so the
+  # deploy job has a single, legible dependency.
+  # ---------------------------------------------------------------------------
+  gate:
+    name: CI gates (lint + tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install deps (api)
+        working-directory: ./api
+        run: npm ci
+
+      - name: Lint
+        working-directory: ./api
+        run: npm run lint
+
+      - name: Test
+        working-directory: ./api
+        run: npm test -- --passWithNoTests
+
+  # ---------------------------------------------------------------------------
+  # Build the arm64 image, push :sha + :latest, run migrations, flip the service.
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Build & deploy
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Variables (AWS_DEPLOY_ROLE_ARN) live on this environment. The OIDC token's
+    # sub becomes repo:pahferreira/ejc-hub:environment:production — the deploy
+    # role's trust policy must match that subject.
+    environment:
+      name: production
+      url: https://api.pontoejc.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Graviton (t4g.micro) runs arm64. A non-arm image crash-loops, so build
+      # under QEMU emulation with Buildx.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build & push arm64 image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          file: ./api/Dockerfile
+          platforms: linux/arm64
+          push: true
+          # Single-platform image (not a multi-arch index). provenance:false keeps
+          # the manifest simple so `docker compose pull` on the instance is happy.
+          provenance: false
+          tags: |
+            ${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+            ${{ env.ECR_REPOSITORY }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Resolve the instance id at runtime (it changes on user_data replacement —
+      # never hardcode it). Tag lookup is the stable identifier.
+      - name: Resolve target instance id
+        id: instance
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=${INSTANCE_TAG_NAME}" \
+                      "Name=instance-state-name,Values=running" \
+            --query "Reservations[].Instances[].InstanceId" \
+            --output text)
+          if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ]; then
+            echo "::error::No running instance found for tag Name=${INSTANCE_TAG_NAME}"
+            exit 1
+          fi
+          echo "Resolved instance: $INSTANCE_ID"
+          echo "id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
+
+      # Pull the freshly built :latest onto the instance FIRST so migrations run
+      # from the new image, not the stale locally-cached one.
+      - name: Pull new image (SSM)
+        run: |
+          .github/scripts/ssm-run.sh "${{ steps.instance.outputs.id }}" \
+            "cd /opt/app && docker compose pull"
+
+      # Run drizzle migrations BEFORE flipping the service. Keep them
+      # expand/contract (backward compatible) — there is a brief version overlap.
+      - name: Run DB migrations (SSM)
+        run: |
+          .github/scripts/ssm-run.sh "${{ steps.instance.outputs.id }}" \
+            "cd /opt/app && docker compose run --rm api npm run db:migrate"
+
+      # Recreate the api container on the new image.
+      - name: Restart service (SSM)
+        run: |
+          .github/scripts/ssm-run.sh "${{ steps.instance.outputs.id }}" \
+            "cd /opt/app && docker compose up -d"
+
+      - name: Health check
+        run: |
+          echo "Polling ${HEALTHCHECK_URL} ..."
+          for i in $(seq 1 30); do
+            if curl -fsS --max-time 5 "${HEALTHCHECK_URL}" | grep -q '"message":"OK"'; then
+              echo "API healthy."
+              exit 0
+            fi
+            echo "attempt $i: not healthy yet, retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::API did not become healthy within timeout"
+          exit 1

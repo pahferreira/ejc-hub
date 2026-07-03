@@ -1,0 +1,145 @@
+name: Deploy SPA
+run-name: Deploy SPA (${{ github.sha }})
+
+# Builds the React/Vite SPA and ships it to S3 + CloudFront.
+# Triggers on merges to main that touch the app or the shared package.
+# NOTE: common/** MUST be here — otherwise shared-code changes deploy stale.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/**'
+      - 'common/**'
+      - '.github/workflows/deploy-spa.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-spa
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # required for AWS OIDC
+
+env:
+  AWS_REGION: us-east-1
+  SPA_BUCKET: ponto-ejc-prod-spa-bucket
+  CLOUDFRONT_DISTRIBUTION_ID: E77XKOGICDSQS
+  # Build-time public config (baked into the bundle — not secret).
+  VITE_AUTH0_DOMAIN: dev-crnyfuq63ewvzz16.us.auth0.com
+  VITE_AUTH0_AUDIENCE: api.pontoejc.com
+  VITE_API_URL: https://api.pontoejc.com
+
+jobs:
+  gate:
+    name: CI gates (lint + tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install deps (app)
+        working-directory: ./app
+        run: npm ci
+
+      - name: Lint
+        working-directory: ./app
+        run: npm run lint
+
+      # App tests run in a real browser (Storybook + Vitest browser mode), so we
+      # need a Chromium install — mirrors the PR CI job.
+      - name: Get Playwright version
+        id: pw
+        working-directory: ./app
+        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Playwright browser (Chromium)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        working-directory: ./app
+        run: npx playwright install chromium
+
+      - name: Install Playwright OS deps
+        working-directory: ./app
+        run: npx playwright install-deps chromium
+
+      - name: Test
+        working-directory: ./app
+        run: npm test -- --passWithNoTests
+
+  deploy:
+    name: Build & deploy
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Variables (AWS_DEPLOY_ROLE_ARN, VITE_AUTH0_CLIENT_ID) live on this
+    # environment. The OIDC token's sub becomes
+    # repo:pahferreira/ejc-hub:environment:production — the deploy role's trust
+    # policy must match that subject.
+    environment:
+      name: production
+      url: https://pontoejc.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install deps (app)
+        working-directory: ./app
+        run: npm ci
+
+      - name: Build
+        working-directory: ./app
+        env:
+          # Client id comes from an environment variable (public, but tenant-specific).
+          VITE_AUTH0_CLIENT_ID: ${{ vars.VITE_AUTH0_CLIENT_ID }}
+        run: npm run build
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Upload hashed assets with a long immutable cache. index.html is excluded
+      # here so it is neither uploaded with the long cache nor deleted.
+      - name: Sync hashed assets to S3
+        working-directory: ./app
+        run: |
+          aws s3 sync dist/ "s3://${SPA_BUCKET}" \
+            --delete \
+            --exclude index.html \
+            --cache-control "public, max-age=31536000, immutable"
+
+      # index.html must never be cached — it points at the current hashed assets.
+      - name: Upload index.html (no-cache)
+        working-directory: ./app
+        run: |
+          aws s3 cp dist/index.html "s3://${SPA_BUCKET}/index.html" \
+            --cache-control "no-cache, no-store, must-revalidate" \
+            --content-type "text/html"
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${CLOUDFRONT_DISTRIBUTION_ID}" \
+            --paths "/*"
