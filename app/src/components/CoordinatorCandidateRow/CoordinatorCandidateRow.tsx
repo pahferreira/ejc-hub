@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { FiCheck } from 'react-icons/fi'
 import { Badge } from '../Badge/Badge'
 import { TeamAvatar } from '../TeamAvatar/TeamAvatar'
 import { experienceLabels } from '../../pages/TeamBuildingPage/experience'
@@ -28,6 +29,10 @@ export type CoordinatorCandidateRowProps = {
   teams: string[]
   /** Whether this candidate has listed this team among their preferences. */
   preferredThisTeam: boolean
+  /** Whether the candidate has any prior coordinator experience. */
+  hasCoordinatorExperience?: boolean
+  /** Names of the teams the candidate has coordinated in past events. */
+  coordinatorExperienceTeams?: string[]
   selected: boolean
   disabled: boolean
   onToggle: () => void
@@ -37,6 +42,22 @@ export function CoordinatorCandidateRow(props: CoordinatorCandidateRowProps) {
   const experience = experienceLabels[props.experienceType]
   const badgeVariant = experienceBadgeVariant[props.experienceType]
   const initials = getInitials(props.name)
+
+  const experienceTeams = props.coordinatorExperienceTeams ?? []
+
+  // Prefer the concrete team list; fall back to a generic label when the
+  // candidate self-declared experience but we have no recorded teams.
+  const coordinatorExperience =
+    experienceTeams.length > 0 ? (
+      <span className="text-xs font-medium text-primary">
+        Coordenou: {experienceTeams.join(', ')}
+      </span>
+    ) : props.hasCoordinatorExperience ? (
+      <span className="flex items-center gap-1 text-xs font-medium text-primary">
+        <FiCheck aria-hidden="true" className="h-3 w-3 shrink-0" />
+        Possui experiência com coordenação
+      </span>
+    ) : null
 
   return (
     <button
@@ -96,6 +117,7 @@ export function CoordinatorCandidateRow(props: CoordinatorCandidateRowProps) {
         {props.areas.length > 0 && (
           <span className="text-xs text-dark-brown/60">{props.areas.join(' | ')}</span>
         )}
+        {coordinatorExperience}
       </div>
 
       {/* Right-aligned team preference avatars */}

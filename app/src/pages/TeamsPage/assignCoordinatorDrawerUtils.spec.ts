@@ -22,6 +22,8 @@ const makeCandidate = (overrides: Partial<CoordinatorCandidate> = {}): Coordinat
   areas: [],
   preferenceTeamIds: [],
   preferences: [],
+  hasCoordinatorExperience: false,
+  coordinatorExperienceTeams: [],
   ...overrides,
 })
 

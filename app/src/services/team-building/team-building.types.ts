@@ -59,6 +59,10 @@ export type CoordinatorCandidate = {
   preferenceTeamIds: string[]
   /** Resolved names for preferenceTeamIds. */
   preferences: string[]
+  /** Whether the candidate has any prior coordinator experience. */
+  hasCoordinatorExperience: boolean
+  /** Names of the teams the candidate has coordinated in past events. */
+  coordinatorExperienceTeams: string[]
 }
 
 export type CandidateListResponse = {

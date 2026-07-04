@@ -38,6 +38,7 @@ function buildSub(overrides: Partial<Sub> & Pick<Sub, 'id' | 'userId' | 'status'
       email: 'm@e.com',
       phone: null,
       experienceType: 'newbie',
+      hasCoordinatorExperience: false,
       ...noSkills,
     },
     ...overrides,
@@ -61,6 +62,7 @@ function makeRepos(opts: {
   subscriptions: Sub[]
   memberships: Map<string, string[]>
   coordinators?: Map<string, string[]>
+  coordinatorExperience?: Map<string, string[]>
   coordinatorSlots?: CoordinatorSlots
 }) {
   const eventRepository = {
@@ -80,6 +82,9 @@ function makeRepos(opts: {
       .fn()
       .mockResolvedValue([buildInstance(TEAM_A, 'Liturgia'), buildInstance(TEAM_B, 'Música')]),
     listCoordinatorIdsByTeamInstanceIds: vi.fn().mockResolvedValue(opts.coordinators ?? new Map()),
+    listCoordinatorExperienceByUserIds: vi
+      .fn()
+      .mockResolvedValue(opts.coordinatorExperience ?? new Map()),
     getCoordinatorSlots: vi
       .fn()
       .mockResolvedValue(opts.coordinatorSlots ?? { first: null, second: null, third: null }),
@@ -302,6 +307,75 @@ describe('TeamBuilding.listCandidates', () => {
     await expect(tb.listCandidates('foreign-team')).rejects.toThrow(
       /does not belong to the current event/
     )
+  })
+
+  it('sorts candidates alphabetically by nickname', async () => {
+    const subscriptions = [
+      buildSub({
+        id: 's1',
+        userId: 'u1',
+        status: 'received',
+        user: { name: 'Carla Souza', nickname: 'Carla' } as Sub['user'],
+      }),
+      buildSub({
+        id: 's2',
+        userId: 'u2',
+        status: 'received',
+        user: { name: 'Ana Lima', nickname: 'Ana' } as Sub['user'],
+      }),
+      buildSub({
+        id: 's3',
+        userId: 'u3',
+        status: 'received',
+        user: { name: 'Bruno Dias', nickname: 'Bruno' } as Sub['user'],
+      }),
+    ]
+    const repos = makeRepos({ subscriptions, memberships: new Map() })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    const result = await tb.listCandidates(TEAM_A)
+
+    expect(result.candidates.map((c) => c.nickname)).toEqual(['Ana', 'Bruno', 'Carla'])
+  })
+
+  it('returns coordinator experience teams and derives the flag', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'received' }), // past coordination
+      buildSub({
+        id: 's2',
+        userId: 'u2',
+        status: 'received',
+        user: {
+          name: 'Self Declared',
+          nickname: 'Self',
+          hasCoordinatorExperience: true,
+        } as Sub['user'],
+      }), // self-declared only, no history
+      buildSub({ id: 's3', userId: 'u3', status: 'received' }), // no experience at all
+    ]
+    const coordinatorExperience = new Map([['u1', ['Liturgia', 'Música']]])
+    const repos = makeRepos({ subscriptions, memberships: new Map(), coordinatorExperience })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    const result = await tb.listCandidates(TEAM_A)
+    const byId = new Map(result.candidates.map((c) => [c.userId, c]))
+
+    expect(byId.get('u1')?.coordinatorExperienceTeams).toEqual(['Liturgia', 'Música'])
+    expect(byId.get('u1')?.hasCoordinatorExperience).toBe(true)
+    expect(byId.get('u2')?.coordinatorExperienceTeams).toEqual([])
+    expect(byId.get('u2')?.hasCoordinatorExperience).toBe(true) // self-declared
+    expect(byId.get('u3')?.coordinatorExperienceTeams).toEqual([])
+    expect(byId.get('u3')?.hasCoordinatorExperience).toBe(false)
   })
 
   it('returns currentCoordinators positionally with nulls preserved', async () => {

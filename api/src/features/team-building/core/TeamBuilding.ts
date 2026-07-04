@@ -283,27 +283,44 @@ export class TeamBuilding {
       const subscriptions = await this.#subscriptionRepository.listSubscriptionsByEventId(event.id)
       const instanceNameById = new Map(instances.map((i) => [i.id, i.templateName]))
 
-      const candidates: Candidate[] = subscriptions
-        .filter((sub) => {
-          // Always include the target team's own current coordinators.
-          if (targetCoordinatorSet.has(sub.userId)) return true
-          // Exclude members of any team.
-          if (memberExclusionSet.has(sub.userId)) return false
-          // Exclude coordinators of other teams.
-          if (otherTeamCoordinatorSet.has(sub.userId)) return false
-          return true
+      const eligibleSubscriptions = subscriptions.filter((sub) => {
+        // Always include the target team's own current coordinators.
+        if (targetCoordinatorSet.has(sub.userId)) return true
+        // Exclude members of any team.
+        if (memberExclusionSet.has(sub.userId)) return false
+        // Exclude coordinators of other teams.
+        if (otherTeamCoordinatorSet.has(sub.userId)) return false
+        return true
+      })
+
+      // Resolve prior coordinator experience (teams coordinated in other events)
+      // for the eligible candidates only.
+      const coordinatorExperienceByUser =
+        await this.#teamInstanceRepository.listCoordinatorExperienceByUserIds(
+          eligibleSubscriptions.map((sub) => sub.userId),
+          event.id
+        )
+
+      const candidates: Candidate[] = eligibleSubscriptions
+        .map((sub) => {
+          const experienceTeams = coordinatorExperienceByUser.get(sub.userId) ?? []
+          return {
+            userId: sub.userId,
+            name: sub.user.name,
+            nickname: resolveNickname(sub.user.name, sub.user.nickname),
+            experienceType: sub.user.experienceType,
+            areas: formatAreas(sub.user),
+            preferenceTeamIds: sub.teams ?? [],
+            preferences: (sub.teams ?? [])
+              .map((tid) => instanceNameById.get(tid))
+              .filter((name): name is string => Boolean(name)),
+            // Self-declared flag OR at least one recorded past coordination.
+            hasCoordinatorExperience:
+              sub.user.hasCoordinatorExperience || experienceTeams.length > 0,
+            coordinatorExperienceTeams: experienceTeams,
+          }
         })
-        .map((sub) => ({
-          userId: sub.userId,
-          name: sub.user.name,
-          nickname: resolveNickname(sub.user.name, sub.user.nickname),
-          experienceType: sub.user.experienceType,
-          areas: formatAreas(sub.user),
-          preferenceTeamIds: sub.teams ?? [],
-          preferences: (sub.teams ?? [])
-            .map((tid) => instanceNameById.get(tid))
-            .filter((name): name is string => Boolean(name)),
-        }))
+        .sort((a, b) => a.nickname.localeCompare(b.nickname, 'pt-BR', { sensitivity: 'base' }))
 
       const currentCoordinators =
         await this.#teamInstanceRepository.getCoordinatorSlots(teamInstanceId)
