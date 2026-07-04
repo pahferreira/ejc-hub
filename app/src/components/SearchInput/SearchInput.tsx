@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { FiSearch } from 'react-icons/fi'
 
 type SearchInputProps = {
@@ -5,6 +6,8 @@ type SearchInputProps = {
   value?: string
   onChange?: (value: string) => void
   onSearch?: (value: string) => void
+  /** Span the full width of the container instead of capping at max-w-md. */
+  fullWidth?: boolean
 }
 
 export function SearchInput(props: SearchInputProps) {
@@ -15,7 +18,7 @@ export function SearchInput(props: SearchInputProps) {
   }
 
   return (
-    <div className="relative w-full max-w-md">
+    <div className={clsx('relative w-full', !props.fullWidth && 'max-w-md')}>
       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
         <FiSearch className="h-4 w-4 text-dark-brown" />
       </div>

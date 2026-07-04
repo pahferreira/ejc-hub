@@ -56,6 +56,7 @@ export function AssignCoordinatorDrawer(props: AssignCoordinatorDrawerProps) {
             placeholder="Buscar por nome..."
             value={props.search}
             onChange={props.setSearch}
+            fullWidth
           />
 
           {/* Filters */}
@@ -90,6 +91,8 @@ export function AssignCoordinatorDrawer(props: AssignCoordinatorDrawerProps) {
                 nickname={candidate.nickname}
                 experienceType={candidate.experienceType}
                 areas={candidate.areas}
+                hasCoordinatorExperience={candidate.hasCoordinatorExperience}
+                coordinatorExperienceTeams={candidate.coordinatorExperienceTeams}
                 teams={candidate.preferences}
                 preferredThisTeam={
                   props.target !== null && candidate.preferenceTeamIds.includes(props.target.id)

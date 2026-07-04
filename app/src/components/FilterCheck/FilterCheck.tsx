@@ -43,7 +43,7 @@ export function FilterCheck(props: FilterCheckProps) {
             onClick={() => toggle(option.value)}
             aria-pressed={isActive}
             className={clsx(
-              'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors hover:cursor-pointer',
+              'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors hover:cursor-pointer',
               isActive
                 ? 'bg-dark-brown text-white'
                 : 'bg-transparent text-dark-brown hover:bg-secondary/50'

@@ -44,44 +44,44 @@ export function TeamHealthCard(props: TeamHealthCardProps) {
         )}
 
         {props.team.coordinators.length > 0 ? (
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex shrink-0 -space-x-2">
-                {props.team.coordinators.map((coordinator) => (
-                  <div
-                    key={coordinator.id}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-dark-brown text-sm font-semibold text-white"
-                    aria-hidden
-                  >
-                    {getInitials(coordinator.name)}
-                  </div>
-                ))}
-              </div>
-              <div className="flex min-w-0 flex-col">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex shrink-0 -space-x-2">
+                  {props.team.coordinators.map((coordinator) => (
+                    <div
+                      key={coordinator.id}
+                      className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-dark-brown text-sm font-semibold text-white"
+                      aria-hidden
+                    >
+                      {getInitials(coordinator.name)}
+                    </div>
+                  ))}
+                </div>
                 <span className="text-xs uppercase font-semibold tracking-wider text-secondary">
                   Coordenadores
                 </span>
-                <span className="truncate text-sm font-medium text-black">
-                  {props.team.coordinators.length === 1
-                    ? props.team.coordinators[0].name
-                    : props.team.coordinators.map((c) => c.name.split(/\s+/)[0]).join(', ')}
-                </span>
               </div>
+              {props.onAssignCoordinator && (
+                <button
+                  type="button"
+                  onClick={props.onAssignCoordinator}
+                  aria-label="Editar coordenação"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-secondary transition-colors hover:bg-tertiary hover:text-dark-brown"
+                >
+                  <FiEdit2 size={16} />
+                </button>
+              )}
             </div>
-            {props.onAssignCoordinator && (
-              <button
-                type="button"
-                onClick={props.onAssignCoordinator}
-                aria-label="Editar coordenação"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-secondary transition-colors hover:bg-tertiary hover:text-dark-brown"
-              >
-                <FiEdit2 size={16} />
-              </button>
-            )}
+            <span className="text-sm font-medium text-black">
+              {props.team.coordinators.length === 1
+                ? props.team.coordinators[0].name
+                : props.team.coordinators.map((c) => c.name.split(/\s+/)[0]).join(', ')}
+            </span>
           </div>
         ) : (
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-red/60 bg-red/5 px-3 py-2">
-            <div className="flex min-w-0 items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-red/60 bg-red/5 px-3 py-2">
+            <div className="flex min-w-0 flex-1 basis-40 items-center gap-3">
               <div
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-dashed border-red/60 text-red"
                 aria-hidden
@@ -92,9 +92,7 @@ export function TeamHealthCard(props: TeamHealthCardProps) {
                 <span className="text-xs uppercase font-semibold tracking-wider text-red">
                   Sem coordenação
                 </span>
-                <span className="truncate text-sm font-medium text-black">
-                  Nenhum coordenador atribuído
-                </span>
+                <span className="text-sm font-medium text-black">Nenhum coordenador atribuído</span>
               </div>
             </div>
             {props.onAssignCoordinator && (

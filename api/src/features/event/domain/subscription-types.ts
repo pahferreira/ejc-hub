@@ -61,6 +61,7 @@ export type SubscriptionWithDetails = {
     email: string
     phone: string | null
     experienceType: ExperienceType
+    hasCoordinatorExperience: boolean
     hasActingSkills: boolean
     hasCommunicationSkills: boolean
     hasCookingSkills: boolean

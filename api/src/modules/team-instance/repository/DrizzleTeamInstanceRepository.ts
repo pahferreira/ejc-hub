@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, ne, or } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type {
@@ -86,6 +86,54 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
     }
 
     return coordinatorIdsByTeam
+  }
+
+  async listCoordinatorExperienceByUserIds(userIds: string[], excludeEventId?: string) {
+    const experienceByUser = new Map<string, string[]>()
+
+    if (userIds.length === 0) {
+      return experienceByUser
+    }
+
+    const rows = await db
+      .select({
+        templateName: schema.teamTemplates.name,
+        firstCoordinatorId: schema.teamInstances.firstCoordinatorId,
+        secondCoordinatorId: schema.teamInstances.secondCoordinatorId,
+        thirdCoordinatorId: schema.teamInstances.thirdCoordinatorId,
+      })
+      .from(schema.teamInstances)
+      .innerJoin(schema.teamTemplates, eq(schema.teamInstances.templateId, schema.teamTemplates.id))
+      .where(
+        and(
+          excludeEventId ? ne(schema.teamInstances.eventId, excludeEventId) : undefined,
+          or(
+            inArray(schema.teamInstances.firstCoordinatorId, userIds),
+            inArray(schema.teamInstances.secondCoordinatorId, userIds),
+            inArray(schema.teamInstances.thirdCoordinatorId, userIds)
+          )
+        )
+      )
+
+    const userIdSet = new Set(userIds)
+    const addExperience = (userId: string | null, teamName: string) => {
+      if (!userId || !userIdSet.has(userId)) {
+        return
+      }
+      const teams = experienceByUser.get(userId) ?? []
+      if (!teams.includes(teamName)) {
+        teams.push(teamName)
+      }
+      experienceByUser.set(userId, teams)
+    }
+
+    for (const row of rows) {
+      addExperience(row.firstCoordinatorId, row.templateName)
+      addExperience(row.secondCoordinatorId, row.templateName)
+      addExperience(row.thirdCoordinatorId, row.templateName)
+    }
+
+    return experienceByUser
   }
 
   async listCoordinatorsByTeamInstanceIds(teamInstanceIds: string[]) {

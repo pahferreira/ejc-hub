@@ -42,7 +42,7 @@ export function Drawer(props: DrawerProps) {
                 leaveFrom="translate-x-0"
                 leaveTo="translate-x-full"
               >
-                <DialogPanel className="pointer-events-auto flex w-screen max-w-lg flex-col bg-white shadow-xl border-t-primary border-t-4">
+                <DialogPanel className="pointer-events-auto flex w-screen max-w-xl flex-col bg-white shadow-xl border-t-primary border-t-4">
                   {/* Header */}
                   <div className="flex items-start justify-between border-b border-gray-200 px-6 py-4">
                     <div>

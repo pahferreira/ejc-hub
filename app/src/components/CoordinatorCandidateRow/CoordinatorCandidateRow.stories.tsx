@@ -71,3 +71,21 @@ export const NoAreas: Story = {
     areas: [],
   },
 }
+
+export const WithCoordinatorExperience: Story = {
+  args: {
+    name: 'Ana Beatriz',
+    nickname: 'Bia',
+    experienceType: 'experienced',
+    areas: ['Louvor'],
+    hasCoordinatorExperience: true,
+    coordinatorExperienceTeams: ['Liturgia', 'Acolhida'],
+  },
+}
+
+export const SelfDeclaredCoordinatorExperience: Story = {
+  args: {
+    hasCoordinatorExperience: true,
+    coordinatorExperienceTeams: [],
+  },
+}
