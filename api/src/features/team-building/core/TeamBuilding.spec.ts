@@ -558,3 +558,125 @@ describe('Regression: third coordinator slot', () => {
     expect(result.currentCoordinators.third).toBe('coord-3')
   })
 })
+
+describe('TeamBuilding.addMembers', () => {
+  it('inserts memberships for each user in the target team', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'received' }),
+      buildSub({ id: 's2', userId: 'u2', status: 'received' }),
+    ]
+    const repos = makeRepos({ subscriptions, memberships: new Map() })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await tb.addMembers(TEAM_A, ['u1', 'u2'])
+
+    expect(repos.teamMembershipRepository.insertTeamMembership).toHaveBeenCalledWith(
+      { userId: 'u1', teamInstanceId: TEAM_A },
+      expect.anything()
+    )
+    expect(repos.teamMembershipRepository.insertTeamMembership).toHaveBeenCalledWith(
+      { userId: 'u2', teamInstanceId: TEAM_A },
+      expect.anything()
+    )
+  })
+
+  it('promotes a waiting-list member when adding them to a team', async () => {
+    const subscriptions = [buildSub({ id: 's1', userId: 'u1', status: 'waiting_list' })]
+    const repos = makeRepos({ subscriptions, memberships: new Map() })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await tb.addMembers(TEAM_A, ['u1'])
+
+    expect(repos.subscriptionRepository.updateSubscriptionStatus).toHaveBeenCalledWith(
+      's1',
+      'received',
+      expect.anything()
+    )
+  })
+
+  it('does not touch the status of an already-received member', async () => {
+    const subscriptions = [buildSub({ id: 's1', userId: 'u1', status: 'received' })]
+    const repos = makeRepos({ subscriptions, memberships: new Map() })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await tb.addMembers(TEAM_A, ['u1'])
+
+    expect(repos.subscriptionRepository.updateSubscriptionStatus).not.toHaveBeenCalled()
+  })
+
+  it('dedupes repeated user ids into a single membership insert', async () => {
+    const subscriptions = [buildSub({ id: 's1', userId: 'u1', status: 'received' })]
+    const repos = makeRepos({ subscriptions, memberships: new Map() })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await tb.addMembers(TEAM_A, ['u1', 'u1'])
+
+    expect(repos.teamMembershipRepository.insertTeamMembership).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects the whole batch when a user is already on a team', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'received' }),
+      buildSub({ id: 's2', userId: 'u2', status: 'received' }),
+    ]
+    // u2 already belongs to TEAM_B.
+    const repos = makeRepos({ subscriptions, memberships: new Map([[TEAM_B, ['u2']]]) })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await expect(tb.addMembers(TEAM_A, ['u1', 'u2'])).rejects.toThrow(/already assigned to a team/)
+    expect(repos.teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
+  })
+
+  it('rejects a team target that does not belong to the current event', async () => {
+    const repos = makeRepos({ subscriptions: [], memberships: new Map() })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await expect(tb.addMembers('foreign-team', ['u1'])).rejects.toThrow(
+      /does not belong to the current event/
+    )
+    expect(repos.teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
+  })
+
+  it('rejects a user without a subscription in the current event', async () => {
+    const repos = makeRepos({ subscriptions: [], memberships: new Map() })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await expect(tb.addMembers(TEAM_A, ['ghost'])).rejects.toThrow(/No subscription found/)
+    expect(repos.teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
+  })
+})

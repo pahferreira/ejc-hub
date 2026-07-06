@@ -16,10 +16,9 @@ export function useAssignCoordinatorsMutation() {
       teamBuildingApi.assignCoordinators(vars.teamInstanceId, vars.coordinatorIds),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: teamsOverviewQueryKeys.stats })
-      // Invalidate all list queries regardless of filters by using the shared prefix.
-      queryClient.invalidateQueries({ queryKey: ['teams', 'overview', 'list'] })
+      queryClient.invalidateQueries({ queryKey: teamsOverviewQueryKeys.lists })
       queryClient.invalidateQueries({
-        queryKey: teamBuildingQueryKeys.candidates(vars.teamInstanceId),
+        queryKey: teamBuildingQueryKeys.teamCandidates(vars.teamInstanceId),
       })
     },
   })

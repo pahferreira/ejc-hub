@@ -17,10 +17,13 @@ import { ROUTE_PATHS } from '../../constants/routePaths'
 import type { TeamsListFilters } from '../../services/teams/teams.types'
 import { useAssignCoordinatorDrawer } from './useAssignCoordinatorDrawer'
 import { AssignCoordinatorDrawer } from './AssignCoordinatorDrawer'
+import { useAddMembersDrawer } from './useAddMembersDrawer'
+import { AddMembersDrawer } from './AddMembersDrawer'
 
 export function TeamsPage() {
   const navigate = useNavigate()
   const drawer = useAssignCoordinatorDrawer()
+  const addMembersDrawer = useAddMembersDrawer()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<TeamsStatusFilter>('all')
   const [sort, setSort] = useState<TeamsSortOption>('name_asc')
@@ -125,6 +128,14 @@ export function TeamsPage() {
                   key={team.id}
                   team={team}
                   onAssignCoordinator={() => drawer.open({ id: team.id, name: team.templateName })}
+                  onAdd={() =>
+                    addMembersDrawer.open({
+                      id: team.id,
+                      name: team.templateName,
+                      memberCount: team.memberCount,
+                      maxCapacity: team.maxCapacity,
+                    })
+                  }
                 />
               ))}
             </div>
@@ -133,6 +144,7 @@ export function TeamsPage() {
       </div>
 
       <AssignCoordinatorDrawer {...drawer} />
+      <AddMembersDrawer {...addMembersDrawer} />
     </div>
   )
 }

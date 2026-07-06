@@ -89,3 +89,15 @@ export const SelfDeclaredCoordinatorExperience: Story = {
     coordinatorExperienceTeams: [],
   },
 }
+
+export const HiddenCoordinatorExperience: Story = {
+  args: {
+    name: 'Ana Beatriz',
+    nickname: 'Bia',
+    experienceType: 'experienced',
+    areas: ['Louvor'],
+    hasCoordinatorExperience: true,
+    coordinatorExperienceTeams: ['Liturgia', 'Acolhida'],
+    hideCoordinatorExperience: true,
+  },
+}

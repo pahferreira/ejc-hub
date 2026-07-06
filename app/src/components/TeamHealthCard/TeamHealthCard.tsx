@@ -3,6 +3,7 @@ import type { TeamOverview } from '../../services/teams/teams.types'
 import { getTeamStatus, teamStatusDisplay } from './teamStatus'
 import { Badge } from '../Badge/Badge'
 import { Button } from '../Button/Button'
+import { ButtonIcon } from '../ButtonIcon/ButtonIcon'
 
 export type TeamHealthCardProps = {
   team: TeamOverview
@@ -45,39 +46,37 @@ export function TeamHealthCard(props: TeamHealthCardProps) {
 
         {props.team.coordinators.length > 0 ? (
           <div className="flex flex-col gap-1.5">
+            <span className="text-xs uppercase font-semibold tracking-wider text-secondary">
+              Coordenadores
+            </span>
             <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="flex shrink-0 -space-x-2">
+              <div className="flex min-w-0 flex-col justify-center sm:flex-row sm:items-center sm:gap-2">
+                <div className="flex shrink-0 -space-x-2 items-center">
                   {props.team.coordinators.map((coordinator) => (
                     <div
                       key={coordinator.id}
-                      className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-dark-brown text-sm font-semibold text-white"
+                      className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-dark-brown text-sm font-semibold text-white cursor-default"
                       aria-hidden
+                      title={coordinator.name}
                     >
                       {getInitials(coordinator.name)}
                     </div>
                   ))}
                 </div>
-                <span className="text-xs uppercase font-semibold tracking-wider text-secondary">
-                  Coordenadores
+                <span className="text-sm font-medium text-black">
+                  {props.team.coordinators.length === 1
+                    ? props.team.coordinators[0].name
+                    : props.team.coordinators.map((c) => c.name.split(/\s+/)[0]).join(', ')}
                 </span>
               </div>
               {props.onAssignCoordinator && (
-                <button
-                  type="button"
+                <ButtonIcon
+                  icon={<FiEdit2 />}
+                  ariaLabel="Editar coordenação"
                   onClick={props.onAssignCoordinator}
-                  aria-label="Editar coordenação"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-secondary transition-colors hover:bg-tertiary hover:text-dark-brown"
-                >
-                  <FiEdit2 size={16} />
-                </button>
+                />
               )}
             </div>
-            <span className="text-sm font-medium text-black">
-              {props.team.coordinators.length === 1
-                ? props.team.coordinators[0].name
-                : props.team.coordinators.map((c) => c.name.split(/\s+/)[0]).join(', ')}
-            </span>
           </div>
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-red/60 bg-red/5 px-3 py-2">

@@ -8,6 +8,7 @@ import {
   TeamMembershipPermissions,
 } from '../../../../../common/permissions/permissions.types.ts'
 import {
+  addMembersBodySchema,
   applyAssignmentsBodySchema,
   teamInstanceParamsSchema,
   setCoordinatorsBodySchema,
@@ -60,6 +61,25 @@ export function teamBuildingRoutes(server: FastifyServerInstance) {
           const result = await teamBuildingApp.listCandidates(teamInstanceId)
 
           return reply.code(HttpStatus.Ok).send(result)
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.post(
+      '/team-building/teams/:teamInstanceId/members',
+      {
+        schema: { params: teamInstanceParamsSchema, body: addMembersBodySchema },
+        preHandler: authGuard(server, { permissions: [TeamMembershipPermissions.Create] }),
+      },
+      async (request, reply) => {
+        try {
+          const { teamInstanceId } = request.params
+          const { userIds } = request.body
+          await teamBuildingApp.addMembers(teamInstanceId, userIds)
+
+          return reply.code(HttpStatus.Ok).send({})
         } catch (error) {
           fastifyErrorHandler(reply, error)
         }
