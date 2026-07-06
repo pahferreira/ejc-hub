@@ -333,6 +333,79 @@ export class TeamBuilding {
     })
   }
 
+  // Adds a batch of members to a single team instance atomically. All-or-nothing:
+  // if any candidate is invalid (already on a team, or missing a subscription) the
+  // whole batch aborts before the DB is touched. Capacity is intentionally not
+  // enforced here — matching applyAssignments, the UI owns the "vagas" guardrail.
+  async addMembers(teamInstanceId: string, userIds: string[]): Promise<void> {
+    await this.#withCurrentEvent(async (event) => {
+      const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(event.id)
+      const instanceIds = new Set(instances.map((i) => i.id))
+
+      if (!instanceIds.has(teamInstanceId)) {
+        throw new AppError(`Team instance ${teamInstanceId} does not belong to the current event`)
+      }
+
+      // Dedupe while preserving order.
+      const seen = new Set<string>()
+      const deduped: string[] = []
+      for (const id of userIds) {
+        if (!seen.has(id)) {
+          seen.add(id)
+          deduped.push(id)
+        }
+      }
+
+      if (deduped.length === 0) {
+        throw new AppError('At least one member is required')
+      }
+
+      // Anyone with a membership in the event is already assigned and cannot be added.
+      const membershipUserIdsByTeam =
+        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds])
+      const assignedUserSet = new Set<string>()
+      for (const [, ids] of membershipUserIdsByTeam) {
+        for (const id of ids) assignedUserSet.add(id)
+      }
+
+      // Validate and resolve subscriptions up front so a bad entry aborts the whole
+      // batch cleanly before opening the transaction.
+      const resolved = await Promise.all(
+        deduped.map(async (userId) => {
+          if (assignedUserSet.has(userId)) {
+            throw new AppError(`User ${userId} is already assigned to a team`)
+          }
+
+          const subscription = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
+            userId,
+            event.id
+          )
+
+          if (!subscription) {
+            throw new AppError(`No subscription found for user ${userId} in the current event`)
+          }
+
+          return { userId, subscription }
+        })
+      )
+
+      await runInTransaction(async (tx) => {
+        for (const { userId, subscription } of resolved) {
+          await this.#teamMembershipRepository.insertTeamMembership({ userId, teamInstanceId }, tx)
+
+          // Promote a waiting-list subscription so the member no longer shows as waiting.
+          if (subscription.status === WAITING_LIST_STATUS) {
+            await this.#subscriptionRepository.updateSubscriptionStatus(
+              subscription.id,
+              UNASSIGNED_STATUS,
+              tx
+            )
+          }
+        }
+      })
+    })
+  }
+
   // Sets the coordinator slots for a team instance atomically.
   // `coordinatorUserIds` is positional (index 0 → first slot, etc.).
   // Passing an empty array clears all slots.

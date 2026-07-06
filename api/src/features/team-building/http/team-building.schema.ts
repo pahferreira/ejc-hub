@@ -26,3 +26,9 @@ export const teamInstanceParamsSchema = z.object({
 export const setCoordinatorsBodySchema = z.object({
   coordinatorIds: z.array(z.uuid()).max(3),
 })
+
+export const addMembersBodySchema = z.object({
+  userIds: z.array(z.uuid()).min(1, 'at least one member is required'),
+})
+
+export type AddMembersBody = z.infer<typeof addMembersBodySchema>

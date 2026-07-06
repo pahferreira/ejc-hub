@@ -33,6 +33,8 @@ export type CoordinatorCandidateRowProps = {
   hasCoordinatorExperience?: boolean
   /** Names of the teams the candidate has coordinated in past events. */
   coordinatorExperienceTeams?: string[]
+  /** Hides the coordinator-experience line entirely (e.g. the add-members flow). */
+  hideCoordinatorExperience?: boolean
   selected: boolean
   disabled: boolean
   onToggle: () => void
@@ -46,18 +48,19 @@ export function CoordinatorCandidateRow(props: CoordinatorCandidateRowProps) {
   const experienceTeams = props.coordinatorExperienceTeams ?? []
 
   // Prefer the concrete team list; fall back to a generic label when the
-  // candidate self-declared experience but we have no recorded teams.
-  const coordinatorExperience =
-    experienceTeams.length > 0 ? (
-      <span className="text-xs font-medium text-primary">
-        Coordenou: {experienceTeams.join(', ')}
-      </span>
-    ) : props.hasCoordinatorExperience ? (
-      <span className="flex items-center gap-1 text-xs font-medium text-primary">
-        <FiCheck aria-hidden="true" className="h-3 w-3 shrink-0" />
-        Possui experiência com coordenação
-      </span>
-    ) : null
+  // candidate self-declared experience but we have no recorded teams. Suppressed
+  // entirely when the row is used in a flow that doesn't care about coordination.
+  const coordinatorExperience = props.hideCoordinatorExperience ? null : experienceTeams.length >
+    0 ? (
+    <span className="text-xs font-medium text-primary">
+      Coordenou: {experienceTeams.join(', ')}
+    </span>
+  ) : props.hasCoordinatorExperience ? (
+    <span className="flex items-center gap-1 text-xs font-medium text-primary">
+      <FiCheck aria-hidden="true" className="h-3 w-3 shrink-0" />
+      Possui experiência com coordenação
+    </span>
+  ) : null
 
   return (
     <button

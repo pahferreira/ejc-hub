@@ -24,9 +24,14 @@ async function assignCoordinators(teamInstanceId: string, coordinatorIds: string
   await api.put(`/team-building/teams/${teamInstanceId}/coordinators`, { coordinatorIds })
 }
 
+async function addMembers(teamInstanceId: string, userIds: string[]): Promise<void> {
+  await api.post(`/team-building/teams/${teamInstanceId}/members`, { userIds })
+}
+
 export const teamBuildingApi = {
   getCurrentEventBoard,
   applyAssignments,
   getCandidates,
   assignCoordinators,
+  addMembers,
 }

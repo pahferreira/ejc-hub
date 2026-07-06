@@ -74,5 +74,7 @@ export type CandidateListResponse = {
 
 export const teamBuildingQueryKeys = {
   board: ['team-building', 'board'] as const,
-  candidates: (teamInstanceId: string) => ['team-building', 'candidates', teamInstanceId] as const,
+  allCandidates: ['team-building', 'candidates'] as const,
+  teamCandidates: (teamInstanceId: string) =>
+    [...teamBuildingQueryKeys.allCandidates, teamInstanceId] as const,
 }
