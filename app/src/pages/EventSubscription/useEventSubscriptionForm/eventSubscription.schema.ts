@@ -5,6 +5,8 @@ export const eventSubscriptionSchema = z
   .object({
     fullName: z.string().nonempty('Nome completo é obrigatório'),
     nickname: z.string().nonempty('Apelido é obrigatório'),
+    instagram: z.string().optional(),
+    dateOfBirth: z.string().optional(),
     email: z.email('Email inválido'),
     phone: z.string().nonempty('Telefone é obrigatório'),
     emergencyContactName: z.string().nonempty('Nome do contato de emergência é obrigatório'),
@@ -19,6 +21,7 @@ export const eventSubscriptionSchema = z
       .array(z.string())
       .min(1, 'Selecione pelo menos 1 dia de disponibilidade'),
     details: z.string().optional(),
+    workingAnotherEvent: z.boolean().optional(),
     selectedPreviousExperienceTeams: z.array(z.string()).optional(),
   })
   .refine((data) => !(data.experienceType === 'newbie' && !data.circle), {
@@ -28,6 +31,8 @@ export const eventSubscriptionSchema = z
   .transform((data) => ({
     fullName: data.fullName,
     nickname: data.nickname,
+    instagram: data.instagram || undefined,
+    dateOfBirth: data.dateOfBirth || undefined,
     email: data.email,
     phone: data.phone,
     emergencyContactName: data.emergencyContactName,
@@ -39,6 +44,7 @@ export const eventSubscriptionSchema = z
     selectedSkills: data.selectedSkills ?? [],
     selectedTeams: data.selectedTeams,
     details: data.details,
+    workingAnotherEvent: data.workingAnotherEvent ?? false,
     availability: data.selectedAvailability,
     previousExperienceTeams:
       data.experienceType === 'newbie' ? [] : (data.selectedPreviousExperienceTeams ?? []),

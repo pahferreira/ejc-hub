@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FiLogOut, FiSidebar } from 'react-icons/fi'
 import { useAuthentication } from '../../hooks/useAuthentication'
+import { useCurrentUserQuery } from '../../services/users/useCurrentUserQuery'
 import { hasPermission } from '../../../../common/permissions'
 import { SidebarNavGroup } from './SidebarNavGroup'
 import { SidebarUserInfo } from './SidebarUserInfo'
@@ -26,6 +27,7 @@ const getInitialCollapsed = (): boolean => {
 export type SidebarViewProps = {
   groups: SidebarNavGroupType[]
   userName?: string
+  userNickname?: string
   userPicture?: string
   onLogout: () => void
   isCollapsed: boolean
@@ -95,6 +97,7 @@ export function SidebarView(props: SidebarViewProps) {
       {/* User info */}
       <SidebarUserInfo
         userName={props.userName}
+        userNickname={props.userNickname}
         userPicture={props.userPicture}
         isCollapsed={props.isCollapsed}
       />
@@ -105,6 +108,7 @@ export function SidebarView(props: SidebarViewProps) {
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(getInitialCollapsed)
   const { permissions, user, logout } = useAuthentication()
+  const currentUser = useCurrentUserQuery()
 
   const toggleCollapsed = () => {
     setIsCollapsed((prev) => {
@@ -130,8 +134,9 @@ export function Sidebar() {
   return (
     <SidebarView
       groups={filteredGroups}
-      userName={user?.name}
-      userPicture={user?.picture}
+      userName={currentUser.data?.name ?? user?.name}
+      userNickname={currentUser.data?.nickname ?? undefined}
+      userPicture={currentUser.data?.pictureUrl ?? user?.picture}
       onLogout={logout}
       isCollapsed={isCollapsed}
       onToggleCollapse={toggleCollapsed}

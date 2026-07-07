@@ -34,6 +34,8 @@ export const subscribeBodySchema = z.object({
     hasManualSkills: z.boolean().optional(),
     hasMusicSkills: z.boolean().optional(),
     hasSingingSkills: z.boolean().optional(),
+    hasGuitarSkills: z.boolean().optional(),
+    hasPercussionSkills: z.boolean().optional(),
   }),
   options: z.array(z.string()).length(3, 'Exactly 3 options are required'),
   availability: z
@@ -102,6 +104,8 @@ export const listCurrentSubscriptionsQuerystringSchema = z.object({
 export const subscribeCurrentSchema = z.object({
   fullName: z.string('Full name is required').nonempty(),
   nickname: z.string('Nickname is required').nonempty(),
+  instagram: z.string().optional(),
+  dateOfBirth: z.iso.date('Date of birth must be a yyyy-mm-dd date').optional(),
   email: z.email('Email is required'),
   phone: z.string('Phone number is required').nonempty(),
   emergencyContactName: z.string('Emergency contact name is required').nonempty(),
@@ -112,6 +116,7 @@ export const subscribeCurrentSchema = z.object({
   selectedSkills: z.array(z.string()),
   selectedTeams: z.array(z.string()),
   details: z.string().optional(),
+  workingAnotherEvent: z.boolean().optional(),
   previousExperienceTeams: z.array(z.string()),
   availability: z
     .array(subscriptionAvailabilityEnum)

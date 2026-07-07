@@ -6,12 +6,16 @@ export type SkillFlags = {
   hasManualSkills: boolean
   hasMusicSkills: boolean
   hasSingingSkills: boolean
+  hasGuitarSkills: boolean
+  hasPercussionSkills: boolean
 }
 
 // Read-side inverse of Events#formatSkillsObject: turns the user's skill
 // booleans into the inline area labels shown on a board card.
 const SKILL_LABELS: { key: keyof SkillFlags; label: string }[] = [
-  { key: 'hasMusicSkills', label: 'Toca violão' },
+  { key: 'hasMusicSkills', label: 'Toca um instrumento' },
+  { key: 'hasGuitarSkills', label: 'Toca violão' },
+  { key: 'hasPercussionSkills', label: 'Toca percussão' },
   { key: 'hasSingingSkills', label: 'Canta' },
   { key: 'hasActingSkills', label: 'Atuação' },
   { key: 'hasDancingSkills', label: 'Dança' },

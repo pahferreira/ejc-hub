@@ -9,6 +9,8 @@ export function PersonalDataStep() {
   const email = useEventSubscriptionField('email')
   const phone = useEventSubscriptionField('phone')
   const nickname = useEventSubscriptionField('nickname')
+  const instagram = useEventSubscriptionField('instagram')
+  const dateOfBirth = useEventSubscriptionField('dateOfBirth')
   const gender = useEventSubscriptionField('gender')
   const contactName = useEventSubscriptionField('emergencyContactName')
   const contactPhone = useEventSubscriptionField('emergencyContactPhone')
@@ -36,6 +38,24 @@ export function PersonalDataStep() {
           onChange={nickname.field.onChange}
           error={nickname.fieldState.error?.message}
         />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input
+            label="@instagram"
+            name="instagram"
+            placeholder="@seu_usuario"
+            value={instagram.field.value}
+            onChange={instagram.field.onChange}
+            error={instagram.fieldState.error?.message}
+          />
+          <Input
+            label="Data de Nascimento"
+            name="dateOfBirth"
+            type="date"
+            value={dateOfBirth.field.value}
+            onChange={dateOfBirth.field.onChange}
+            error={dateOfBirth.fieldState.error?.message}
+          />
+        </div>
         <div className="flex flex-col gap-1">
           <RadioGroup
             label="Gênero"

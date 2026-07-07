@@ -12,17 +12,19 @@ import { Button } from '../components/Button/Button'
 import { FeatureCard } from '../components/FeatureCard/FeatureCard'
 import { Navbar } from '../components/Navbar/Navbar'
 import { useAuth0 } from '@auth0/auth0-react'
+import { ROUTE_PATHS } from '../constants/routePaths'
 
 export function Welcome() {
   const { loginWithRedirect } = useAuth0()
 
   const handleLogin = () => loginWithRedirect()
+  const handleEnter = () => loginWithRedirect({ appState: { returnTo: ROUTE_PATHS.HOME } })
 
   return (
     <div className="bg-welcome-gradient">
       {/* Section 1 — Hero */}
       <div className="flex min-h-screen flex-col">
-        <Navbar navItems={[]} button={{ label: 'Inscreva-se', onClick: handleLogin }} />
+        <Navbar navItems={[]} button={{ label: 'Entrar', onClick: handleEnter }} />
 
         <main className="flex flex-1 flex-col gap-10 max-w-8xl mx-auto items-center justify-center p-8">
           <section className="flex w-full flex-col gap-8">

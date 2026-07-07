@@ -1,11 +1,11 @@
 import { and, eq, sql } from 'drizzle-orm'
 import { db, type DbExecutor } from '../../../core/database/client.ts'
-import { schema } from '../../../core/database/schemas/index.ts'
+import { schema, type SubscriptionInput } from '../../../core/database/schemas/index.ts'
 import type { SubscriptionRepository } from '../domain/SubscriptionRepository.ts'
 import type { SubscriptionStatus } from '../domain/subscription.types.ts'
 
 class DrizzleSubscriptionRepository implements SubscriptionRepository {
-  async insertSubscription(input: { userId: string; eventId: string }) {
+  async insertSubscription(input: SubscriptionInput) {
     const result = await db.insert(schema.subscriptions).values(input).returning()
     return result[0]
   }
@@ -98,6 +98,8 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
           hasManualSkills: schema.users.hasManualSkills,
           hasMusicSkills: schema.users.hasMusicSkills,
           hasSingingSkills: schema.users.hasSingingSkills,
+          hasGuitarSkills: schema.users.hasGuitarSkills,
+          hasPercussionSkills: schema.users.hasPercussionSkills,
         },
       })
       .from(schema.subscriptions)
@@ -122,7 +124,9 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
         schema.users.hasDancingSkills,
         schema.users.hasManualSkills,
         schema.users.hasMusicSkills,
-        schema.users.hasSingingSkills
+        schema.users.hasSingingSkills,
+        schema.users.hasGuitarSkills,
+        schema.users.hasPercussionSkills
       )
       .where(eq(schema.subscriptions.eventId, eventId))
     return results
