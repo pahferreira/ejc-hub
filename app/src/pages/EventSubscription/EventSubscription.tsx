@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { FiX } from 'react-icons/fi'
 import { useNavigate } from 'react-router'
 import { useCurrentEventSubscriptionStatusQuery } from '../../services/events/useCurrentEventSubscriptionStatusQuery'
@@ -48,6 +49,12 @@ function EventSubscriptionForm(props: EventSubscriptionFormProps) {
     useSubscriptionWizard()
 
   const handleClose = () => navigate(ROUTE_PATHS.HOME)
+
+  // On mobile the steps are taller than the viewport, so landing on the form
+  // and moving between steps must always start from the top of the page.
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [currentStep])
 
   const onSubmit = async (data: EventSubscriptionFormOutput) => {
     const response = createEventSubscription.mutateAsync(data)

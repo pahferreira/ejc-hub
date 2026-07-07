@@ -393,6 +393,9 @@ export class Events {
       userId: user.id,
       eventId: currentEvent.id,
       availability: input.availability,
+      details: input.details,
+      previousExperienceTeams: input.previousExperienceTeams,
+      workingAnotherEvent: input.workingAnotherEvent,
     }
 
     const subscription = await this.#subscriptionRepository.insertSubscription(subscriptionInput)
@@ -419,7 +422,11 @@ export class Events {
 
     await this.#userRepository.updateUser(user.id, {
       ...skills,
+      name: input.fullName,
+      nickname: input.nickname,
       phone: input.phone,
+      instagram: input.instagram,
+      dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : undefined,
       emergencyContactName: input.emergencyContactName,
       emergencyContactPhone: input.emergencyContactPhone,
       gender: input.gender,
@@ -511,6 +518,8 @@ export class Events {
       hasMusicSkills: skills.includes('has_music_skills'),
       hasDancingSkills: skills.includes('has_dancing_skills'),
       hasSingingSkills: skills.includes('has_singing_skills'),
+      hasGuitarSkills: skills.includes('has_guitar_skills'),
+      hasPercussionSkills: skills.includes('has_percussion_skills'),
     }
 
     return skillsObject

@@ -8,6 +8,8 @@ export const STEP_FIELDS: Record<StepId, (keyof EventSubscriptionFormInput)[]> =
   personal: [
     'fullName',
     'nickname',
+    'instagram',
+    'dateOfBirth',
     'email',
     'phone',
     'emergencyContactName',
@@ -22,6 +24,6 @@ export const STEP_FIELDS: Record<StepId, (keyof EventSubscriptionFormInput)[]> =
     'selectedAvailability',
   ],
   teams: ['selectedTeams'],
-  additional: ['details'],
+  additional: ['details', 'workingAnotherEvent'],
   confirm: [],
 }

@@ -5,6 +5,7 @@ export type SyncedUser = {
   name: string
   phone: string | null
   nickname: string | null
+  instagram: string | null
   pictureUrl: string | null
   dateOfBirth: string | null
   emergencyContactName: string | null
@@ -16,6 +17,8 @@ export type SyncedUser = {
   hasManualSkills: boolean
   hasMusicSkills: boolean
   hasSingingSkills: boolean
+  hasGuitarSkills: boolean
+  hasPercussionSkills: boolean
   hasCoordinatorExperience: boolean
   experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
   createdAt: string

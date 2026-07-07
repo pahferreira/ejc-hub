@@ -9,6 +9,8 @@ const noSkills: SkillFlags = {
   hasManualSkills: false,
   hasMusicSkills: false,
   hasSingingSkills: false,
+  hasGuitarSkills: false,
+  hasPercussionSkills: false,
 }
 
 describe('formatAreas', () => {
@@ -17,9 +19,13 @@ describe('formatAreas', () => {
   })
 
   it('maps active skills to their labels in a stable order', () => {
-    expect(formatAreas({ ...noSkills, hasSingingSkills: true, hasMusicSkills: true })).toEqual([
-      'Toca violão',
-      'Canta',
-    ])
+    expect(
+      formatAreas({
+        ...noSkills,
+        hasSingingSkills: true,
+        hasMusicSkills: true,
+        hasGuitarSkills: true,
+      })
+    ).toEqual(['Toca um instrumento', 'Toca violão', 'Canta'])
   })
 })

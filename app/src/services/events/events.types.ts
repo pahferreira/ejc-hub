@@ -1,6 +1,8 @@
 export type CreateEventSubscriptionPayload = {
   fullName: string
   nickname: string
+  instagram?: string
+  dateOfBirth?: string
   email: string
   phone: string
   emergencyContactName: string
@@ -12,6 +14,7 @@ export type CreateEventSubscriptionPayload = {
   selectedSkills: string[]
   selectedTeams: string[]
   details?: string
+  workingAnotherEvent?: boolean
   availability: string[]
   previousExperienceTeams: string[]
 }

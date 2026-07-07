@@ -23,6 +23,8 @@ export const skills = [
   { label: 'Sabe cozinhar', value: 'has_cooking_skills' },
   { label: 'Habilidades manuais', value: 'has_manual_skills' },
   { label: 'Toca um instrumento', value: 'has_music_skills' },
+  { label: 'Toca violão', value: 'has_guitar_skills' },
+  { label: 'Toca percussão', value: 'has_percussion_skills' },
 ]
 
 export const availability = [

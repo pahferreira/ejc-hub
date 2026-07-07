@@ -27,6 +27,8 @@ export interface SubscriptionRepository {
         hasManualSkills: boolean
         hasMusicSkills: boolean
         hasSingingSkills: boolean
+        hasGuitarSkills: boolean
+        hasPercussionSkills: boolean
       }
     }[]
   >

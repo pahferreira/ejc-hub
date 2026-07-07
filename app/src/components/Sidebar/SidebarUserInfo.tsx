@@ -2,15 +2,13 @@ import { FiUser } from 'react-icons/fi'
 
 type SidebarUserInfoProps = {
   userName?: string
+  userNickname?: string
   userPicture?: string
   isCollapsed: boolean
 }
 
 export function SidebarUserInfo(props: SidebarUserInfoProps) {
-  const [firstName, lastName] = props.userName?.split(' ') ?? []
-  const firstInitial = firstName?.charAt(0)?.toUpperCase() ?? ''
-  const lastInitial = lastName?.charAt(0)?.toUpperCase() ?? ''
-  const initials = `${firstInitial}${lastInitial}` || 'U'
+  const displayName = props.userNickname || props.userName
 
   return (
     <div
@@ -18,27 +16,23 @@ export function SidebarUserInfo(props: SidebarUserInfoProps) {
     >
       <div
         className={`flex items-center gap-3 ${props.isCollapsed ? 'justify-center' : ''}`}
-        title={props.isCollapsed ? props.userName : undefined}
+        title={props.isCollapsed ? displayName : undefined}
       >
         {props.userPicture ? (
           <img
             src={props.userPicture}
-            alt={props.userName}
+            alt={displayName}
             className="w-9 h-9 rounded-full shrink-0 object-cover"
           />
         ) : (
           <div className="w-9 h-9 rounded-full bg-dark-brown flex items-center justify-center shrink-0">
-            {props.userName ? (
-              <span className="text-white font-semibold text-sm">{initials}</span>
-            ) : (
-              <FiUser size={16} className="text-white" />
-            )}
+            <FiUser size={16} className="text-white" />
           </div>
         )}
         {!props.isCollapsed && (
           <div className="min-w-0">
             <p className="text-sm font-semibold text-dark-brown leading-tight truncate m-0">
-              {props.userName ?? 'Usuário'}
+              {displayName ?? 'Usuário'}
             </p>
           </div>
         )}

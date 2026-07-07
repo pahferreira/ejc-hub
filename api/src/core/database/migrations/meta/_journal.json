@@ -218,6 +218,20 @@
       "when": 1781623749520,
       "tag": "0030_curly_doctor_strange",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1783352131192,
+      "tag": "0031_broad_nick_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1783371288011,
+      "tag": "0032_loving_hammerhead",
+      "breakpoints": true
     }
   ]
 }

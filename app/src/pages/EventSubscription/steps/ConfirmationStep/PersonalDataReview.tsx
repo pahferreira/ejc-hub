@@ -13,6 +13,8 @@ export function PersonalDataReview() {
         <dl className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ReviewField label="Nome Completo" value={values.fullName} />
           <ReviewField label="Apelido" value={values.nickname} />
+          <ReviewField label="@instagram" value={values.instagram} />
+          <ReviewField label="Data de Nascimento" value={values.dateOfBirth} />
           <ReviewField label="Email" value={values.email} />
           <ReviewField label="Telefone" value={values.phone} />
         </dl>

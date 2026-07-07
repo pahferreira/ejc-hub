@@ -11,6 +11,8 @@ function syncedUserSkillsToFormValues(user: SyncedUser): string[] {
   if (user.hasCookingSkills) out.push('has_cooking_skills')
   if (user.hasManualSkills) out.push('has_manual_skills')
   if (user.hasMusicSkills) out.push('has_music_skills')
+  if (user.hasGuitarSkills) out.push('has_guitar_skills')
+  if (user.hasPercussionSkills) out.push('has_percussion_skills')
   return out
 }
 
@@ -22,6 +24,9 @@ export function syncedUserToFormDefaults(
   return {
     fullName: user.name ?? '',
     nickname: user.nickname ?? '',
+    instagram: user.instagram ?? '',
+    // Native date inputs expect yyyy-mm-dd; the API sends an ISO timestamp.
+    dateOfBirth: user.dateOfBirth?.slice(0, 10) ?? '',
     email: user.email ?? '',
     phone: user.phone ?? '',
     emergencyContactName: user.emergencyContactName ?? '',
@@ -33,6 +38,7 @@ export function syncedUserToFormDefaults(
     selectedTeams: [],
     selectedAvailability: [],
     details: '',
+    workingAnotherEvent: false,
     selectedPreviousExperienceTeams: [],
   }
 }

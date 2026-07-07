@@ -20,6 +20,8 @@ type UpdateUserInput = {
   hasManualSkills?: boolean
   hasCookingSkills?: boolean
   hasCommunicationSkills?: boolean
+  hasGuitarSkills?: boolean
+  hasPercussionSkills?: boolean
 }
 
 export class User {
@@ -43,7 +45,11 @@ export class User {
 
     const diff: Partial<UserInput> = {}
     if (existing.email !== input.email) diff.email = input.email
-    if (existing.name !== input.name) diff.name = input.name
+    // For database-connection signups Auth0 sets the token's name claim to the
+    // email, and users provide their real name in the app (e.g. subscription
+    // form). Only take the token's name while ours is still that placeholder,
+    // so login syncs never clobber a user-provided name.
+    if (existing.name !== input.name && existing.name === existing.email) diff.name = input.name
     const nextPicture = input.picture || null
     if (existing.pictureUrl !== nextPicture) diff.pictureUrl = nextPicture
 

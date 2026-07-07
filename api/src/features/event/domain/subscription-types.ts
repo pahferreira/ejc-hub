@@ -29,6 +29,8 @@ export type SubscriptionPayload = {
     hasMusicSkills?: boolean
     hasDancingSkills?: boolean
     hasSingingSkills?: boolean
+    hasGuitarSkills?: boolean
+    hasPercussionSkills?: boolean
   }
   options: string[]
   availability: SubscriptionAvailability[]
@@ -37,6 +39,8 @@ export type SubscriptionPayload = {
 export type CurrentEventSubscriptionPayload = {
   fullName: string
   nickname: string
+  instagram?: string
+  dateOfBirth?: string
   email: string
   phone: string
   emergencyContactName: string
@@ -46,6 +50,9 @@ export type CurrentEventSubscriptionPayload = {
   hasCoordinatorExperience?: boolean
   selectedSkills: string[]
   selectedTeams: string[]
+  details?: string
+  workingAnotherEvent?: boolean
+  previousExperienceTeams: string[]
   availability: SubscriptionAvailability[]
 }
 
@@ -69,5 +76,7 @@ export type SubscriptionWithDetails = {
     hasManualSkills: boolean
     hasMusicSkills: boolean
     hasSingingSkills: boolean
+    hasGuitarSkills: boolean
+    hasPercussionSkills: boolean
   }
 }

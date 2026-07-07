@@ -1,4 +1,4 @@
-import { pgTable, timestamp, pgEnum, uuid, text, unique } from 'drizzle-orm/pg-core'
+import { pgTable, timestamp, pgEnum, uuid, text, unique, boolean } from 'drizzle-orm/pg-core'
 import { users } from './users.ts'
 import { events } from './events.ts'
 
@@ -33,6 +33,7 @@ export const subscriptions = pgTable(
     status: subscriptionStatus().notNull().default('pending'),
     availability: subscriptionAvailability().notNull().array().default([]),
     details: text('details').default(''),
+    workingAnotherEvent: boolean('working_another_event'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
     previousExperienceTeams: text('previous_experience_teams').notNull().array().default([]),
