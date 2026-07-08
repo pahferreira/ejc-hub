@@ -15,17 +15,21 @@ export const circleOptions = [
   { label: 'Azul', value: 'blue' },
 ]
 
+// Single source of truth for skill options: `value` is the snake_case form
+// value sent to the API, `key` is the matching camelCase flag on the user.
+// The API's format-areas.ts renders these same labels on board cards/drawers.
 export const skills = [
-  { label: 'Atuação', value: 'has_acting_skills' },
-  { label: 'Dança', value: 'has_dancing_skills' },
-  { label: 'Canta', value: 'has_singing_skills' },
-  { label: 'Comunicação', value: 'has_communication_skills' },
-  { label: 'Sabe cozinhar', value: 'has_cooking_skills' },
-  { label: 'Habilidades manuais', value: 'has_manual_skills' },
-  { label: 'Toca um instrumento', value: 'has_music_skills' },
-  { label: 'Toca violão', value: 'has_guitar_skills' },
-  { label: 'Toca percussão', value: 'has_percussion_skills' },
-]
+  { label: 'Atuação', value: 'has_acting_skills', key: 'hasActingSkills' },
+  { label: 'Dança', value: 'has_dancing_skills', key: 'hasDancingSkills' },
+  { label: 'Canta', value: 'has_singing_skills', key: 'hasSingingSkills' },
+  { label: 'Comunicação', value: 'has_communication_skills', key: 'hasCommunicationSkills' },
+  { label: 'Habilidades Culinárias', value: 'has_cooking_skills', key: 'hasCookingSkills' },
+  { label: 'Papelaria e Confecção Manual', value: 'has_manual_skills', key: 'hasManualSkills' },
+  { label: 'Toca violão', value: 'has_guitar_skills', key: 'hasGuitarSkills' },
+  { label: 'Toca percussão', value: 'has_percussion_skills', key: 'hasPercussionSkills' },
+  { label: 'Toca algum outro instrumento', value: 'has_music_skills', key: 'hasMusicSkills' },
+  { label: 'Edição de Vídeo e Mídias', value: 'has_midia_skills', key: 'hasMidiaSkills' },
+] as const
 
 export const availability = [
   { label: 'Segunda-feira', value: 'monday' },
@@ -37,6 +41,9 @@ export const availability = [
   { label: 'Domingo', value: 'sunday' },
 ]
 
-export function getOptionLabel(value: string, options: { label: string; value: string }[]) {
+export function getOptionLabel(
+  value: string,
+  options: readonly { label: string; value: string }[]
+) {
   return options.find((option) => option.value === value)?.label ?? value
 }

@@ -520,6 +520,7 @@ export class Events {
       hasSingingSkills: skills.includes('has_singing_skills'),
       hasGuitarSkills: skills.includes('has_guitar_skills'),
       hasPercussionSkills: skills.includes('has_percussion_skills'),
+      hasMidiaSkills: skills.includes('has_midia_skills'),
     }
 
     return skillsObject

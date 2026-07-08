@@ -36,6 +36,7 @@ export const subscribeBodySchema = z.object({
     hasSingingSkills: z.boolean().optional(),
     hasGuitarSkills: z.boolean().optional(),
     hasPercussionSkills: z.boolean().optional(),
+    hasMidiaSkills: z.boolean().optional(),
   }),
   options: z.array(z.string()).length(3, 'Exactly 3 options are required'),
   availability: z

@@ -11,6 +11,7 @@ const noSkills: SkillFlags = {
   hasSingingSkills: false,
   hasGuitarSkills: false,
   hasPercussionSkills: false,
+  hasMidiaSkills: false,
 }
 
 describe('formatAreas', () => {
@@ -26,6 +27,6 @@ describe('formatAreas', () => {
         hasMusicSkills: true,
         hasGuitarSkills: true,
       })
-    ).toEqual(['Toca um instrumento', 'Toca violão', 'Canta'])
+    ).toEqual(['Toca algum outro instrumento', 'Toca violão', 'Canta'])
   })
 })

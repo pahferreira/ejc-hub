@@ -37,7 +37,7 @@ export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
   const status = props.subscription.status
 
   return (
-    <Modal open={props.open} onClose={props.onClose} title="Review Subscription">
+    <Modal open={props.open} onClose={props.onClose} title="Revisar inscrição">
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -52,7 +52,7 @@ export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Email</p>
-            <p className="text-sm text-gray-900">{props.subscription.user.email}</p>
+            <p className="text-sm text-gray-900 break-all">{props.subscription.user.email}</p>
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Telefone</p>

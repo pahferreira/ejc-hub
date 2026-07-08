@@ -117,6 +117,7 @@ export async function seedSubscriptions() {
       hasSingingSkills: faker.datatype.boolean(),
       hasGuitarSkills: faker.datatype.boolean(),
       hasPercussionSkills: faker.datatype.boolean(),
+      hasMidiaSkills: faker.datatype.boolean(),
       hasCoordinatorExperience: faker.datatype.boolean(),
       experienceType: faker.helpers.arrayElement<ExperienceOption>([...EXPERIENCE_OPTIONS]),
     }

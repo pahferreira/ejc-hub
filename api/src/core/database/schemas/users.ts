@@ -29,6 +29,7 @@ export const users = pgTable('users', {
   hasSingingSkills: boolean('has_singing_skills').notNull().default(false),
   hasGuitarSkills: boolean('has_guitar_skills').notNull().default(false),
   hasPercussionSkills: boolean('has_percussion_skills').notNull().default(false),
+  hasMidiaSkills: boolean('has_midia_skills').notNull().default(false),
   hasCoordinatorExperience: boolean('has_coordinator_experience').notNull().default(false),
   experienceType: experienceType().notNull().default('experienced'),
   gender: gender(),
