@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "has_midia_skills" boolean DEFAULT false NOT NULL;

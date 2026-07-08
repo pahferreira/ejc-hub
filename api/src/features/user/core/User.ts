@@ -22,6 +22,7 @@ type UpdateUserInput = {
   hasCommunicationSkills?: boolean
   hasGuitarSkills?: boolean
   hasPercussionSkills?: boolean
+  hasMidiaSkills?: boolean
 }
 
 export class User {

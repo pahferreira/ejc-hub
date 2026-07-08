@@ -31,6 +31,7 @@ export type SubscriptionPayload = {
     hasSingingSkills?: boolean
     hasGuitarSkills?: boolean
     hasPercussionSkills?: boolean
+    hasMidiaSkills?: boolean
   }
   options: string[]
   availability: SubscriptionAvailability[]
@@ -78,5 +79,6 @@ export type SubscriptionWithDetails = {
     hasSingingSkills: boolean
     hasGuitarSkills: boolean
     hasPercussionSkills: boolean
+    hasMidiaSkills: boolean
   }
 }

@@ -18,6 +18,7 @@ const updateUserInputSchema = z.object({
   hasCommunicationSkills: z.boolean().optional(),
   hasGuitarSkills: z.boolean().optional(),
   hasPercussionSkills: z.boolean().optional(),
+  hasMidiaSkills: z.boolean().optional(),
 })
 
 export function userRoutes(server: FastifyServerInstance) {

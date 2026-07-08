@@ -100,6 +100,7 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
           hasSingingSkills: schema.users.hasSingingSkills,
           hasGuitarSkills: schema.users.hasGuitarSkills,
           hasPercussionSkills: schema.users.hasPercussionSkills,
+          hasMidiaSkills: schema.users.hasMidiaSkills,
         },
       })
       .from(schema.subscriptions)
@@ -126,7 +127,8 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
         schema.users.hasMusicSkills,
         schema.users.hasSingingSkills,
         schema.users.hasGuitarSkills,
-        schema.users.hasPercussionSkills
+        schema.users.hasPercussionSkills,
+        schema.users.hasMidiaSkills
       )
       .where(eq(schema.subscriptions.eventId, eventId))
     return results
