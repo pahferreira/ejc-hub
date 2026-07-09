@@ -50,7 +50,10 @@ export class ControlPanel {
     return teamTemplates
   }
 
-  async updateTeamTemplate(id: string, input: { description?: string; name?: string }) {
+  async updateTeamTemplate(
+    id: string,
+    input: { description?: string; name?: string; maxCapacity?: number }
+  ) {
     const teamTemplateToUpdate = await this.#teamTemplateRepository.selectTeamTemplateById(id)
 
     if (!teamTemplateToUpdate) {

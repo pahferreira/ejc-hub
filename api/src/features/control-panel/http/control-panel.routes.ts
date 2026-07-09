@@ -17,6 +17,7 @@ export const postTeamTemplateBodySchema = z.object({
   name: z.string('Team template name is required').nonempty('Team template cannot be empty'),
   key: z.string('Team template key is required').nonempty('Team template key cannot be empty'),
   description: z.string().optional(),
+  maxCapacity: z.number().int().min(0, 'maxCapacity must be zero or greater').optional(),
 })
 
 const eventIdParamSchema = z.object({
@@ -36,8 +37,8 @@ const updateEventBodySchema = createEventBodySchema.partial().refine((data) => {
 }, 'At least one of the following attributes needs to be present: name, description')
 
 export const patchTeamTemplateBodySchema = postTeamTemplateBodySchema.partial().refine((data) => {
-  return data.name || data.description
-}, 'At least one field (name or description) is required for update')
+  return data.name || data.description || data.maxCapacity !== undefined
+}, 'At least one field (name, description or maxCapacity) is required for update')
 
 export function controlPanelRoutes(server: FastifyServerInstance) {
   return () => {
@@ -111,10 +112,11 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
       async (request, reply) => {
         try {
           const { teamTemplateId } = request.params
-          const { name, description } = request.body
+          const { name, description, maxCapacity } = request.body
           const result = await controlPanelApp.updateTeamTemplate(teamTemplateId, {
             name,
             description,
+            maxCapacity,
           })
 
           return reply.code(HttpStatus.Ok).send({ result })
