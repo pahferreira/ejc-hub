@@ -1,16 +1,8 @@
 import clsx from 'clsx'
 import { FiCheck } from 'react-icons/fi'
-import { Badge } from '../Badge/Badge'
+import { ExperienceBadge } from '../ExperienceBadge/ExperienceBadge'
 import { TeamAvatar } from '../TeamAvatar/TeamAvatar'
-import { experienceLabels } from '../../pages/TeamBuildingPage/experience'
 import type { ExperienceType } from '../../services/team-building/team-building.types'
-
-// Maps the experience variant palette to existing Badge variants.
-const experienceBadgeVariant: Record<ExperienceType, 'completed' | 'received' | 'pending'> = {
-  newbie: 'completed',
-  experienced: 'received',
-  experienced_outsider: 'pending',
-}
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -41,8 +33,6 @@ export type CoordinatorCandidateRowProps = {
 }
 
 export function CoordinatorCandidateRow(props: CoordinatorCandidateRowProps) {
-  const experience = experienceLabels[props.experienceType]
-  const badgeVariant = experienceBadgeVariant[props.experienceType]
   const initials = getInitials(props.name)
 
   const experienceTeams = props.coordinatorExperienceTeams ?? []
@@ -114,7 +104,7 @@ export function CoordinatorCandidateRow(props: CoordinatorCandidateRowProps) {
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="truncate text-sm font-medium text-dark-brown">{props.nickname}</span>
-          <Badge variant={badgeVariant}>{experience.label}</Badge>
+          <ExperienceBadge experienceType={props.experienceType} />
         </div>
         <span className="truncate text-xs text-dark-brown/70">{props.name}</span>
         {props.areas.length > 0 && (

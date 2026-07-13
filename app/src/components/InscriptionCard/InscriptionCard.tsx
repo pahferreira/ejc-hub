@@ -1,8 +1,6 @@
 import { FiDollarSign, FiTag, FiUserCheck } from 'react-icons/fi'
-import { Badge } from '../Badge/Badge'
+import { Badge, type BadgeVariant } from '../Badge/Badge'
 import { ProgressBar } from '../ProgressBar/ProgressBar'
-
-type BadgeVariant = 'pending' | 'received' | 'completed' | 'waiting_list' | 'default'
 
 type SubscriptionStatus = 'pending' | 'received' | 'completed' | 'waiting_list'
 type PaymentStatus = 'paid' | 'pending' | 'not_required'
@@ -17,21 +15,21 @@ export type InscriptionCardProps = {
 }
 
 const statusDisplay: Record<SubscriptionStatus, { label: string; variant: BadgeVariant }> = {
-  pending: { label: 'Pendente', variant: 'pending' },
-  received: { label: 'Recebida', variant: 'received' },
-  completed: { label: 'Aprovado', variant: 'completed' },
-  waiting_list: { label: 'Lista de Espera', variant: 'waiting_list' },
+  pending: { label: 'Pendente', variant: 'error' },
+  received: { label: 'Recebida', variant: 'info' },
+  completed: { label: 'Aprovado', variant: 'success' },
+  waiting_list: { label: 'Lista de Espera', variant: 'warning' },
 }
 
 const paymentDisplay: Record<PaymentStatus, { label: string; variant: BadgeVariant }> = {
-  paid: { label: 'Pago', variant: 'completed' },
-  pending: { label: 'Pendente', variant: 'pending' },
+  paid: { label: 'Pago', variant: 'success' },
+  pending: { label: 'Pendente', variant: 'error' },
   not_required: { label: 'Não exigido', variant: 'default' },
 }
 
 const shirtDisplay: Record<ShirtStatus, { label: string; variant: BadgeVariant }> = {
-  paid: { label: 'Paga', variant: 'completed' },
-  pending: { label: 'Pendente', variant: 'pending' },
+  paid: { label: 'Paga', variant: 'success' },
+  pending: { label: 'Pendente', variant: 'error' },
   not_requested: { label: 'Não solicitada', variant: 'default' },
 }
 

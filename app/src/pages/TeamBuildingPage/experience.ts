@@ -1,16 +1,14 @@
 import type { ExperienceType } from '../../services/team-building/team-building.types'
 
-type ExperienceOption = { label: string; variant: 'green' | 'blue' | 'red' }
-
-export const experienceLabels: Record<ExperienceType, ExperienceOption> = {
-  newbie: { label: 'Encontrista', variant: 'green' },
-  experienced: { label: 'Encontreiro Rosário', variant: 'blue' },
-  experienced_outsider: { label: 'Encontreiro', variant: 'red' },
+export const experienceLabels: Record<ExperienceType, string> = {
+  newbie: 'Encontrista',
+  experienced: 'Encontreiro Rosário',
+  experienced_outsider: 'Encontreiro',
 }
 
 export const experienceFilterOptions = (
-  Object.entries(experienceLabels) as [ExperienceType, ExperienceOption][]
-).map(([value, option]) => ({ value, label: option.label }))
+  Object.entries(experienceLabels) as [ExperienceType, string][]
+).map(([value, label]) => ({ value, label }))
 
 export type CapacityFilter = 'all' | 'available' | 'full'
 

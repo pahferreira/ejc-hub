@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-type BadgeVariant = 'pending' | 'received' | 'completed' | 'waiting_list' | 'default'
+export type BadgeVariant = 'default' | 'warning' | 'error' | 'success' | 'info'
 
 type BadgeProps = {
   children: ReactNode
@@ -8,11 +8,11 @@ type BadgeProps = {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  pending: 'border-red bg-red/10 text-red',
-  received: 'border-blue bg-blue/10 text-blue',
-  completed: 'border-green bg-green/10 text-green',
-  waiting_list: 'border-orange bg-orange/10 text-orange',
-  default: 'border-dark-brown bg-secondary text-dark-brown',
+  default: 'border-dark-brown bg-dark-brown/10 text-dark-brown',
+  warning: 'border-orange bg-orange/10 text-orange',
+  error: 'border-red bg-red/10 text-red',
+  success: 'border-green bg-green/10 text-green',
+  info: 'border-blue bg-blue/10 text-blue',
 }
 
 export function Badge({ children, variant = 'default' }: BadgeProps) {

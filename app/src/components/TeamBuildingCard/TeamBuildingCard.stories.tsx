@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { TeamBuildingCard } from './TeamBuildingCard'
+import { ExperienceBadge } from '../ExperienceBadge/ExperienceBadge'
 
 const meta = {
   title: 'UI/TeamBuildingCard',
@@ -24,7 +25,7 @@ export const Full: Story = {
   args: {
     name: 'Alice Ribeiro',
     nickname: 'Lili',
-    badge: 'Encontrista',
+    badge: <ExperienceBadge experienceType="newbie" />,
     phone: '(41) 90427-7888',
     attributes: ['Música', 'Teatro'],
     preferences: ['Logística', 'Primeira Eucaristia', 'Decoração'],
@@ -35,7 +36,7 @@ export const WithoutPreferences: Story = {
   args: {
     name: 'Bruno Carvalho',
     nickname: 'Bru',
-    badge: 'Encontreiro Rosário',
+    badge: <ExperienceBadge experienceType="experienced" />,
     phone: '(41) 91234-5678',
     attributes: ['Cozinha'],
   },
@@ -55,7 +56,7 @@ export const WithAvatarImage: Story = {
   args: {
     name: 'Alice Ribeiro',
     nickname: 'Lili',
-    badge: 'Encontreiro',
+    badge: <ExperienceBadge experienceType="experienced_outsider" />,
     phone: '(41) 90427-7888',
     avatarUrl: 'https://i.pravatar.cc/80?img=5',
     attributes: ['Música', 'Teatro'],

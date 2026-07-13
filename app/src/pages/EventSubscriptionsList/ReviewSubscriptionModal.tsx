@@ -1,11 +1,8 @@
 import { Modal } from '../../components/Modal/Modal'
-import { Badge } from '../../components/Badge/Badge'
 import { Button } from '../../components/Button/Button'
+import { SubscriptionStatusBadge } from '../../components/SubscriptionStatusBadge/SubscriptionStatusBadge'
 import { TeamAvatar } from '../../components/TeamAvatar/TeamAvatar'
-import type {
-  SubscriptionWithDetails,
-  SubscriptionStatus,
-} from '../../services/subscriptions/subscriptions.types'
+import type { SubscriptionWithDetails } from '../../services/subscriptions/subscriptions.types'
 import { formatDate } from '../../utils/formatDate/formatDate'
 import { experienceOptions, getOptionLabel } from '../EventSubscription/profileOptions'
 
@@ -15,20 +12,6 @@ type ReviewSubscriptionModalProps = {
   onClose: () => void
   onConfirm: (id: string) => void
   onWaitList: (id: string) => void
-}
-
-const statusVariantMap = {
-  pending: 'pending',
-  received: 'received',
-  completed: 'completed',
-  waiting_list: 'waiting_list',
-} as const
-
-const statusLabelMap: Record<SubscriptionStatus, string> = {
-  pending: 'Pendente',
-  received: 'Recebido',
-  completed: 'Concluído',
-  waiting_list: 'Lista de Espera',
 }
 
 export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
@@ -64,7 +47,7 @@ export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
-            <Badge variant={statusVariantMap[status]}>{statusLabelMap[status]}</Badge>
+            <SubscriptionStatusBadge status={status} />
           </div>
         </div>
 
