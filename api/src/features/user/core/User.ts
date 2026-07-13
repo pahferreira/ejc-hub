@@ -1,4 +1,7 @@
-import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
+import type {
+  ListUsersOptions,
+  UserRepository,
+} from '../../../modules/user/domain/UserRepository.ts'
 import type { UserInput } from '../../../core/database/schemas/index.ts'
 import { AppError } from '../../../shared/AppError.ts'
 
@@ -57,6 +60,23 @@ export class User {
     if (Object.keys(diff).length === 0) return existing
 
     return this.#userRepository.updateUser(existing.id, diff)
+  }
+
+  async listUsers(options: ListUsersOptions) {
+    return this.#userRepository.listUsers(options)
+  }
+
+  async updateUserById(id: string, input: UpdateUserInput) {
+    const updatedUser = await this.#userRepository.updateUser(id, {
+      ...input,
+      dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : undefined,
+    })
+
+    if (!updatedUser) {
+      throw new AppError('user not found')
+    }
+
+    return updatedUser
   }
 
   async updateProfile(authId: string, input: UpdateUserInput) {

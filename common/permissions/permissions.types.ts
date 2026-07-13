@@ -33,10 +33,16 @@ export const TeamTemplatePermissions = {
   Delete: "team-templates:delete",
 } as const;
 
+export const UserPermissions = {
+  List: "users:list",
+  Update: "users:update",
+} as const;
+
 // Union type for all permissions
 export type Permission =
   | (typeof EventPermissions)[keyof typeof EventPermissions]
   | (typeof SubscriptionPermissions)[keyof typeof SubscriptionPermissions]
   | (typeof TeamInstancePermissions)[keyof typeof TeamInstancePermissions]
   | (typeof TeamMembershipPermissions)[keyof typeof TeamMembershipPermissions]
-  | (typeof TeamTemplatePermissions)[keyof typeof TeamTemplatePermissions];
+  | (typeof TeamTemplatePermissions)[keyof typeof TeamTemplatePermissions]
+  | (typeof UserPermissions)[keyof typeof UserPermissions];
