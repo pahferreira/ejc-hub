@@ -10,6 +10,7 @@ export type SubscriptionWithDetails = {
   }>
   user: {
     name: string
+    nickname: string | null
     email: string
     phone: string | null
     experienceType: 'newbie' | 'experienced' | 'experienced_outsider'

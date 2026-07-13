@@ -1,5 +1,5 @@
 import { TeamBuildingCard } from '../../components/TeamBuildingCard/TeamBuildingCard'
-import { experienceLabels } from './experience'
+import { ExperienceBadge } from '../../components/ExperienceBadge/ExperienceBadge'
 import type { TeamBoardMember } from '../../services/team-building/team-building.types'
 
 export type MemberCardProps = {
@@ -8,14 +8,11 @@ export type MemberCardProps = {
 
 /** Maps a board member onto the presentational TeamBuildingCard. */
 export function MemberCard(props: MemberCardProps) {
-  const experience = experienceLabels[props.member.experienceType]
-
   return (
     <TeamBuildingCard
       name={props.member.name}
       nickname={props.member.nickname}
-      badge={experience.label}
-      badgeVariant={experience.variant}
+      badge={<ExperienceBadge experienceType={props.member.experienceType} />}
       phone={props.member.phone ?? undefined}
       attributes={props.member.areas}
       preferences={props.member.preferences}

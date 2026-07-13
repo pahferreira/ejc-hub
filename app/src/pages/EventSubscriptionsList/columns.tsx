@@ -1,25 +1,10 @@
 import { createColumnHelper } from '@tanstack/react-table'
 import type { SubscriptionWithDetails } from '../../services/subscriptions/subscriptions.types'
-import { Badge } from '../../components/Badge/Badge'
+import { ExperienceBadge } from '../../components/ExperienceBadge/ExperienceBadge'
+import { SubscriptionStatusBadge } from '../../components/SubscriptionStatusBadge/SubscriptionStatusBadge'
 import { TeamAvatar } from '../../components/TeamAvatar/TeamAvatar'
-import { experienceOptions, getOptionLabel } from '../EventSubscription/profileOptions'
-import { subscriptionStatusDisplay } from '../../services/events/subscriptionStatusDisplay'
-import type { SubscriptionStatus } from '../../services/events/events.types'
 
 const columnHelper = createColumnHelper<SubscriptionWithDetails>()
-
-// Note: Badge uses its own variant system ('pending' | 'received' | 'completed' | 'waiting_list')
-// which differs from SubscriptionStatusDisplay variants ('pending' | 'success').
-// We keep a separate map here for Badge display context.
-const statusBadgeVariantMap: Record<
-  SubscriptionStatus,
-  'pending' | 'received' | 'completed' | 'waiting_list'
-> = {
-  pending: 'pending',
-  received: 'received',
-  completed: 'completed',
-  waiting_list: 'waiting_list',
-}
 
 function formatShortDate(dateString: string): string {
   return new Intl.DateTimeFormat('pt-BR', {
@@ -36,10 +21,10 @@ export const subscriptionColumns = [
     header: 'Nome',
     cell: (info) => (
       <div>
-        <div className="font-medium text-gray-900">{info.getValue()}</div>
-        <div className="text-sm text-gray-500">
-          {getOptionLabel(info.row.original.user.experienceType, experienceOptions)}
+        <div className="font-medium text-gray-900">
+          {info.row.original.user.nickname || info.getValue()}
         </div>
+        <div className="text-sm text-gray-500">{info.getValue()}</div>
       </div>
     ),
   }),
@@ -58,17 +43,15 @@ export const subscriptionColumns = [
     header: 'Data',
     cell: (info) => formatShortDate(info.getValue()),
   }),
+  columnHelper.accessor('user.experienceType', {
+    id: 'experience',
+    header: 'Experiência',
+    cell: (info) => <ExperienceBadge experienceType={info.getValue()} />,
+  }),
   columnHelper.accessor('status', {
     id: 'status',
     header: 'Status',
-    cell: (info) => {
-      const status = info.getValue()
-      return (
-        <Badge variant={statusBadgeVariantMap[status]}>
-          {subscriptionStatusDisplay[status].label}
-        </Badge>
-      )
-    },
+    cell: (info) => <SubscriptionStatusBadge status={info.getValue()} />,
   }),
   columnHelper.accessor('teams', {
     id: 'teams',

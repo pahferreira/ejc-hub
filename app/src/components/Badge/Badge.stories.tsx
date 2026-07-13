@@ -15,30 +15,30 @@ export const Default: StoryObj<typeof Badge> = {
   },
 }
 
-export const Pending: StoryObj<typeof Badge> = {
+export const Warning: StoryObj<typeof Badge> = {
   args: {
-    children: 'Pending',
-    variant: 'pending',
+    children: 'Warning',
+    variant: 'warning',
   },
 }
 
-export const Received: StoryObj<typeof Badge> = {
+export const Error: StoryObj<typeof Badge> = {
   args: {
-    children: 'Received',
-    variant: 'received',
+    children: 'Error',
+    variant: 'error',
   },
 }
 
-export const Completed: StoryObj<typeof Badge> = {
+export const Success: StoryObj<typeof Badge> = {
   args: {
-    children: 'Completed',
-    variant: 'completed',
+    children: 'Success',
+    variant: 'success',
   },
 }
 
-export const WaitingList: StoryObj<typeof Badge> = {
+export const Info: StoryObj<typeof Badge> = {
   args: {
-    children: 'Waiting List',
-    variant: 'waiting_list',
+    children: 'Info',
+    variant: 'info',
   },
 }

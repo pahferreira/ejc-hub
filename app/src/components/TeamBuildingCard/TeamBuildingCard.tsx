@@ -1,16 +1,15 @@
+import type { ReactNode } from 'react'
 import { FiPhone, FiUser } from 'react-icons/fi'
 import { Card } from '../Card/Card'
 import { Pill } from '../Pill/Pill'
-import clsx from 'clsx'
 
 export type TeamBuildingCardProps = {
   /** Person's full name. Used for the title and to derive the avatar initials. */
   name: string
   /** Nickname shown next to the name (e.g. "Lili"). Hidden when blank. */
   nickname: string
-  /** Optional badge label shown next to the name (e.g. "Novo"). Hidden when absent. */
-  badge?: string
-  badgeVariant?: 'blue' | 'red' | 'green'
+  /** Optional badge shown under the nickname (e.g. an ExperienceBadge). Hidden when absent. */
+  badge?: ReactNode
   /** Optional phone number. The phone line is hidden when absent. */
   phone?: string
   /** Inline attributes joined by a pipe (e.g. ["Música", "Teatro"]). Line hidden when empty. */
@@ -29,12 +28,6 @@ function getInitials(name: string) {
   const first = parts[0].charAt(0)
   const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : ''
   return (first + last).toUpperCase()
-}
-
-const badgeVariantBackground = {
-  blue: 'bg-blue',
-  red: 'bg-red',
-  green: 'bg-green',
 }
 
 export function TeamBuildingCard(props: TeamBuildingCardProps) {
@@ -56,16 +49,7 @@ export function TeamBuildingCard(props: TeamBuildingCardProps) {
 
           <div className="flex min-w-0 flex-col">
             <span className="font-semibold text-dark-brown">{props.nickname}</span>
-            {props.badge && (
-              <span
-                className={clsx(
-                  'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white w-fit',
-                  props.badgeVariant ? badgeVariantBackground[props.badgeVariant] : 'bg-green'
-                )}
-              >
-                {props.badge}
-              </span>
-            )}
+            {props.badge && <div className="w-fit">{props.badge}</div>}
           </div>
         </div>
 

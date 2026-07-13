@@ -16,11 +16,11 @@ export function getTeamStatus(memberCount: number, maxCapacity: number): TeamSta
 
 type TeamStatusDisplay = {
   label: string
-  badgeVariant: 'pending' | 'received' | 'completed'
+  badgeVariant: 'error' | 'info' | 'success'
 }
 
 export const teamStatusDisplay: Record<TeamStatus, TeamStatusDisplay> = {
-  needsMembers: { label: 'Precisa de membros', badgeVariant: 'pending' },
-  spotsAvailable: { label: 'Vagas disponíveis', badgeVariant: 'received' },
-  complete: { label: 'Completa', badgeVariant: 'completed' },
+  needsMembers: { label: 'Precisa de membros', badgeVariant: 'error' },
+  spotsAvailable: { label: 'Vagas disponíveis', badgeVariant: 'info' },
+  complete: { label: 'Completa', badgeVariant: 'success' },
 }
