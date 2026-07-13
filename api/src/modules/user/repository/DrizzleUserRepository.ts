@@ -1,8 +1,8 @@
-import { eq } from 'drizzle-orm'
+import { asc, eq } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type { UserInput } from '../../../core/database/schemas/index.ts'
-import type { UserRepository } from '../domain/UserRepository.ts'
+import type { ListUsersOptions, UserRepository } from '../domain/UserRepository.ts'
 
 class DrizzleUserRepository implements UserRepository {
   async createUser(input: UserInput) {
@@ -13,6 +13,13 @@ class DrizzleUserRepository implements UserRepository {
   async getUser(authId: string) {
     const results = await db.select().from(schema.users).where(eq(schema.users.authId, authId))
     return results[0]
+  }
+
+  async listUsers({ limit, offset }: ListUsersOptions) {
+    let query = db.select().from(schema.users).orderBy(asc(schema.users.name)).$dynamic()
+    if (limit !== undefined) query = query.limit(limit)
+    if (offset !== undefined) query = query.offset(offset)
+    return query
   }
 
   async updateUser(id: string, input: Partial<UserInput>) {

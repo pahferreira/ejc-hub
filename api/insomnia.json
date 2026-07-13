@@ -27,7 +27,8 @@
         "teamId": "00000000-0000-0000-0000-000000000000",
         "teamTemplateId": "00000000-0000-0000-0000-000000000000",
         "subscriptionId": "00000000-0000-0000-0000-000000000000",
-        "memberId": "00000000-0000-0000-0000-000000000000"
+        "memberId": "00000000-0000-0000-0000-000000000000",
+        "userId": "00000000-0000-0000-0000-000000000000"
       },
       "dataPropertyOrder": {
         "&": [
@@ -37,7 +38,8 @@
           "teamId",
           "teamTemplateId",
           "subscriptionId",
-          "memberId"
+          "memberId",
+          "userId"
         ]
       },
       "color": null,
@@ -149,6 +151,87 @@
       ],
       "authentication": {},
       "metaSortKey": -1738540799000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_users_list",
+      "parentId": "fld_users",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/users",
+      "name": "List Users",
+      "description": "List all users. Pagination is optional: omit limit/offset to get every user. Requires the users:list permission.",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "limit",
+          "value": "20",
+          "description": "Page size (optional; omit to return all users)",
+          "disabled": true,
+          "id": "pair_users_limit"
+        },
+        {
+          "name": "offset",
+          "value": "0",
+          "description": "Number of users to skip (optional, default 0)",
+          "disabled": true,
+          "id": "pair_users_offset"
+        }
+      ],
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_users_list"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540798000,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "_type": "request"
+    },
+    {
+      "_id": "req_users_update_by_id",
+      "parentId": "fld_users",
+      "modified": 1738540800000,
+      "created": 1738540800000,
+      "url": "{{ _.baseUrl }}/users/{{ _.userId }}",
+      "name": "Update User by ID",
+      "description": "Admin update of a specific user. Requires the users:update permission.",
+      "method": "PATCH",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"phone\": \"123456789\",\n  \"nickname\": \"johndoe\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"hasMusicSkills\": true,\n  \"hasActingSkills\": false,\n  \"hasDancingSkills\": false,\n  \"hasSingingSkills\": true,\n  \"hasManualSkills\": false,\n  \"hasCookingSkills\": true,\n  \"hasCommunicationSkills\": true,\n  \"hasGuitarSkills\": false,\n  \"hasPercussionSkills\": false,\n  \"hasMidiaSkills\": false\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "id": "pair_content_type_user_update_by_id"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.authToken }}",
+          "id": "pair_auth_user_update_by_id"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": -1738540797000,
       "isPrivate": false,
       "settingStoreCookies": true,
       "settingSendCookies": true,

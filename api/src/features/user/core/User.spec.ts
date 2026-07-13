@@ -18,17 +18,21 @@ function buildExisting(overrides: Partial<{ name: string; email: string }> = {})
   }
 }
 
+function buildRepository() {
+  return {
+    getUser: vi.fn(),
+    createUser: vi.fn(),
+    updateUser: vi.fn(),
+    listUsers: vi.fn(),
+  } as unknown as UserRepository
+}
+
 describe('User.syncProfile', () => {
   let userRepository: UserRepository
   let user: User
 
   beforeEach(() => {
-    userRepository = {
-      getUser: vi.fn(),
-      createUser: vi.fn(),
-      updateUser: vi.fn(),
-    } as unknown as UserRepository
-
+    userRepository = buildRepository()
     user = new User(userRepository)
   })
 
@@ -57,5 +61,77 @@ describe('User.syncProfile', () => {
 
     expect(userRepository.updateUser).not.toHaveBeenCalled()
     expect(result).toEqual(buildExisting({ name: 'Maria da Silva' }))
+  })
+})
+
+describe('User.listUsers', () => {
+  let userRepository: UserRepository
+  let user: User
+
+  beforeEach(() => {
+    userRepository = buildRepository()
+    user = new User(userRepository)
+  })
+
+  it('returns the users page from the repository', async () => {
+    const users = [buildExisting()]
+    vi.mocked(userRepository.listUsers).mockResolvedValue(users as never)
+
+    const result = await user.listUsers({ limit: 20, offset: 0 })
+
+    expect(userRepository.listUsers).toHaveBeenCalledWith({ limit: 20, offset: 0 })
+    expect(result).toEqual(users)
+  })
+
+  it('returns all users when no pagination options are given', async () => {
+    const users = [buildExisting(), buildExisting({ name: 'Maria da Silva' })]
+    vi.mocked(userRepository.listUsers).mockResolvedValue(users as never)
+
+    const result = await user.listUsers({})
+
+    expect(userRepository.listUsers).toHaveBeenCalledWith({})
+    expect(result).toEqual(users)
+  })
+
+  it('returns an empty list when there are no users in the page', async () => {
+    vi.mocked(userRepository.listUsers).mockResolvedValue([] as never)
+
+    const result = await user.listUsers({ limit: 20, offset: 100 })
+
+    expect(result).toEqual([])
+  })
+})
+
+describe('User.updateUserById', () => {
+  let userRepository: UserRepository
+  let user: User
+
+  beforeEach(() => {
+    userRepository = buildRepository()
+    user = new User(userRepository)
+  })
+
+  it('updates the user by id and converts dateOfBirth to a Date', async () => {
+    const updated = buildExisting({ name: 'Maria da Silva' })
+    vi.mocked(userRepository.updateUser).mockResolvedValue(updated as never)
+
+    const result = await user.updateUserById(USER_ID, {
+      nickname: 'Mari',
+      dateOfBirth: '1990-05-01',
+    })
+
+    expect(userRepository.updateUser).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({ nickname: 'Mari', dateOfBirth: new Date('1990-05-01') })
+    )
+    expect(result).toEqual(updated)
+  })
+
+  it('throws when the user does not exist', async () => {
+    vi.mocked(userRepository.updateUser).mockResolvedValue(undefined as never)
+
+    await expect(user.updateUserById('missing-id', { nickname: 'Mari' })).rejects.toThrow(
+      'user not found'
+    )
   })
 })

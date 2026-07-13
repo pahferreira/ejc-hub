@@ -17,3 +17,4 @@
    - `TeamInstancePermissions` — Read, Update
    - `TeamMembershipPermissions` — Create, Delete
    - `TeamTemplatePermissions` — Read, Create, Update, Delete
+   - `UserPermissions` — List, Update
