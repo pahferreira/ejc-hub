@@ -1,4 +1,7 @@
-import type { ListUsersOptions, UserRepository } from '../../../modules/user/domain/UserRepository.ts'
+import type {
+  ListUsersOptions,
+  UserRepository,
+} from '../../../modules/user/domain/UserRepository.ts'
 import type { UserInput } from '../../../core/database/schemas/index.ts'
 import { AppError } from '../../../shared/AppError.ts'
 
