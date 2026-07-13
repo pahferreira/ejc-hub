@@ -19,23 +19,12 @@ export type CreateEventSubscriptionPayload = {
   previousExperienceTeams: string[]
 }
 
-export type SubscriptionStatus = 'pending' | 'received' | 'completed' | 'waiting_list'
+import type {
+  SubscriptionStatus,
+  SubscriptionWithDetails,
+} from '../subscriptions/subscriptions.types'
 
-export type SubscriptionWithDetails = {
-  id: string
-  status: SubscriptionStatus
-  createdAt: string
-  teams: Array<{
-    id: string
-    name: string
-  }>
-  user: {
-    name: string
-    email: string
-    phone: string | null
-    experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
-  }
-}
+export type { SubscriptionStatus, SubscriptionWithDetails }
 
 export type CurrentEvent = {
   id: string
