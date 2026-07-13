@@ -13,7 +13,9 @@ export function syncedUserToFormDefaults(
   user: SyncedUser
 ): DefaultValues<EventSubscriptionFormInput> {
   return {
-    fullName: user.name ?? '',
+    // Auth0 database signups store the email as the name placeholder; leave
+    // the field blank in that case so the subscriber types their real name.
+    fullName: user.name && user.name !== user.email ? user.name : '',
     nickname: user.nickname ?? '',
     instagram: user.instagram ?? '',
     // Native date inputs expect yyyy-mm-dd; the API sends an ISO timestamp.

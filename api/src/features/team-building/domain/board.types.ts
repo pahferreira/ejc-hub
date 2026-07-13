@@ -12,6 +12,8 @@ export type TeamBoardMember = {
   nickname: string
   phone: string | null
   experienceType: ExperienceType
+  /** Key of the member's circle (newbies only); null when unset. */
+  circleKey: string | null
   /** Skill-derived labels shown inline on the card (e.g. ["Música", "Canto"]). */
   areas: string[]
   /** Names of the team instances the member signed up for. */
@@ -62,6 +64,8 @@ export type Candidate = {
   /** Nickname, falling back to the user's first name when unset. */
   nickname: string
   experienceType: ExperienceType
+  /** Key of the candidate's circle (newbies only); null when unset. */
+  circleKey: string | null
   /** Skill-derived labels (e.g. ["Música", "Canto"]). */
   areas: string[]
   /** Raw team-instance IDs from the subscription's team preferences. */

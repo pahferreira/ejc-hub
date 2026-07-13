@@ -16,6 +16,8 @@ export type CoordinatorCandidateRowProps = {
   name: string
   nickname: string
   experienceType: ExperienceType
+  /** Key of the candidate's circle; colors the newbie badge. */
+  circleKey?: string | null
   areas: string[]
   /** Names of the teams this candidate selected as preferences (rendered as avatars). */
   teams: string[]
@@ -104,7 +106,7 @@ export function CoordinatorCandidateRow(props: CoordinatorCandidateRowProps) {
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="truncate text-sm font-medium text-dark-brown">{props.nickname}</span>
-          <ExperienceBadge experienceType={props.experienceType} />
+          <ExperienceBadge experienceType={props.experienceType} circleKey={props.circleKey} />
         </div>
         <span className="truncate text-xs text-dark-brown/70">{props.name}</span>
         {props.areas.length > 0 && (

@@ -1,4 +1,5 @@
 import { AppError } from '../../../shared/AppError.ts'
+import type { CircleRepository } from '../../../modules/circle/domain/CircleRepository.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type { TeamTemplateRepository } from '../../../modules/team-template/domain/TeamTemplateRepository.ts'
@@ -7,16 +8,29 @@ export class ControlPanel {
   #teamTemplateRepository: TeamTemplateRepository
   #eventRepository: EventRepository
   #teamInstanceRepository: TeamInstanceRepository
+  #circleRepository: CircleRepository
   currentEventId: string | null = null
 
   constructor(
     teamTemplateRepo: TeamTemplateRepository,
     eventRepo: EventRepository,
-    teamInstanceRepo: TeamInstanceRepository
+    teamInstanceRepo: TeamInstanceRepository,
+    circleRepo: CircleRepository
   ) {
     this.#teamTemplateRepository = teamTemplateRepo
     this.#eventRepository = eventRepo
     this.#teamInstanceRepository = teamInstanceRepo
+    this.#circleRepository = circleRepo
+  }
+
+  async listCircles() {
+    const circles = await this.#circleRepository.listCircles()
+
+    return circles.map((circle) => ({
+      key: circle.key,
+      label: circle.label,
+      color: circle.color,
+    }))
   }
 
   async createTeamTemplate(input: { description?: string; key: string; name: string }) {

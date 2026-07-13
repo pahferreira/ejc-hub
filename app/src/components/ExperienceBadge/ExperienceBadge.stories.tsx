@@ -15,6 +15,27 @@ export const Newbie: StoryObj<typeof ExperienceBadge> = {
   },
 }
 
+export const NewbieRedCircle: StoryObj<typeof ExperienceBadge> = {
+  args: {
+    experienceType: 'newbie',
+    circleKey: 'red',
+  },
+}
+
+export const NewbieGreenCircle: StoryObj<typeof ExperienceBadge> = {
+  args: {
+    experienceType: 'newbie',
+    circleKey: 'green',
+  },
+}
+
+export const NewbieBlueCircle: StoryObj<typeof ExperienceBadge> = {
+  args: {
+    experienceType: 'newbie',
+    circleKey: 'blue',
+  },
+}
+
 export const Experienced: StoryObj<typeof ExperienceBadge> = {
   args: {
     experienceType: 'experienced',

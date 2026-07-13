@@ -12,7 +12,12 @@ export function MemberCard(props: MemberCardProps) {
     <TeamBuildingCard
       name={props.member.name}
       nickname={props.member.nickname}
-      badge={<ExperienceBadge experienceType={props.member.experienceType} />}
+      badge={
+        <ExperienceBadge
+          experienceType={props.member.experienceType}
+          circleKey={props.member.circleKey}
+        />
+      }
       phone={props.member.phone ?? undefined}
       attributes={props.member.areas}
       preferences={props.member.preferences}

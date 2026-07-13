@@ -46,7 +46,12 @@ export const subscriptionColumns = [
   columnHelper.accessor('user.experienceType', {
     id: 'experience',
     header: 'Experiência',
-    cell: (info) => <ExperienceBadge experienceType={info.getValue()} />,
+    cell: (info) => (
+      <ExperienceBadge
+        experienceType={info.getValue()}
+        circleKey={info.row.original.user.circle?.key}
+      />
+    ),
   }),
   columnHelper.accessor('status', {
     id: 'status',

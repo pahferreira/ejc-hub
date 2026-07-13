@@ -19,6 +19,7 @@ const makeCandidate = (overrides: Partial<CoordinatorCandidate> = {}): Coordinat
   name: 'João da Silva',
   nickname: 'Joãozinho',
   experienceType: 'newbie',
+  circleKey: null,
   areas: [],
   preferenceTeamIds: [],
   preferences: [],

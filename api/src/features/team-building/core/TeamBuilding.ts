@@ -86,6 +86,7 @@ export class TeamBuilding {
         nickname: resolveNickname(subscription.user.name, subscription.user.nickname),
         phone: subscription.user.phone,
         experienceType: subscription.user.experienceType,
+        circleKey: subscription.user.circle?.key ?? null,
         areas: formatAreas(subscription.user),
         preferences: (subscription.teams ?? [])
           .map((teamInstanceId) => instanceNameById.get(teamInstanceId))
@@ -309,6 +310,7 @@ export class TeamBuilding {
             name: sub.user.name,
             nickname: resolveNickname(sub.user.name, sub.user.nickname),
             experienceType: sub.user.experienceType,
+            circleKey: sub.user.circle?.key ?? null,
             areas: formatAreas(sub.user),
             preferenceTeamIds: sub.teams ?? [],
             preferences: (sub.teams ?? [])

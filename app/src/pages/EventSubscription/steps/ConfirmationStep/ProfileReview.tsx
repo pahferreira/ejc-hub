@@ -1,13 +1,8 @@
 import { Badge } from '../../../../components/Badge/Badge'
 import { SectionTitle } from '../../../../components/SectionTitle/SectionTitle'
-import {
-  availability,
-  circleOptions,
-  experienceOptions,
-  getOptionLabel,
-  skills,
-} from '../../profileOptions'
+import { availability, experienceOptions, getOptionLabel, skills } from '../../profileOptions'
 import { useEventSubscriptionForm } from '../../useEventSubscriptionForm'
+import { useCirclesQuery } from '../../../../services/circles/useCirclesQuery'
 import { ReviewField } from './ReviewField'
 
 type ProfileReviewProps = {
@@ -17,6 +12,11 @@ type ProfileReviewProps = {
 export function ProfileReview(props: ProfileReviewProps) {
   const form = useEventSubscriptionForm()
   const values = form.watch()
+  const circlesQuery = useCirclesQuery()
+  const circleOptions = (circlesQuery.data ?? []).map((option) => ({
+    label: option.label,
+    value: option.key,
+  }))
 
   const isNewbie = values.experienceType === 'newbie'
   const hasServed = !isNewbie && Boolean(values.experienceType)

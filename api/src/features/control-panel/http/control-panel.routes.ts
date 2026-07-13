@@ -42,6 +42,16 @@ export const patchTeamTemplateBodySchema = postTeamTemplateBodySchema.partial().
 
 export function controlPanelRoutes(server: FastifyServerInstance) {
   return () => {
+    server.get('/circles', { preHandler: authGuard(server) }, async (_, reply) => {
+      try {
+        const circles = await controlPanelApp.listCircles()
+
+        return reply.code(HttpStatus.Ok).send({ circles })
+      } catch (error) {
+        fastifyErrorHandler(reply, error)
+      }
+    })
+
     // Team Management
     server.get(
       '/control-panel/team-templates',
