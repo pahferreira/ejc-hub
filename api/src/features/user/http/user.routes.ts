@@ -7,7 +7,14 @@ import { extractUserInformationFromToken } from '../../../shared/extract-user-in
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import { UserPermissions } from '../../../../../common/permissions/permissions.types.ts'
 
-const updateUserInputSchema = z.object({
+const updateProfileInputSchema = z.object({
+  // An email-shaped name would re-enable the syncProfile placeholder guard,
+  // letting the next login overwrite it with the Auth0 token name.
+  name: z
+    .string()
+    .nonempty('must not be empty')
+    .refine((value) => !z.email().safeParse(value).success, 'must not be an email')
+    .optional(),
   phone: z.string().nonempty('must not be empty').optional(),
   nickname: z.string().nonempty('must not be empty').optional(),
   dateOfBirth: z.string().nonempty('must not be empty').optional(),
@@ -21,6 +28,10 @@ const updateUserInputSchema = z.object({
   hasGuitarSkills: z.boolean().optional(),
   hasPercussionSkills: z.boolean().optional(),
   hasMidiaSkills: z.boolean().optional(),
+})
+
+const updateUserInputSchema = updateProfileInputSchema.extend({
+  circleKey: z.string().nonempty('must not be empty').optional(),
 })
 
 const listUsersQueryStringSchema = z.object({
@@ -84,7 +95,7 @@ export function userRoutes(server: FastifyServerInstance) {
 
     server.patch(
       '/users/profile',
-      { schema: { body: updateUserInputSchema }, preHandler: authGuard(server) },
+      { schema: { body: updateProfileInputSchema }, preHandler: authGuard(server) },
       async (request, reply) => {
         const token = request.getToken()
         if (token) {
