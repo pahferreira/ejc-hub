@@ -91,12 +91,21 @@ export async function seedSubscriptions() {
 
   const teamInstanceIds = teamInstances.map((t) => t.id)
 
+  const circles = await db.select({ id: schema.circles.id }).from(schema.circles)
+
+  if (circles.length === 0) {
+    throw new Error('No circles found. Run the circles seed first.')
+  }
+
+  const circleIds = circles.map((circle) => circle.id)
+
   const usersToInsert = Array.from({ length: TOTAL_USERS }, () => {
     const firstName = faker.person.firstName()
     const lastName = faker.person.lastName()
     const email = faker.internet
       .email({ firstName, lastName, provider: 'seed.ejc-hub.local' })
       .toLowerCase()
+    const experienceType = faker.helpers.arrayElement<ExperienceOption>([...EXPERIENCE_OPTIONS])
 
     return {
       authId: `seed|${faker.string.uuid()}`,
@@ -119,7 +128,8 @@ export async function seedSubscriptions() {
       hasPercussionSkills: faker.datatype.boolean(),
       hasMidiaSkills: faker.datatype.boolean(),
       hasCoordinatorExperience: faker.datatype.boolean(),
-      experienceType: faker.helpers.arrayElement<ExperienceOption>([...EXPERIENCE_OPTIONS]),
+      experienceType,
+      circleId: experienceType === 'newbie' ? faker.helpers.arrayElement(circleIds) : null,
     }
   })
 

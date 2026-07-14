@@ -1,8 +1,9 @@
 import { Checkbox } from '../../../components/Checkbox/Checkbox'
 import { RadioGroup } from '../../../components/RadioGroup/RadioGroup'
 import { SectionTitle } from '../../../components/SectionTitle/SectionTitle'
-import { availability, circleOptions, experienceOptions, skills } from '../profileOptions'
+import { availability, experienceOptions, skills } from '../profileOptions'
 import { useEventSubscriptionField } from '../useEventSubscriptionForm'
+import { useCirclesQuery } from '../../../services/circles/useCirclesQuery'
 
 type ProfileStepProps = {
   teamOptions: { key: string; name: string; description: string }[]
@@ -17,6 +18,11 @@ export function ProfileStep(props: ProfileStepProps) {
   const selectedPreviousExperienceTeams = useEventSubscriptionField(
     'selectedPreviousExperienceTeams'
   )
+  const circlesQuery = useCirclesQuery()
+  const circleOptions = (circlesQuery.data ?? []).map((option) => ({
+    label: option.label,
+    value: option.key,
+  }))
 
   const isNewbie = experienceType.field.value === 'newbie'
   const hasServed = !isNewbie && Boolean(experienceType.field.value)

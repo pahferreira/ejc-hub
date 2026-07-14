@@ -7,8 +7,10 @@ import type { TeamMembershipRepository } from '../../../modules/team-membership/
 import type { SubscriptionOptionRepository } from '../../../modules/subscription-option/domain/SubscriptionOptionRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
+import type { CircleRepository } from '../../../modules/circle/domain/CircleRepository.ts'
 import type {
   CurrentEventSubscriptionPayload,
+  ExperienceType,
   SubscriptionPayload,
   SubscriptionWithDetails,
 } from '../domain/subscription-types.ts'
@@ -29,6 +31,7 @@ export class Events {
   #subscriptionOptionRepository: SubscriptionOptionRepository
   #userRepository: UserRepository
   #eventsRepository: EventRepository
+  #circleRepository: CircleRepository
 
   constructor(
     teamInstanceRepo: TeamInstanceRepository,
@@ -36,7 +39,8 @@ export class Events {
     subscriptionOptionRepo: SubscriptionOptionRepository,
     userRepo: UserRepository,
     eventRepo: EventRepository,
-    teamMembershipRepo: TeamMembershipRepository
+    teamMembershipRepo: TeamMembershipRepository,
+    circleRepo: CircleRepository
   ) {
     this.#teamInstanceRepository = teamInstanceRepo
     this.#subscriptionRepository = subscriptionRepo
@@ -44,6 +48,7 @@ export class Events {
     this.#userRepository = userRepo
     this.#eventsRepository = eventRepo
     this.#teamMembershipRepository = teamMembershipRepo
+    this.#circleRepository = circleRepo
   }
 
   async subscribe(eventId: string, userAuthId: string, input: SubscriptionPayload) {
@@ -378,6 +383,8 @@ export class Events {
       )
     }
 
+    const circleId = await this.#resolveCircleId(input.experienceType, input.circle)
+
     const teamInstancesToSubscribe = await this.#teamInstanceRepository.listTeamInstances(
       currentEvent.id,
       {
@@ -431,10 +438,29 @@ export class Events {
       emergencyContactPhone: input.emergencyContactPhone,
       gender: input.gender,
       experienceType: input.experienceType,
+      circleId,
       hasCoordinatorExperience: input.hasCoordinatorExperience ?? false,
     })
 
     return subscription
+  }
+
+  async #resolveCircleId(experienceType: ExperienceType, circleKey?: string) {
+    if (experienceType !== 'newbie') {
+      return null
+    }
+
+    if (!circleKey) {
+      throw new AppError('Circle is required for newbie subscriptions')
+    }
+
+    const circle = await this.#circleRepository.getCircleByKey(circleKey)
+
+    if (!circle) {
+      throw new AppError(`Circle "${circleKey}" not found`)
+    }
+
+    return circle.id
   }
 
   #filterSubscriptionsByStatus(

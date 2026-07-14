@@ -4,6 +4,12 @@ export type ExperienceType = 'newbie' | 'experienced' | 'experienced_outsider'
 
 export type Gender = 'male' | 'female'
 
+export type SubscriberCircle = {
+  key: string
+  label: string
+  color: string
+}
+
 type SubscriptionAvailability =
   | 'monday'
   | 'tuesday'
@@ -48,6 +54,7 @@ export type CurrentEventSubscriptionPayload = {
   emergencyContactPhone: string
   gender: Gender
   experienceType: ExperienceType
+  circle?: string
   hasCoordinatorExperience?: boolean
   selectedSkills: string[]
   selectedTeams: string[]
@@ -69,6 +76,7 @@ export type SubscriptionWithDetails = {
     email: string
     phone: string | null
     experienceType: ExperienceType
+    circle: SubscriberCircle | null
     hasCoordinatorExperience: boolean
     hasActingSkills: boolean
     hasCommunicationSkills: boolean

@@ -7,6 +7,7 @@ import type { SubscriptionRepository } from '../../../modules/subscription/domai
 import type { SubscriptionOptionRepository } from '../../../modules/subscription-option/domain/SubscriptionOptionRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
+import type { CircleRepository } from '../../../modules/circle/domain/CircleRepository.ts'
 import type { CurrentEventSubscriptionPayload } from '../domain/subscription-types.ts'
 
 const EVENT_ID = 'event-1'
@@ -40,6 +41,7 @@ describe('Events.subscribeCurrentEvent', () => {
   let subscriptionRepository: SubscriptionRepository
   let subscriptionOptionRepository: SubscriptionOptionRepository
   let teamInstanceRepository: TeamInstanceRepository
+  let circleRepository: CircleRepository
   let events: Events
 
   beforeEach(() => {
@@ -66,13 +68,18 @@ describe('Events.subscribeCurrentEvent', () => {
       listTeamInstances: vi.fn().mockResolvedValue([{ id: 'instance-1', templateKey: 'cozinha' }]),
     } as unknown as TeamInstanceRepository
 
+    circleRepository = {
+      getCircleByKey: vi.fn().mockResolvedValue({ id: 'circle-1', key: 'red' }),
+    } as unknown as CircleRepository
+
     events = new Events(
       teamInstanceRepository,
       subscriptionRepository,
       subscriptionOptionRepository,
       userRepository,
       eventRepository,
-      {} as TeamMembershipRepository
+      {} as TeamMembershipRepository,
+      circleRepository
     )
   })
 
@@ -130,6 +137,51 @@ describe('Events.subscribeCurrentEvent', () => {
     expect(userRepository.updateUser).toHaveBeenCalledWith(
       USER_ID,
       expect.objectContaining({ instagram: undefined, dateOfBirth: undefined })
+    )
+  })
+
+  it('resolves the circle key and stores the circle id for newbie subscriptions', async () => {
+    await events.subscribeCurrentEvent(
+      USER_AUTH_ID,
+      buildPayload({ experienceType: 'newbie', circle: 'red', previousExperienceTeams: [] })
+    )
+
+    expect(circleRepository.getCircleByKey).toHaveBeenCalledWith('red')
+    expect(userRepository.updateUser).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({ circleId: 'circle-1' })
+    )
+  })
+
+  it('rejects a newbie subscription without a circle', async () => {
+    await expect(
+      events.subscribeCurrentEvent(
+        USER_AUTH_ID,
+        buildPayload({ experienceType: 'newbie', previousExperienceTeams: [] })
+      )
+    ).rejects.toThrow('Circle is required for newbie subscriptions')
+
+    expect(subscriptionRepository.insertSubscription).not.toHaveBeenCalled()
+  })
+
+  it('rejects a newbie subscription with an unknown circle key', async () => {
+    vi.mocked(circleRepository.getCircleByKey).mockResolvedValue(undefined)
+
+    await expect(
+      events.subscribeCurrentEvent(
+        USER_AUTH_ID,
+        buildPayload({ experienceType: 'newbie', circle: 'purple', previousExperienceTeams: [] })
+      )
+    ).rejects.toThrow('Circle "purple" not found')
+  })
+
+  it('stores a null circle id and skips circle lookup for non-newbie subscriptions', async () => {
+    await events.subscribeCurrentEvent(USER_AUTH_ID, buildPayload({ circle: 'red' }))
+
+    expect(circleRepository.getCircleByKey).not.toHaveBeenCalled()
+    expect(userRepository.updateUser).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({ circleId: null })
     )
   })
 })

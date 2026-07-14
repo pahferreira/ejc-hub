@@ -84,6 +84,11 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
         status: schema.subscriptions.status,
         createdAt: schema.subscriptions.createdAt,
         teams: sql<string[]>`array_agg(${schema.subscriptionOptions.teamInstanceId})`,
+        circle: {
+          key: schema.circles.key,
+          label: schema.circles.label,
+          color: schema.circles.color,
+        },
         user: {
           name: schema.users.name,
           nickname: schema.users.nickname,
@@ -105,6 +110,7 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
       })
       .from(schema.subscriptions)
       .innerJoin(schema.users, eq(schema.users.id, schema.subscriptions.userId))
+      .leftJoin(schema.circles, eq(schema.circles.id, schema.users.circleId))
       .leftJoin(
         schema.subscriptionOptions,
         eq(schema.subscriptionOptions.subscriptionId, schema.subscriptions.id)
@@ -113,6 +119,9 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
         schema.subscriptions.id,
         schema.subscriptions.userId,
         schema.subscriptions.createdAt,
+        schema.circles.key,
+        schema.circles.label,
+        schema.circles.color,
         schema.users.name,
         schema.users.nickname,
         schema.users.email,
@@ -131,7 +140,11 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
         schema.users.hasMidiaSkills
       )
       .where(eq(schema.subscriptions.eventId, eventId))
-    return results
+
+    return results.map(({ circle, ...subscription }) => ({
+      ...subscription,
+      user: { ...subscription.user, circle },
+    }))
   }
 }
 

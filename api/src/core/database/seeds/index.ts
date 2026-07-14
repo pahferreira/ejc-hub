@@ -1,18 +1,20 @@
 import { seedTeamTemplates } from './team-templates.seed.ts'
 import { seedEvents } from './events.seed.ts'
 import { seedSubscriptions } from './subscriptions.seed.ts'
+import { seedCircles } from './circles.seed.ts'
 
 type SeedResult = Record<string, unknown>
 type SeedRunner = () => Promise<SeedResult>
 
 const seeds: Record<string, SeedRunner> = {
+  circles: seedCircles,
   'team-templates': seedTeamTemplates,
   events: seedEvents,
   subscriptions: seedSubscriptions,
 }
 
 const ALIASES = {
-  all: ['team-templates', 'events', 'subscriptions'] as const,
+  all: ['circles', 'team-templates', 'events', 'subscriptions'] as const,
 }
 
 function printAvailable() {

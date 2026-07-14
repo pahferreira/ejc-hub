@@ -1,4 +1,5 @@
 import { pgEnum, pgTable, text, timestamp, boolean, uuid } from 'drizzle-orm/pg-core'
+import { circles } from './circles.ts'
 
 export const experienceType = pgEnum('experience_type', [
   'newbie',
@@ -32,6 +33,7 @@ export const users = pgTable('users', {
   hasMidiaSkills: boolean('has_midia_skills').notNull().default(false),
   hasCoordinatorExperience: boolean('has_coordinator_experience').notNull().default(false),
   experienceType: experienceType().notNull().default('experienced'),
+  circleId: uuid('circle_id').references(() => circles.id),
   gender: gender(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),

@@ -113,6 +113,7 @@ export const subscribeCurrentSchema = z.object({
   emergencyContactPhone: z.string('Emergency contact phone is required').nonempty(),
   gender: genderEnum,
   experienceType: experienceTypeEnum,
+  circle: z.string().nonempty().optional(),
   hasCoordinatorExperience: z.boolean().optional(),
   selectedSkills: z.array(z.string()),
   selectedTeams: z.array(z.string()),

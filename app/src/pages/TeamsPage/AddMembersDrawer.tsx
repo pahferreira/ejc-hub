@@ -108,6 +108,7 @@ export function AddMembersDrawer(props: AddMembersDrawerProps) {
                 name={candidate.name}
                 nickname={candidate.nickname}
                 experienceType={candidate.experienceType}
+                circleKey={candidate.circleKey}
                 areas={candidate.areas}
                 hideCoordinatorExperience
                 teams={candidate.preferences}

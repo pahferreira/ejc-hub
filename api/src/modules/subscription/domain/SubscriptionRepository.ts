@@ -19,6 +19,7 @@ export interface SubscriptionRepository {
         email: string
         phone: string | null
         experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
+        circle: { key: string; label: string; color: string } | null
         hasCoordinatorExperience: boolean
         hasActingSkills: boolean
         hasCommunicationSkills: boolean

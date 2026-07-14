@@ -4,6 +4,7 @@ import { ControlPanel } from './ControlPanel.ts'
 import type { TeamTemplateRepository } from '../../../modules/team-template/domain/TeamTemplateRepository.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
+import type { CircleRepository } from '../../../modules/circle/domain/CircleRepository.ts'
 
 const TEAM_TEMPLATE_ID = 'team-template-1'
 
@@ -26,7 +27,12 @@ describe('ControlPanel.updateTeamTemplate', () => {
     eventRepository = {} as unknown as EventRepository
     teamInstanceRepository = {} as unknown as TeamInstanceRepository
 
-    controlPanel = new ControlPanel(teamTemplateRepository, eventRepository, teamInstanceRepository)
+    controlPanel = new ControlPanel(
+      teamTemplateRepository,
+      eventRepository,
+      teamInstanceRepository,
+      {} as CircleRepository
+    )
   })
 
   it('passes maxCapacity through to the repository update', async () => {

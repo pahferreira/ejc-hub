@@ -13,7 +13,7 @@ export const eventSubscriptionSchema = z
     emergencyContactPhone: z.string().nonempty('Telefone do contato de emergência é obrigatório'),
     gender: z.enum(['male', 'female'], { message: 'Selecione um gênero' }),
     experienceType: z.enum(['newbie', 'experienced', 'experienced_outsider']),
-    circle: z.enum(['red', 'green', 'blue']).optional(),
+    circle: z.string().optional(),
     hasCoordinatorExperience: z.boolean(),
     selectedSkills: z.array(z.string()).optional(),
     selectedTeams: z.array(z.string()).min(3, 'Selecione pelo menos 3 equipes.'),

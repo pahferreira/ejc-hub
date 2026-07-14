@@ -9,12 +9,6 @@ export const genderOptions = [
   { label: 'Feminino', value: 'female' },
 ]
 
-export const circleOptions = [
-  { label: 'Vermelho', value: 'red' },
-  { label: 'Verde', value: 'green' },
-  { label: 'Azul', value: 'blue' },
-]
-
 // Single source of truth for skill options: `value` is the snake_case form
 // value sent to the API, `key` is the matching camelCase flag on the user.
 // The API's format-areas.ts renders these same labels on board cards/drawers.
