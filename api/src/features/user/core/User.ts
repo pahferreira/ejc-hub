@@ -2,6 +2,7 @@ import type {
   ListUsersOptions,
   UserRepository,
 } from '../../../modules/user/domain/UserRepository.ts'
+import type { CircleRepository } from '../../../modules/circle/domain/CircleRepository.ts'
 import type { UserInput } from '../../../core/database/schemas/index.ts'
 import { AppError } from '../../../shared/AppError.ts'
 
@@ -13,6 +14,7 @@ type SyncUserInput = {
 }
 
 type UpdateUserInput = {
+  name?: string
   phone?: string
   nickname?: string
   dateOfBirth?: string
@@ -28,11 +30,17 @@ type UpdateUserInput = {
   hasMidiaSkills?: boolean
 }
 
+type UpdateUserByIdInput = UpdateUserInput & {
+  circleKey?: string
+}
+
 export class User {
   #userRepository: UserRepository
+  #circleRepository: CircleRepository
 
-  constructor(userRepo: UserRepository) {
+  constructor(userRepo: UserRepository, circleRepo: CircleRepository) {
     this.#userRepository = userRepo
+    this.#circleRepository = circleRepo
   }
 
   async syncProfile(input: SyncUserInput) {
@@ -66,10 +74,15 @@ export class User {
     return this.#userRepository.listUsers(options)
   }
 
-  async updateUserById(id: string, input: UpdateUserInput) {
+  async updateUserById(id: string, { circleKey, ...input }: UpdateUserByIdInput) {
+    // An unknown circle key is ignored rather than rejected, leaving the
+    // user's current circle untouched.
+    const circle = circleKey ? await this.#circleRepository.getCircleByKey(circleKey) : undefined
+
     const updatedUser = await this.#userRepository.updateUser(id, {
       ...input,
       dateOfBirth: input.dateOfBirth ? new Date(input.dateOfBirth) : undefined,
+      circleId: circle?.id,
     })
 
     if (!updatedUser) {

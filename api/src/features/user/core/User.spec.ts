@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 import { User } from './User.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
+import type { CircleRepository } from '../../../modules/circle/domain/CircleRepository.ts'
 
 const AUTH_ID = 'auth0|user-1'
 const USER_ID = 'user-1'
@@ -27,13 +28,20 @@ function buildRepository() {
   } as unknown as UserRepository
 }
 
+function buildCircleRepository() {
+  return {
+    listCircles: vi.fn(),
+    getCircleByKey: vi.fn(),
+  } as unknown as CircleRepository
+}
+
 describe('User.syncProfile', () => {
   let userRepository: UserRepository
   let user: User
 
   beforeEach(() => {
     userRepository = buildRepository()
-    user = new User(userRepository)
+    user = new User(userRepository, buildCircleRepository())
   })
 
   it('takes the token name while the stored name is still the email placeholder', async () => {
@@ -70,7 +78,7 @@ describe('User.listUsers', () => {
 
   beforeEach(() => {
     userRepository = buildRepository()
-    user = new User(userRepository)
+    user = new User(userRepository, buildCircleRepository())
   })
 
   it('returns the users page from the repository', async () => {
@@ -104,11 +112,13 @@ describe('User.listUsers', () => {
 
 describe('User.updateUserById', () => {
   let userRepository: UserRepository
+  let circleRepository: CircleRepository
   let user: User
 
   beforeEach(() => {
     userRepository = buildRepository()
-    user = new User(userRepository)
+    circleRepository = buildCircleRepository()
+    user = new User(userRepository, circleRepository)
   })
 
   it('updates the user by id and converts dateOfBirth to a Date', async () => {
@@ -125,6 +135,52 @@ describe('User.updateUserById', () => {
       expect.objectContaining({ nickname: 'Mari', dateOfBirth: new Date('1990-05-01') })
     )
     expect(result).toEqual(updated)
+  })
+
+  it('updates the user name', async () => {
+    const updated = buildExisting({ name: 'Maria Souza' })
+    vi.mocked(userRepository.updateUser).mockResolvedValue(updated as never)
+
+    const result = await user.updateUserById(USER_ID, { name: 'Maria Souza' })
+
+    expect(userRepository.updateUser).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({ name: 'Maria Souza' })
+    )
+    expect(result).toEqual(updated)
+  })
+
+  it('resolves the circle key to its id and updates the user circle', async () => {
+    vi.mocked(circleRepository.getCircleByKey).mockResolvedValue({ id: 'circle-1' } as never)
+    vi.mocked(userRepository.updateUser).mockResolvedValue(buildExisting() as never)
+
+    await user.updateUserById(USER_ID, { circleKey: 'yellow' })
+
+    expect(circleRepository.getCircleByKey).toHaveBeenCalledWith('yellow')
+    expect(userRepository.updateUser).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({ circleId: 'circle-1' })
+    )
+  })
+
+  it('ignores the circle update when no circle matches the key', async () => {
+    vi.mocked(circleRepository.getCircleByKey).mockResolvedValue(undefined)
+    vi.mocked(userRepository.updateUser).mockResolvedValue(buildExisting() as never)
+
+    await user.updateUserById(USER_ID, { nickname: 'Mari', circleKey: 'unknown' })
+
+    expect(userRepository.updateUser).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({ nickname: 'Mari', circleId: undefined })
+    )
+  })
+
+  it('does not look up a circle when no circle key is given', async () => {
+    vi.mocked(userRepository.updateUser).mockResolvedValue(buildExisting() as never)
+
+    await user.updateUserById(USER_ID, { nickname: 'Mari' })
+
+    expect(circleRepository.getCircleByKey).not.toHaveBeenCalled()
   })
 
   it('throws when the user does not exist', async () => {
