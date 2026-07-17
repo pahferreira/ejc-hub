@@ -3,6 +3,7 @@ import type { UserInput, UserModel } from '../../../core/database/schemas/index.
 export type ListUsersOptions = {
   limit?: number
   offset?: number
+  search?: string
 }
 
 export interface UserRepository {

@@ -108,6 +108,16 @@ describe('User.listUsers', () => {
 
     expect(result).toEqual([])
   })
+
+  it('forwards the search term to the repository', async () => {
+    const users = [buildExisting()]
+    vi.mocked(userRepository.listUsers).mockResolvedValue(users as never)
+
+    const result = await user.listUsers({ search: 'maria' })
+
+    expect(userRepository.listUsers).toHaveBeenCalledWith({ search: 'maria' })
+    expect(result).toEqual(users)
+  })
 })
 
 describe('User.updateUserById', () => {
