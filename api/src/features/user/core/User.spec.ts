@@ -160,6 +160,17 @@ describe('User.updateUserById', () => {
     expect(result).toEqual(updated)
   })
 
+  it('forwards the experience type to the repository', async () => {
+    vi.mocked(userRepository.updateUser).mockResolvedValue(buildExisting() as never)
+
+    await user.updateUserById(USER_ID, { experienceType: 'newbie' })
+
+    expect(userRepository.updateUser).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({ experienceType: 'newbie' })
+    )
+  })
+
   it('resolves the circle key to its id and updates the user circle', async () => {
     vi.mocked(circleRepository.getCircleByKey).mockResolvedValue({ id: 'circle-1' } as never)
     vi.mocked(userRepository.updateUser).mockResolvedValue(buildExisting() as never)

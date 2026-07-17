@@ -4,7 +4,10 @@ import type {
 } from '../../../modules/user/domain/UserRepository.ts'
 import type { CircleRepository } from '../../../modules/circle/domain/CircleRepository.ts'
 import type { UserInput } from '../../../core/database/schemas/index.ts'
+import { experienceType } from '../../../core/database/schemas/users.ts'
 import { AppError } from '../../../shared/AppError.ts'
+
+type ExperienceType = (typeof experienceType.enumValues)[number]
 
 type SyncUserInput = {
   authId: string
@@ -32,6 +35,7 @@ type UpdateUserInput = {
 
 type UpdateUserByIdInput = UpdateUserInput & {
   circleKey?: string
+  experienceType?: ExperienceType
 }
 
 export class User {
