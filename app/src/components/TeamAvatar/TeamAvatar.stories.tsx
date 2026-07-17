@@ -1,6 +1,8 @@
+/* eslint-disable storybook/use-storybook-expect */
 import { describe, it, expect } from 'vitest'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { TeamAvatar, getInitials } from './TeamAvatar'
+import { TeamAvatar } from './TeamAvatar'
+import { getInitials } from './getInitials'
 
 const meta = {
   title: 'UI/TeamAvatar',

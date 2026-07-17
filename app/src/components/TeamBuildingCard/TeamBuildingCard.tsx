@@ -79,10 +79,7 @@ export function TeamBuildingCard(props: TeamBuildingCardProps) {
             </div>
           )}
           {hasWeekAvailability && (
-            <div
-              className="flex items-center gap-1.5"
-              title="Disponibilidade da semana"
-            >
+            <div className="flex items-center gap-1.5" title="Disponibilidade da semana">
               <FiCalendar size={12} className="shrink-0 text-secondary-foreground" />
               <div className="flex gap-0.5">
                 {WEEK_DAYS.map((day) => (
