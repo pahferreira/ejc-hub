@@ -32,6 +32,7 @@ const updateProfileInputSchema = z.object({
 
 const updateUserInputSchema = updateProfileInputSchema.extend({
   circleKey: z.string().nonempty('must not be empty').optional(),
+  experienceType: z.enum(['newbie', 'experienced', 'experienced_outsider']).optional(),
 })
 
 const listUsersQueryStringSchema = z.object({
