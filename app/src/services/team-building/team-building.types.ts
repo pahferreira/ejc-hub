@@ -15,6 +15,8 @@ export type TeamBoardMember = {
   areas: string[]
   /** Names of the team instances the member signed up for. */
   preferences: string[]
+  /** Days of the week the member is available (e.g. ["monday", "friday"]). */
+  weekAvailability: string[]
 }
 
 export type TeamBoardColumn = {
@@ -67,6 +69,8 @@ export type CoordinatorCandidate = {
   hasCoordinatorExperience: boolean
   /** Names of the teams the candidate has coordinated in past events. */
   coordinatorExperienceTeams: string[]
+  /** Days of the week the candidate is available (e.g. ["monday", "friday"]). */
+  weekAvailability: string[]
 }
 
 export type CandidateListResponse = {

@@ -1,3 +1,5 @@
+import { getInitials } from './getInitials'
+
 export type TeamAvatarSize = 'sm' | 'md'
 
 export type TeamAvatarProps = {
@@ -12,10 +14,10 @@ const sizeClasses: Record<TeamAvatarSize, string> = {
   md: 'h-8 w-8 text-sm',
 }
 
-function getInitials(name: string) {
-  const [first = '', second = ''] = name.trim().split(/\s+/)
-  return (first.charAt(0) + second.charAt(0)).toUpperCase()
-}
+/**
+ * Connector words (Portuguese) that should be skipped when deriving initials
+ * from multi-word names, so "Som e Iluminação" -> "SI" (not "SE").
+ */
 
 export function TeamAvatar(props: TeamAvatarProps) {
   const initials = getInitials(props.name)
