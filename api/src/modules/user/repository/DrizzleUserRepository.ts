@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, ilike, or } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type { UserInput } from '../../../core/database/schemas/index.ts'
@@ -15,8 +15,15 @@ class DrizzleUserRepository implements UserRepository {
     return results[0]
   }
 
-  async listUsers({ limit, offset }: ListUsersOptions) {
+  async listUsers({ limit, offset, search }: ListUsersOptions) {
     let query = db.select().from(schema.users).orderBy(asc(schema.users.name)).$dynamic()
+    if (search) {
+      // Escape LIKE wildcards so user input is matched literally.
+      const pattern = `%${search.replace(/[\\%_]/g, '\\$&')}%`
+      query = query.where(
+        or(ilike(schema.users.name, pattern), ilike(schema.users.nickname, pattern))
+      )
+    }
     if (limit !== undefined) query = query.limit(limit)
     if (offset !== undefined) query = query.offset(offset)
     return query

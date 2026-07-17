@@ -37,6 +37,7 @@ const updateUserInputSchema = updateProfileInputSchema.extend({
 const listUsersQueryStringSchema = z.object({
   limit: z.coerce.number().int().min(1).optional(),
   offset: z.coerce.number().int().min(0).optional(),
+  search: z.string().trim().nonempty('must not be empty').optional(),
 })
 
 const userIdParamSchema = z.object({
@@ -54,8 +55,8 @@ export function userRoutes(server: FastifyServerInstance) {
       },
       async (request, reply) => {
         try {
-          const { limit, offset } = request.query
-          const users = await userApp.listUsers({ limit, offset })
+          const { limit, offset, search } = request.query
+          const users = await userApp.listUsers({ limit, offset, search })
 
           return reply.code(HttpStatus.Ok).send({ users })
         } catch (error) {
