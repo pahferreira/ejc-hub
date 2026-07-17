@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { FiPhone, FiUser } from 'react-icons/fi'
+import { FiCalendar, FiPhone, FiUser } from 'react-icons/fi'
 import { Card } from '../Card/Card'
 import { Pill } from '../Pill/Pill'
 
@@ -18,6 +18,8 @@ export type TeamBuildingCardProps = {
   preferences?: string[]
   /** Optional avatar image URL. Falls back to initials when absent. */
   avatarUrl?: string
+  /** Days of the week the member is available (e.g. ["monday", "friday"]). Hidden when absent. */
+  weekAvailability?: string[]
 }
 
 function getInitials(name: string) {
@@ -30,10 +32,22 @@ function getInitials(name: string) {
   return (first + last).toUpperCase()
 }
 
+const WEEK_DAYS = [
+  { key: 'monday', label: 'S' },
+  { key: 'tuesday', label: 'T' },
+  { key: 'wednesday', label: 'Q' },
+  { key: 'thursday', label: 'Q' },
+  { key: 'friday', label: 'S' },
+  { key: 'saturday', label: 'S' },
+  { key: 'sunday', label: 'D' },
+]
+
 export function TeamBuildingCard(props: TeamBuildingCardProps) {
   const initials = getInitials(props.name)
   const hasAttributes = (props.attributes?.length ?? 0) > 0
   const hasPreferences = (props.preferences?.length ?? 0) > 0
+  const hasWeekAvailability = (props.weekAvailability?.length ?? 0) > 0
+  const availabilitySet = new Set(props.weekAvailability ?? [])
 
   return (
     <Card className="cursor-grab transition-shadow hover:shadow-lg active:cursor-grabbing">
@@ -62,6 +76,28 @@ export function TeamBuildingCard(props: TeamBuildingCardProps) {
             <div className="flex items-center gap-1">
               <FiPhone size={12} />
               <p className="m-0 text-xs text-secondary-foreground font-medium">{props.phone}</p>
+            </div>
+          )}
+          {hasWeekAvailability && (
+            <div
+              className="flex items-center gap-1.5"
+              title="Disponibilidade da semana"
+            >
+              <FiCalendar size={12} className="shrink-0 text-secondary-foreground" />
+              <div className="flex gap-0.5">
+                {WEEK_DAYS.map((day) => (
+                  <span
+                    key={day.key}
+                    className={`flex size-4 items-center justify-center rounded-full text-[10px] font-semibold ${
+                      availabilitySet.has(day.key)
+                        ? 'bg-dark-brown text-white'
+                        : 'bg-secondary text-secondary-foreground opacity-40'
+                    }`}
+                  >
+                    {day.label}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
           {hasAttributes && (

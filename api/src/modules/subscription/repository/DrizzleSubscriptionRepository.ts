@@ -83,6 +83,7 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
         userId: schema.subscriptions.userId,
         status: schema.subscriptions.status,
         createdAt: schema.subscriptions.createdAt,
+        availability: schema.subscriptions.availability,
         teams: sql<string[]>`array_agg(${schema.subscriptionOptions.teamInstanceId})`,
         circle: {
           key: schema.circles.key,
@@ -143,6 +144,7 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
 
     return results.map(({ circle, ...subscription }) => ({
       ...subscription,
+      availability: subscription.availability ?? [],
       user: { ...subscription.user, circle },
     }))
   }

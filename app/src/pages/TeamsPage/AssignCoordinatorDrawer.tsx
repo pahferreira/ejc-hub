@@ -92,6 +92,7 @@ export function AssignCoordinatorDrawer(props: AssignCoordinatorDrawerProps) {
                 experienceType={candidate.experienceType}
                 circleKey={candidate.circleKey}
                 areas={candidate.areas}
+                weekAvailability={candidate.weekAvailability}
                 hasCoordinatorExperience={candidate.hasCoordinatorExperience}
                 coordinatorExperienceTeams={candidate.coordinatorExperienceTeams}
                 teams={candidate.preferences}

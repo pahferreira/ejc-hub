@@ -91,6 +91,7 @@ export class TeamBuilding {
         preferences: (subscription.teams ?? [])
           .map((teamInstanceId) => instanceNameById.get(teamInstanceId))
           .filter((name): name is string => Boolean(name)),
+        weekAvailability: subscription.availability ?? [],
       })
 
       const unassigned: TeamBoardMember[] = []
@@ -320,6 +321,7 @@ export class TeamBuilding {
             hasCoordinatorExperience:
               sub.user.hasCoordinatorExperience || experienceTeams.length > 0,
             coordinatorExperienceTeams: experienceTeams,
+            weekAvailability: sub.availability ?? [],
           }
         })
         .sort((a, b) => a.nickname.localeCompare(b.nickname, 'pt-BR', { sensitivity: 'base' }))
