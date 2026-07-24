@@ -396,6 +396,14 @@ export class Events {
       throw new AppError('No team instances available for this event')
     }
 
+    const isOutsider = input.experienceType === 'experienced_outsider'
+    const alreadyWorkedHere = isOutsider ? input.alreadyWorkedHere : undefined
+    const alreadyWorkedEvent =
+      isOutsider && alreadyWorkedHere ? input.alreadyWorkedEvent : undefined
+    const alreadyWorkedTeams =
+      isOutsider && alreadyWorkedHere ? input.alreadyWorkedTeams : undefined
+    const groups = isOutsider ? undefined : input.groups
+
     const subscriptionInput = {
       userId: user.id,
       eventId: currentEvent.id,
@@ -403,6 +411,10 @@ export class Events {
       details: input.details,
       previousExperienceTeams: input.previousExperienceTeams,
       workingAnotherEvent: input.workingAnotherEvent,
+      alreadyWorkedHere,
+      alreadyWorkedEvent,
+      alreadyWorkedTeams,
+      groups,
     }
 
     const subscription = await this.#subscriptionRepository.insertSubscription(subscriptionInput)
@@ -440,6 +452,10 @@ export class Events {
       experienceType: input.experienceType,
       circleId,
       hasCoordinatorExperience: input.hasCoordinatorExperience ?? false,
+      alreadyWorkedHere,
+      alreadyWorkedEvent,
+      alreadyWorkedTeams,
+      groups,
     })
 
     return subscription

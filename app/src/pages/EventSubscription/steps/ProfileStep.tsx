@@ -1,4 +1,5 @@
 import { Checkbox } from '../../../components/Checkbox/Checkbox'
+import { Input } from '../../../components/Input/Input'
 import { RadioGroup } from '../../../components/RadioGroup/RadioGroup'
 import { SectionTitle } from '../../../components/SectionTitle/SectionTitle'
 import { availability, experienceOptions, skills } from '../profileOptions'
@@ -18,6 +19,10 @@ export function ProfileStep(props: ProfileStepProps) {
   const selectedPreviousExperienceTeams = useEventSubscriptionField(
     'selectedPreviousExperienceTeams'
   )
+  const alreadyWorkedHere = useEventSubscriptionField('alreadyWorkedHere')
+  const alreadyWorkedEvent = useEventSubscriptionField('alreadyWorkedEvent')
+  const alreadyWorkedTeams = useEventSubscriptionField('alreadyWorkedTeams')
+  const groups = useEventSubscriptionField('groups')
   const circlesQuery = useCirclesQuery()
   const circleOptions = (circlesQuery.data ?? []).map((option) => ({
     label: option.label,
@@ -26,6 +31,8 @@ export function ProfileStep(props: ProfileStepProps) {
 
   const isNewbie = experienceType.field.value === 'newbie'
   const hasServed = !isNewbie && Boolean(experienceType.field.value)
+  const isOutsider = experienceType.field.value === 'experienced_outsider'
+  const showGroups = isNewbie || experienceType.field.value === 'experienced'
 
   const toggleSkill = (value: string) => {
     const current = selectedSkills.field.value ?? []
@@ -73,6 +80,14 @@ export function ProfileStep(props: ProfileStepProps) {
             )}
           </div>
         )}
+        {showGroups && (
+          <Input
+            label="Quais grupos da paróquia você participa?"
+            name="groups"
+            value={groups.field.value}
+            onChange={groups.field.onChange}
+          />
+        )}
         {hasServed && (
           <div className="flex flex-col gap-4">
             <SectionTitle
@@ -95,6 +110,34 @@ export function ProfileStep(props: ProfileStepProps) {
                 />
               ))}
             </div>
+            {isOutsider && (
+              <div className="flex flex-col gap-4">
+                <p className="text-sm text-black font-bold">
+                  Já serviu conosco nos anos anteriores?
+                </p>
+                <Checkbox
+                  label="Sim! Já servi aqui antes."
+                  checked={alreadyWorkedHere.field.value ?? false}
+                  onChange={alreadyWorkedHere.field.onChange}
+                />
+                {alreadyWorkedHere.field.value && (
+                  <>
+                    <Input
+                      label="Em quais encontros?"
+                      name="alreadyWorkedEvent"
+                      value={alreadyWorkedEvent.field.value}
+                      onChange={alreadyWorkedEvent.field.onChange}
+                    />
+                    <Input
+                      label="Em quais equipes?"
+                      name="alreadyWorkedTeams"
+                      value={alreadyWorkedTeams.field.value}
+                      onChange={alreadyWorkedTeams.field.onChange}
+                    />
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

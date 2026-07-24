@@ -23,6 +23,10 @@ export const eventSubscriptionSchema = z
     details: z.string().optional(),
     workingAnotherEvent: z.boolean().optional(),
     selectedPreviousExperienceTeams: z.array(z.string()).optional(),
+    alreadyWorkedHere: z.boolean().optional(),
+    alreadyWorkedEvent: z.string().optional(),
+    alreadyWorkedTeams: z.string().optional(),
+    groups: z.string().optional(),
   })
   .refine((data) => !(data.experienceType === 'newbie' && !data.circle), {
     message: 'Selecione o círculo que você participou',
@@ -48,6 +52,17 @@ export const eventSubscriptionSchema = z
     availability: data.selectedAvailability,
     previousExperienceTeams:
       data.experienceType === 'newbie' ? [] : (data.selectedPreviousExperienceTeams ?? []),
+    alreadyWorkedHere:
+      data.experienceType === 'experienced_outsider' ? data.alreadyWorkedHere : undefined,
+    alreadyWorkedEvent:
+      data.experienceType === 'experienced_outsider' && data.alreadyWorkedHere
+        ? data.alreadyWorkedEvent
+        : undefined,
+    alreadyWorkedTeams:
+      data.experienceType === 'experienced_outsider' && data.alreadyWorkedHere
+        ? data.alreadyWorkedTeams
+        : undefined,
+    groups: data.experienceType === 'experienced_outsider' ? undefined : data.groups,
   }))
 
 export type EventSubscriptionFormInput = z.input<typeof eventSubscriptionSchema>

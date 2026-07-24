@@ -22,6 +22,10 @@ export type SyncedUser = {
   hasMidiaSkills: boolean
   hasCoordinatorExperience: boolean
   experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
+  alreadyWorkedHere: boolean | null
+  alreadyWorkedEvent: string | null
+  alreadyWorkedTeams: string | null
+  groups: string | null
   createdAt: string
   updatedAt: string
 }
