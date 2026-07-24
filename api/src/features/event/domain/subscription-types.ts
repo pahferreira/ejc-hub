@@ -62,6 +62,10 @@ export type CurrentEventSubscriptionPayload = {
   workingAnotherEvent?: boolean
   previousExperienceTeams: string[]
   availability: SubscriptionAvailability[]
+  alreadyWorkedHere?: boolean
+  alreadyWorkedEvent?: string
+  alreadyWorkedTeams?: string
+  groups?: string
 }
 
 export type SubscriptionWithDetails = {

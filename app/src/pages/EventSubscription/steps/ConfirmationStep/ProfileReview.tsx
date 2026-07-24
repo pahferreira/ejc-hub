@@ -20,6 +20,8 @@ export function ProfileReview(props: ProfileReviewProps) {
 
   const isNewbie = values.experienceType === 'newbie'
   const hasServed = !isNewbie && Boolean(values.experienceType)
+  const isOutsider = values.experienceType === 'experienced_outsider'
+  const showGroups = isNewbie || values.experienceType === 'experienced'
 
   const experienceLabel = getOptionLabel(values.experienceType, experienceOptions)
   const circleLabel = values.circle ? getOptionLabel(values.circle, circleOptions) : null
@@ -44,6 +46,9 @@ export function ProfileReview(props: ProfileReviewProps) {
             label="Experiência como coordenador/líder"
             value={values.hasCoordinatorExperience ? 'Sim' : 'Não'}
           />
+        )}
+        {showGroups && values.groups && (
+          <ReviewField label="Quais grupos da paróquia você participa?" value={values.groups} />
         )}
         <div className="flex flex-col gap-1">
           <p className="text-sm text-gray-500">Habilidades</p>
@@ -78,6 +83,18 @@ export function ProfileReview(props: ProfileReviewProps) {
             </div>
           ) : (
             <p className="text-base font-medium text-gray-900">Nenhuma equipe selecionada</p>
+          )}
+          {isOutsider && (
+            <ReviewField
+              label="Já trabalhei aqui antes"
+              value={values.alreadyWorkedHere ? 'Sim' : 'Não'}
+            />
+          )}
+          {isOutsider && values.alreadyWorkedHere && values.alreadyWorkedEvent && (
+            <ReviewField label="Em quais encontros?" value={values.alreadyWorkedEvent} />
+          )}
+          {isOutsider && values.alreadyWorkedHere && values.alreadyWorkedTeams && (
+            <ReviewField label="Em quais equipes?" value={values.alreadyWorkedTeams} />
           )}
         </div>
       )}

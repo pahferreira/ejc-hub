@@ -184,4 +184,93 @@ describe('Events.subscribeCurrentEvent', () => {
       expect.objectContaining({ circleId: null })
     )
   })
+
+  it('persists groups and alreadyWorked* fields on both the subscription and the user for outsiders', async () => {
+    const payload = buildPayload({
+      experienceType: 'experienced_outsider',
+      previousExperienceTeams: [],
+      alreadyWorkedHere: true,
+      alreadyWorkedEvent: 'EJC 2024',
+      alreadyWorkedTeams: 'cozinha, som',
+      groups: 'should be ignored',
+    })
+
+    await events.subscribeCurrentEvent(USER_AUTH_ID, payload)
+
+    expect(subscriptionRepository.insertSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({
+        alreadyWorkedHere: true,
+        alreadyWorkedEvent: 'EJC 2024',
+        alreadyWorkedTeams: 'cozinha, som',
+        groups: undefined,
+      })
+    )
+    expect(userRepository.updateUser).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({
+        alreadyWorkedHere: true,
+        alreadyWorkedEvent: 'EJC 2024',
+        alreadyWorkedTeams: 'cozinha, som',
+        groups: undefined,
+      })
+    )
+  })
+
+  it('persists groups for newbie/experienced subscriptions and gates alreadyWorked* to undefined', async () => {
+    const payload = buildPayload({
+      experienceType: 'experienced',
+      groups: 'grupo de oração',
+      alreadyWorkedHere: true,
+      alreadyWorkedEvent: 'EJC 2024',
+      alreadyWorkedTeams: 'cozinha',
+    })
+
+    await events.subscribeCurrentEvent(USER_AUTH_ID, payload)
+
+    expect(subscriptionRepository.insertSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({
+        groups: 'grupo de oração',
+        alreadyWorkedHere: undefined,
+        alreadyWorkedEvent: undefined,
+        alreadyWorkedTeams: undefined,
+      })
+    )
+    expect(userRepository.updateUser).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({
+        groups: 'grupo de oração',
+        alreadyWorkedHere: undefined,
+        alreadyWorkedEvent: undefined,
+        alreadyWorkedTeams: undefined,
+      })
+    )
+  })
+
+  it('clears alreadyWorkedEvent/alreadyWorkedTeams when alreadyWorkedHere is falsy for outsiders', async () => {
+    const payload = buildPayload({
+      experienceType: 'experienced_outsider',
+      previousExperienceTeams: [],
+      alreadyWorkedHere: false,
+      alreadyWorkedEvent: 'EJC 2024',
+      alreadyWorkedTeams: 'cozinha',
+    })
+
+    await events.subscribeCurrentEvent(USER_AUTH_ID, payload)
+
+    expect(subscriptionRepository.insertSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({
+        alreadyWorkedHere: false,
+        alreadyWorkedEvent: undefined,
+        alreadyWorkedTeams: undefined,
+      })
+    )
+    expect(userRepository.updateUser).toHaveBeenCalledWith(
+      USER_ID,
+      expect.objectContaining({
+        alreadyWorkedHere: false,
+        alreadyWorkedEvent: undefined,
+        alreadyWorkedTeams: undefined,
+      })
+    )
+  })
 })

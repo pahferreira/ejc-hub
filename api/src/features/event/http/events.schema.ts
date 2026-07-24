@@ -123,4 +123,8 @@ export const subscribeCurrentSchema = z.object({
   availability: z
     .array(subscriptionAvailabilityEnum)
     .min(1, 'At least one availability day is required'),
+  alreadyWorkedHere: z.boolean().optional(),
+  alreadyWorkedEvent: z.string().optional(),
+  alreadyWorkedTeams: z.string().optional(),
+  groups: z.string().optional(),
 })

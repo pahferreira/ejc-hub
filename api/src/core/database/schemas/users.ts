@@ -35,6 +35,10 @@ export const users = pgTable('users', {
   experienceType: experienceType().notNull().default('experienced'),
   circleId: uuid('circle_id').references(() => circles.id),
   gender: gender(),
+  alreadyWorkedHere: boolean('already_worked_here'),
+  alreadyWorkedEvent: text('already_worked_event'),
+  alreadyWorkedTeams: text('already_worked_teams'),
+  groups: text('groups'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })

@@ -33,5 +33,9 @@ export function syncedUserToFormDefaults(
     details: '',
     workingAnotherEvent: false,
     selectedPreviousExperienceTeams: [],
+    alreadyWorkedHere: user.alreadyWorkedHere ?? false,
+    alreadyWorkedEvent: user.alreadyWorkedEvent ?? '',
+    alreadyWorkedTeams: user.alreadyWorkedTeams ?? '',
+    groups: user.groups ?? '',
   }
 }

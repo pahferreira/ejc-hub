@@ -37,6 +37,10 @@ export const subscriptions = pgTable(
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
     previousExperienceTeams: text('previous_experience_teams').notNull().array().default([]),
+    alreadyWorkedHere: boolean('already_worked_here'),
+    alreadyWorkedEvent: text('already_worked_event'),
+    alreadyWorkedTeams: text('already_worked_teams'),
+    groups: text('groups'),
   },
   (table) => [unique('subscriptions_user_id_event_id_unique').on(table.userId, table.eventId)]
 )

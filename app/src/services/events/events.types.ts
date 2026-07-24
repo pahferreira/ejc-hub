@@ -17,6 +17,10 @@ export type CreateEventSubscriptionPayload = {
   workingAnotherEvent?: boolean
   availability: string[]
   previousExperienceTeams: string[]
+  alreadyWorkedHere?: boolean
+  alreadyWorkedEvent?: string
+  alreadyWorkedTeams?: string
+  groups?: string
 }
 
 import type {
