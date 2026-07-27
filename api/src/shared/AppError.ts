@@ -1,6 +1,7 @@
 export const AppErrorCode = {
   Default: 'app_error',
   UserAlreadySubscribed: 'user_already_subscribed',
+  SubscriptionsClosed: 'subscriptions_closed',
 } as const
 
 type AppErrorCode = (typeof AppErrorCode)[keyof typeof AppErrorCode]

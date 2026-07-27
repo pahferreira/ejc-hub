@@ -1,0 +1,1 @@
+ALTER TABLE "events" ADD COLUMN "subscriptions_open" boolean DEFAULT true NOT NULL;

@@ -60,3 +60,47 @@ describe('ControlPanel.updateTeamTemplate', () => {
     expect(teamTemplateRepository.updateTeamTemplate).not.toHaveBeenCalled()
   })
 })
+
+describe('ControlPanel.handleEventSubscriptions', () => {
+  const EVENT_ID = 'event-1'
+  let eventRepository: EventRepository
+  let controlPanel: ControlPanel
+
+  beforeEach(() => {
+    eventRepository = {
+      findEvent: vi.fn().mockResolvedValue({ id: EVENT_ID, subscriptionsOpen: true }),
+      updateEvent: vi.fn().mockResolvedValue({ id: EVENT_ID, subscriptionsOpen: false }),
+    } as unknown as EventRepository
+
+    controlPanel = new ControlPanel(
+      {} as TeamTemplateRepository,
+      eventRepository,
+      {} as TeamInstanceRepository,
+      {} as CircleRepository
+    )
+  })
+
+  it('updates the event subscriptionsOpen flag with the provided value', async () => {
+    await controlPanel.handleEventSubscriptions(EVENT_ID, false)
+
+    expect(eventRepository.updateEvent).toHaveBeenCalledWith(EVENT_ID, {
+      subscriptionsOpen: false,
+    })
+  })
+
+  it('returns the updated event', async () => {
+    const result = await controlPanel.handleEventSubscriptions(EVENT_ID, false)
+
+    expect(result).toEqual(expect.objectContaining({ subscriptionsOpen: false }))
+  })
+
+  it('throws when the event does not exist', async () => {
+    eventRepository.findEvent = vi.fn().mockResolvedValue(undefined)
+
+    await expect(controlPanel.handleEventSubscriptions(EVENT_ID, false)).rejects.toThrow(
+      'Event not found, please check the event id.'
+    )
+
+    expect(eventRepository.updateEvent).not.toHaveBeenCalled()
+  })
+})

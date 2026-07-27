@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router'
 import { EventBanner } from '../components/EventBanner/EventBanner'
 import { InscriptionCard } from '../components/InscriptionCard/InscriptionCard'
 import { SubscribeCard } from '../components/SubscribeCard/SubscribeCard'
+import { SubscriptionsClosedCard } from '../components/SubscriptionsClosedCard/SubscriptionsClosedCard'
 import { TeamCard } from '../components/TeamCard/TeamCard'
 import { ROUTE_PATHS } from '../constants/routePaths'
 import { useCurrentEventQuery } from '../services/events/useCurrentEventQuery'
@@ -52,7 +53,7 @@ export function Home() {
             />
 
             <HomeBody
-              view={getHomeView(subscriptionStatus, assignedTeam)}
+              view={getHomeView(subscriptionStatus, assignedTeam, event.subscriptionsOpen)}
               eventName={event.name}
               subscriptionStatus={subscriptionStatus}
               preferences={preferences}
@@ -76,6 +77,10 @@ type HomeBodyProps = {
 function HomeBody(props: HomeBodyProps) {
   if (props.view.kind === 'subscribe') {
     return <SubscribeCard eventName={props.eventName} onSubscribe={props.onSubscribe} />
+  }
+
+  if (props.view.kind === 'subscriptionsClosed') {
+    return <SubscriptionsClosedCard eventName={props.eventName} />
   }
 
   if (!props.subscriptionStatus) {
