@@ -36,6 +36,10 @@ const updateEventBodySchema = createEventBodySchema.partial().refine((data) => {
   return data.name || data.description
 }, 'At least one of the following attributes needs to be present: name, description')
 
+const handleSubscriptionsBodySchema = z.object({
+  open: z.boolean(),
+})
+
 export const patchTeamTemplateBodySchema = postTeamTemplateBodySchema.partial().refine((data) => {
   return data.name || data.description || data.maxCapacity !== undefined
 }, 'At least one field (name, description or maxCapacity) is required for update')
@@ -268,6 +272,26 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
           return reply.code(HttpStatus.Ok).send({
             event,
           })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.patch(
+      '/control-panel/events/:eventId/handle-subscriptions',
+      {
+        schema: { params: eventIdParamSchema, body: handleSubscriptionsBodySchema },
+
+        preHandler: authGuard(server, { permissions: [EventPermissions.Update] }),
+      },
+      async (request, reply) => {
+        try {
+          const { eventId } = request.params
+          const { open } = request.body
+          const event = await controlPanelApp.handleEventSubscriptions(eventId, open)
+
+          return reply.code(HttpStatus.Ok).send({ event })
         } catch (error) {
           fastifyErrorHandler(reply, error)
         }

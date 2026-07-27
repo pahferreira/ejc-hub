@@ -162,6 +162,19 @@ export class ControlPanel {
     return deletedEvent
   }
 
+  async handleEventSubscriptions(eventId: string, open: boolean) {
+    const eventToUpdate = await this.#eventRepository.findEvent(eventId)
+    if (!eventToUpdate) {
+      throw new AppError('Event not found, please check the event id.')
+    }
+
+    const updatedEvent = await this.#eventRepository.updateEvent(eventId, {
+      subscriptionsOpen: open,
+    })
+
+    return updatedEvent
+  }
+
   async setCurrentEvent(eventId: string) {
     const eventToUpdate = await this.#eventRepository.findEvent(eventId)
     if (!eventToUpdate) {

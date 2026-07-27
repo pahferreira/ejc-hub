@@ -18,6 +18,14 @@ describe('getHomeView', () => {
     expect(getHomeView(null, team)).toEqual({ kind: 'subscribe' })
   })
 
+  it('returns subscriptionsClosed when there is no subscription and subscriptions are closed', () => {
+    expect(getHomeView(null, null, false)).toEqual({ kind: 'subscriptionsClosed' })
+  })
+
+  it('keeps showing the existing subscription status even when subscriptions are closed', () => {
+    expect(getHomeView('pending', null, false)).toEqual({ kind: 'pendingTeam' })
+  })
+
   it('returns pendingTeam for pending status without a team', () => {
     expect(getHomeView('pending', null)).toEqual({ kind: 'pendingTeam' })
   })

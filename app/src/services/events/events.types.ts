@@ -38,6 +38,7 @@ export type CurrentEvent = {
   endsAt: string | null
   location: string | null
   isCurrent: boolean
+  subscriptionsOpen: boolean
 }
 
 export type AssignedTeam = {

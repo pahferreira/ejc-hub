@@ -84,10 +84,20 @@ async function getCurrentEvent() {
   return response.data.currentEvent
 }
 
+async function handleEventSubscriptions(eventId: string, open: boolean) {
+  const response = await api.patch<{ event: CurrentEvent }>(
+    `/control-panel/events/${eventId}/handle-subscriptions`,
+    { open }
+  )
+
+  return response.data.event
+}
+
 export const eventsApi = {
   createEventSubscription,
   getCurrentEventSubscriptionsList,
   getCurrentEventSubscriptionStats,
   getCurrentEventSubscriptionStatus,
   getCurrentEvent,
+  handleEventSubscriptions,
 }

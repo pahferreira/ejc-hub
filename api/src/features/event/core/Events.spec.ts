@@ -52,7 +52,9 @@ describe('Events.subscribeCurrentEvent', () => {
     } as unknown as UserRepository
 
     eventRepository = {
-      findCurrentEvent: vi.fn().mockResolvedValue({ id: EVENT_ID, name: 'EJC 2026' }),
+      findCurrentEvent: vi
+        .fn()
+        .mockResolvedValue({ id: EVENT_ID, name: 'EJC 2026', subscriptionsOpen: true }),
     } as unknown as EventRepository
 
     subscriptionRepository = {
@@ -81,6 +83,20 @@ describe('Events.subscribeCurrentEvent', () => {
       {} as TeamMembershipRepository,
       circleRepository
     )
+  })
+
+  it('rejects the subscription when subscriptions are closed for the current event', async () => {
+    vi.mocked(eventRepository.findCurrentEvent).mockResolvedValue({
+      id: EVENT_ID,
+      name: 'EJC 2026',
+      subscriptionsOpen: false,
+    } as unknown as Awaited<ReturnType<EventRepository['findCurrentEvent']>>)
+
+    await expect(events.subscribeCurrentEvent(USER_AUTH_ID, buildPayload())).rejects.toThrow(
+      'Subscriptions are closed for this event'
+    )
+
+    expect(subscriptionRepository.insertSubscription).not.toHaveBeenCalled()
   })
 
   it('persists details, previous experience teams and workingAnotherEvent on the subscription', async () => {

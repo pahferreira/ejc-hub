@@ -2,9 +2,11 @@ import { useEffect } from 'react'
 import { FiX } from 'react-icons/fi'
 import { useNavigate } from 'react-router'
 import { useCurrentEventSubscriptionStatusQuery } from '../../services/events/useCurrentEventSubscriptionStatusQuery'
+import { useCurrentEventQuery } from '../../services/events/useCurrentEventQuery'
 import { useCurrentUserQuery } from '../../services/users/useCurrentUserQuery'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import { AlreadySubscribed } from './AlreadySubscribed'
+import { SubscriptionsClosed } from './SubscriptionsClosed'
 import { EventSubscriptionProvider } from './useEventSubscriptionForm'
 import { useEventSubscriptionForm } from './useEventSubscriptionForm'
 import type { EventSubscriptionFormOutput } from './useEventSubscriptionForm'
@@ -137,13 +139,19 @@ function SubscriptionPageLoading() {
 
 export function EventSubscription() {
   const statusQuery = useCurrentEventSubscriptionStatusQuery()
+  const currentEventQuery = useCurrentEventQuery()
   const currentUser = useCurrentUserQuery()
 
-  if (statusQuery.isLoading || !currentUser.isReady) return <SubscriptionPageLoading />
+  if (statusQuery.isLoading || currentEventQuery.isLoading || !currentUser.isReady)
+    return <SubscriptionPageLoading />
 
   const status = statusQuery.data?.subscriptionStatus
   if (status) {
     return <AlreadySubscribed status={status} eventName={statusQuery.data?.eventName} />
+  }
+
+  if (currentEventQuery.data && !currentEventQuery.data.subscriptionsOpen) {
+    return <SubscriptionsClosed />
   }
 
   return (

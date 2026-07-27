@@ -54,6 +54,19 @@ export class Events {
   async subscribe(eventId: string, userAuthId: string, input: SubscriptionPayload) {
     const user = await this.#userRepository.getUser(userAuthId)
 
+    const event = await this.#eventsRepository.findEvent(eventId)
+
+    if (!event) {
+      throw new AppError('Event not found')
+    }
+
+    if (!event.subscriptionsOpen) {
+      throw new AppError(
+        'Subscriptions are closed for this event',
+        AppErrorCode.SubscriptionsClosed
+      )
+    }
+
     const subscriptionEvent = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
       user.id,
       eventId
@@ -369,6 +382,13 @@ export class Events {
 
     if (!currentEvent) {
       throw new AppError('Current event not set')
+    }
+
+    if (!currentEvent.subscriptionsOpen) {
+      throw new AppError(
+        'Subscriptions are closed for this event',
+        AppErrorCode.SubscriptionsClosed
+      )
     }
 
     const subscriptionEvent = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(

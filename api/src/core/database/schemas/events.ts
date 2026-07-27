@@ -11,4 +11,5 @@ export const events = pgTable('events', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
   deletedAt: timestamp('deleted_at'),
   isCurrent: boolean('is_current').default(false),
+  subscriptionsOpen: boolean('subscriptions_open').notNull().default(true),
 })
