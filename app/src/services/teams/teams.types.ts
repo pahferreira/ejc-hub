@@ -24,6 +24,8 @@ export type TeamOption = {
 export type TeamCoordinatorSummary = {
   id: string
   name: string
+  /** Profile photo URL; null when unset. */
+  pictureUrl: string | null
 }
 
 export type TeamOverview = {

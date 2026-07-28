@@ -1,20 +1,15 @@
 import clsx from 'clsx'
 import { FiPlus, FiX } from 'react-icons/fi'
+import { UserAvatar } from '../UserAvatar/UserAvatar'
 
 const MAX_SLOTS = 3
-
-function getInitials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return '?'
-  const first = parts[0].charAt(0)
-  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : ''
-  return (first + last).toUpperCase()
-}
 
 export type SelectedCoordinator = {
   id: string
   name: string
   nickname: string
+  /** Profile photo URL; falls back to initials when absent or broken. */
+  pictureUrl?: string | null
 }
 
 export type CoordinatorSlotsProps = {
@@ -79,12 +74,11 @@ export function CoordinatorSlots(props: CoordinatorSlotsProps) {
                 <FiX size={14} aria-hidden="true" />
               </button>
 
-              <span
-                aria-hidden="true"
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-dark-brown text-sm font-semibold text-white"
-              >
-                {getInitials(coordinator.name)}
-              </span>
+              <UserAvatar
+                name={coordinator.name}
+                pictureUrl={coordinator.pictureUrl}
+                size="default"
+              />
               <span className="max-w-full truncate text-center text-sm font-semibold text-dark-brown">
                 {coordinator.nickname}
               </span>

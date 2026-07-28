@@ -19,6 +19,7 @@ export interface SubscriptionRepository {
         nickname: string | null
         email: string
         phone: string | null
+        pictureUrl: string | null
         experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
         circle: { key: string; label: string; color: string } | null
         hasCoordinatorExperience: boolean

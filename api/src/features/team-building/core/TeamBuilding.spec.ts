@@ -37,6 +37,7 @@ function buildSub(overrides: Partial<Sub> & Pick<Sub, 'id' | 'userId' | 'status'
       nickname: null,
       email: 'm@e.com',
       phone: null,
+      pictureUrl: null,
       experienceType: 'newbie',
       hasCoordinatorExperience: false,
       ...noSkills,

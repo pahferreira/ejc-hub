@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { FiCalendar, FiPhone, FiUser } from 'react-icons/fi'
 import { Card } from '../Card/Card'
 import { Pill } from '../Pill/Pill'
+import { UserAvatar } from '../UserAvatar/UserAvatar'
 
 export type TeamBuildingCardProps = {
   /** Person's full name. Used for the title and to derive the avatar initials. */
@@ -22,16 +23,6 @@ export type TeamBuildingCardProps = {
   weekAvailability?: string[]
 }
 
-function getInitials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) {
-    return '?'
-  }
-  const first = parts[0].charAt(0)
-  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : ''
-  return (first + last).toUpperCase()
-}
-
 const WEEK_DAYS = [
   { key: 'monday', label: 'S' },
   { key: 'tuesday', label: 'T' },
@@ -43,7 +34,6 @@ const WEEK_DAYS = [
 ]
 
 export function TeamBuildingCard(props: TeamBuildingCardProps) {
-  const initials = getInitials(props.name)
   const hasAttributes = (props.attributes?.length ?? 0) > 0
   const hasPreferences = (props.preferences?.length ?? 0) > 0
   const hasWeekAvailability = (props.weekAvailability?.length ?? 0) > 0
@@ -53,13 +43,7 @@ export function TeamBuildingCard(props: TeamBuildingCardProps) {
     <Card className="cursor-grab transition-shadow hover:shadow-lg active:cursor-grabbing">
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary text-sm font-semibold text-dark-brown">
-            {props.avatarUrl ? (
-              <img src={props.avatarUrl} alt="" className="size-full object-cover" />
-            ) : (
-              <span aria-hidden="true">{initials}</span>
-            )}
-          </span>
+          <UserAvatar name={props.name} pictureUrl={props.avatarUrl} size="default" />
 
           <div className="flex min-w-0 flex-col">
             <span className="font-semibold text-dark-brown">{props.nickname}</span>
