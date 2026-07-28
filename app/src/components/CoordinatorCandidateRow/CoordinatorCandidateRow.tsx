@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { FiCalendar, FiCheck } from 'react-icons/fi'
 import { ExperienceBadge } from '../ExperienceBadge/ExperienceBadge'
 import { TeamAvatar } from '../TeamAvatar/TeamAvatar'
+import { UserAvatar } from '../UserAvatar/UserAvatar'
 import type { ExperienceType } from '../../services/team-building/team-building.types'
 
 const WEEK_DAYS = [
@@ -14,17 +15,11 @@ const WEEK_DAYS = [
   { key: 'sunday', label: 'D' },
 ]
 
-function getInitials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return '?'
-  const first = parts[0].charAt(0)
-  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : ''
-  return (first + last).toUpperCase()
-}
-
 export type CoordinatorCandidateRowProps = {
   name: string
   nickname: string
+  /** Profile photo URL; falls back to initials when absent or broken. */
+  pictureUrl?: string | null
   experienceType: ExperienceType
   /** Key of the candidate's circle; colors the newbie badge. */
   circleKey?: string | null
@@ -47,7 +42,6 @@ export type CoordinatorCandidateRowProps = {
 }
 
 export function CoordinatorCandidateRow(props: CoordinatorCandidateRowProps) {
-  const initials = getInitials(props.name)
   const availabilitySet = new Set(props.weekAvailability ?? [])
 
   const experienceTeams = props.coordinatorExperienceTeams ?? []
@@ -108,12 +102,7 @@ export function CoordinatorCandidateRow(props: CoordinatorCandidateRowProps) {
           )}
         </span>
 
-        <span
-          aria-hidden="true"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-dark-brown text-xs font-semibold text-white"
-        >
-          {initials}
-        </span>
+        <UserAvatar name={props.name} pictureUrl={props.pictureUrl} size="small" />
       </div>
 
       {/* Content column: top row + skills */}

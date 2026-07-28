@@ -107,6 +107,7 @@ export function AddMembersDrawer(props: AddMembersDrawerProps) {
                 key={candidate.userId}
                 name={candidate.name}
                 nickname={candidate.nickname}
+                pictureUrl={candidate.pictureUrl}
                 experienceType={candidate.experienceType}
                 circleKey={candidate.circleKey}
                 areas={candidate.areas}

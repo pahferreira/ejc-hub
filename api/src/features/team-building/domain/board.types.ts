@@ -11,6 +11,8 @@ export type TeamBoardMember = {
   /** The user's nickname, falling back to their first name when unset. */
   nickname: string
   phone: string | null
+  /** Profile photo URL; null when unset. */
+  pictureUrl: string | null
   experienceType: ExperienceType
   /** Key of the member's circle (newbies only); null when unset. */
   circleKey: string | null
@@ -65,6 +67,8 @@ export type Candidate = {
   name: string
   /** Nickname, falling back to the user's first name when unset. */
   nickname: string
+  /** Profile photo URL; null when unset. */
+  pictureUrl: string | null
   experienceType: ExperienceType
   /** Key of the candidate's circle (newbies only); null when unset. */
   circleKey: string | null

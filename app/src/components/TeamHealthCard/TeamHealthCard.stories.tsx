@@ -27,7 +27,7 @@ export const NeedsMembers: Story = {
       templateDescription: 'Recebe os participantes com acolhimento e atenção.',
       memberCount: 7,
       maxCapacity: 12,
-      coordinators: [{ id: 'u1', name: 'Julia Martins' }],
+      coordinators: [{ id: 'u1', name: 'Julia Martins', pictureUrl: null }],
     },
   },
 }
@@ -41,7 +41,9 @@ export const HasSpotsAvailable: Story = {
       templateDescription: 'Conduz dinâmicas e atividades de integração.',
       memberCount: 13,
       maxCapacity: 15,
-      coordinators: [{ id: 'u2', name: 'Carlos Ferreira' }],
+      coordinators: [
+        { id: 'u2', name: 'Carlos Ferreira', pictureUrl: 'https://i.pravatar.cc/80?img=12' },
+      ],
     },
   },
 }
@@ -55,7 +57,7 @@ export const Complete: Story = {
       templateDescription: 'Prepara e conduz momentos de oração e celebrações.',
       memberCount: 12,
       maxCapacity: 12,
-      coordinators: [{ id: 'u3', name: 'Maria Silva' }],
+      coordinators: [{ id: 'u3', name: 'Maria Silva', pictureUrl: null }],
     },
   },
 }
@@ -69,7 +71,7 @@ export const WithoutDescription: Story = {
       templateDescription: null,
       memberCount: 6,
       maxCapacity: 10,
-      coordinators: [{ id: 'u4', name: 'Ana Souza' }],
+      coordinators: [{ id: 'u4', name: 'Ana Souza', pictureUrl: null }],
     },
   },
 }
@@ -98,9 +100,9 @@ export const WithThreeCoordinators: Story = {
       memberCount: 8,
       maxCapacity: 10,
       coordinators: [
-        { id: 'u5', name: 'Paula Lima' },
-        { id: 'u6', name: 'Rafael Costa' },
-        { id: 'u7', name: 'Beatriz Almeida' },
+        { id: 'u5', name: 'Paula Lima', pictureUrl: 'https://i.pravatar.cc/80?img=25' },
+        { id: 'u6', name: 'Rafael Costa', pictureUrl: null },
+        { id: 'u7', name: 'Beatriz Almeida', pictureUrl: null },
       ],
     },
   },
@@ -115,7 +117,7 @@ export const Grid: Story = {
       templateDescription: 'Recebe os participantes com acolhimento e atenção.',
       memberCount: 7,
       maxCapacity: 12,
-      coordinators: [{ id: 'u1', name: 'Julia Martins' }],
+      coordinators: [{ id: 'u1', name: 'Julia Martins', pictureUrl: null }],
     },
   },
   render: () => (
@@ -128,7 +130,7 @@ export const Grid: Story = {
           templateDescription: 'Recebe os participantes com acolhimento e atenção.',
           memberCount: 7,
           maxCapacity: 12,
-          coordinators: [{ id: 'u1', name: 'Julia Martins' }],
+          coordinators: [{ id: 'u1', name: 'Julia Martins', pictureUrl: null }],
         }}
         onAdd={fn()}
       />
@@ -140,7 +142,9 @@ export const Grid: Story = {
           templateDescription: 'Conduz dinâmicas e atividades de integração.',
           memberCount: 13,
           maxCapacity: 15,
-          coordinators: [{ id: 'u2', name: 'Carlos Ferreira' }],
+          coordinators: [
+            { id: 'u2', name: 'Carlos Ferreira', pictureUrl: 'https://i.pravatar.cc/80?img=12' },
+          ],
         }}
         onAdd={fn()}
       />
@@ -152,7 +156,7 @@ export const Grid: Story = {
           templateDescription: 'Prepara e conduz momentos de oração e celebrações.',
           memberCount: 12,
           maxCapacity: 12,
-          coordinators: [{ id: 'u3', name: 'Maria Silva' }],
+          coordinators: [{ id: 'u3', name: 'Maria Silva', pictureUrl: null }],
         }}
         onAdd={fn()}
       />

@@ -97,7 +97,12 @@ export function useAssignCoordinatorDrawer() {
     const candidateMap = new Map(candidates.map((c) => [c.userId, c]))
     return selectedIds.map((id) => {
       const candidate = candidateMap.get(id)
-      return { id, name: candidate?.name ?? id, nickname: candidate?.nickname ?? id }
+      return {
+        id,
+        name: candidate?.name ?? id,
+        nickname: candidate?.nickname ?? id,
+        pictureUrl: candidate?.pictureUrl ?? null,
+      }
     })
   }, [selectedIds, candidatesQuery.data?.candidates])
 

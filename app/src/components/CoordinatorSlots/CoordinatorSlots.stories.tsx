@@ -47,3 +47,17 @@ export const ThreeSlotsFilled: Story = {
     ],
   },
 }
+
+export const WithPhoto: Story = {
+  args: {
+    selected: [
+      {
+        id: '1',
+        name: 'João da Silva',
+        nickname: 'Joãozinho',
+        pictureUrl: 'https://i.pravatar.cc/80?img=5',
+      },
+      { id: '2', name: 'Maria Santos', nickname: 'Mari' },
+    ],
+  },
+}

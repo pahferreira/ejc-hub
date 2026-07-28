@@ -4,16 +4,12 @@ import { getTeamStatus, teamStatusDisplay } from './teamStatus'
 import { Badge } from '../Badge/Badge'
 import { Button } from '../Button/Button'
 import { ButtonIcon } from '../ButtonIcon/ButtonIcon'
+import { UserAvatar } from '../UserAvatar/UserAvatar'
 
 export type TeamHealthCardProps = {
   team: TeamOverview
   onAdd?: () => void
   onAssignCoordinator?: () => void
-}
-
-function getInitials(name: string) {
-  const [first = '', second = ''] = name.trim().split(/\s+/)
-  return ((first[0] ?? '') + (second[0] ?? '')).toUpperCase() || '?'
 }
 
 function calculatePercentage(current: number, max: number) {
@@ -55,11 +51,15 @@ export function TeamHealthCard(props: TeamHealthCardProps) {
                   {props.team.coordinators.map((coordinator) => (
                     <div
                       key={coordinator.id}
-                      className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-dark-brown text-sm font-semibold text-white cursor-default"
+                      className="cursor-default rounded-full border-2 border-white"
                       aria-hidden
                       title={coordinator.name}
                     >
-                      {getInitials(coordinator.name)}
+                      <UserAvatar
+                        name={coordinator.name}
+                        pictureUrl={coordinator.pictureUrl}
+                        size="small"
+                      />
                     </div>
                   ))}
                 </div>

@@ -147,7 +147,7 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
     }
 
     const users = await db
-      .select({ id: schema.users.id, name: schema.users.name })
+      .select({ id: schema.users.id, name: schema.users.name, pictureUrl: schema.users.pictureUrl })
       .from(schema.users)
       .where(inArray(schema.users.id, coordinatorIds))
 
