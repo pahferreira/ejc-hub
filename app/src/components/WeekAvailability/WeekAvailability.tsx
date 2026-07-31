@@ -4,13 +4,13 @@ export type WeekAvailabilityProps = {
 }
 
 const WEEK_DAYS = [
-  { key: 'monday', label: 'S' },
-  { key: 'tuesday', label: 'T' },
-  { key: 'wednesday', label: 'Q' },
-  { key: 'thursday', label: 'Q' },
-  { key: 'friday', label: 'S' },
-  { key: 'saturday', label: 'S' },
-  { key: 'sunday', label: 'D' },
+  { key: 'monday', label: 'S', name: 'Segunda' },
+  { key: 'tuesday', label: 'T', name: 'Terça' },
+  { key: 'wednesday', label: 'Q', name: 'Quarta' },
+  { key: 'thursday', label: 'Q', name: 'Quinta' },
+  { key: 'friday', label: 'S', name: 'Sexta' },
+  { key: 'saturday', label: 'S', name: 'Sábado' },
+  { key: 'sunday', label: 'D', name: 'Domingo' },
 ]
 
 export function WeekAvailability(props: WeekAvailabilityProps) {
@@ -27,7 +27,8 @@ export function WeekAvailability(props: WeekAvailabilityProps) {
       {WEEK_DAYS.map((day) => (
         <span
           key={day.key}
-          className={`flex size-4 items-center justify-center rounded-full text-[10px] font-semibold ${
+          title={day.name}
+          className={`flex size-4 cursor-default items-center justify-center rounded-full text-[10px] font-semibold ${
             availabilitySet.has(day.key)
               ? 'bg-dark-brown text-white'
               : 'bg-secondary text-secondary-foreground opacity-40'
