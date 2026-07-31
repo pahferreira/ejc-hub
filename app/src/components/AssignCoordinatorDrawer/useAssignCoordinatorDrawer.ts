@@ -7,7 +7,7 @@ import {
   getSeedIds,
   isDisabledId,
 } from './assignCoordinatorDrawerUtils'
-import type { TeamPreferenceScope } from '../../components/TeamPreferenceFilter/TeamPreferenceFilter'
+import type { TeamPreferenceScope } from '../TeamPreferenceFilter/TeamPreferenceFilter'
 
 type TargetTeam = {
   id: string

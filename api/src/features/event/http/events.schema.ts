@@ -8,6 +8,10 @@ export const eventIdParamSchema = z.object({
   eventId: z.uuid(),
 })
 
+export const teamKeyParamSchema = z.object({
+  teamKey: z.string(),
+})
+
 export const subscriptionAvailabilityEnum = z.enum([
   'monday',
   'tuesday',

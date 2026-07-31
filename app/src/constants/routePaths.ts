@@ -5,5 +5,6 @@ export const ROUTE_PATHS = {
   EVENTS: '/events',
   TEAMS: '/teams',
   TEAMS_TEAM_BUILDING: '/teams/team-building',
+  TEAM_DETAIL: '/teams/:teamKey',
   TEAM_TEMPLATES: '/templates',
 } as const
