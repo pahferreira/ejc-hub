@@ -10,6 +10,8 @@ export type TeamHealthCardProps = {
   team: TeamOverview
   onAdd?: () => void
   onAssignCoordinator?: () => void
+  /** Called when the team title is clicked. Renders a plain heading when absent. */
+  onOpen?: () => void
 }
 
 function calculatePercentage(current: number, max: number) {
@@ -32,7 +34,17 @@ export function TeamHealthCard(props: TeamHealthCardProps) {
       <div className={`h-1.5 ${statusFillClass}`} aria-hidden />
       <div className="flex flex-1 flex-col gap-4 px-6 py-5">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="m-0 font-serif text-xl text-dark-brown">{props.team.templateName}</h3>
+          {props.onOpen ? (
+            <button
+              type="button"
+              onClick={props.onOpen}
+              className="m-0 text-left font-serif text-xl text-dark-brown hover:cursor-pointer hover:underline"
+            >
+              {props.team.templateName}
+            </button>
+          ) : (
+            <h3 className="m-0 font-serif text-xl text-dark-brown">{props.team.templateName}</h3>
+          )}
           <Badge variant={statusDisplay.badgeVariant}>{statusDisplay.label}</Badge>
         </div>
 
@@ -127,7 +139,12 @@ export function TeamHealthCard(props: TeamHealthCardProps) {
           </span>
         </div>
 
-        <div className="mt-auto flex flex-col">
+        <div className={`mt-auto grid gap-3 ${props.onOpen ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          {props.onOpen && (
+            <Button variant="secondary" onClick={props.onOpen}>
+              Ver Equipe
+            </Button>
+          )}
           <Button onClick={props.onAdd} disabled={isFull}>
             + Adicionar
           </Button>

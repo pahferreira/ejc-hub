@@ -5,7 +5,11 @@ import type { TeamInstanceRepository } from '../../../modules/team-instance/doma
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
-import { formatAreas } from './format-areas.ts'
+import { formatAreas } from '../../event/core/format-areas.ts'
+import {
+  mapSubscriptionToPerson,
+  resolveNickname,
+} from '../../event/core/subscription-to-person.ts'
 import {
   UNASSIGNED_STATUS,
   WAITING_LIST_STATUS,
@@ -20,11 +24,6 @@ import {
 type SubscriptionRow = Awaited<
   ReturnType<SubscriptionRepository['listSubscriptionsByEventId']>
 >[number]
-
-// Falls back to the first word of the full name when the user has no nickname.
-function resolveNickname(name: string, nickname: string | null): string {
-  return nickname?.trim() || name.trim().split(/\s+/)[0] || name
-}
 
 export class TeamBuilding {
   #teamInstanceRepository: TeamInstanceRepository
@@ -81,18 +80,7 @@ export class TeamBuilding {
 
       const toMember = (subscription: SubscriptionRow): TeamBoardMember => ({
         subscriptionId: subscription.id,
-        userId: subscription.userId,
-        name: subscription.user.name,
-        nickname: resolveNickname(subscription.user.name, subscription.user.nickname),
-        phone: subscription.user.phone,
-        pictureUrl: subscription.user.pictureUrl,
-        experienceType: subscription.user.experienceType,
-        circleKey: subscription.user.circle?.key ?? null,
-        areas: formatAreas(subscription.user),
-        preferences: (subscription.teams ?? [])
-          .map((teamInstanceId) => instanceNameById.get(teamInstanceId))
-          .filter((name): name is string => Boolean(name)),
-        weekAvailability: subscription.availability ?? [],
+        ...mapSubscriptionToPerson(subscription, instanceNameById),
       })
 
       const unassigned: TeamBoardMember[] = []

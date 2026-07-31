@@ -15,10 +15,10 @@ import { useTeamsOverviewQuery } from '../../services/teams/useTeamsOverviewQuer
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import type { TeamsListFilters } from '../../services/teams/teams.types'
-import { useAssignCoordinatorDrawer } from './useAssignCoordinatorDrawer'
-import { AssignCoordinatorDrawer } from './AssignCoordinatorDrawer'
-import { useAddMembersDrawer } from './useAddMembersDrawer'
-import { AddMembersDrawer } from './AddMembersDrawer'
+import { useAssignCoordinatorDrawer } from '../../components/AssignCoordinatorDrawer/useAssignCoordinatorDrawer'
+import { AssignCoordinatorDrawer } from '../../components/AssignCoordinatorDrawer/AssignCoordinatorDrawer'
+import { useAddMembersDrawer } from '../../components/AddMembersDrawer/useAddMembersDrawer'
+import { AddMembersDrawer } from '../../components/AddMembersDrawer/AddMembersDrawer'
 
 export function TeamsPage() {
   const navigate = useNavigate()
@@ -127,6 +127,7 @@ export function TeamsPage() {
                 <TeamHealthCard
                   key={team.id}
                   team={team}
+                  onOpen={() => navigate(`/teams/${team.templateKey}`)}
                   onAssignCoordinator={() => drawer.open({ id: team.id, name: team.templateName })}
                   onAdd={() =>
                     addMembersDrawer.open({

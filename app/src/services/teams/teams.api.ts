@@ -1,5 +1,11 @@
 import { api } from '../api'
-import type { TeamOption, TeamOverview, TeamsListFilters, TeamsOverviewStats } from './teams.types'
+import type {
+  TeamDetail,
+  TeamOption,
+  TeamOverview,
+  TeamsListFilters,
+  TeamsOverviewStats,
+} from './teams.types'
 
 async function getTeamOptions() {
   const response = await api.get<{ teamOptions: TeamOption[] }>('/teams/options')
@@ -26,8 +32,19 @@ async function getCurrentEventTeamsOverview() {
   return response.data.stats
 }
 
+async function getCurrentEventTeamDetail(teamKey: string) {
+  const response = await api.get<{ team: TeamDetail }>(`/events/current/teams/${teamKey}`)
+  return response.data.team
+}
+
+async function removeTeamMember(teamId: string, memberId: string): Promise<void> {
+  await api.delete(`/teams/${teamId}/members/${memberId}`)
+}
+
 export const teamsApi = {
   getTeamOptions,
   getCurrentEventTeams,
   getCurrentEventTeamsOverview,
+  getCurrentEventTeamDetail,
+  removeTeamMember,
 }

@@ -15,6 +15,7 @@ import {
   listSubscriptionsQuerystringSchema,
   subscribeBodySchema,
   subscribeCurrentSchema,
+  teamKeyParamSchema,
   teamKeysQuerystringSchema,
 } from './events.schema.ts'
 
@@ -167,6 +168,24 @@ export function eventsRoutes(server: FastifyServerInstance) {
           const result = await eventsApp.getCurrentEventTeamsOverview()
 
           return reply.code(HttpStatus.Ok).send(result)
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.get(
+      '/events/current/teams/:teamKey',
+      {
+        schema: { params: teamKeyParamSchema },
+        preHandler: authGuard(server, { permissions: [TeamInstancePermissions.Read] }),
+      },
+      async (request, reply) => {
+        try {
+          const { teamKey } = request.params
+          const team = await eventsApp.getCurrentEventTeamDetail(teamKey)
+
+          return reply.code(HttpStatus.Ok).send({ team })
         } catch (error) {
           fastifyErrorHandler(reply, error)
         }

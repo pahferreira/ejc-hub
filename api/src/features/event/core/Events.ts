@@ -14,11 +14,14 @@ import type {
   SubscriptionPayload,
   SubscriptionWithDetails,
 } from '../domain/subscription-types.ts'
-import type { TeamOverview, TeamsOverviewStats } from '../domain/team-overview.types.ts'
+import type { TeamDetail, TeamOverview, TeamsOverviewStats } from '../domain/team-overview.types.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
 import { getTeamSummaryBucket } from './team-summary.ts'
 import { getTeamStatus, type TeamStatus } from './team-status.ts'
+import { mapSubscriptionToPerson } from './subscription-to-person.ts'
+
+const COORDINATOR_SLOTS = 3
 
 const DEFAULT_PAGE = 1
 const DEFAULT_SIZE = 10
@@ -226,6 +229,76 @@ export class Events {
     )
 
     return { stats }
+  }
+
+  async getCurrentEventTeamDetail(teamKey: string): Promise<TeamDetail> {
+    const currentEvent = await this.#eventsRepository.findCurrentEvent()
+
+    if (!currentEvent) {
+      throw new AppError('Current event not set')
+    }
+
+    const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(
+      currentEvent.id
+    )
+    const instance = instances.find((candidate) => candidate.templateKey === teamKey)
+
+    if (!instance) {
+      throw new AppError(`Team "${teamKey}" not found`)
+    }
+
+    const instanceNameById = new Map(instances.map((i) => [i.id, i.templateName]))
+
+    const [coordinatorSlots, membershipUserIdsByTeam, subscriptions] = await Promise.all([
+      this.#teamInstanceRepository.getCoordinatorSlots(instance.id),
+      this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([instance.id]),
+      this.#subscriptionRepository.listSubscriptionsByEventId(currentEvent.id),
+    ])
+
+    const subscriptionByUserId = new Map(subscriptions.map((sub) => [sub.userId, sub]))
+
+    // Slot-ordered coordinator userIds with gaps preserved for lookup, but the
+    // returned list only contains filled slots (nulls are dropped after ordering).
+    const coordinatorUserIds = [
+      coordinatorSlots.first,
+      coordinatorSlots.second,
+      coordinatorSlots.third,
+    ]
+    const coordinatorIdSet = new Set(coordinatorUserIds.filter((id): id is string => id !== null))
+
+    const coordinators = coordinatorUserIds
+      .filter((id): id is string => id !== null)
+      .map((userId) => subscriptionByUserId.get(userId))
+      .filter((subscription) => subscription !== undefined)
+      .map((subscription) => mapSubscriptionToPerson(subscription, instanceNameById))
+
+    const memberUserIds = membershipUserIdsByTeam.get(instance.id) ?? []
+
+    // A coordinator with a membership row must not also appear as a member.
+    const members = memberUserIds
+      .filter((userId) => !coordinatorIdSet.has(userId))
+      .map((userId) => subscriptionByUserId.get(userId))
+      .filter((subscription) => subscription !== undefined)
+      .map((subscription) => mapSubscriptionToPerson(subscription, instanceNameById))
+
+    const memberCount = this.#countDistinctMembers(memberUserIds, [...coordinatorIdSet])
+    const freeSlots = Math.max(0, instance.maxCapacity - memberCount)
+    const filledPercentage =
+      instance.maxCapacity > 0 ? Math.round((memberCount / instance.maxCapacity) * 100) : 0
+
+    return {
+      id: instance.id,
+      templateKey: instance.templateKey,
+      name: instance.templateName,
+      description: instance.templateDescription,
+      memberCount,
+      maxCapacity: instance.maxCapacity,
+      freeSlots,
+      filledPercentage,
+      coordinatorSlots: COORDINATOR_SLOTS,
+      coordinators,
+      members,
+    }
   }
 
   // Coordinators count as members, deduped against memberships so the same

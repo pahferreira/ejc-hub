@@ -38,7 +38,7 @@ export function SidebarView(props: SidebarViewProps) {
   return (
     <aside
       className={`sticky top-0 h-screen bg-sidebar-background border-r border-secondary/30 flex flex-col transition-all duration-200 shrink-0 overflow-hidden ${
-        props.isCollapsed ? 'w-16' : 'w-64'
+        props.isCollapsed ? 'w-14' : 'w-64'
       }`}
     >
       {/* Logo */}

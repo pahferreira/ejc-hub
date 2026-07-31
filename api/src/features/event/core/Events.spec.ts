@@ -290,3 +290,180 @@ describe('Events.subscribeCurrentEvent', () => {
     )
   })
 })
+
+describe('Events.getCurrentEventTeamDetail', () => {
+  const TEAM_INSTANCE_ID = 'instance-1'
+  const TEAM_KEY = 'liturgia'
+
+  const noSkills = {
+    hasActingSkills: false,
+    hasCommunicationSkills: false,
+    hasCookingSkills: false,
+    hasDancingSkills: false,
+    hasManualSkills: false,
+    hasMusicSkills: false,
+    hasSingingSkills: false,
+    hasGuitarSkills: false,
+    hasPercussionSkills: false,
+    hasMidiaSkills: false,
+  }
+
+  function buildSubscription(userId: string, overrides: Record<string, unknown> = {}) {
+    return {
+      id: `sub-${userId}`,
+      userId,
+      status: 'received',
+      createdAt: new Date(),
+      availability: ['saturday'],
+      teams: [],
+      user: {
+        name: `User ${userId}`,
+        nickname: null,
+        email: `${userId}@example.com`,
+        phone: null,
+        pictureUrl: null,
+        experienceType: 'experienced',
+        circle: null,
+        hasCoordinatorExperience: false,
+        ...noSkills,
+      },
+      ...overrides,
+    }
+  }
+
+  function makeEvents(opts: {
+    subscriptions: ReturnType<typeof buildSubscription>[]
+    memberUserIds?: string[]
+    coordinatorSlots?: { first: string | null; second: string | null; third: string | null }
+    maxCapacity?: number
+  }) {
+    const eventRepository = {
+      findCurrentEvent: vi.fn().mockResolvedValue({ id: EVENT_ID }),
+    } as unknown as EventRepository
+
+    const teamInstanceRepository = {
+      listTeamInstancesWithDetails: vi.fn().mockResolvedValue([
+        {
+          id: TEAM_INSTANCE_ID,
+          eventId: EVENT_ID,
+          templateKey: TEAM_KEY,
+          templateName: 'Liturgia',
+          templateDescription: 'Cuida da liturgia',
+          maxCapacity: opts.maxCapacity ?? 10,
+        },
+      ]),
+      getCoordinatorSlots: vi
+        .fn()
+        .mockResolvedValue(opts.coordinatorSlots ?? { first: null, second: null, third: null }),
+    } as unknown as TeamInstanceRepository
+
+    const teamMembershipRepository = {
+      listMemberUserIdsByTeamInstanceIds: vi
+        .fn()
+        .mockResolvedValue(new Map([[TEAM_INSTANCE_ID, opts.memberUserIds ?? []]])),
+    } as unknown as TeamMembershipRepository
+
+    const subscriptionRepository = {
+      listSubscriptionsByEventId: vi.fn().mockResolvedValue(opts.subscriptions),
+    } as unknown as SubscriptionRepository
+
+    const events = new Events(
+      teamInstanceRepository,
+      subscriptionRepository,
+      {} as SubscriptionOptionRepository,
+      {} as UserRepository,
+      eventRepository,
+      teamMembershipRepository,
+      {} as CircleRepository
+    )
+
+    return { events, teamInstanceRepository, teamMembershipRepository, subscriptionRepository }
+  }
+
+  it('resolves the team by templateKey', async () => {
+    const { events } = makeEvents({ subscriptions: [] })
+
+    const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    expect(detail.id).toBe(TEAM_INSTANCE_ID)
+    expect(detail.templateKey).toBe(TEAM_KEY)
+    expect(detail.name).toBe('Liturgia')
+    expect(detail.description).toBe('Cuida da liturgia')
+    expect(detail.coordinatorSlots).toBe(3)
+  })
+
+  it('throws when the teamKey does not match any team in the current event', async () => {
+    const { events } = makeEvents({ subscriptions: [] })
+
+    await expect(events.getCurrentEventTeamDetail('unknown-key')).rejects.toThrow(/not found/)
+  })
+
+  it('excludes coordinators from the members list even when they have a membership row', async () => {
+    const coordinatorSub = buildSubscription('coord-1')
+    const memberSub = buildSubscription('member-1')
+    const { events } = makeEvents({
+      subscriptions: [coordinatorSub, memberSub],
+      memberUserIds: ['coord-1', 'member-1'],
+      coordinatorSlots: { first: 'coord-1', second: null, third: null },
+    })
+
+    const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    expect(detail.coordinators.map((c) => c.userId)).toEqual(['coord-1'])
+    expect(detail.members.map((m) => m.userId)).toEqual(['member-1'])
+  })
+
+  it('computes memberCount, freeSlots and filledPercentage, deduping coordinators against members', async () => {
+    const coordinatorSub = buildSubscription('coord-1')
+    const memberSub = buildSubscription('member-1')
+    const { events } = makeEvents({
+      subscriptions: [coordinatorSub, memberSub],
+      memberUserIds: ['coord-1', 'member-1'],
+      coordinatorSlots: { first: 'coord-1', second: null, third: null },
+      maxCapacity: 4,
+    })
+
+    const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    // coord-1 counts once even though it's both a coordinator and a membership row.
+    expect(detail.memberCount).toBe(2)
+    expect(detail.maxCapacity).toBe(4)
+    expect(detail.freeSlots).toBe(2)
+    expect(detail.filledPercentage).toBe(50)
+  })
+
+  it('returns slot-ordered coordinators, skipping unfilled slots', async () => {
+    const first = buildSubscription('coord-1')
+    const third = buildSubscription('coord-3')
+    const { events } = makeEvents({
+      subscriptions: [first, third],
+      coordinatorSlots: { first: 'coord-1', second: null, third: 'coord-3' },
+    })
+
+    const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    expect(detail.coordinators.map((c) => c.userId)).toEqual(['coord-1', 'coord-3'])
+  })
+
+  it('rejects when there is no current event', async () => {
+    const { teamInstanceRepository } = makeEvents({ subscriptions: [] })
+
+    const eventRepository = {
+      findCurrentEvent: vi.fn().mockResolvedValue(undefined),
+    } as unknown as EventRepository
+
+    const eventsWithoutCurrentEvent = new Events(
+      teamInstanceRepository,
+      {} as SubscriptionRepository,
+      {} as SubscriptionOptionRepository,
+      {} as UserRepository,
+      eventRepository,
+      {} as TeamMembershipRepository,
+      {} as CircleRepository
+    )
+
+    await expect(eventsWithoutCurrentEvent.getCurrentEventTeamDetail(TEAM_KEY)).rejects.toThrow(
+      'Current event not set'
+    )
+  })
+})

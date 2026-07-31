@@ -41,7 +41,7 @@ export function TeamDetailHeaderCard(props: TeamDetailHeaderCardProps) {
             </div>
           </div>
 
-          <div className="flex shrink-0 gap-8">
+          <div className="flex shrink-0 gap-2 md-gap-8">
             <StatBlock value={props.memberCount} label="Membros" />
             <StatBlock value={props.maxCapacity} label="Capacidade" />
             <StatBlock value={props.freeSlots} label="Vagas livres" />

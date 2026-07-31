@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useAssignCoordinatorCandidatesQuery } from '../../services/team-building/useAssignCoordinatorCandidatesQuery'
 import { useAddMembersMutation } from '../../services/team-building/useAddMembersMutation'
-import { filterCandidates } from './assignCoordinatorDrawerUtils'
-import type { TeamPreferenceScope } from '../../components/TeamPreferenceFilter/TeamPreferenceFilter'
+import { filterCandidates } from '../AssignCoordinatorDrawer/assignCoordinatorDrawerUtils'
+import type { TeamPreferenceScope } from '../TeamPreferenceFilter/TeamPreferenceFilter'
 
 type TargetTeam = {
   id: string
