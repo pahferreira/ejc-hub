@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { FiCalendar, FiPhone, FiTrash2, FiUser } from 'react-icons/fi'
-import { Badge } from '../Badge/Badge'
 import { ButtonIcon } from '../ButtonIcon/ButtonIcon'
 import { Card } from '../Card/Card'
 import { UserAvatar } from '../UserAvatar/UserAvatar'
@@ -84,8 +83,14 @@ export function PersonCard(props: PersonCardProps) {
           <>
             <hr className="m-0 border-t border-tertiary" />
             <div className="flex flex-wrap gap-2">
-              <Badge>Taxa · em breve</Badge>
-              <Badge>Camisa · em breve</Badge>
+              {['Taxa · em breve', 'Camisa · em breve'].map((label) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center rounded-full border border-dashed border-tertiary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground"
+                >
+                  {label}
+                </span>
+              ))}
             </div>
           </>
         )}
