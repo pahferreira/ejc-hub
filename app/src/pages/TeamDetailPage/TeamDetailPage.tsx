@@ -103,7 +103,7 @@ export function TeamDetailPage() {
               Nenhum membro atribuído a esta equipe.
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
               {team.members.map((member) => (
                 <TeamPersonCard
                   key={member.userId}
