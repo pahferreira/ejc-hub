@@ -6,7 +6,7 @@ type LogoProps = {
 
 export function Logo(props: LogoProps) {
   if (props.iconOnly) {
-    return <img src={logoUrl} alt="Ponto EJC" className="w-9 h-9 rounded-lg shrink-0" />
+    return <img src={logoUrl} alt="Ponto EJC" className="w-8 h-8 rounded-lg shrink-0" />
   }
 
   return (
