@@ -30,7 +30,6 @@ export const Coordinator: Story = {
     phone: '(41) 90427-7888',
     weekAvailability: ['monday', 'wednesday', 'friday'],
     attributes: ['Música', 'Teatro'],
-    preferences: ['Logística', 'Decoração'],
     showStatusChips: true,
   },
 }
@@ -42,7 +41,6 @@ export const Member: Story = {
     phone: '(41) 91234-5678',
     weekAvailability: ['saturday', 'sunday'],
     attributes: ['Cozinha'],
-    preferences: ['Primeira Eucaristia'],
     showStatusChips: true,
     onRemove: fn(),
     removeAriaLabel: 'Remover Bruno Carvalho da equipe',
@@ -63,6 +61,5 @@ export const WithExperienceBadge: Story = {
     badge: <ExperienceBadge experienceType="newbie" />,
     phone: '(41) 90427-7888',
     attributes: ['Música', 'Teatro'],
-    preferences: ['Logística', 'Primeira Eucaristia', 'Decoração'],
   },
 }

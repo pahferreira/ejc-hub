@@ -3,7 +3,6 @@ import { FiCalendar, FiPhone, FiTrash2, FiUser } from 'react-icons/fi'
 import { Badge } from '../Badge/Badge'
 import { ButtonIcon } from '../ButtonIcon/ButtonIcon'
 import { Card } from '../Card/Card'
-import { Pill } from '../Pill/Pill'
 import { UserAvatar } from '../UserAvatar/UserAvatar'
 import { WeekAvailability } from '../WeekAvailability/WeekAvailability'
 
@@ -18,8 +17,6 @@ export type PersonCardProps = {
   phone?: string
   /** Optional avatar image URL. Falls back to initials when absent. */
   avatarUrl?: string
-  /** Preference tags. The whole preferences section is hidden when empty/undefined. */
-  preferences?: string[]
   /** Inline attributes joined by a pipe (e.g. ["Música", "Teatro"]). Line hidden when empty. */
   attributes?: string[]
   /** Days of the week the person is available (e.g. ["monday", "friday"]). Hidden when absent. */
@@ -36,7 +33,6 @@ export type PersonCardProps = {
 
 export function PersonCard(props: PersonCardProps) {
   const hasAttributes = (props.attributes?.length ?? 0) > 0
-  const hasPreferences = (props.preferences?.length ?? 0) > 0
   const hasWeekAvailability = (props.weekAvailability?.length ?? 0) > 0
   const subtitle = props.role ? `${props.name} · ${props.role}` : props.name
 
@@ -83,24 +79,6 @@ export function PersonCard(props: PersonCardProps) {
             <p className="m-0 text-xs text-secondary-foreground">{props.attributes?.join(' | ')}</p>
           )}
         </div>
-
-        {hasPreferences && (
-          <>
-            <hr className="m-0 border-t border-tertiary" />
-            <div className="flex flex-col gap-2">
-              <span className="font-mono text-xs font-semibold tracking-wide text-dark-brown uppercase">
-                Preferências
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {props.preferences?.map((preference) => (
-                  <Pill key={preference} variant="primary">
-                    {preference}
-                  </Pill>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
 
         {props.showStatusChips && (
           <>
