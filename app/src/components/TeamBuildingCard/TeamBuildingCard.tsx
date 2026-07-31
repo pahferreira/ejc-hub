@@ -3,6 +3,7 @@ import { FiCalendar, FiPhone, FiUser } from 'react-icons/fi'
 import { Card } from '../Card/Card'
 import { Pill } from '../Pill/Pill'
 import { UserAvatar } from '../UserAvatar/UserAvatar'
+import { WeekAvailability } from '../WeekAvailability/WeekAvailability'
 
 export type TeamBuildingCardProps = {
   /** Person's full name. Used for the title and to derive the avatar initials. */
@@ -23,21 +24,10 @@ export type TeamBuildingCardProps = {
   weekAvailability?: string[]
 }
 
-const WEEK_DAYS = [
-  { key: 'monday', label: 'S' },
-  { key: 'tuesday', label: 'T' },
-  { key: 'wednesday', label: 'Q' },
-  { key: 'thursday', label: 'Q' },
-  { key: 'friday', label: 'S' },
-  { key: 'saturday', label: 'S' },
-  { key: 'sunday', label: 'D' },
-]
-
 export function TeamBuildingCard(props: TeamBuildingCardProps) {
   const hasAttributes = (props.attributes?.length ?? 0) > 0
   const hasPreferences = (props.preferences?.length ?? 0) > 0
   const hasWeekAvailability = (props.weekAvailability?.length ?? 0) > 0
-  const availabilitySet = new Set(props.weekAvailability ?? [])
 
   return (
     <Card className="cursor-grab transition-shadow hover:shadow-lg active:cursor-grabbing">
@@ -65,20 +55,7 @@ export function TeamBuildingCard(props: TeamBuildingCardProps) {
           {hasWeekAvailability && (
             <div className="flex items-center gap-1.5" title="Disponibilidade da semana">
               <FiCalendar size={12} className="shrink-0 text-secondary-foreground" />
-              <div className="flex gap-0.5">
-                {WEEK_DAYS.map((day) => (
-                  <span
-                    key={day.key}
-                    className={`flex size-4 items-center justify-center rounded-full text-[10px] font-semibold ${
-                      availabilitySet.has(day.key)
-                        ? 'bg-dark-brown text-white'
-                        : 'bg-secondary text-secondary-foreground opacity-40'
-                    }`}
-                  >
-                    {day.label}
-                  </span>
-                ))}
-              </div>
+              <WeekAvailability weekAvailability={props.weekAvailability} />
             </div>
           )}
           {hasAttributes && (

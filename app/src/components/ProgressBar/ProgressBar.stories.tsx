@@ -58,3 +58,14 @@ export const PresenceUseCase: Story = {
     descriptionSuffix: ' de presença',
   },
 }
+
+export const PercentageOnly: Story = {
+  args: {
+    label: 'Vagas preenchidas',
+    value: 92,
+    max: 100,
+    variant: 'green',
+    rightLabel: 'percentage',
+    showPercentageLine: false,
+  },
+}
