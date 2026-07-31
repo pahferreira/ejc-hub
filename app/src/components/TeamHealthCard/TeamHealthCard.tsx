@@ -139,7 +139,12 @@ export function TeamHealthCard(props: TeamHealthCardProps) {
           </span>
         </div>
 
-        <div className="mt-auto flex flex-col">
+        <div className={`mt-auto grid gap-3 ${props.onOpen ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          {props.onOpen && (
+            <Button variant="secondary" onClick={props.onOpen}>
+              Ver Equipe
+            </Button>
+          )}
           <Button onClick={props.onAdd} disabled={isFull}>
             + Adicionar
           </Button>
