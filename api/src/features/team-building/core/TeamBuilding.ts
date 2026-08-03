@@ -11,6 +11,7 @@ import {
   resolveNickname,
 } from '../../event/core/subscription-to-person.ts'
 import {
+  COMPLETED_STATUS,
   UNASSIGNED_STATUS,
   WAITING_LIST_STATUS,
   type AssignmentChange,
@@ -204,13 +205,13 @@ export class TeamBuilding {
               tx
             )
 
-            if (subscription.status === WAITING_LIST_STATUS) {
-              await this.#subscriptionRepository.updateSubscriptionStatus(
-                subscription.id,
-                UNASSIGNED_STATUS,
-                tx
-              )
-            }
+            // Placing a member into a team means they are "montado" — mark the
+            // subscription completed regardless of its prior status.
+            await this.#subscriptionRepository.updateSubscriptionStatus(
+              subscription.id,
+              COMPLETED_STATUS,
+              tx
+            )
             continue
           }
 
@@ -387,14 +388,13 @@ export class TeamBuilding {
         for (const { userId, subscription } of resolved) {
           await this.#teamMembershipRepository.insertTeamMembership({ userId, teamInstanceId }, tx)
 
-          // Promote a waiting-list subscription so the member no longer shows as waiting.
-          if (subscription.status === WAITING_LIST_STATUS) {
-            await this.#subscriptionRepository.updateSubscriptionStatus(
-              subscription.id,
-              UNASSIGNED_STATUS,
-              tx
-            )
-          }
+          // Adding a member to a team means they are "montado" — mark the
+          // subscription completed regardless of its prior status.
+          await this.#subscriptionRepository.updateSubscriptionStatus(
+            subscription.id,
+            COMPLETED_STATUS,
+            tx
+          )
         }
       })
     })
@@ -426,16 +426,20 @@ export class TeamBuilding {
         throw new AppError('A team can have at most 3 coordinators')
       }
 
-      // Each userId must have a subscription in the current event.
-      for (const userId of deduped) {
-        const subscription = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
-          userId,
-          event.id
-        )
-        if (!subscription) {
-          throw new AppError(`No subscription found for user ${userId} in the current event`)
-        }
-      }
+      // Each userId must have a subscription in the current event. Resolve them
+      // up front so a bad entry aborts before we open the transaction.
+      const subscriptions = await Promise.all(
+        deduped.map(async (userId) => {
+          const subscription = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
+            userId,
+            event.id
+          )
+          if (!subscription) {
+            throw new AppError(`No subscription found for user ${userId} in the current event`)
+          }
+          return subscription
+        })
+      )
 
       const slots = {
         first: deduped[0] ?? null,
@@ -443,7 +447,20 @@ export class TeamBuilding {
         third: deduped[2] ?? null,
       }
 
-      await this.#teamInstanceRepository.setCoordinators(teamInstanceId, slots)
+      // Write the coordinator slots and mark each coordinator's subscription
+      // "montado" atomically. A coordinator has no team membership record (they
+      // live in FK columns), so completing the subscription is what places them.
+      await runInTransaction(async (tx) => {
+        await this.#teamInstanceRepository.setCoordinators(teamInstanceId, slots, tx)
+
+        for (const subscription of subscriptions) {
+          await this.#subscriptionRepository.updateSubscriptionStatus(
+            subscription.id,
+            COMPLETED_STATUS,
+            tx
+          )
+        }
+      })
     })
   }
 }

@@ -3,8 +3,10 @@ import { Badge, type BadgeVariant } from '../Badge/Badge'
 import { ProgressBar } from '../ProgressBar/ProgressBar'
 
 type SubscriptionStatus = 'pending' | 'received' | 'completed' | 'waiting_list'
-type PaymentStatus = 'paid' | 'pending' | 'not_required'
-type ShirtStatus = 'paid' | 'pending' | 'not_requested'
+// `coming_soon` is a temporary placeholder until payment/shirt data exists — it
+// renders an "Em breve" chip. Remove it once real statuses are wired up.
+type PaymentStatus = 'paid' | 'pending' | 'not_required' | 'coming_soon'
+type ShirtStatus = 'paid' | 'pending' | 'not_requested' | 'coming_soon'
 
 export type InscriptionCardProps = {
   subscriptionStatus: SubscriptionStatus
@@ -25,12 +27,14 @@ const paymentDisplay: Record<PaymentStatus, { label: string; variant: BadgeVaria
   paid: { label: 'Pago', variant: 'success' },
   pending: { label: 'Pendente', variant: 'error' },
   not_required: { label: 'Não exigido', variant: 'default' },
+  coming_soon: { label: 'Em breve', variant: 'default' },
 }
 
 const shirtDisplay: Record<ShirtStatus, { label: string; variant: BadgeVariant }> = {
   paid: { label: 'Paga', variant: 'success' },
   pending: { label: 'Pendente', variant: 'error' },
   not_requested: { label: 'Não solicitada', variant: 'default' },
+  coming_soon: { label: 'Em breve', variant: 'default' },
 }
 
 export function InscriptionCard(props: InscriptionCardProps) {

@@ -89,7 +89,13 @@ function HomeBody(props: HomeBodyProps) {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <InscriptionCard subscriptionStatus={props.subscriptionStatus} />
+      {/* Taxa/Camisa data does not exist yet — show "Em breve" placeholders.
+          Replace these literals with real values from the API once available. */}
+      <InscriptionCard
+        subscriptionStatus={props.subscriptionStatus}
+        paymentStatus="coming_soon"
+        shirtStatus="coming_soon"
+      />
       {props.view.kind === 'assignedTeam' && <TeamCard variant="assigned" team={props.view.team} />}
       {props.view.kind === 'pendingTeam' && (
         <TeamCard variant="pending" preferences={props.preferences} />

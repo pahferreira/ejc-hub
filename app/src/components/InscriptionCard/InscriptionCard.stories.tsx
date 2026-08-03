@@ -70,3 +70,12 @@ export const NoAttendance: Story = {
     shirtStatus: 'paid',
   },
 }
+
+// Placeholder state used on the homepage while payment/shirt data does not exist.
+export const ComingSoon: Story = {
+  args: {
+    subscriptionStatus: 'completed',
+    paymentStatus: 'coming_soon',
+    shirtStatus: 'coming_soon',
+  },
+}
