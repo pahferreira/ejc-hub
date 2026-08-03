@@ -203,7 +203,7 @@ describe('TeamBuilding.applyAssignments', () => {
     )
   })
 
-  it('assigns a waiting-list member to a team and promotes their status', async () => {
+  it('assigns a member to a team and completes (montado) their subscription', async () => {
     await teamBuilding.applyAssignments([
       { userId: 'u1', target: { kind: 'team', teamInstanceId: TEAM_B } },
     ])
@@ -214,7 +214,7 @@ describe('TeamBuilding.applyAssignments', () => {
     )
     expect(repos.subscriptionRepository.updateSubscriptionStatus).toHaveBeenCalledWith(
       's1',
-      'received',
+      'completed',
       expect.anything()
     )
   })
@@ -430,11 +430,38 @@ describe('TeamBuilding.assignCoordinators', () => {
 
     await tb.assignCoordinators(TEAM_A, ['u1', 'u2'])
 
-    expect(repos.teamInstanceRepository.setCoordinators).toHaveBeenCalledWith(TEAM_A, {
-      first: 'u1',
-      second: 'u2',
-      third: null,
-    })
+    expect(repos.teamInstanceRepository.setCoordinators).toHaveBeenCalledWith(
+      TEAM_A,
+      { first: 'u1', second: 'u2', third: null },
+      expect.anything()
+    )
+  })
+
+  it('completes (montado) each assigned coordinator subscription transactionally', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'received' }),
+      buildSub({ id: 's2', userId: 'u2', status: 'received' }),
+    ]
+    const repos = makeAssignRepos(subscriptions)
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await tb.assignCoordinators(TEAM_A, ['u1', 'u2'])
+
+    expect(repos.subscriptionRepository.updateSubscriptionStatus).toHaveBeenCalledWith(
+      's1',
+      'completed',
+      expect.anything()
+    )
+    expect(repos.subscriptionRepository.updateSubscriptionStatus).toHaveBeenCalledWith(
+      's2',
+      'completed',
+      expect.anything()
+    )
   })
 
   it('nulls all slots when given an empty array (clear all)', async () => {
@@ -448,11 +475,11 @@ describe('TeamBuilding.assignCoordinators', () => {
 
     await tb.assignCoordinators(TEAM_A, [])
 
-    expect(repos.teamInstanceRepository.setCoordinators).toHaveBeenCalledWith(TEAM_A, {
-      first: null,
-      second: null,
-      third: null,
-    })
+    expect(repos.teamInstanceRepository.setCoordinators).toHaveBeenCalledWith(
+      TEAM_A,
+      { first: null, second: null, third: null },
+      expect.anything()
+    )
   })
 
   it('rejects more than 3 unique coordinator IDs', async () => {
@@ -489,11 +516,11 @@ describe('TeamBuilding.assignCoordinators', () => {
     // 4 entries but all the same userId — should dedupe to 1 and pass validation
     await expect(tb.assignCoordinators(TEAM_A, ['u1', 'u1', 'u1', 'u1'])).resolves.toBeUndefined()
 
-    expect(repos.teamInstanceRepository.setCoordinators).toHaveBeenCalledWith(TEAM_A, {
-      first: 'u1',
-      second: null,
-      third: null,
-    })
+    expect(repos.teamInstanceRepository.setCoordinators).toHaveBeenCalledWith(
+      TEAM_A,
+      { first: 'u1', second: null, third: null },
+      expect.anything()
+    )
   })
 
   it('rejects a userId that has no subscription in the current event', async () => {
@@ -586,7 +613,7 @@ describe('TeamBuilding.addMembers', () => {
     )
   })
 
-  it('promotes a waiting-list member when adding them to a team', async () => {
+  it('completes (montado) a waiting-list member when adding them to a team', async () => {
     const subscriptions = [buildSub({ id: 's1', userId: 'u1', status: 'waiting_list' })]
     const repos = makeRepos({ subscriptions, memberships: new Map() })
     const tb = new TeamBuilding(
@@ -600,12 +627,12 @@ describe('TeamBuilding.addMembers', () => {
 
     expect(repos.subscriptionRepository.updateSubscriptionStatus).toHaveBeenCalledWith(
       's1',
-      'received',
+      'completed',
       expect.anything()
     )
   })
 
-  it('does not touch the status of an already-received member', async () => {
+  it('completes (montado) an already-received member when adding them to a team', async () => {
     const subscriptions = [buildSub({ id: 's1', userId: 'u1', status: 'received' })]
     const repos = makeRepos({ subscriptions, memberships: new Map() })
     const tb = new TeamBuilding(
@@ -617,7 +644,11 @@ describe('TeamBuilding.addMembers', () => {
 
     await tb.addMembers(TEAM_A, ['u1'])
 
-    expect(repos.subscriptionRepository.updateSubscriptionStatus).not.toHaveBeenCalled()
+    expect(repos.subscriptionRepository.updateSubscriptionStatus).toHaveBeenCalledWith(
+      's1',
+      'completed',
+      expect.anything()
+    )
   })
 
   it('dedupes repeated user ids into a single membership insert', async () => {

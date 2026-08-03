@@ -53,6 +53,8 @@ export type AssignmentChange = {
 // Statuses that surface on the board when the member has no team membership.
 export const UNASSIGNED_STATUS: SubscriptionStatus = 'received'
 export const WAITING_LIST_STATUS: SubscriptionStatus = 'waiting_list'
+// "Montado" — the member has been placed into a team (as a member or coordinator).
+export const COMPLETED_STATUS: SubscriptionStatus = 'completed'
 
 // Coordinator slots for a team instance — three nullable positional slots.
 export type CoordinatorSlots = {

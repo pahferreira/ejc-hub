@@ -1,4 +1,5 @@
 import type { TeamInstanceInput, TeamInstanceModel } from '../../../core/database/schemas/index.ts'
+import type { DbExecutor } from '../../../core/database/client.ts'
 
 export type AssignedTeamForUser = {
   id: string
@@ -77,6 +78,7 @@ export interface TeamInstanceRepository {
   }>
   setCoordinators: (
     teamInstanceId: string,
-    slots: { first: string | null; second: string | null; third: string | null }
+    slots: { first: string | null; second: string | null; third: string | null },
+    executor?: DbExecutor
   ) => Promise<void>
 }

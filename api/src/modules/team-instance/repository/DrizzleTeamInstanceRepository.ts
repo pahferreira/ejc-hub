@@ -1,5 +1,5 @@
 import { and, eq, inArray, ne, or } from 'drizzle-orm'
-import { db } from '../../../core/database/client.ts'
+import { db, type DbExecutor } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type {
   AssignedTeamForUser,
@@ -187,7 +187,34 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
       )
       .limit(1)
 
-    return teamRows[0]
+    if (teamRows[0]) {
+      return teamRows[0]
+    }
+
+    // Coordinators have no membership record — they live in the three coordinator
+    // FK columns. Fall back to matching those so a coordinator's assigned team
+    // still resolves (e.g. for the homepage "Sua Equipe" card).
+    const coordinatorRows = await db
+      .select({
+        id: schema.teamInstances.id,
+        name: schema.teamTemplates.name,
+        description: schema.teamTemplates.description,
+      })
+      .from(schema.teamInstances)
+      .innerJoin(schema.teamTemplates, eq(schema.teamInstances.templateId, schema.teamTemplates.id))
+      .where(
+        and(
+          eq(schema.teamInstances.eventId, eventId),
+          or(
+            eq(schema.teamInstances.firstCoordinatorId, userId),
+            eq(schema.teamInstances.secondCoordinatorId, userId),
+            eq(schema.teamInstances.thirdCoordinatorId, userId)
+          )
+        )
+      )
+      .limit(1)
+
+    return coordinatorRows[0]
   }
 
   async listTeamCoordinators(teamInstanceId: string): Promise<TeamCoordinator[]> {
@@ -306,9 +333,10 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
 
   async setCoordinators(
     teamInstanceId: string,
-    slots: { first: string | null; second: string | null; third: string | null }
+    slots: { first: string | null; second: string | null; third: string | null },
+    executor: DbExecutor = db
   ) {
-    await db
+    await executor
       .update(schema.teamInstances)
       .set({
         firstCoordinatorId: slots.first,
