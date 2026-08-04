@@ -47,12 +47,6 @@ export type AssignmentChange = {
   target: AssignmentTarget
 }
 
-export type CoordinatorSlots = {
-  first: string | null
-  second: string | null
-  third: string | null
-}
-
 export type CoordinatorCandidate = {
   userId: string
   name: string
@@ -79,8 +73,8 @@ export type CoordinatorCandidate = {
 
 export type CandidateListResponse = {
   team: { id: string; name: string }
-  /** Current coordinator slots with positional nulls preserved. */
-  currentCoordinators: CoordinatorSlots
+  /** User ids of the team's current coordinators (flat, unordered peer set). */
+  currentCoordinators: string[]
   candidates: CoordinatorCandidate[]
 }
 

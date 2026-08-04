@@ -1,9 +1,9 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
+import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type {
   TeamCoordinator,
-  TeamInstanceRepository,
-} from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
-import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
+  TeamMembershipRepository,
+} from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { SubscriptionOptionRepository } from '../../../modules/subscription-option/domain/SubscriptionOptionRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
@@ -57,6 +57,10 @@ export class Events {
   async subscribe(eventId: string, userAuthId: string, input: SubscriptionPayload) {
     const user = await this.#userRepository.getUser(userAuthId)
 
+    if (!user) {
+      throw new AppError('User not found')
+    }
+
     const event = await this.#eventsRepository.findEvent(eventId)
 
     if (!event) {
@@ -90,6 +94,10 @@ export class Events {
       throw new AppError('No team instances available for this event')
     }
 
+    // Resolve every selected team up front so an unknown key fails before we
+    // create the subscription instead of orphaning it with an invalid option.
+    const teamInstanceIds = this.#resolveTeamInstanceIds(input.options, teamInstancesToSubscribe)
+
     const subscriptionInput = {
       userId: user.id,
       eventId: eventId,
@@ -102,10 +110,9 @@ export class Events {
       throw new AppError('Failed to create subscription')
     }
 
-    const subscriptionOptionsToSubscribe = input.options.map((option) => ({
+    const subscriptionOptionsToSubscribe = teamInstanceIds.map((teamInstanceId) => ({
       subscriptionId: subscription.id,
-      teamInstanceId: teamInstancesToSubscribe.find((instance) => instance.templateKey === option)
-        ?.id as string,
+      teamInstanceId,
     }))
 
     const subscriptionOptions = await this.#subscriptionOptionRepository.insertSubscriptionOptions(
@@ -149,7 +156,7 @@ export class Events {
 
     const [membershipUserIdsByTeam, coordinatorsByTeam] = await Promise.all([
       this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds(teamInstanceIds),
-      this.#teamInstanceRepository.listCoordinatorsByTeamInstanceIds(teamInstanceIds),
+      this.#teamMembershipRepository.listCoordinatorsByTeamInstanceIds(teamInstanceIds),
     ])
 
     const teams: TeamOverview[] = instances.map((instance) => {
@@ -211,7 +218,7 @@ export class Events {
     // names.
     const [membershipUserIdsByTeam, coordinatorIdsByTeam] = await Promise.all([
       this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds(teamInstanceIds),
-      this.#teamInstanceRepository.listCoordinatorIdsByTeamInstanceIds(teamInstanceIds),
+      this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds(teamInstanceIds),
     ])
 
     const stats = instances.reduce<TeamsOverviewStats>(
@@ -249,34 +256,27 @@ export class Events {
 
     const instanceNameById = new Map(instances.map((i) => [i.id, i.templateName]))
 
-    const [coordinatorSlots, membershipUserIdsByTeam, subscriptions] = await Promise.all([
-      this.#teamInstanceRepository.getCoordinatorSlots(instance.id),
+    const [coordinatorUserIds, membershipUserIdsByTeam, subscriptions] = await Promise.all([
+      this.#teamMembershipRepository.getCoordinatorUserIds(instance.id),
       this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([instance.id]),
       this.#subscriptionRepository.listSubscriptionsByEventId(currentEvent.id),
     ])
 
     const subscriptionByUserId = new Map(subscriptions.map((sub) => [sub.userId, sub]))
 
-    // Slot-ordered coordinator userIds with gaps preserved for lookup, but the
-    // returned list only contains filled slots (nulls are dropped after ordering).
-    const coordinatorUserIds = [
-      coordinatorSlots.first,
-      coordinatorSlots.second,
-      coordinatorSlots.third,
-    ]
-    const coordinatorIdSet = new Set(coordinatorUserIds.filter((id): id is string => id !== null))
+    // Coordinators are a flat peer set (no ordering).
+    const coordinatorIdSet = new Set(coordinatorUserIds)
 
     const coordinators = coordinatorUserIds
-      .filter((id): id is string => id !== null)
       .map((userId) => subscriptionByUserId.get(userId))
       .filter((subscription) => subscription !== undefined)
       .map((subscription) => mapSubscriptionToPerson(subscription, instanceNameById))
 
     const memberUserIds = membershipUserIdsByTeam.get(instance.id) ?? []
 
-    // A coordinator with a membership row must not also appear as a member.
+    // Members (type='member') and coordinators (type='coordinator') are disjoint
+    // by the team_memberships unique constraint, so no dedup guard is needed here.
     const members = memberUserIds
-      .filter((userId) => !coordinatorIdSet.has(userId))
       .map((userId) => subscriptionByUserId.get(userId))
       .filter((subscription) => subscription !== undefined)
       .map((subscription) => mapSubscriptionToPerson(subscription, instanceNameById))
@@ -410,6 +410,11 @@ export class Events {
 
   async getCurrentEventSubscriptionStatus(userAuthId: string) {
     const user = await this.#userRepository.getUser(userAuthId)
+
+    if (!user) {
+      throw new AppError('User not found')
+    }
+
     const currentEvent = await this.#eventsRepository.findCurrentEvent()
 
     if (!currentEvent) {
@@ -438,7 +443,7 @@ export class Events {
     let coordinators: TeamCoordinator[] = []
 
     if (team) {
-      coordinators = await this.#teamInstanceRepository.listTeamCoordinators(team.id)
+      coordinators = await this.#teamMembershipRepository.listTeamCoordinators(team.id)
     }
 
     return {
@@ -451,6 +456,11 @@ export class Events {
 
   async subscribeCurrentEvent(userAuthId: string, input: CurrentEventSubscriptionPayload) {
     const user = await this.#userRepository.getUser(userAuthId)
+
+    if (!user) {
+      throw new AppError('User not found')
+    }
+
     const currentEvent = await this.#eventsRepository.findCurrentEvent()
 
     if (!currentEvent) {
@@ -489,6 +499,13 @@ export class Events {
       throw new AppError('No team instances available for this event')
     }
 
+    // Resolve every selected team up front so an unknown key fails before we
+    // create the subscription instead of orphaning it with an invalid option.
+    const teamInstanceIds = this.#resolveTeamInstanceIds(
+      input.selectedTeams,
+      teamInstancesToSubscribe
+    )
+
     const isOutsider = input.experienceType === 'experienced_outsider'
     const alreadyWorkedHere = isOutsider ? input.alreadyWorkedHere : undefined
     const alreadyWorkedEvent =
@@ -516,11 +533,9 @@ export class Events {
       throw new AppError('Failed to create subscription')
     }
 
-    const subscriptionOptionsToSubscribe = input.selectedTeams.map((teamOption) => ({
+    const subscriptionOptionsToSubscribe = teamInstanceIds.map((teamInstanceId) => ({
       subscriptionId: subscription.id,
-      teamInstanceId: teamInstancesToSubscribe.find(
-        (instance) => instance.templateKey === teamOption
-      )?.id as string,
+      teamInstanceId,
     }))
 
     const subscriptionOptions = await this.#subscriptionOptionRepository.insertSubscriptionOptions(
@@ -642,6 +657,28 @@ export class Events {
 
   #listTeamInstances(eventId: string, teamKeys?: string[]) {
     return this.#teamInstanceRepository.listTeamInstances(eventId, { keys: teamKeys })
+  }
+
+  // Maps each selected team key to its team instance id, throwing a clear error
+  // when a key has no matching instance instead of silently coercing the missing
+  // id to a string.
+  #resolveTeamInstanceIds(
+    teamKeys: string[],
+    teamInstances: { id: string; templateKey: string }[]
+  ): string[] {
+    const teamInstanceIdByKey = new Map(
+      teamInstances.map((instance) => [instance.templateKey, instance.id])
+    )
+
+    return teamKeys.map((key) => {
+      const teamInstanceId = teamInstanceIdByKey.get(key)
+
+      if (!teamInstanceId) {
+        throw new AppError(`Team "${key}" is not available for this event`)
+      }
+
+      return teamInstanceId
+    })
   }
 
   #formatSkillsObject(skills: string[]) {

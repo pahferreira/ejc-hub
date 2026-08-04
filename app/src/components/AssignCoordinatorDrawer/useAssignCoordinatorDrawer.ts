@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAssignCoordinatorCandidatesQuery } from '../../services/team-building/useAssignCoordinatorCandidatesQuery'
 import { useAssignCoordinatorsMutation } from '../../services/team-building/useAssignCoordinatorsMutation'
-import {
-  computeSlotRules,
-  filterCandidates,
-  getSeedIds,
-  isDisabledId,
-} from './assignCoordinatorDrawerUtils'
+import { computeSlotRules, filterCandidates, isDisabledId } from './assignCoordinatorDrawerUtils'
 import type { TeamPreferenceScope } from '../TeamPreferenceFilter/TeamPreferenceFilter'
 
 type TargetTeam = {
@@ -31,7 +26,7 @@ export function useAssignCoordinatorDrawer() {
   // Seed selection once data becomes available (or when isOpen flips to true for cached data).
   useEffect(() => {
     if (isOpen && candidatesQuery.data) {
-      const seedIds = getSeedIds(candidatesQuery.data.currentCoordinators)
+      const seedIds = candidatesQuery.data.currentCoordinators
       setSelectedIds(seedIds)
       setIsEditMode(seedIds.length > 0)
     }

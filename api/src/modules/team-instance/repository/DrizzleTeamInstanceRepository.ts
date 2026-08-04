@@ -1,12 +1,11 @@
-import { and, eq, inArray, ne, or } from 'drizzle-orm'
-import { db, type DbExecutor } from '../../../core/database/client.ts'
+import { and, eq, inArray } from 'drizzle-orm'
+import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type {
   AssignedTeamForUser,
-  TeamCoordinator,
-  TeamCoordinatorSummary,
   TeamInstanceRepository,
 } from '../domain/TeamInstanceRepository.ts'
+import type { TeamInstanceInput } from '../../../core/database/schemas/index.ts'
 
 class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
   async insertTeamInstance(input: { templateId: string; eventId: string }) {
@@ -56,116 +55,6 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
       .where(eq(schema.teamInstances.eventId, eventId))
   }
 
-  async listCoordinatorIdsByTeamInstanceIds(teamInstanceIds: string[]) {
-    const coordinatorIdsByTeam = new Map<string, string[]>()
-
-    if (teamInstanceIds.length === 0) {
-      return coordinatorIdsByTeam
-    }
-
-    const instances = await db
-      .select({
-        id: schema.teamInstances.id,
-        firstCoordinatorId: schema.teamInstances.firstCoordinatorId,
-        secondCoordinatorId: schema.teamInstances.secondCoordinatorId,
-        thirdCoordinatorId: schema.teamInstances.thirdCoordinatorId,
-      })
-      .from(schema.teamInstances)
-      .where(inArray(schema.teamInstances.id, teamInstanceIds))
-
-    for (const instance of instances) {
-      const coordinatorIds = [
-        instance.firstCoordinatorId,
-        instance.secondCoordinatorId,
-        instance.thirdCoordinatorId,
-      ].filter((id): id is string => id !== null)
-
-      if (coordinatorIds.length > 0) {
-        coordinatorIdsByTeam.set(instance.id, coordinatorIds)
-      }
-    }
-
-    return coordinatorIdsByTeam
-  }
-
-  async listCoordinatorExperienceByUserIds(userIds: string[], excludeEventId?: string) {
-    const experienceByUser = new Map<string, string[]>()
-
-    if (userIds.length === 0) {
-      return experienceByUser
-    }
-
-    const rows = await db
-      .select({
-        templateName: schema.teamTemplates.name,
-        firstCoordinatorId: schema.teamInstances.firstCoordinatorId,
-        secondCoordinatorId: schema.teamInstances.secondCoordinatorId,
-        thirdCoordinatorId: schema.teamInstances.thirdCoordinatorId,
-      })
-      .from(schema.teamInstances)
-      .innerJoin(schema.teamTemplates, eq(schema.teamInstances.templateId, schema.teamTemplates.id))
-      .where(
-        and(
-          excludeEventId ? ne(schema.teamInstances.eventId, excludeEventId) : undefined,
-          or(
-            inArray(schema.teamInstances.firstCoordinatorId, userIds),
-            inArray(schema.teamInstances.secondCoordinatorId, userIds),
-            inArray(schema.teamInstances.thirdCoordinatorId, userIds)
-          )
-        )
-      )
-
-    const userIdSet = new Set(userIds)
-    const addExperience = (userId: string | null, teamName: string) => {
-      if (!userId || !userIdSet.has(userId)) {
-        return
-      }
-      const teams = experienceByUser.get(userId) ?? []
-      if (!teams.includes(teamName)) {
-        teams.push(teamName)
-      }
-      experienceByUser.set(userId, teams)
-    }
-
-    for (const row of rows) {
-      addExperience(row.firstCoordinatorId, row.templateName)
-      addExperience(row.secondCoordinatorId, row.templateName)
-      addExperience(row.thirdCoordinatorId, row.templateName)
-    }
-
-    return experienceByUser
-  }
-
-  async listCoordinatorsByTeamInstanceIds(teamInstanceIds: string[]) {
-    const coordinatorsByTeam = new Map<string, TeamCoordinatorSummary[]>()
-    const coordinatorIdsByTeam = await this.listCoordinatorIdsByTeamInstanceIds(teamInstanceIds)
-
-    const coordinatorIds = [...coordinatorIdsByTeam.values()].flat()
-
-    if (coordinatorIds.length === 0) {
-      return coordinatorsByTeam
-    }
-
-    const users = await db
-      .select({ id: schema.users.id, name: schema.users.name, pictureUrl: schema.users.pictureUrl })
-      .from(schema.users)
-      .where(inArray(schema.users.id, coordinatorIds))
-
-    const usersById = new Map(users.map((user) => [user.id, user]))
-
-    for (const [teamInstanceId, ids] of coordinatorIdsByTeam) {
-      const coordinators = ids
-        .map((id) => usersById.get(id))
-        .filter((user): user is TeamCoordinatorSummary => user !== undefined)
-
-      if (coordinators.length > 0) {
-        coordinatorsByTeam.set(teamInstanceId, coordinators)
-      }
-    }
-
-    return coordinatorsByTeam
-  }
-
   async findUserTeamForEvent(
     userId: string,
     eventId: string
@@ -187,74 +76,7 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
       )
       .limit(1)
 
-    if (teamRows[0]) {
-      return teamRows[0]
-    }
-
-    // Coordinators have no membership record — they live in the three coordinator
-    // FK columns. Fall back to matching those so a coordinator's assigned team
-    // still resolves (e.g. for the homepage "Sua Equipe" card).
-    const coordinatorRows = await db
-      .select({
-        id: schema.teamInstances.id,
-        name: schema.teamTemplates.name,
-        description: schema.teamTemplates.description,
-      })
-      .from(schema.teamInstances)
-      .innerJoin(schema.teamTemplates, eq(schema.teamInstances.templateId, schema.teamTemplates.id))
-      .where(
-        and(
-          eq(schema.teamInstances.eventId, eventId),
-          or(
-            eq(schema.teamInstances.firstCoordinatorId, userId),
-            eq(schema.teamInstances.secondCoordinatorId, userId),
-            eq(schema.teamInstances.thirdCoordinatorId, userId)
-          )
-        )
-      )
-      .limit(1)
-
-    return coordinatorRows[0]
-  }
-
-  async listTeamCoordinators(teamInstanceId: string): Promise<TeamCoordinator[]> {
-    const teamInstance = await db
-      .select({
-        firstCoordinatorId: schema.teamInstances.firstCoordinatorId,
-        secondCoordinatorId: schema.teamInstances.secondCoordinatorId,
-        thirdCoordinatorId: schema.teamInstances.thirdCoordinatorId,
-      })
-      .from(schema.teamInstances)
-      .where(eq(schema.teamInstances.id, teamInstanceId))
-      .limit(1)
-
-    const row = teamInstance[0]
-    if (!row) {
-      return []
-    }
-
-    const coordinatorIds = [
-      row.firstCoordinatorId,
-      row.secondCoordinatorId,
-      row.thirdCoordinatorId,
-    ].filter((id): id is string => id !== null)
-
-    if (coordinatorIds.length === 0) {
-      return []
-    }
-
-    const coordinators = await db
-      .select({
-        id: schema.users.id,
-        name: schema.users.name,
-        phone: schema.users.phone,
-      })
-      .from(schema.users)
-      .where(inArray(schema.users.id, coordinatorIds))
-
-    return coordinatorIds
-      .map((id) => coordinators.find((coordinator) => coordinator.id === id))
-      .filter((coordinator): coordinator is TeamCoordinator => coordinator !== undefined)
+    return teamRows[0]
   }
 
   async selectTeamInstance(id: string) {
@@ -282,14 +104,7 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
     return deleted[0]
   }
 
-  async updateTeamInstance(
-    id: string,
-    input: {
-      firstCoordinatorId?: string | null
-      secondCoordinatorId?: string | null
-      thirdCoordinatorId?: string | null
-    }
-  ) {
+  async updateTeamInstance(id: string, input: Partial<TeamInstanceInput>) {
     const updated = await db
       .update(schema.teamInstances)
       .set(input)
@@ -306,44 +121,6 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
     }))
     const teams = await db.insert(schema.teamInstances).values(teamInstancesToInsert).returning()
     return teams
-  }
-
-  async getCoordinatorSlots(teamInstanceId: string) {
-    const rows = await db
-      .select({
-        firstCoordinatorId: schema.teamInstances.firstCoordinatorId,
-        secondCoordinatorId: schema.teamInstances.secondCoordinatorId,
-        thirdCoordinatorId: schema.teamInstances.thirdCoordinatorId,
-      })
-      .from(schema.teamInstances)
-      .where(eq(schema.teamInstances.id, teamInstanceId))
-      .limit(1)
-
-    const row = rows[0]
-    if (!row) {
-      return { first: null, second: null, third: null }
-    }
-
-    return {
-      first: row.firstCoordinatorId,
-      second: row.secondCoordinatorId,
-      third: row.thirdCoordinatorId,
-    }
-  }
-
-  async setCoordinators(
-    teamInstanceId: string,
-    slots: { first: string | null; second: string | null; third: string | null },
-    executor: DbExecutor = db
-  ) {
-    await executor
-      .update(schema.teamInstances)
-      .set({
-        firstCoordinatorId: slots.first,
-        secondCoordinatorId: slots.second,
-        thirdCoordinatorId: slots.third,
-      })
-      .where(eq(schema.teamInstances.id, teamInstanceId))
   }
 }
 

@@ -56,13 +56,6 @@ export const WAITING_LIST_STATUS: SubscriptionStatus = 'waiting_list'
 // "Montado" — the member has been placed into a team (as a member or coordinator).
 export const COMPLETED_STATUS: SubscriptionStatus = 'completed'
 
-// Coordinator slots for a team instance — three nullable positional slots.
-export type CoordinatorSlots = {
-  first: string | null
-  second: string | null
-  third: string | null
-}
-
 // A person eligible to be selected as a coordinator for a given team.
 export type Candidate = {
   userId: string
@@ -90,7 +83,7 @@ export type Candidate = {
 
 export type CandidateListResult = {
   team: { id: string; name: string }
-  /** Current coordinator slots with positional nulls preserved. */
-  currentCoordinators: CoordinatorSlots
+  /** User ids of the team's current coordinators (flat, unordered peer set). */
+  currentCoordinators: string[]
   candidates: Candidate[]
 }

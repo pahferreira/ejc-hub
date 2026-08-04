@@ -1,14 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import {
-  computeSlotRules,
-  filterCandidates,
-  getSeedIds,
-  isDisabledId,
-} from './assignCoordinatorDrawerUtils'
-import type {
-  CoordinatorCandidate,
-  CoordinatorSlots,
-} from '../../services/team-building/team-building.types'
+import { computeSlotRules, filterCandidates, isDisabledId } from './assignCoordinatorDrawerUtils'
+import type { CoordinatorCandidate } from '../../services/team-building/team-building.types'
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -28,30 +20,6 @@ const makeCandidate = (overrides: Partial<CoordinatorCandidate> = {}): Coordinat
   coordinatorExperienceTeams: [],
   weekAvailability: [],
   ...overrides,
-})
-
-const slots = (
-  first: string | null,
-  second: string | null,
-  third: string | null
-): CoordinatorSlots => ({ first, second, third })
-
-// ---------------------------------------------------------------------------
-// getSeedIds
-// ---------------------------------------------------------------------------
-
-describe('getSeedIds', () => {
-  it('returns empty array when all slots are null', () => {
-    expect(getSeedIds(slots(null, null, null))).toEqual([])
-  })
-
-  it('returns only non-null slot ids', () => {
-    expect(getSeedIds(slots('u1', null, 'u3'))).toEqual(['u1', 'u3'])
-  })
-
-  it('returns all three when all are filled', () => {
-    expect(getSeedIds(slots('u1', 'u2', 'u3'))).toEqual(['u1', 'u2', 'u3'])
-  })
 })
 
 // ---------------------------------------------------------------------------

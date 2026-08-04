@@ -7,7 +7,7 @@ export type ListUsersOptions = {
 }
 
 export interface UserRepository {
-  getUser: (authId: string) => Promise<UserModel>
+  getUser: (authId: string) => Promise<UserModel | undefined>
   createUser: (input: UserInput) => Promise<UserModel>
   updateUser: (id: string, input: Partial<UserInput>) => Promise<UserModel>
   listUsers: (options: ListUsersOptions) => Promise<UserModel[]>

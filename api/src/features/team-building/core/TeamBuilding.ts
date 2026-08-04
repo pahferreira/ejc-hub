@@ -201,7 +201,11 @@ export class TeamBuilding {
 
           if (change.target.kind === 'team') {
             await this.#teamMembershipRepository.insertTeamMembership(
-              { userId: change.userId, teamInstanceId: change.target.teamInstanceId },
+              {
+                userId: change.userId,
+                teamInstanceId: change.target.teamInstanceId,
+                type: 'member',
+              },
               tx
             )
 
@@ -242,11 +246,11 @@ export class TeamBuilding {
       const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(event.id)
       const instanceIds = new Set(instances.map((i) => i.id))
 
-      if (!instanceIds.has(teamInstanceId)) {
+      const targetInstance = instances.find((i) => i.id === teamInstanceId)
+
+      if (!targetInstance) {
         throw new AppError(`Team instance ${teamInstanceId} does not belong to the current event`)
       }
-
-      const targetInstance = instances.find((i) => i.id === teamInstanceId)!
 
       // Build member exclusion set — everyone who has a team membership in the event.
       const membershipUserIdsByTeam =
@@ -261,7 +265,7 @@ export class TeamBuilding {
       // Build coordinator exclusion set from OTHER teams only, and capture the
       // target team's own coordinator IDs for force-include.
       const coordinatorIdsByTeam =
-        await this.#teamInstanceRepository.listCoordinatorIdsByTeamInstanceIds([...instanceIds])
+        await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds([...instanceIds])
       const otherTeamCoordinatorSet = new Set<string>()
       const targetCoordinatorSet = new Set<string>()
       for (const [tid, coordIds] of coordinatorIdsByTeam) {
@@ -288,7 +292,7 @@ export class TeamBuilding {
       // Resolve prior coordinator experience (teams coordinated in other events)
       // for the eligible candidates only.
       const coordinatorExperienceByUser =
-        await this.#teamInstanceRepository.listCoordinatorExperienceByUserIds(
+        await this.#teamMembershipRepository.listCoordinatorExperienceByUserIds(
           eligibleSubscriptions.map((sub) => sub.userId),
           event.id
         )
@@ -318,7 +322,7 @@ export class TeamBuilding {
         .sort((a, b) => a.nickname.localeCompare(b.nickname, 'pt-BR', { sensitivity: 'base' }))
 
       const currentCoordinators =
-        await this.#teamInstanceRepository.getCoordinatorSlots(teamInstanceId)
+        await this.#teamMembershipRepository.getCoordinatorUserIds(teamInstanceId)
 
       return {
         team: { id: targetInstance.id, name: targetInstance.templateName },
@@ -363,12 +367,23 @@ export class TeamBuilding {
         for (const id of ids) assignedUserSet.add(id)
       }
 
+      // A coordinator of the target team already occupies its (team, user) row, so
+      // adding them as a member would violate the uniqueness constraint. Reject them
+      // with a clear error instead of letting the insert fail with a raw DB error.
+      const targetCoordinatorIdsByTeam =
+        await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds([teamInstanceId])
+      const targetCoordinatorSet = new Set(targetCoordinatorIdsByTeam.get(teamInstanceId) ?? [])
+
       // Validate and resolve subscriptions up front so a bad entry aborts the whole
       // batch cleanly before opening the transaction.
       const resolved = await Promise.all(
         deduped.map(async (userId) => {
           if (assignedUserSet.has(userId)) {
             throw new AppError(`User ${userId} is already assigned to a team`)
+          }
+
+          if (targetCoordinatorSet.has(userId)) {
+            throw new AppError(`User ${userId} already coordinates this team`)
           }
 
           const subscription = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
@@ -386,7 +401,10 @@ export class TeamBuilding {
 
       await runInTransaction(async (tx) => {
         for (const { userId, subscription } of resolved) {
-          await this.#teamMembershipRepository.insertTeamMembership({ userId, teamInstanceId }, tx)
+          await this.#teamMembershipRepository.insertTeamMembership(
+            { userId, teamInstanceId, type: 'member' },
+            tx
+          )
 
           // Adding a member to a team means they are "montado" — mark the
           // subscription completed regardless of its prior status.
@@ -400,9 +418,9 @@ export class TeamBuilding {
     })
   }
 
-  // Sets the coordinator slots for a team instance atomically.
-  // `coordinatorUserIds` is positional (index 0 → first slot, etc.).
-  // Passing an empty array clears all slots.
+  // Replaces a team instance's coordinators atomically. Coordinators are a flat
+  // peer set (no ordering); duplicates are ignored and at most 3 are allowed.
+  // Passing an empty array clears all coordinators.
   async assignCoordinators(teamInstanceId: string, coordinatorUserIds: string[]): Promise<void> {
     await this.#withCurrentEvent(async (event) => {
       const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(event.id)
@@ -426,10 +444,21 @@ export class TeamBuilding {
         throw new AppError('A team can have at most 3 coordinators')
       }
 
+      // A member of the target team already occupies its (team, user) row, so
+      // promoting them to coordinator would violate the uniqueness constraint.
+      // Reject with a clear error instead of a raw DB failure.
+      const membershipUserIdsByTeam =
+        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([teamInstanceId])
+      const targetMemberSet = new Set(membershipUserIdsByTeam.get(teamInstanceId) ?? [])
+
       // Each userId must have a subscription in the current event. Resolve them
       // up front so a bad entry aborts before we open the transaction.
       const subscriptions = await Promise.all(
         deduped.map(async (userId) => {
+          if (targetMemberSet.has(userId)) {
+            throw new AppError(`User ${userId} is already a member of this team`)
+          }
+
           const subscription = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
             userId,
             event.id
@@ -441,17 +470,10 @@ export class TeamBuilding {
         })
       )
 
-      const slots = {
-        first: deduped[0] ?? null,
-        second: deduped[1] ?? null,
-        third: deduped[2] ?? null,
-      }
-
-      // Write the coordinator slots and mark each coordinator's subscription
-      // "montado" atomically. A coordinator has no team membership record (they
-      // live in FK columns), so completing the subscription is what places them.
+      // Write the coordinators (as flat `type: 'coordinator'` membership rows) and
+      // mark each coordinator's subscription "montado" atomically.
       await runInTransaction(async (tx) => {
-        await this.#teamInstanceRepository.setCoordinators(teamInstanceId, slots, tx)
+        await this.#teamMembershipRepository.setCoordinators(teamInstanceId, deduped, tx)
 
         for (const subscription of subscriptions) {
           await this.#subscriptionRepository.updateSubscriptionStatus(
