@@ -23,6 +23,7 @@ export function MemberCard(props: MemberCardProps) {
       attributes={props.member.areas}
       preferences={props.member.preferences}
       weekAvailability={props.member.weekAvailability}
+      isCoordinator={props.member.isCoordinator}
     />
   )
 }

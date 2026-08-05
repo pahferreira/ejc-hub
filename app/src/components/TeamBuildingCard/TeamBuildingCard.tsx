@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { FaCrown } from 'react-icons/fa'
 import { FiCalendar, FiPhone, FiUser } from 'react-icons/fi'
 import { Card } from '../Card/Card'
 import { Pill } from '../Pill/Pill'
@@ -22,6 +23,8 @@ export type TeamBuildingCardProps = {
   avatarUrl?: string
   /** Days of the week the member is available (e.g. ["monday", "friday"]). Hidden when absent. */
   weekAvailability?: string[]
+  /** Renders a crown next to the name for team coordinators. */
+  isCoordinator?: boolean
 }
 
 export function TeamBuildingCard(props: TeamBuildingCardProps) {
@@ -36,7 +39,16 @@ export function TeamBuildingCard(props: TeamBuildingCardProps) {
           <UserAvatar name={props.name} pictureUrl={props.avatarUrl} size="default" />
 
           <div className="flex min-w-0 flex-col">
-            <span className="font-semibold text-dark-brown">{props.nickname}</span>
+            <span className="flex items-center gap-1 font-semibold text-dark-brown">
+              {props.nickname}
+              {props.isCoordinator && (
+                <FaCrown
+                  size={12}
+                  className="shrink-0 text-amber-500"
+                  aria-label="Coordenador(a)"
+                />
+              )}
+            </span>
             {props.badge && <div className="w-fit">{props.badge}</div>}
           </div>
         </div>

@@ -70,3 +70,14 @@ export const Minimal: Story = {
     nickname: 'Carlinha',
   },
 }
+
+export const Coordinator: Story = {
+  args: {
+    name: 'Alice Ribeiro',
+    nickname: 'Lili',
+    badge: <ExperienceBadge experienceType="experienced" />,
+    phone: '(41) 90427-7888',
+    attributes: ['Música', 'Teatro'],
+    isCoordinator: true,
+  },
+}

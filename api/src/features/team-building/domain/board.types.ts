@@ -22,6 +22,8 @@ export type TeamBoardMember = {
   preferences: string[]
   /** Days of the week the member is available (e.g. ["monday", "friday"]). */
   weekAvailability: string[]
+  /** True when this card is a team coordinator (rendered crowned + non-draggable). */
+  isCoordinator?: boolean
 }
 
 export type TeamBoardColumn = {

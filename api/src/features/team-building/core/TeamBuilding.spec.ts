@@ -178,6 +178,35 @@ describe('TeamBuilding.getCurrentEventBoard', () => {
     expect(nicknameByUser.get('u1')).toBe('Alice')
     expect(nicknameByUser.get('u2')).toBe('Bru')
   })
+
+  it('includes team coordinators in their team column, flagged and counted', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'completed' }), // member of TEAM_A
+      buildSub({ id: 's2', userId: 'coord-1', status: 'completed' }), // coordinator of TEAM_A
+    ]
+    const memberships = new Map([[TEAM_A, ['u1']]])
+    const coordinators = new Map([[TEAM_A, ['coord-1']]])
+
+    const repos = makeRepos({ subscriptions, memberships, coordinators })
+    const teamBuilding = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    const { columns } = await teamBuilding.getCurrentEventBoard()
+    const byId = new Map(columns.map((column) => [column.id, column]))
+    const teamAColumn = byId.get(TEAM_A)
+
+    expect(teamAColumn?.members.map((m) => m.userId)).toEqual(['coord-1', 'u1'])
+    expect(teamAColumn?.members.find((m) => m.userId === 'coord-1')?.isCoordinator).toBe(true)
+    expect(teamAColumn?.members.find((m) => m.userId === 'u1')?.isCoordinator).toBeUndefined()
+    expect(teamAColumn?.count).toBe(2)
+
+    expect(byId.get('unassigned')?.members.some((m) => m.userId === 'coord-1')).toBe(false)
+    expect(byId.get('waiting_list')?.members.some((m) => m.userId === 'coord-1')).toBe(false)
+  })
 })
 
 describe('TeamBuilding.applyAssignments', () => {
@@ -238,6 +267,30 @@ describe('TeamBuilding.applyAssignments', () => {
     ).rejects.toThrow(/does not belong to the current event/)
 
     expect(repos.teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
+  })
+
+  it('rejects moving a user into a team they already coordinate', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'waiting_list' }),
+      buildSub({ id: 's2', userId: 'coord-1', status: 'completed' }),
+    ]
+    const coordinatorRepos = makeRepos({
+      subscriptions,
+      memberships: new Map(),
+      coordinators: new Map([[TEAM_A, ['coord-1']]]),
+    })
+    const tb = new TeamBuilding(
+      coordinatorRepos.teamInstanceRepository,
+      coordinatorRepos.teamMembershipRepository,
+      coordinatorRepos.subscriptionRepository,
+      coordinatorRepos.eventRepository
+    )
+
+    await expect(
+      tb.applyAssignments([{ userId: 'coord-1', target: { kind: 'team', teamInstanceId: TEAM_A } }])
+    ).rejects.toThrow(/already coordinates this team/)
+
+    expect(coordinatorRepos.teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
   })
 })
 

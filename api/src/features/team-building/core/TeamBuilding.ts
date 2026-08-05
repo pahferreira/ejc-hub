@@ -70,6 +70,10 @@ export class TeamBuilding {
         await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds(
           instances.map((instance) => instance.id)
         )
+      const coordinatorIdsByTeam =
+        await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds(
+          instances.map((instance) => instance.id)
+        )
 
       // Invert the membership map so we can find each user's team in one lookup.
       const teamByUserId = new Map<string, string>()
@@ -79,9 +83,12 @@ export class TeamBuilding {
         }
       }
 
-      const toMember = (subscription: SubscriptionRow): TeamBoardMember => ({
+      const subscriptionByUserId = new Map(subscriptions.map((sub) => [sub.userId, sub]))
+
+      const toMember = (subscription: SubscriptionRow, isCoordinator = false): TeamBoardMember => ({
         subscriptionId: subscription.id,
         ...mapSubscriptionToPerson(subscription, instanceNameById),
+        isCoordinator: isCoordinator || undefined,
       })
 
       const unassigned: TeamBoardMember[] = []
@@ -128,7 +135,11 @@ export class TeamBuilding {
           members: waitingList,
         },
         ...instances.map((instance): TeamBoardColumn => {
-          const members = membersByTeam.get(instance.id) ?? []
+          const coordinatorMembers = (coordinatorIdsByTeam.get(instance.id) ?? [])
+            .map((userId) => subscriptionByUserId.get(userId))
+            .filter((sub): sub is SubscriptionRow => sub !== undefined)
+            .map((sub) => toMember(sub, true))
+          const members = [...coordinatorMembers, ...(membersByTeam.get(instance.id) ?? [])]
           return {
             id: instance.id,
             kind: 'team',
@@ -153,6 +164,8 @@ export class TeamBuilding {
       const instanceIds = new Set(instances.map((instance) => instance.id))
       const membershipUserIdsByTeam =
         await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds])
+      const coordinatorIdsByTeam =
+        await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds([...instanceIds])
 
       const currentTeamsByUser = new Map<string, string[]>()
       for (const [teamInstanceId, userIds] of membershipUserIdsByTeam) {
@@ -171,6 +184,18 @@ export class TeamBuilding {
             throw new AppError(
               `Team instance ${change.target.teamInstanceId} does not belong to the current event`
             )
+          }
+
+          // A coordinator of the target team already occupies its (team, user) row, so
+          // moving them in as a member would violate the uniqueness constraint. Reject
+          // with a clear error instead of letting the insert fail with a raw DB error.
+          if (change.target.kind === 'team') {
+            const targetCoordinatorSet = new Set(
+              coordinatorIdsByTeam.get(change.target.teamInstanceId) ?? []
+            )
+            if (targetCoordinatorSet.has(change.userId)) {
+              throw new AppError(`User ${change.userId} already coordinates this team`)
+            }
           }
 
           const subscription = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
