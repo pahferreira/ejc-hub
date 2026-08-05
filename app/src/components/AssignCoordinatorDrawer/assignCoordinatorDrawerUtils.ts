@@ -1,12 +1,4 @@
-import type {
-  CoordinatorCandidate,
-  CoordinatorSlots,
-} from '../../services/team-building/team-building.types'
-
-/** Extracts non-null IDs from the positional coordinator slots. */
-export function getSeedIds(slots: CoordinatorSlots): string[] {
-  return [slots.first, slots.second, slots.third].filter((id): id is string => id !== null)
-}
+import type { CoordinatorCandidate } from '../../services/team-building/team-building.types'
 
 /** Derives slot-rule values from current selection and edit-mode state. */
 export function computeSlotRules(selectedIds: string[], isEditMode: boolean) {

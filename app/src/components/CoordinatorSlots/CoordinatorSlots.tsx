@@ -13,7 +13,7 @@ export type SelectedCoordinator = {
 }
 
 export type CoordinatorSlotsProps = {
-  /** Selected coordinators in order (0–3). The first is the leader (LÍDER). */
+  /** Selected coordinators (0–3), a flat peer set — no rank or leader. */
   selected: SelectedCoordinator[]
   /** Remove a coordinator from the selection. */
   onRemove: (id: string) => void

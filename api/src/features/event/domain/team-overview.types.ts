@@ -1,4 +1,4 @@
-import type { TeamCoordinatorSummary } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
+import type { TeamCoordinatorSummary } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { ExperienceType } from './subscription-types.ts'
 
 export type TeamOverview = {

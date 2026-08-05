@@ -18,6 +18,57 @@ function columnIdToTarget(columnId: string): AssignmentTarget {
 }
 
 /**
+ * Pure column-derivation logic behind the `columns` memo. Exported (rather than
+ * inlined in the hook) so it can be unit-tested without rendering React.
+ *
+ * Overlays local member moves on top of the server board: members dropped into
+ * a column float to the top (most recently moved first), team coordinators are
+ * pinned above everyone else and never move.
+ */
+export function computeDraftColumns(
+  board: TeamBoard | undefined,
+  overrides: Record<string, string>,
+  moveOrder: string[]
+): TeamBoardColumn[] {
+  if (!board) {
+    return []
+  }
+
+  const membersByColumn = new Map<string, TeamBoardColumn['members']>(
+    board.columns.map((column) => [column.id, []])
+  )
+
+  board.columns.forEach((column) => {
+    column.members.forEach((member) => {
+      const target = overrides[member.userId] ?? column.id
+      const bucket = membersByColumn.get(target) ?? membersByColumn.get(column.id)!
+      bucket.push(member)
+    })
+  })
+
+  const moveRank = new Map(moveOrder.map((userId, index) => [userId, index]))
+
+  return board.columns.map((column) => {
+    const bucket = membersByColumn.get(column.id) ?? []
+
+    // Coordinators are pinned to the top of the column and never move.
+    const coordinators = bucket.filter((member) => member.isCoordinator)
+
+    // Members dropped into this column float above the existing members.
+    const movedIn = bucket
+      .filter((member) => !member.isCoordinator && overrides[member.userId] === column.id)
+      .sort((a, b) => (moveRank.get(a.userId) ?? 0) - (moveRank.get(b.userId) ?? 0))
+
+    const existing = bucket.filter(
+      (member) => !member.isCoordinator && overrides[member.userId] === undefined
+    )
+
+    const members = [...coordinators, ...movedIn, ...existing]
+    return { ...column, members, count: members.length }
+  })
+}
+
+/**
  * Overlays local member moves on top of the server board. Moves are kept as a
  * map of userId -> destination column id; the effective board and the diff sent
  * to the API are both derived from that overlay.
@@ -42,37 +93,10 @@ export function useTeamBuildingDraft(board: TeamBoard | undefined) {
     return map
   }, [board])
 
-  const columns = useMemo<TeamBoardColumn[]>(() => {
-    if (!board) {
-      return []
-    }
-
-    const membersByColumn = new Map<string, TeamBoardColumn['members']>(
-      board.columns.map((column) => [column.id, []])
-    )
-
-    board.columns.forEach((column) => {
-      column.members.forEach((member) => {
-        const target = overrides[member.userId] ?? column.id
-        const bucket = membersByColumn.get(target) ?? membersByColumn.get(column.id)!
-        bucket.push(member)
-      })
-    })
-
-    const moveRank = new Map(moveOrder.map((userId, index) => [userId, index]))
-
-    return board.columns.map((column) => {
-      const bucket = membersByColumn.get(column.id) ?? []
-      // Members dropped into this column float to the top, most recent first;
-      // the column's existing members keep their order below them.
-      const movedIn = bucket
-        .filter((member) => overrides[member.userId] === column.id)
-        .sort((a, b) => (moveRank.get(a.userId) ?? 0) - (moveRank.get(b.userId) ?? 0))
-      const existing = bucket.filter((member) => overrides[member.userId] === undefined)
-      const members = [...movedIn, ...existing]
-      return { ...column, members, count: members.length }
-    })
-  }, [board, overrides, moveOrder])
+  const columns = useMemo<TeamBoardColumn[]>(
+    () => computeDraftColumns(board, overrides, moveOrder),
+    [board, overrides, moveOrder]
+  )
 
   const moveMember = (userId: string, toColumnId: string) => {
     const original = originalColumnByUser.get(userId)

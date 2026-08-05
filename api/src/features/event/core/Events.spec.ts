@@ -334,7 +334,7 @@ describe('Events.getCurrentEventTeamDetail', () => {
   function makeEvents(opts: {
     subscriptions: ReturnType<typeof buildSubscription>[]
     memberUserIds?: string[]
-    coordinatorSlots?: { first: string | null; second: string | null; third: string | null }
+    coordinatorUserIds?: string[]
     maxCapacity?: number
   }) {
     const eventRepository = {
@@ -352,15 +352,13 @@ describe('Events.getCurrentEventTeamDetail', () => {
           maxCapacity: opts.maxCapacity ?? 10,
         },
       ]),
-      getCoordinatorSlots: vi
-        .fn()
-        .mockResolvedValue(opts.coordinatorSlots ?? { first: null, second: null, third: null }),
     } as unknown as TeamInstanceRepository
 
     const teamMembershipRepository = {
       listMemberUserIdsByTeamInstanceIds: vi
         .fn()
         .mockResolvedValue(new Map([[TEAM_INSTANCE_ID, opts.memberUserIds ?? []]])),
+      getCoordinatorUserIds: vi.fn().mockResolvedValue(opts.coordinatorUserIds ?? []),
     } as unknown as TeamMembershipRepository
 
     const subscriptionRepository = {
@@ -398,13 +396,17 @@ describe('Events.getCurrentEventTeamDetail', () => {
     await expect(events.getCurrentEventTeamDetail('unknown-key')).rejects.toThrow(/not found/)
   })
 
-  it('excludes coordinators from the members list even when they have a membership row', async () => {
+  it('keeps coordinators and members as disjoint lists', async () => {
+    // Members (type='member') and coordinators (type='coordinator') can never
+    // share a user id for the same team instance — enforced by the
+    // team_memberships (team_instance_id, user_id) unique constraint — so a
+    // coordinator never also appears in memberUserIds.
     const coordinatorSub = buildSubscription('coord-1')
     const memberSub = buildSubscription('member-1')
     const { events } = makeEvents({
       subscriptions: [coordinatorSub, memberSub],
-      memberUserIds: ['coord-1', 'member-1'],
-      coordinatorSlots: { first: 'coord-1', second: null, third: null },
+      memberUserIds: ['member-1'],
+      coordinatorUserIds: ['coord-1'],
     })
 
     const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)
@@ -413,31 +415,30 @@ describe('Events.getCurrentEventTeamDetail', () => {
     expect(detail.members.map((m) => m.userId)).toEqual(['member-1'])
   })
 
-  it('computes memberCount, freeSlots and filledPercentage, deduping coordinators against members', async () => {
+  it('computes memberCount, freeSlots and filledPercentage counting both coordinators and members', async () => {
     const coordinatorSub = buildSubscription('coord-1')
     const memberSub = buildSubscription('member-1')
     const { events } = makeEvents({
       subscriptions: [coordinatorSub, memberSub],
-      memberUserIds: ['coord-1', 'member-1'],
-      coordinatorSlots: { first: 'coord-1', second: null, third: null },
+      memberUserIds: ['member-1'],
+      coordinatorUserIds: ['coord-1'],
       maxCapacity: 4,
     })
 
     const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)
 
-    // coord-1 counts once even though it's both a coordinator and a membership row.
     expect(detail.memberCount).toBe(2)
     expect(detail.maxCapacity).toBe(4)
     expect(detail.freeSlots).toBe(2)
     expect(detail.filledPercentage).toBe(50)
   })
 
-  it('returns slot-ordered coordinators, skipping unfilled slots', async () => {
+  it('returns the team coordinators', async () => {
     const first = buildSubscription('coord-1')
     const third = buildSubscription('coord-3')
     const { events } = makeEvents({
       subscriptions: [first, third],
-      coordinatorSlots: { first: 'coord-1', second: null, third: 'coord-3' },
+      coordinatorUserIds: ['coord-1', 'coord-3'],
     })
 
     const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)

@@ -19,6 +19,8 @@ export type TeamBoardMember = {
   preferences: string[]
   /** Days of the week the member is available (e.g. ["monday", "friday"]). */
   weekAvailability: string[]
+  /** True when this card is a team coordinator (rendered crowned + non-draggable). */
+  isCoordinator?: boolean
 }
 
 export type TeamBoardColumn = {
@@ -47,12 +49,6 @@ export type AssignmentChange = {
   target: AssignmentTarget
 }
 
-export type CoordinatorSlots = {
-  first: string | null
-  second: string | null
-  third: string | null
-}
-
 export type CoordinatorCandidate = {
   userId: string
   name: string
@@ -79,8 +75,8 @@ export type CoordinatorCandidate = {
 
 export type CandidateListResponse = {
   team: { id: string; name: string }
-  /** Current coordinator slots with positional nulls preserved. */
-  currentCoordinators: CoordinatorSlots
+  /** User ids of the team's current coordinators (flat, unordered peer set). */
+  currentCoordinators: string[]
   candidates: CoordinatorCandidate[]
 }
 

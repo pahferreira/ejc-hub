@@ -4,6 +4,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { MdDragIndicator } from 'react-icons/md'
 import { TeamBuildingColumn } from '../../components/TeamBuildingColumn/TeamBuildingColumn'
 import { DraggableMemberCard } from './DraggableMemberCard'
+import { MemberCard } from './MemberCard'
 import type { TeamBoardColumn } from '../../services/team-building/team-building.types'
 
 export type SortableColumnProps = {
@@ -45,9 +46,13 @@ export function SortableColumn(props: SortableColumnProps) {
           </button>
         }
       >
-        {props.column.members.map((member) => (
-          <DraggableMemberCard key={member.userId} member={member} />
-        ))}
+        {props.column.members.map((member) =>
+          member.isCoordinator ? (
+            <MemberCard key={member.userId} member={member} />
+          ) : (
+            <DraggableMemberCard key={member.userId} member={member} />
+          )
+        )}
       </TeamBuildingColumn>
     </div>
   )

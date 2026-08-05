@@ -57,14 +57,12 @@ function buildInstance(id: string, name: string) {
   }
 }
 
-type CoordinatorSlots = { first: string | null; second: string | null; third: string | null }
-
 function makeRepos(opts: {
   subscriptions: Sub[]
   memberships: Map<string, string[]>
   coordinators?: Map<string, string[]>
   coordinatorExperience?: Map<string, string[]>
-  coordinatorSlots?: CoordinatorSlots
+  coordinatorUserIds?: string[]
 }) {
   const eventRepository = {
     findCurrentEvent: vi.fn().mockResolvedValue({ id: EVENT_ID }),
@@ -82,20 +80,18 @@ function makeRepos(opts: {
     listTeamInstancesWithDetails: vi
       .fn()
       .mockResolvedValue([buildInstance(TEAM_A, 'Liturgia'), buildInstance(TEAM_B, 'Música')]),
-    listCoordinatorIdsByTeamInstanceIds: vi.fn().mockResolvedValue(opts.coordinators ?? new Map()),
-    listCoordinatorExperienceByUserIds: vi
-      .fn()
-      .mockResolvedValue(opts.coordinatorExperience ?? new Map()),
-    getCoordinatorSlots: vi
-      .fn()
-      .mockResolvedValue(opts.coordinatorSlots ?? { first: null, second: null, third: null }),
-    setCoordinators: vi.fn().mockResolvedValue(undefined),
   } as unknown as TeamInstanceRepository
 
   const teamMembershipRepository = {
     listMemberUserIdsByTeamInstanceIds: vi.fn().mockResolvedValue(opts.memberships),
     insertTeamMembership: vi.fn().mockResolvedValue(undefined),
     deleteByMemberAndTeam: vi.fn().mockResolvedValue(undefined),
+    listCoordinatorIdsByTeamInstanceIds: vi.fn().mockResolvedValue(opts.coordinators ?? new Map()),
+    listCoordinatorExperienceByUserIds: vi
+      .fn()
+      .mockResolvedValue(opts.coordinatorExperience ?? new Map()),
+    getCoordinatorUserIds: vi.fn().mockResolvedValue(opts.coordinatorUserIds ?? []),
+    setCoordinators: vi.fn().mockResolvedValue(undefined),
   } as unknown as TeamMembershipRepository
 
   return {
@@ -182,6 +178,35 @@ describe('TeamBuilding.getCurrentEventBoard', () => {
     expect(nicknameByUser.get('u1')).toBe('Alice')
     expect(nicknameByUser.get('u2')).toBe('Bru')
   })
+
+  it('includes team coordinators in their team column, flagged and counted', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'completed' }), // member of TEAM_A
+      buildSub({ id: 's2', userId: 'coord-1', status: 'completed' }), // coordinator of TEAM_A
+    ]
+    const memberships = new Map([[TEAM_A, ['u1']]])
+    const coordinators = new Map([[TEAM_A, ['coord-1']]])
+
+    const repos = makeRepos({ subscriptions, memberships, coordinators })
+    const teamBuilding = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    const { columns } = await teamBuilding.getCurrentEventBoard()
+    const byId = new Map(columns.map((column) => [column.id, column]))
+    const teamAColumn = byId.get(TEAM_A)
+
+    expect(teamAColumn?.members.map((m) => m.userId)).toEqual(['coord-1', 'u1'])
+    expect(teamAColumn?.members.find((m) => m.userId === 'coord-1')?.isCoordinator).toBe(true)
+    expect(teamAColumn?.members.find((m) => m.userId === 'u1')?.isCoordinator).toBeUndefined()
+    expect(teamAColumn?.count).toBe(2)
+
+    expect(byId.get('unassigned')?.members.some((m) => m.userId === 'coord-1')).toBe(false)
+    expect(byId.get('waiting_list')?.members.some((m) => m.userId === 'coord-1')).toBe(false)
+  })
 })
 
 describe('TeamBuilding.applyAssignments', () => {
@@ -209,7 +234,7 @@ describe('TeamBuilding.applyAssignments', () => {
     ])
 
     expect(repos.teamMembershipRepository.insertTeamMembership).toHaveBeenCalledWith(
-      { userId: 'u1', teamInstanceId: TEAM_B },
+      { userId: 'u1', teamInstanceId: TEAM_B, type: 'member' },
       expect.anything()
     )
     expect(repos.subscriptionRepository.updateSubscriptionStatus).toHaveBeenCalledWith(
@@ -242,6 +267,30 @@ describe('TeamBuilding.applyAssignments', () => {
     ).rejects.toThrow(/does not belong to the current event/)
 
     expect(repos.teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
+  })
+
+  it('rejects moving a user into a team they already coordinate', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'waiting_list' }),
+      buildSub({ id: 's2', userId: 'coord-1', status: 'completed' }),
+    ]
+    const coordinatorRepos = makeRepos({
+      subscriptions,
+      memberships: new Map(),
+      coordinators: new Map([[TEAM_A, ['coord-1']]]),
+    })
+    const tb = new TeamBuilding(
+      coordinatorRepos.teamInstanceRepository,
+      coordinatorRepos.teamMembershipRepository,
+      coordinatorRepos.subscriptionRepository,
+      coordinatorRepos.eventRepository
+    )
+
+    await expect(
+      tb.applyAssignments([{ userId: 'coord-1', target: { kind: 'team', teamInstanceId: TEAM_A } }])
+    ).rejects.toThrow(/already coordinates this team/)
+
+    expect(coordinatorRepos.teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
   })
 })
 
@@ -379,10 +428,13 @@ describe('TeamBuilding.listCandidates', () => {
     expect(byId.get('u3')?.hasCoordinatorExperience).toBe(false)
   })
 
-  it('returns currentCoordinators positionally with nulls preserved', async () => {
+  it('returns currentCoordinators as a flat user-id list', async () => {
     const subscriptions = [buildSub({ id: 's1', userId: 'u1', status: 'received' })]
-    const slots = { first: 'coord-1', second: null, third: 'coord-3' }
-    const repos = makeRepos({ subscriptions, memberships: new Map(), coordinatorSlots: slots })
+    const repos = makeRepos({
+      subscriptions,
+      memberships: new Map(),
+      coordinatorUserIds: ['coord-1', 'coord-3'],
+    })
     const tb = new TeamBuilding(
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
@@ -392,7 +444,7 @@ describe('TeamBuilding.listCandidates', () => {
 
     const result = await tb.listCandidates(TEAM_A)
 
-    expect(result.currentCoordinators).toEqual({ first: 'coord-1', second: null, third: 'coord-3' })
+    expect(result.currentCoordinators).toEqual(['coord-1', 'coord-3'])
   })
 
   it('returns team name in the result', async () => {
@@ -430,9 +482,9 @@ describe('TeamBuilding.assignCoordinators', () => {
 
     await tb.assignCoordinators(TEAM_A, ['u1', 'u2'])
 
-    expect(repos.teamInstanceRepository.setCoordinators).toHaveBeenCalledWith(
+    expect(repos.teamMembershipRepository.setCoordinators).toHaveBeenCalledWith(
       TEAM_A,
-      { first: 'u1', second: 'u2', third: null },
+      ['u1', 'u2'],
       expect.anything()
     )
   })
@@ -475,9 +527,9 @@ describe('TeamBuilding.assignCoordinators', () => {
 
     await tb.assignCoordinators(TEAM_A, [])
 
-    expect(repos.teamInstanceRepository.setCoordinators).toHaveBeenCalledWith(
+    expect(repos.teamMembershipRepository.setCoordinators).toHaveBeenCalledWith(
       TEAM_A,
-      { first: null, second: null, third: null },
+      [],
       expect.anything()
     )
   })
@@ -500,7 +552,7 @@ describe('TeamBuilding.assignCoordinators', () => {
     await expect(tb.assignCoordinators(TEAM_A, ['u1', 'u2', 'u3', 'u4'])).rejects.toThrow(
       /at most 3 coordinators/
     )
-    expect(repos.teamInstanceRepository.setCoordinators).not.toHaveBeenCalled()
+    expect(repos.teamMembershipRepository.setCoordinators).not.toHaveBeenCalled()
   })
 
   it('dedupes before enforcing the max-3 limit (4 identical IDs → 1 unique → passes)', async () => {
@@ -516,9 +568,9 @@ describe('TeamBuilding.assignCoordinators', () => {
     // 4 entries but all the same userId — should dedupe to 1 and pass validation
     await expect(tb.assignCoordinators(TEAM_A, ['u1', 'u1', 'u1', 'u1'])).resolves.toBeUndefined()
 
-    expect(repos.teamInstanceRepository.setCoordinators).toHaveBeenCalledWith(
+    expect(repos.teamMembershipRepository.setCoordinators).toHaveBeenCalledWith(
       TEAM_A,
-      { first: 'u1', second: null, third: null },
+      ['u1'],
       expect.anything()
     )
   })
@@ -535,7 +587,7 @@ describe('TeamBuilding.assignCoordinators', () => {
     await expect(tb.assignCoordinators(TEAM_A, ['unknown-user'])).rejects.toThrow(
       /No subscription found for user/
     )
-    expect(repos.teamInstanceRepository.setCoordinators).not.toHaveBeenCalled()
+    expect(repos.teamMembershipRepository.setCoordinators).not.toHaveBeenCalled()
   })
 
   it('rejects a teamInstanceId that does not belong to the current event', async () => {
@@ -550,28 +602,24 @@ describe('TeamBuilding.assignCoordinators', () => {
     await expect(tb.assignCoordinators('foreign-team', [])).rejects.toThrow(
       /does not belong to the current event/
     )
-    expect(repos.teamInstanceRepository.setCoordinators).not.toHaveBeenCalled()
+    expect(repos.teamMembershipRepository.setCoordinators).not.toHaveBeenCalled()
   })
 })
 
-// Regression: the listTeamCoordinators fix adds the third coordinator slot.
-// Within the unit harness we verify that listCandidates correctly reads the
-// third slot position from getCoordinatorSlots (the positional read method),
-// and that force-include works for a third-slot coordinator.
-describe('Regression: third coordinator slot', () => {
-  it('force-includes a third-slot coordinator in the candidate list', async () => {
+// Force-include: a team's own current coordinators must appear in the candidate
+// list (pre-selected in edit mode) even though coordinators are otherwise excluded.
+describe('own-team coordinator force-include', () => {
+  it('force-includes a current coordinator in the candidate list', async () => {
     const subscriptions = [
-      buildSub({ id: 's1', userId: 'coord-3', status: 'received' }), // third coordinator of target
+      buildSub({ id: 's1', userId: 'coord-3', status: 'received' }), // a coordinator of the target
     ]
-    // coord-3 is the third coordinator of TEAM_A
     const coordinators = new Map([[TEAM_A, ['coord-1', 'coord-2', 'coord-3']]])
-    const slots = { first: 'coord-1', second: 'coord-2', third: 'coord-3' }
 
     const repos = makeRepos({
       subscriptions,
       memberships: new Map(),
       coordinators,
-      coordinatorSlots: slots,
+      coordinatorUserIds: ['coord-1', 'coord-2', 'coord-3'],
     })
     const tb = new TeamBuilding(
       repos.teamInstanceRepository,
@@ -583,7 +631,7 @@ describe('Regression: third coordinator slot', () => {
     const result = await tb.listCandidates(TEAM_A)
 
     expect(result.candidates.map((c) => c.userId)).toContain('coord-3')
-    expect(result.currentCoordinators.third).toBe('coord-3')
+    expect(result.currentCoordinators).toContain('coord-3')
   })
 })
 
@@ -604,11 +652,11 @@ describe('TeamBuilding.addMembers', () => {
     await tb.addMembers(TEAM_A, ['u1', 'u2'])
 
     expect(repos.teamMembershipRepository.insertTeamMembership).toHaveBeenCalledWith(
-      { userId: 'u1', teamInstanceId: TEAM_A },
+      { userId: 'u1', teamInstanceId: TEAM_A, type: 'member' },
       expect.anything()
     )
     expect(repos.teamMembershipRepository.insertTeamMembership).toHaveBeenCalledWith(
-      { userId: 'u2', teamInstanceId: TEAM_A },
+      { userId: 'u2', teamInstanceId: TEAM_A, type: 'member' },
       expect.anything()
     )
   })
