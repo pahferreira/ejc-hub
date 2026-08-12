@@ -19,11 +19,15 @@ describe('getHomeView', () => {
   })
 
   it('returns subscriptionsClosed when there is no subscription and subscriptions are closed', () => {
-    expect(getHomeView(null, null, false)).toEqual({ kind: 'subscriptionsClosed' })
+    expect(getHomeView(null, null, { subscriptionsOpen: false })).toEqual({
+      kind: 'subscriptionsClosed',
+    })
   })
 
   it('keeps showing the existing subscription status even when subscriptions are closed', () => {
-    expect(getHomeView('pending', null, false)).toEqual({ kind: 'pendingTeam' })
+    expect(getHomeView('pending', null, { subscriptionsOpen: false })).toEqual({
+      kind: 'pendingTeam',
+    })
   })
 
   it('returns pendingTeam for pending status without a team', () => {
@@ -38,8 +42,18 @@ describe('getHomeView', () => {
     expect(getHomeView('completed', null)).toEqual({ kind: 'pendingTeam' })
   })
 
-  it('returns assignedTeam for completed status with a team', () => {
-    expect(getHomeView('completed', team)).toEqual({ kind: 'assignedTeam', team })
+  it('returns assignedTeam for completed status with a team when the MyTeam flag is on', () => {
+    expect(getHomeView('completed', team, { myTeamEnabled: true })).toEqual({
+      kind: 'assignedTeam',
+      team,
+    })
+  })
+
+  it('falls back to pendingTeam for completed status with a team when the MyTeam flag is off', () => {
+    expect(getHomeView('completed', team)).toEqual({ kind: 'pendingTeam' })
+    expect(getHomeView('completed', team, { myTeamEnabled: false })).toEqual({
+      kind: 'pendingTeam',
+    })
   })
 
   it('returns waitingList for waiting_list status regardless of team presence', () => {

@@ -1,9 +1,14 @@
 import { useAuth0 } from '@auth0/auth0-react'
+import { usePostHog } from '@posthog/react'
 import { jwtDecode } from 'jwt-decode'
 import { useEffect, useRef, useState } from 'react'
 import { tokenHandler } from '../services/token'
 import { useSyncUserMutation } from '../services/users/useSyncUserMutation'
 import { clearSubscriptionFormPersistence } from '../pages/EventSubscription/useSubscriptionFormPersistence/useSubscriptionFormPersistence'
+
+const isPostHogConfigured = Boolean(
+  import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN && import.meta.env.VITE_PUBLIC_POSTHOG_HOST
+)
 
 export function useAuthentication() {
   const { isLoading, isAuthenticated, getAccessTokenSilently, logout, user } = useAuth0()
@@ -11,6 +16,7 @@ export function useAuthentication() {
   const userSynced = useRef(false)
   const [permissions, setPermissions] = useState<string[]>([])
   const { mutate: syncUser } = useSyncUserMutation()
+  const posthog = usePostHog()
 
   getAccessTokenSilently().then((accessToken) => {
     if (accessToken !== token) {
@@ -31,6 +37,9 @@ export function useAuthentication() {
   }, [token, syncUser])
 
   const handleLogout = () => {
+    if (isPostHogConfigured) {
+      posthog.reset()
+    }
     tokenHandler.clearToken()
     clearSubscriptionFormPersistence()
     userSynced.current = false
