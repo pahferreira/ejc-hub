@@ -5,6 +5,8 @@ import { SubscribeCard } from '../components/SubscribeCard/SubscribeCard'
 import { SubscriptionsClosedCard } from '../components/SubscriptionsClosedCard/SubscriptionsClosedCard'
 import { TeamCard } from '../components/TeamCard/TeamCard'
 import { ROUTE_PATHS } from '../constants/routePaths'
+import { FeatureFlag } from '../hooks/useFeatureFlag/feature-flags'
+import { useFeatureFlag } from '../hooks/useFeatureFlag/useFeatureFlag'
 import { useCurrentEventQuery } from '../services/events/useCurrentEventQuery'
 import { useCurrentEventSubscriptionStatusQuery } from '../services/events/useCurrentEventSubscriptionStatusQuery'
 import type { SubscriptionStatus, TeamPreference } from '../services/events/events.types'
@@ -16,6 +18,8 @@ export function Home() {
   const currentEventQuery = useCurrentEventQuery()
   const subscriptionStatusQuery = useCurrentEventSubscriptionStatusQuery()
   const { data: user } = useCurrentUserQuery()
+  const { isFeatureEnabled } = useFeatureFlag()
+  const myTeamEnabled = isFeatureEnabled(FeatureFlag.MyTeam, false)
 
   const greetingName = user?.nickname ?? user?.name ?? ''
   const isLoading = currentEventQuery.isLoading || subscriptionStatusQuery.isLoading
@@ -53,7 +57,10 @@ export function Home() {
             />
 
             <HomeBody
-              view={getHomeView(subscriptionStatus, assignedTeam, event.subscriptionsOpen)}
+              view={getHomeView(subscriptionStatus, assignedTeam, {
+                subscriptionsOpen: event.subscriptionsOpen,
+                myTeamEnabled,
+              })}
               eventName={event.name}
               subscriptionStatus={subscriptionStatus}
               preferences={preferences}
