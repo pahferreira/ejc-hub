@@ -112,6 +112,10 @@ jobs:
         env:
           # Client id comes from an environment variable (public, but tenant-specific).
           VITE_AUTH0_CLIENT_ID: ${{ vars.VITE_AUTH0_CLIENT_ID }}
+          # PostHog public config (project token + host). The token is a public
+          # write-only key baked into the bundle — a Variable, not a Secret.
+          VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: ${{ vars.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN }}
+          VITE_PUBLIC_POSTHOG_HOST: ${{ vars.VITE_PUBLIC_POSTHOG_HOST }}
         run: npm run build
 
       - name: Configure AWS credentials (OIDC)
