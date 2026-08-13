@@ -72,6 +72,20 @@ export const NoAreas: Story = {
   },
 }
 
+export const WithDetails: Story = {
+  args: {
+    details: 'Disponível apenas no período da tarde. Alergia a amendoim.',
+  },
+}
+
+// Observations must surface even when the subscriber listed no skills.
+export const DetailsWithoutAreas: Story = {
+  args: {
+    areas: [],
+    details: 'Chega no sábado à noite; não pode faltar ao trabalho na sexta.',
+  },
+}
+
 export const WithCoordinatorExperience: Story = {
   args: {
     name: 'Ana Beatriz',

@@ -345,6 +345,26 @@ describe('TeamBuilding.listCandidates', () => {
     expect(candidate?.preferences).toEqual(['Música']) // 'stale-id' has no matching instance
   })
 
+  it('surfaces subscription details, coercing null to an empty string', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'received', details: 'Chega no sábado' }),
+      buildSub({ id: 's2', userId: 'u2', status: 'received', details: null }),
+    ]
+    const repos = makeRepos({ subscriptions, memberships: new Map() })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    const result = await tb.listCandidates(TEAM_A)
+    const byId = new Map(result.candidates.map((c) => [c.userId, c]))
+
+    expect(byId.get('u1')?.details).toBe('Chega no sábado')
+    expect(byId.get('u2')?.details).toBe('')
+  })
+
   it('rejects a teamInstanceId that does not belong to the current event', async () => {
     const repos = makeRepos({ subscriptions: [], memberships: new Map() })
     const tb = new TeamBuilding(

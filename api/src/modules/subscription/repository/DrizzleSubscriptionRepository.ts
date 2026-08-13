@@ -84,6 +84,7 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
         status: schema.subscriptions.status,
         createdAt: schema.subscriptions.createdAt,
         availability: schema.subscriptions.availability,
+        details: schema.subscriptions.details,
         teams: sql<string[]>`array_agg(${schema.subscriptionOptions.teamInstanceId})`,
         circle: {
           key: schema.circles.key,
@@ -121,6 +122,7 @@ class DrizzleSubscriptionRepository implements SubscriptionRepository {
         schema.subscriptions.id,
         schema.subscriptions.userId,
         schema.subscriptions.createdAt,
+        schema.subscriptions.details,
         schema.circles.key,
         schema.circles.label,
         schema.circles.color,

@@ -111,6 +111,7 @@ export function AddMembersDrawer(props: AddMembersDrawerProps) {
                 experienceType={candidate.experienceType}
                 circleKey={candidate.circleKey}
                 areas={candidate.areas}
+                details={candidate.details}
                 weekAvailability={candidate.weekAvailability}
                 hideCoordinatorExperience
                 teams={candidate.preferences}

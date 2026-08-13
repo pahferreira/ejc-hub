@@ -71,6 +71,8 @@ export type Candidate = {
   circleKey: string | null
   /** Skill-derived labels (e.g. ["Música", "Canto"]). */
   areas: string[]
+  /** Free-text observations the subscriber provided; empty string when unset. */
+  details: string
   /** Raw team-instance IDs from the subscription's team preferences. */
   preferenceTeamIds: string[]
   /** Resolved names for preferenceTeamIds. */

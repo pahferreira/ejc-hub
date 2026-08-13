@@ -14,6 +14,7 @@ const makeCandidate = (overrides: Partial<CoordinatorCandidate> = {}): Coordinat
   experienceType: 'newbie',
   circleKey: null,
   areas: [],
+  details: '',
   preferenceTeamIds: [],
   preferences: [],
   hasCoordinatorExperience: false,

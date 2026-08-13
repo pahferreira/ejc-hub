@@ -24,6 +24,8 @@ export type CoordinatorCandidateRowProps = {
   /** Key of the candidate's circle; colors the newbie badge. */
   circleKey?: string | null
   areas: string[]
+  /** Free-text observations the subscriber provided; rendered under the skills block. */
+  details?: string | null
   /** Names of the teams this candidate selected as preferences (rendered as avatars). */
   teams: string[]
   /** Whether this candidate has listed this team among their preferences. */
@@ -43,6 +45,10 @@ export type CoordinatorCandidateRowProps = {
 
 export function CoordinatorCandidateRow(props: CoordinatorCandidateRowProps) {
   const availabilitySet = new Set(props.weekAvailability ?? [])
+
+  const hasAreas = props.areas.length > 0
+  const details = props.details?.trim() ?? ''
+  const hasDetails = details.length > 0
 
   const experienceTeams = props.coordinatorExperienceTeams ?? []
 
@@ -152,15 +158,29 @@ export function CoordinatorCandidateRow(props: CoordinatorCandidateRowProps) {
           )}
         </div>
 
-        {/* Skills — separated by a divider, aligned with content (not under checkbox/avatar) */}
-        {props.areas.length > 0 && (
+        {/* Skills + observations — separated by a divider, aligned with content (not
+            under checkbox/avatar). The divider shows when either block has content;
+            each sub-block guards its own so observations surface even without skills. */}
+        {(hasAreas || hasDetails) && (
           <>
             <hr className="mx-0 my-1 border-t border-tertiary" />
-            <div className="flex flex-col gap-1">
-              <span className="font-mono text-xs font-semibold tracking-wide text-dark-brown uppercase">
-                Habilidades
-              </span>
-              <span className="text-xs text-dark-brown/60">{props.areas.join(' | ')}</span>
+            <div className="flex flex-col gap-2">
+              {hasAreas && (
+                <div className="flex flex-col gap-1">
+                  <span className="font-mono text-xs font-semibold tracking-wide text-dark-brown uppercase">
+                    Habilidades
+                  </span>
+                  <span className="text-xs text-dark-brown/60">{props.areas.join(' | ')}</span>
+                </div>
+              )}
+              {hasDetails && (
+                <div className="flex flex-col gap-1">
+                  <span className="font-mono text-xs font-semibold tracking-wide text-dark-brown uppercase">
+                    Observações
+                  </span>
+                  <span className="text-xs whitespace-pre-line text-dark-brown/60">{details}</span>
+                </div>
+              )}
             </div>
           </>
         )}
