@@ -22,6 +22,7 @@ export function mapSubscriptionToPerson(
     experienceType: subscription.user.experienceType,
     circleKey: subscription.user.circle?.key ?? null,
     areas: formatAreas(subscription.user),
+    details: subscription.details ?? '',
     preferences: (subscription.teams ?? [])
       .map((teamInstanceId) => instanceNameById.get(teamInstanceId))
       .filter((name): name is string => Boolean(name)),

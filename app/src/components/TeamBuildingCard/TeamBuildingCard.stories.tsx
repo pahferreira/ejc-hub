@@ -64,6 +64,18 @@ export const WithAvatarImage: Story = {
   },
 }
 
+export const WithDetails: Story = {
+  args: {
+    name: 'Alice Ribeiro',
+    nickname: 'Lili',
+    badge: <ExperienceBadge experienceType="newbie" />,
+    phone: '(41) 90427-7888',
+    attributes: ['Toca violão', 'Atuação'],
+    details: 'Chega no sábado à noite.\nNão pode faltar ao trabalho na sexta.',
+    preferences: ['Bandinha', 'Círculos', 'Liturgia'],
+  },
+}
+
 export const Minimal: Story = {
   args: {
     name: 'Carla Souza',

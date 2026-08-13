@@ -21,6 +21,7 @@ export function MemberCard(props: MemberCardProps) {
       phone={props.member.phone ?? undefined}
       avatarUrl={props.member.pictureUrl ?? undefined}
       attributes={props.member.areas}
+      details={props.member.details}
       preferences={props.member.preferences}
       weekAvailability={props.member.weekAvailability}
       isCoordinator={props.member.isCoordinator}

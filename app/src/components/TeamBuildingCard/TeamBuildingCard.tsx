@@ -17,6 +17,8 @@ export type TeamBuildingCardProps = {
   phone?: string
   /** Inline attributes joined by a pipe (e.g. ["Música", "Teatro"]). Line hidden when empty. */
   attributes?: string[]
+  /** Free-text observations. The whole observations section is hidden when blank. */
+  details?: string
   /** Preference tags. The whole preferences section is hidden when empty/undefined. */
   preferences?: string[]
   /** Optional avatar image URL. Falls back to initials when absent. */
@@ -29,6 +31,8 @@ export type TeamBuildingCardProps = {
 
 export function TeamBuildingCard(props: TeamBuildingCardProps) {
   const hasAttributes = (props.attributes?.length ?? 0) > 0
+  const details = props.details?.trim() ?? ''
+  const hasDetails = details.length > 0
   const hasPreferences = (props.preferences?.length ?? 0) > 0
   const hasWeekAvailability = (props.weekAvailability?.length ?? 0) > 0
 
@@ -74,6 +78,18 @@ export function TeamBuildingCard(props: TeamBuildingCardProps) {
             <p className="m-0 text-xs text-secondary-foreground">{props.attributes?.join(' | ')}</p>
           )}
         </div>
+
+        {hasDetails && (
+          <>
+            <hr className="m-0 border-t border-tertiary" />
+            <div className="flex flex-col gap-2">
+              <span className="font-mono text-xs font-semibold tracking-wide text-dark-brown uppercase">
+                Observações
+              </span>
+              <p className="m-0 text-xs whitespace-pre-line text-secondary-foreground">{details}</p>
+            </div>
+          </>
+        )}
 
         {hasPreferences && (
           <>

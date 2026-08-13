@@ -32,6 +32,8 @@ export type TeamPerson = {
   circleKey: string | null
   /** Skill-derived labels (e.g. ["Música", "Canto"]). */
   areas: string[]
+  /** Free-text observations the subscriber provided; empty string when unset. */
+  details: string
   /** Names of the team instances the person signed up for. */
   preferences: string[]
   /** Days of the week the person is available (e.g. ["monday", "friday"]). */
