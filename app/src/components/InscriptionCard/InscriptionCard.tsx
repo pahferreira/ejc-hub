@@ -19,7 +19,7 @@ export type InscriptionCardProps = {
 const statusDisplay: Record<SubscriptionStatus, { label: string; variant: BadgeVariant }> = {
   pending: { label: 'Pendente', variant: 'error' },
   received: { label: 'Recebida', variant: 'info' },
-  completed: { label: 'Aprovado', variant: 'success' },
+  completed: { label: 'Montado', variant: 'success' },
   waiting_list: { label: 'Lista de Espera', variant: 'warning' },
 }
 
