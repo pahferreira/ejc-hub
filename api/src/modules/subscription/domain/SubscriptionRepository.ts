@@ -13,6 +13,7 @@ export interface SubscriptionRepository {
       status: SubscriptionStatus
       createdAt: Date
       availability: string[]
+      details: string | null
       teams: string[]
       user: {
         name: string

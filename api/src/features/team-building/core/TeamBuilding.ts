@@ -333,6 +333,7 @@ export class TeamBuilding {
             experienceType: sub.user.experienceType,
             circleKey: sub.user.circle?.key ?? null,
             areas: formatAreas(sub.user),
+            details: sub.details ?? '',
             preferenceTeamIds: sub.teams ?? [],
             preferences: (sub.teams ?? [])
               .map((tid) => instanceNameById.get(tid))
