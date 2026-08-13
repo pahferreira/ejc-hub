@@ -18,6 +18,8 @@ export type TeamBoardMember = {
   circleKey: string | null
   /** Skill-derived labels shown inline on the card (e.g. ["Música", "Canto"]). */
   areas: string[]
+  /** Free-text observations the subscriber provided; empty string when unset. */
+  details: string
   /** Names of the team instances the member signed up for. */
   preferences: string[]
   /** Days of the week the member is available (e.g. ["monday", "friday"]). */
