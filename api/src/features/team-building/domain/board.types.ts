@@ -60,6 +60,12 @@ export const WAITING_LIST_STATUS: SubscriptionStatus = 'waiting_list'
 // "Montado" — the member has been placed into a team (as a member or coordinator).
 export const COMPLETED_STATUS: SubscriptionStatus = 'completed'
 
+// Which role the candidate list is being built for. Coordinator assignment keeps
+// the target team's own coordinators in the list (so they can be shown/re-picked);
+// member assignment excludes them, since a coordinator already occupies the
+// (team, user) row and must not also be added as a member.
+export type CandidateRole = 'coordinator' | 'member'
+
 // A person eligible to be selected as a coordinator for a given team.
 export type Candidate = {
   userId: string

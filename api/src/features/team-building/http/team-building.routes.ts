@@ -10,6 +10,7 @@ import {
 import {
   addMembersBodySchema,
   applyAssignmentsBodySchema,
+  candidatesQuerySchema,
   teamInstanceParamsSchema,
   setCoordinatorsBodySchema,
 } from './team-building.schema.ts'
@@ -52,13 +53,14 @@ export function teamBuildingRoutes(server: FastifyServerInstance) {
     server.get(
       '/team-building/teams/:teamInstanceId/candidates',
       {
-        schema: { params: teamInstanceParamsSchema },
+        schema: { params: teamInstanceParamsSchema, querystring: candidatesQuerySchema },
         preHandler: authGuard(server, { permissions: [TeamInstancePermissions.Read] }),
       },
       async (request, reply) => {
         try {
           const { teamInstanceId } = request.params
-          const result = await teamBuildingApp.listCandidates(teamInstanceId)
+          const { role } = request.query
+          const result = await teamBuildingApp.listCandidates(teamInstanceId, role)
 
           return reply.code(HttpStatus.Ok).send(result)
         } catch (error) {

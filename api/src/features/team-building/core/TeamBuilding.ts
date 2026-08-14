@@ -17,6 +17,7 @@ import {
   type AssignmentChange,
   type Candidate,
   type CandidateListResult,
+  type CandidateRole,
   type TeamBoard,
   type TeamBoardColumn,
   type TeamBoardMember,
@@ -266,7 +267,13 @@ export class TeamBuilding {
   }
 
   // Returns the list of users who subscribed to the event and are not assigned to a team.
-  async listCandidates(teamInstanceId: string): Promise<CandidateListResult> {
+  // `role` distinguishes the two callers of this endpoint: 'coordinator' keeps the target
+  // team's own coordinators in the list (the coordinator drawer shows/re-picks them),
+  // while 'member' excludes them so a coordinator can't also be added as a plain member.
+  async listCandidates(
+    teamInstanceId: string,
+    role: CandidateRole = 'coordinator'
+  ): Promise<CandidateListResult> {
     return this.#withCurrentEvent(async (event) => {
       const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(event.id)
       const instanceIds = new Set(instances.map((i) => i.id))
@@ -305,8 +312,10 @@ export class TeamBuilding {
       const instanceNameById = new Map(instances.map((i) => [i.id, i.templateName]))
 
       const eligibleSubscriptions = subscriptions.filter((sub) => {
-        // Always include the target team's own current coordinators.
-        if (targetCoordinatorSet.has(sub.userId)) return true
+        // The target team's own current coordinators: kept for coordinator assignment
+        // (so the drawer can show/re-pick them), excluded for member assignment (they
+        // already occupy the (team, user) row and must not be added as a member too).
+        if (targetCoordinatorSet.has(sub.userId)) return role === 'coordinator'
         // Exclude members of any team.
         if (memberExclusionSet.has(sub.userId)) return false
         // Exclude coordinators of other teams.

@@ -1,5 +1,10 @@
 import { api } from '../api'
-import type { AssignmentChange, CandidateListResponse, TeamBoard } from './team-building.types'
+import type {
+  AssignmentChange,
+  CandidateListResponse,
+  CandidateRole,
+  TeamBoard,
+} from './team-building.types'
 
 async function getCurrentEventBoard() {
   const response = await api.get<{ board: TeamBoard }>('/team-building/board')
@@ -13,9 +18,13 @@ async function applyAssignments(assignments: AssignmentChange[]) {
   return response.data.board
 }
 
-async function getCandidates(teamInstanceId: string): Promise<CandidateListResponse> {
+async function getCandidates(
+  teamInstanceId: string,
+  role: CandidateRole = 'coordinator'
+): Promise<CandidateListResponse> {
   const response = await api.get<CandidateListResponse>(
-    `/team-building/teams/${teamInstanceId}/candidates`
+    `/team-building/teams/${teamInstanceId}/candidates`,
+    { params: { role } }
   )
   return response.data
 }

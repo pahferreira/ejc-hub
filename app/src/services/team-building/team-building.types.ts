@@ -51,6 +51,11 @@ export type AssignmentChange = {
   target: AssignmentTarget
 }
 
+// Which role the candidate list is being fetched for. 'coordinator' keeps the target
+// team's own coordinators in the list; 'member' excludes them (they can't be added as
+// a plain member on top of coordinating the same team).
+export type CandidateRole = 'coordinator' | 'member'
+
 export type CoordinatorCandidate = {
   userId: string
   name: string

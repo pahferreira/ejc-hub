@@ -22,7 +22,7 @@ export function useAddMembersDrawer() {
   const [preferenceScope, setPreferenceScope] = useState<TeamPreferenceScope>('team')
   const [viewSelectedOnly, setViewSelectedOnly] = useState(false)
 
-  const candidatesQuery = useAssignCoordinatorCandidatesQuery(target?.id ?? null)
+  const candidatesQuery = useAssignCoordinatorCandidatesQuery(target?.id ?? null, 'member')
   const mutation = useAddMembersMutation()
 
   const open = useCallback((team: TargetTeam) => {
