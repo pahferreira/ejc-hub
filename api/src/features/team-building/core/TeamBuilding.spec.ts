@@ -653,6 +653,32 @@ describe('own-team coordinator force-include', () => {
     expect(result.candidates.map((c) => c.userId)).toContain('coord-3')
     expect(result.currentCoordinators).toContain('coord-3')
   })
+
+  it("excludes the target team's own coordinators when listing member candidates", async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'coord-3', status: 'received' }), // a coordinator of the target
+    ]
+    const coordinators = new Map([[TEAM_A, ['coord-1', 'coord-2', 'coord-3']]])
+
+    const repos = makeRepos({
+      subscriptions,
+      memberships: new Map(),
+      coordinators,
+      coordinatorUserIds: ['coord-1', 'coord-2', 'coord-3'],
+    })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    const result = await tb.listCandidates(TEAM_A, 'member')
+
+    expect(result.candidates.map((c) => c.userId)).not.toContain('coord-3')
+    // currentCoordinators still reports them; only the candidate list narrows.
+    expect(result.currentCoordinators).toContain('coord-3')
+  })
 })
 
 describe('TeamBuilding.addMembers', () => {

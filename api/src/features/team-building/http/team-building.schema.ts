@@ -23,6 +23,11 @@ export const teamInstanceParamsSchema = z.object({
   teamInstanceId: z.uuid(),
 })
 
+export const candidatesQuerySchema = z.object({
+  // Defaults to 'coordinator' to preserve the original behavior for the coordinator drawer.
+  role: z.enum(['coordinator', 'member']).default('coordinator'),
+})
+
 export const setCoordinatorsBodySchema = z.object({
   coordinatorIds: z.array(z.uuid()).max(3),
 })
