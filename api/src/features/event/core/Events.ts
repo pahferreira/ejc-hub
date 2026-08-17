@@ -650,6 +650,7 @@ export class Events {
         user: subscription.user,
         status: subscription.status,
         createdAt: subscription.createdAt,
+        details: subscription.details,
         teams,
       }
     })

@@ -4,7 +4,7 @@ import { SubscriptionStatusBadge } from '../../components/SubscriptionStatusBadg
 import { TeamAvatar } from '../../components/TeamAvatar/TeamAvatar'
 import type { SubscriptionWithDetails } from '../../services/subscriptions/subscriptions.types'
 import { formatDate } from '../../utils/formatDate/formatDate'
-import { experienceOptions, getOptionLabel } from '../EventSubscription/profileOptions'
+import { experienceOptions, getOptionLabel, skills } from '../EventSubscription/profileOptions'
 
 type ReviewSubscriptionModalProps = {
   subscription: SubscriptionWithDetails | null
@@ -14,10 +14,23 @@ type ReviewSubscriptionModalProps = {
   onWaitList: (id: string) => void
 }
 
+function formatInstagram(value: string) {
+  const handle = value
+    .trim()
+    .replace(/^https?:\/\/(www\.)?instagram\.com\//i, '')
+    .replace(/\/+$/, '')
+    .replace(/^@/, '')
+  return handle ? `@${handle}` : ''
+}
+
 export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
   if (!props.subscription) return null
 
   const status = props.subscription.status
+  const instagram = props.subscription.user.instagram
+    ? formatInstagram(props.subscription.user.instagram)
+    : ''
+  const selectedSkills = skills.filter((skill) => props.subscription!.user[skill.key])
 
   return (
     <Modal open={props.open} onClose={props.onClose} title="Revisar inscrição">
@@ -42,6 +55,10 @@ export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
             <p className="text-sm text-gray-900">{props.subscription.user.phone || '-'}</p>
           </div>
           <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Instagram</p>
+            <p className="text-sm text-gray-900 break-all">{instagram || '-'}</p>
+          </div>
+          <div>
             <p className="text-sm font-medium text-gray-500 mb-1">Data de Inscrição</p>
             <p className="text-sm text-gray-900">{formatDate(props.subscription.createdAt)}</p>
           </div>
@@ -59,6 +76,31 @@ export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
             ))}
           </div>
         </div>
+
+        {selectedSkills.length > 0 && (
+          <div>
+            <p className="text-sm font-medium text-gray-500 mb-2">Habilidades</p>
+            <div className="flex flex-wrap gap-2">
+              {selectedSkills.map((skill) => (
+                <span
+                  key={skill.key}
+                  className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700"
+                >
+                  {skill.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {props.subscription.details && (
+          <div>
+            <p className="text-sm font-medium text-gray-500 mb-1">Detalhes</p>
+            <p className="text-sm text-gray-900 whitespace-pre-line">
+              {props.subscription.details}
+            </p>
+          </div>
+        )}
 
         {status !== 'completed' && (
           <div className="flex flex-col gap-3">

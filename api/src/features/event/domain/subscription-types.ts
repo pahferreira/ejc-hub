@@ -81,6 +81,7 @@ export type SubscriptionWithDetails = {
     nickname: string | null
     email: string
     phone: string | null
+    instagram: string | null
     pictureUrl: string | null
     experienceType: ExperienceType
     circle: SubscriberCircle | null

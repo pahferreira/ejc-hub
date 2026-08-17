@@ -20,6 +20,7 @@ export interface SubscriptionRepository {
         nickname: string | null
         email: string
         phone: string | null
+        instagram: string | null
         pictureUrl: string | null
         experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
         circle: { key: string; label: string; color: string } | null
