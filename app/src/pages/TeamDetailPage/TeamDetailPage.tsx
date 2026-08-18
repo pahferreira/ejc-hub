@@ -13,6 +13,13 @@ import { useRemoveTeamMemberMutation } from '../../services/teams/useRemoveTeamM
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import { TeamPersonCard } from './TeamPersonCard'
 
+// Static classes so Tailwind's JIT can see every variant. Coordinator grid caps at
+// 4 columns (1-3 slots -> 3 columns, 4 slots -> 4 columns); 2 columns from md (768px).
+const COORDINATOR_GRID_COLS: Record<number, string> = {
+  3: 'xl:grid-cols-3',
+  4: 'xl:grid-cols-4',
+}
+
 export function TeamDetailPage() {
   const navigate = useNavigate()
   const { teamKey } = useParams()
@@ -39,6 +46,7 @@ export function TeamDetailPage() {
 
   const team = teamQuery.data
   const emptyCoordinatorSlots = Math.max(0, team.coordinatorSlots - team.coordinators.length)
+  const coordinatorColumns = team.coordinatorSlots >= 4 ? 4 : 3
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
@@ -70,7 +78,9 @@ export function TeamDetailPage() {
               </Button>
             }
           />
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div
+            className={`grid grid-cols-1 gap-4 md:grid-cols-2 ${COORDINATOR_GRID_COLS[coordinatorColumns] ?? 'xl:grid-cols-3'}`}
+          >
             {team.coordinators.map((coordinator) => (
               <TeamPersonCard key={coordinator.userId} person={coordinator} role="Coordenador" />
             ))}

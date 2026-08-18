@@ -40,9 +40,19 @@ const handleSubscriptionsBodySchema = z.object({
   open: z.boolean(),
 })
 
-export const patchTeamTemplateBodySchema = postTeamTemplateBodySchema.partial().refine((data) => {
-  return data.name || data.description || data.maxCapacity !== undefined
-}, 'At least one field (name, description or maxCapacity) is required for update')
+export const patchTeamTemplateBodySchema = postTeamTemplateBodySchema
+  .extend({
+    maxAllowedCoordinators: z.number().int().min(1, 'must be at least 1').optional(),
+  })
+  .partial()
+  .refine((data) => {
+    return (
+      data.name ||
+      data.description ||
+      data.maxCapacity !== undefined ||
+      data.maxAllowedCoordinators !== undefined
+    )
+  }, 'At least one field (name, description, maxCapacity or maxAllowedCoordinators) is required for update')
 
 export function controlPanelRoutes(server: FastifyServerInstance) {
   return () => {
@@ -126,11 +136,12 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
       async (request, reply) => {
         try {
           const { teamTemplateId } = request.params
-          const { name, description, maxCapacity } = request.body
+          const { name, description, maxCapacity, maxAllowedCoordinators } = request.body
           const result = await controlPanelApp.updateTeamTemplate(teamTemplateId, {
             name,
             description,
             maxCapacity,
+            maxAllowedCoordinators,
           })
 
           return reply.code(HttpStatus.Ok).send({ result })

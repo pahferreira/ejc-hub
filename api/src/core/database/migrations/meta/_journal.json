@@ -281,6 +281,20 @@
       "when": 1785853066662,
       "tag": "0039_cooing_talon",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1787076330577,
+      "tag": "0040_zippy_ozymandias",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1787084466261,
+      "tag": "0041_set_padrinhos_max_coordinators",
+      "breakpoints": true
     }
   ]
 }

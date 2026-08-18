@@ -48,7 +48,11 @@ export function AssignCoordinatorDrawer(props: AssignCoordinatorDrawerProps) {
         <div className="flex flex-col gap-5">
           {/* Slots indicator — full-bleed panel under the header */}
           <div className="-mx-6 -mt-4 border-b border-gray-200 bg-secondary/20 px-6 py-4">
-            <CoordinatorSlots selected={props.selectedCoordinators} onRemove={props.toggle} />
+            <CoordinatorSlots
+              selected={props.selectedCoordinators}
+              onRemove={props.toggle}
+              maxSlots={props.maxCoordinators}
+            />
           </div>
 
           {/* Search */}

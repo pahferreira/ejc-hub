@@ -29,33 +29,41 @@ const makeCandidate = (overrides: Partial<CoordinatorCandidate> = {}): Coordinat
 
 describe('computeSlotRules', () => {
   it('slotsUsed equals the length of selectedIds', () => {
-    expect(computeSlotRules(['u1', 'u2'], false).slotsUsed).toBe(2)
+    expect(computeSlotRules(['u1', 'u2'], false, 3).slotsUsed).toBe(2)
   })
 
   it('maxReached is false when fewer than 3 selected', () => {
-    expect(computeSlotRules(['u1', 'u2'], false).maxReached).toBe(false)
+    expect(computeSlotRules(['u1', 'u2'], false, 3).maxReached).toBe(false)
   })
 
   it('maxReached is true when 3 are selected', () => {
-    expect(computeSlotRules(['u1', 'u2', 'u3'], false).maxReached).toBe(true)
+    expect(computeSlotRules(['u1', 'u2', 'u3'], false, 3).maxReached).toBe(true)
   })
 
   it('canSave is false when 0 selected and NOT in edit mode', () => {
-    expect(computeSlotRules([], false).canSave).toBe(false)
+    expect(computeSlotRules([], false, 3).canSave).toBe(false)
   })
 
   it('canSave is true when at least 1 is selected regardless of edit mode', () => {
-    expect(computeSlotRules(['u1'], false).canSave).toBe(true)
-    expect(computeSlotRules(['u1'], true).canSave).toBe(true)
+    expect(computeSlotRules(['u1'], false, 3).canSave).toBe(true)
+    expect(computeSlotRules(['u1'], true, 3).canSave).toBe(true)
   })
 
   // Option A: edit mode allows saving at 0 (to clear existing coordinators).
   it('canSave is true at 0 selected when in edit mode', () => {
-    expect(computeSlotRules([], true).canSave).toBe(true)
+    expect(computeSlotRules([], true, 3).canSave).toBe(true)
   })
 
   it('canSave is false at 0 selected when NOT in edit mode (first-time assignment)', () => {
-    expect(computeSlotRules([], false).canSave).toBe(false)
+    expect(computeSlotRules([], false, 3).canSave).toBe(false)
+  })
+
+  it('maxReached is true when selection reaches a custom lower max', () => {
+    expect(computeSlotRules(['u1', 'u2'], false, 2).maxReached).toBe(true)
+  })
+
+  it('maxReached is false when selection is below a custom higher max', () => {
+    expect(computeSlotRules(['u1', 'u2', 'u3'], false, 5).maxReached).toBe(false)
   })
 })
 
@@ -210,7 +218,7 @@ describe('selection independence from filter', () => {
     expect(selectedIds).toEqual(['u1', 'u2'])
 
     // slotsUsed reflects selectedIds, not filtered count.
-    const { slotsUsed } = computeSlotRules(selectedIds, false)
+    const { slotsUsed } = computeSlotRules(selectedIds, false, 3)
     expect(slotsUsed).toBe(2)
   })
 

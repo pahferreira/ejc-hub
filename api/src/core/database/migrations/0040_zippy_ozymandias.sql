@@ -1,0 +1,1 @@
+ALTER TABLE "team_templates" ADD COLUMN "max_allowed_coordinators" integer DEFAULT 3 NOT NULL;

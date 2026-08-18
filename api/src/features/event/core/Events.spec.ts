@@ -336,6 +336,7 @@ describe('Events.getCurrentEventTeamDetail', () => {
     memberUserIds?: string[]
     coordinatorUserIds?: string[]
     maxCapacity?: number
+    maxAllowedCoordinators?: number
   }) {
     const eventRepository = {
       findCurrentEvent: vi.fn().mockResolvedValue({ id: EVENT_ID }),
@@ -350,6 +351,7 @@ describe('Events.getCurrentEventTeamDetail', () => {
           templateName: 'Liturgia',
           templateDescription: 'Cuida da liturgia',
           maxCapacity: opts.maxCapacity ?? 10,
+          maxAllowedCoordinators: opts.maxAllowedCoordinators ?? 3,
         },
       ]),
     } as unknown as TeamInstanceRepository
@@ -388,6 +390,14 @@ describe('Events.getCurrentEventTeamDetail', () => {
     expect(detail.name).toBe('Liturgia')
     expect(detail.description).toBe('Cuida da liturgia')
     expect(detail.coordinatorSlots).toBe(3)
+  })
+
+  it('exposes coordinatorSlots from the template maxAllowedCoordinators', async () => {
+    const { events } = makeEvents({ subscriptions: [], maxAllowedCoordinators: 4 })
+
+    const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    expect(detail.coordinatorSlots).toBe(4)
   })
 
   it('throws when the teamKey does not match any team in the current event', async () => {

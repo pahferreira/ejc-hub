@@ -29,7 +29,7 @@ export const candidatesQuerySchema = z.object({
 })
 
 export const setCoordinatorsBodySchema = z.object({
-  coordinatorIds: z.array(z.uuid()).max(3),
+  coordinatorIds: z.array(z.uuid()),
 })
 
 export const addMembersBodySchema = z.object({

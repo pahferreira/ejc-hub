@@ -6,6 +6,7 @@ export const teamTemplates = pgTable('team_templates', {
   description: text('description'),
   key: text('key').notNull().unique(),
   maxCapacity: integer('max_capacity').notNull().default(0),
+  maxAllowedCoordinators: integer('max_allowed_coordinators').notNull().default(3),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })

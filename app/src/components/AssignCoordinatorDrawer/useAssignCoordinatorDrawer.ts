@@ -23,6 +23,8 @@ export function useAssignCoordinatorDrawer() {
   const candidatesQuery = useAssignCoordinatorCandidatesQuery(target?.id ?? null)
   const mutation = useAssignCoordinatorsMutation()
 
+  const maxCoordinators = candidatesQuery.data?.team.maxAllowedCoordinators ?? 3
+
   // Seed selection once data becomes available (or when isOpen flips to true for cached data).
   useEffect(() => {
     if (isOpen && candidatesQuery.data) {
@@ -49,17 +51,24 @@ export function useAssignCoordinatorDrawer() {
     setIsEditMode(false)
   }, [])
 
-  const toggle = useCallback((userId: string) => {
-    setSelectedIds((prev) => {
-      if (prev.includes(userId)) {
-        return prev.filter((id) => id !== userId)
-      }
-      if (prev.length >= 3) return prev
-      return [...prev, userId]
-    })
-  }, [])
+  const toggle = useCallback(
+    (userId: string) => {
+      setSelectedIds((prev) => {
+        if (prev.includes(userId)) {
+          return prev.filter((id) => id !== userId)
+        }
+        if (prev.length >= maxCoordinators) return prev
+        return [...prev, userId]
+      })
+    },
+    [maxCoordinators]
+  )
 
-  const { slotsUsed, maxReached, canSave } = computeSlotRules(selectedIds, isEditMode)
+  const { slotsUsed, maxReached, canSave } = computeSlotRules(
+    selectedIds,
+    isEditMode,
+    maxCoordinators
+  )
 
   const filteredCandidates = useMemo(() => {
     if (!candidatesQuery.data || !target) return []
@@ -112,6 +121,7 @@ export function useAssignCoordinatorDrawer() {
     isDisabled,
     slotsUsed,
     maxReached,
+    maxCoordinators,
     canSave,
     search,
     setSearch,
