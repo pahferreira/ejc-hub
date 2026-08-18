@@ -13,6 +13,7 @@ export type TeamInstanceWithDetails = {
   templateName: string
   templateDescription: string | null
   maxCapacity: number
+  maxAllowedCoordinators: number
 }
 
 export interface TeamInstanceRepository {

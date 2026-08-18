@@ -360,7 +360,11 @@ export class TeamBuilding {
         await this.#teamMembershipRepository.getCoordinatorUserIds(teamInstanceId)
 
       return {
-        team: { id: targetInstance.id, name: targetInstance.templateName },
+        team: {
+          id: targetInstance.id,
+          name: targetInstance.templateName,
+          maxAllowedCoordinators: targetInstance.maxAllowedCoordinators,
+        },
         currentCoordinators,
         candidates,
       }
@@ -454,18 +458,18 @@ export class TeamBuilding {
   }
 
   // Replaces a team instance's coordinators atomically. Coordinators are a flat
-  // peer set (no ordering); duplicates are ignored and at most 3 are allowed.
-  // Passing an empty array clears all coordinators.
+  // peer set (no ordering); duplicates are ignored and at most the team template's
+  // maxAllowedCoordinators are allowed. Passing an empty array clears all coordinators.
   async assignCoordinators(teamInstanceId: string, coordinatorUserIds: string[]): Promise<void> {
     await this.#withCurrentEvent(async (event) => {
       const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(event.id)
-      const instanceIds = new Set(instances.map((i) => i.id))
+      const targetInstance = instances.find((i) => i.id === teamInstanceId)
 
-      if (!instanceIds.has(teamInstanceId)) {
+      if (!targetInstance) {
         throw new AppError(`Team instance ${teamInstanceId} does not belong to the current event`)
       }
 
-      // Dedupe while preserving order, then enforce max-3.
+      // Dedupe while preserving order, then enforce the template's max.
       const seen = new Set<string>()
       const deduped: string[] = []
       for (const id of coordinatorUserIds) {
@@ -475,8 +479,9 @@ export class TeamBuilding {
         }
       }
 
-      if (deduped.length > 3) {
-        throw new AppError('A team can have at most 3 coordinators')
+      const maxCoordinators = targetInstance.maxAllowedCoordinators
+      if (deduped.length > maxCoordinators) {
+        throw new AppError(`A team can have at most ${maxCoordinators} coordinators`)
       }
 
       // A member of the target team already occupies its (team, user) row, so

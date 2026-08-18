@@ -46,7 +46,7 @@ function buildSub(overrides: Partial<Sub> & Pick<Sub, 'id' | 'userId' | 'status'
   } as Sub
 }
 
-function buildInstance(id: string, name: string) {
+function buildInstance(id: string, name: string, maxAllowedCoordinators = 3) {
   return {
     id,
     eventId: EVENT_ID,
@@ -54,6 +54,7 @@ function buildInstance(id: string, name: string) {
     templateName: name,
     templateDescription: null,
     maxCapacity: 10,
+    maxAllowedCoordinators,
   }
 }
 
@@ -63,6 +64,7 @@ function makeRepos(opts: {
   coordinators?: Map<string, string[]>
   coordinatorExperience?: Map<string, string[]>
   coordinatorUserIds?: string[]
+  teamAMaxAllowedCoordinators?: number
 }) {
   const eventRepository = {
     findCurrentEvent: vi.fn().mockResolvedValue({ id: EVENT_ID }),
@@ -79,7 +81,10 @@ function makeRepos(opts: {
   const teamInstanceRepository = {
     listTeamInstancesWithDetails: vi
       .fn()
-      .mockResolvedValue([buildInstance(TEAM_A, 'Liturgia'), buildInstance(TEAM_B, 'Música')]),
+      .mockResolvedValue([
+        buildInstance(TEAM_A, 'Liturgia', opts.teamAMaxAllowedCoordinators),
+        buildInstance(TEAM_B, 'Música'),
+      ]),
   } as unknown as TeamInstanceRepository
 
   const teamMembershipRepository = {
@@ -478,13 +483,13 @@ describe('TeamBuilding.listCandidates', () => {
 
     const result = await tb.listCandidates(TEAM_A)
 
-    expect(result.team).toEqual({ id: TEAM_A, name: 'Liturgia' })
+    expect(result.team).toEqual({ id: TEAM_A, name: 'Liturgia', maxAllowedCoordinators: 3 })
   })
 })
 
 describe('TeamBuilding.assignCoordinators', () => {
-  function makeAssignRepos(subscriptions: Sub[]) {
-    return makeRepos({ subscriptions, memberships: new Map() })
+  function makeAssignRepos(subscriptions: Sub[], teamAMaxAllowedCoordinators?: number) {
+    return makeRepos({ subscriptions, memberships: new Map(), teamAMaxAllowedCoordinators })
   }
 
   it('writes coordinator IDs positionally and nulls unfilled slots', async () => {
@@ -573,6 +578,50 @@ describe('TeamBuilding.assignCoordinators', () => {
       /at most 3 coordinators/
     )
     expect(repos.teamMembershipRepository.setCoordinators).not.toHaveBeenCalled()
+  })
+
+  it('rejects a 3rd coordinator when the template only allows 2', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'received' }),
+      buildSub({ id: 's2', userId: 'u2', status: 'received' }),
+      buildSub({ id: 's3', userId: 'u3', status: 'received' }),
+    ]
+    const repos = makeAssignRepos(subscriptions, 2)
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await expect(tb.assignCoordinators(TEAM_A, ['u1', 'u2', 'u3'])).rejects.toThrow(
+      /at most 2 coordinators/
+    )
+    expect(repos.teamMembershipRepository.setCoordinators).not.toHaveBeenCalled()
+  })
+
+  it('accepts 4 coordinators when the template allows up to 5', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'received' }),
+      buildSub({ id: 's2', userId: 'u2', status: 'received' }),
+      buildSub({ id: 's3', userId: 'u3', status: 'received' }),
+      buildSub({ id: 's4', userId: 'u4', status: 'received' }),
+    ]
+    const repos = makeAssignRepos(subscriptions, 5)
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await expect(tb.assignCoordinators(TEAM_A, ['u1', 'u2', 'u3', 'u4'])).resolves.toBeUndefined()
+
+    expect(repos.teamMembershipRepository.setCoordinators).toHaveBeenCalledWith(
+      TEAM_A,
+      ['u1', 'u2', 'u3', 'u4'],
+      expect.anything()
+    )
   })
 
   it('dedupes before enforcing the max-3 limit (4 identical IDs → 1 unique → passes)', async () => {

@@ -57,7 +57,12 @@ class DrizzleTeamTemplateRepository implements TeamTemplateRepository {
 
   async updateTeamTemplate(
     id: string,
-    input: { description?: string | null; name?: string; maxCapacity?: number }
+    input: {
+      description?: string | null
+      name?: string
+      maxCapacity?: number
+      maxAllowedCoordinators?: number
+    }
   ) {
     const updatedTeamTemplate = await db
       .update(schema.teamTemplates)

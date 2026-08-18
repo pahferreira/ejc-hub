@@ -66,7 +66,12 @@ export class ControlPanel {
 
   async updateTeamTemplate(
     id: string,
-    input: { description?: string; name?: string; maxCapacity?: number }
+    input: {
+      description?: string
+      name?: string
+      maxCapacity?: number
+      maxAllowedCoordinators?: number
+    }
   ) {
     const teamTemplateToUpdate = await this.#teamTemplateRepository.selectTeamTemplateById(id)
 

@@ -2,7 +2,10 @@ import clsx from 'clsx'
 import { FiPlus, FiX } from 'react-icons/fi'
 import { UserAvatar } from '../UserAvatar/UserAvatar'
 
-const MAX_SLOTS = 3
+const GRID_COLS: Record<number, string> = {
+  3: 'grid-cols-3',
+  4: 'grid-cols-4',
+}
 
 export type SelectedCoordinator = {
   id: string
@@ -13,14 +16,17 @@ export type SelectedCoordinator = {
 }
 
 export type CoordinatorSlotsProps = {
-  /** Selected coordinators (0–3), a flat peer set — no rank or leader. */
+  /** Selected coordinators, a flat peer set — no rank or leader. */
   selected: SelectedCoordinator[]
   /** Remove a coordinator from the selection. */
   onRemove: (id: string) => void
+  /** Maximum number of coordinator slots for this team. */
+  maxSlots: number
 }
 
 export function CoordinatorSlots(props: CoordinatorSlotsProps) {
-  const slotsUsed = Math.min(props.selected.length, MAX_SLOTS)
+  const slotsUsed = Math.min(props.selected.length, props.maxSlots)
+  const columns = props.maxSlots <= 3 ? 3 : 4
 
   return (
     <div className="flex flex-col gap-3">
@@ -29,12 +35,12 @@ export function CoordinatorSlots(props: CoordinatorSlotsProps) {
           Coordenação da equipe
         </span>
         <span className="text-xs font-semibold tabular-nums text-dark-brown/60">
-          {slotsUsed} de {MAX_SLOTS}
+          {slotsUsed} de {props.maxSlots}
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        {Array.from({ length: MAX_SLOTS }).map((_, index) => {
+      <div className={clsx('grid gap-2', GRID_COLS[columns] ?? 'grid-cols-3')}>
+        {Array.from({ length: props.maxSlots }).map((_, index) => {
           const coordinator = props.selected[index]
 
           if (!coordinator) {

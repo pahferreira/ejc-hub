@@ -21,8 +21,6 @@ import { getTeamSummaryBucket } from './team-summary.ts'
 import { getTeamStatus, type TeamStatus } from './team-status.ts'
 import { mapSubscriptionToPerson } from './subscription-to-person.ts'
 
-const COORDINATOR_SLOTS = 3
-
 const DEFAULT_PAGE = 1
 const DEFAULT_SIZE = 10
 const DEFAULT_PAGE_SIZE = 20
@@ -295,7 +293,7 @@ export class Events {
       maxCapacity: instance.maxCapacity,
       freeSlots,
       filledPercentage,
-      coordinatorSlots: COORDINATOR_SLOTS,
+      coordinatorSlots: instance.maxAllowedCoordinators,
       coordinators,
       members,
     }

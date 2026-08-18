@@ -49,6 +49,7 @@ class DrizzleTeamInstanceRepository implements TeamInstanceRepository {
         templateName: schema.teamTemplates.name,
         templateDescription: schema.teamTemplates.description,
         maxCapacity: schema.teamTemplates.maxCapacity,
+        maxAllowedCoordinators: schema.teamTemplates.maxAllowedCoordinators,
       })
       .from(schema.teamInstances)
       .innerJoin(schema.teamTemplates, eq(schema.teamInstances.templateId, schema.teamTemplates.id))

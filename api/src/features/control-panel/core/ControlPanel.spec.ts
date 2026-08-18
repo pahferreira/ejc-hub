@@ -44,6 +44,15 @@ describe('ControlPanel.updateTeamTemplate', () => {
     )
   })
 
+  it('passes maxAllowedCoordinators through to the repository update', async () => {
+    await controlPanel.updateTeamTemplate(TEAM_TEMPLATE_ID, { maxAllowedCoordinators: 2 })
+
+    expect(teamTemplateRepository.updateTeamTemplate).toHaveBeenCalledWith(
+      TEAM_TEMPLATE_ID,
+      expect.objectContaining({ maxAllowedCoordinators: 2 })
+    )
+  })
+
   it('returns the updated team template', async () => {
     const result = await controlPanel.updateTeamTemplate(TEAM_TEMPLATE_ID, { maxCapacity: 12 })
 

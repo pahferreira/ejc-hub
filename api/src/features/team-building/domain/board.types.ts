@@ -94,7 +94,7 @@ export type Candidate = {
 }
 
 export type CandidateListResult = {
-  team: { id: string; name: string }
+  team: { id: string; name: string; maxAllowedCoordinators: number }
   /** User ids of the team's current coordinators (flat, unordered peer set). */
   currentCoordinators: string[]
   candidates: Candidate[]

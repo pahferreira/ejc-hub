@@ -11,6 +11,7 @@ const meta = {
   tags: ['autodocs'],
   args: {
     onRemove: fn(),
+    maxSlots: 3,
   },
 } satisfies Meta<typeof CoordinatorSlots>
 
@@ -58,6 +59,34 @@ export const WithPhoto: Story = {
         pictureUrl: 'https://i.pravatar.cc/80?img=5',
       },
       { id: '2', name: 'Maria Santos', nickname: 'Mari' },
+    ],
+  },
+}
+
+export const MaxOneSlot: Story = {
+  args: {
+    maxSlots: 1,
+    selected: [],
+  },
+}
+
+export const MaxFourSlots: Story = {
+  args: {
+    maxSlots: 4,
+    selected: [
+      { id: '1', name: 'João da Silva', nickname: 'Joãozinho' },
+      { id: '2', name: 'Maria Santos', nickname: 'Mari' },
+    ],
+  },
+}
+
+export const MaxSixSlotsWrapping: Story = {
+  args: {
+    maxSlots: 6,
+    selected: [
+      { id: '1', name: 'João da Silva', nickname: 'Joãozinho' },
+      { id: '2', name: 'Maria Santos', nickname: 'Mari' },
+      { id: '3', name: 'Pedro Oliveira', nickname: 'Pedrinho' },
     ],
   },
 }

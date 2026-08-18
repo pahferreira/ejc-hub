@@ -1,9 +1,13 @@
 import type { CoordinatorCandidate } from '../../services/team-building/team-building.types'
 
 /** Derives slot-rule values from current selection and edit-mode state. */
-export function computeSlotRules(selectedIds: string[], isEditMode: boolean) {
+export function computeSlotRules(
+  selectedIds: string[],
+  isEditMode: boolean,
+  maxCoordinators: number
+) {
   const slotsUsed = selectedIds.length
-  const maxReached = slotsUsed >= 3
+  const maxReached = slotsUsed >= maxCoordinators
   // Option A: allow save at 0 only when editing an existing assignment.
   const canSave = slotsUsed >= 1 || isEditMode
   return { slotsUsed, maxReached, canSave }
