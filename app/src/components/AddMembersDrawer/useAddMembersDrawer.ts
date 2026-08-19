@@ -19,6 +19,7 @@ export function useAddMembersDrawer() {
   // Filter state
   const [search, setSearch] = useState('')
   const [experienceFilter, setExperienceFilter] = useState<string[]>([])
+  const [skillsFilter, setSkillsFilter] = useState<string[]>([])
   const [preferenceScope, setPreferenceScope] = useState<TeamPreferenceScope>('team')
   const [viewSelectedOnly, setViewSelectedOnly] = useState(false)
 
@@ -30,6 +31,7 @@ export function useAddMembersDrawer() {
     setSelectedIds([])
     setSearch('')
     setExperienceFilter([])
+    setSkillsFilter([])
     setPreferenceScope('team')
     setViewSelectedOnly(false)
     setIsOpen(true)
@@ -61,6 +63,7 @@ export function useAddMembersDrawer() {
     const filtered = filterCandidates(candidatesQuery.data.candidates, {
       search,
       experienceFilter,
+      skillsFilter,
       preferenceScope,
       targetTeamId: target.id,
     })
@@ -73,6 +76,7 @@ export function useAddMembersDrawer() {
     target,
     search,
     experienceFilter,
+    skillsFilter,
     preferenceScope,
     effectiveViewSelectedOnly,
     selectedIds,
@@ -103,6 +107,8 @@ export function useAddMembersDrawer() {
     setSearch,
     experienceFilter,
     setExperienceFilter,
+    skillsFilter,
+    setSkillsFilter,
     preferenceScope,
     setPreferenceScope,
     viewSelectedOnly: effectiveViewSelectedOnly,

@@ -98,6 +98,7 @@ const candidates: CoordinatorCandidate[] = [
     nickname: 'Ali',
     experienceType: 'newbie',
     preferenceTeamIds: [target],
+    areas: ['Atuação'],
   }),
   makeCandidate({
     userId: 'u2',
@@ -105,6 +106,7 @@ const candidates: CoordinatorCandidate[] = [
     nickname: 'Bru',
     experienceType: 'experienced',
     preferenceTeamIds: [],
+    areas: ['Dança'],
   }),
   makeCandidate({
     userId: 'u3',
@@ -112,6 +114,7 @@ const candidates: CoordinatorCandidate[] = [
     nickname: 'Car',
     experienceType: 'experienced_outsider',
     preferenceTeamIds: ['team-louvor'],
+    areas: [],
   }),
 ]
 
@@ -170,6 +173,62 @@ describe('filterCandidates — experienceFilter', () => {
       targetTeamId: target,
     })
     expect(result.map((c) => c.userId)).toEqual(['u1', 'u2'])
+  })
+})
+
+describe('filterCandidates — skillsFilter', () => {
+  it('includes candidates who have at least one of the selected skills', () => {
+    const result = filterCandidates(candidates, {
+      search: '',
+      experienceFilter: [],
+      preferenceScope: 'all',
+      targetTeamId: target,
+      skillsFilter: ['Atuação'],
+    })
+    expect(result.map((c) => c.userId)).toEqual(['u1'])
+  })
+
+  it('excludes candidates who lack all of the selected skills', () => {
+    const result = filterCandidates(candidates, {
+      search: '',
+      experienceFilter: [],
+      preferenceScope: 'all',
+      targetTeamId: target,
+      skillsFilter: ['Canta'],
+    })
+    expect(result).toHaveLength(0)
+  })
+
+  it('matches with OR semantics when multiple skills are selected', () => {
+    const result = filterCandidates(candidates, {
+      search: '',
+      experienceFilter: [],
+      preferenceScope: 'all',
+      targetTeamId: target,
+      skillsFilter: ['Atuação', 'Dança'],
+    })
+    expect(result.map((c) => c.userId)).toEqual(['u1', 'u2'])
+  })
+
+  it('passes through with no filtering when skillsFilter is empty', () => {
+    const result = filterCandidates(candidates, {
+      search: '',
+      experienceFilter: [],
+      preferenceScope: 'all',
+      targetTeamId: target,
+      skillsFilter: [],
+    })
+    expect(result).toHaveLength(3)
+  })
+
+  it('passes through with no filtering when skillsFilter is undefined', () => {
+    const result = filterCandidates(candidates, {
+      search: '',
+      experienceFilter: [],
+      preferenceScope: 'all',
+      targetTeamId: target,
+    })
+    expect(result).toHaveLength(3)
   })
 })
 

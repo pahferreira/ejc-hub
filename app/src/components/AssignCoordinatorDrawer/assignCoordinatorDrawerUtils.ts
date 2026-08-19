@@ -23,6 +23,7 @@ type FilterArgs = {
   experienceFilter: string[]
   preferenceScope: 'team' | 'all'
   targetTeamId: string
+  skillsFilter?: string[]
 }
 
 /** Filters the candidate list client-side. Selection state is NOT considered here. */
@@ -40,6 +41,11 @@ export function filterCandidates(
 
     if (args.experienceFilter.length > 0 && !args.experienceFilter.includes(c.experienceType)) {
       return false
+    }
+
+    if (args.skillsFilter?.length) {
+      const hasMatch = args.skillsFilter.some((skill) => c.areas.includes(skill))
+      if (!hasMatch) return false
     }
 
     if (args.preferenceScope === 'team' && !c.preferenceTeamIds.includes(args.targetTeamId)) {
