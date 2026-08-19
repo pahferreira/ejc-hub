@@ -4,9 +4,13 @@ import { Drawer } from '../Drawer/Drawer'
 import { CoordinatorCandidateRow } from '../CoordinatorCandidateRow/CoordinatorCandidateRow'
 import { TeamPreferenceFilter } from '../TeamPreferenceFilter/TeamPreferenceFilter'
 import { FilterCheck } from '../FilterCheck/FilterCheck'
+import { MultiSelector } from '../MultiSelector/MultiSelector'
 import { SearchInput } from '../SearchInput/SearchInput'
 import { Button } from '../Button/Button'
-import { experienceFilterOptions } from '../../pages/TeamBuildingPage/experience'
+import {
+  experienceFilterOptions,
+  skillFilterOptions,
+} from '../../pages/TeamBuildingPage/experience'
 import type { useAddMembersDrawer } from './useAddMembersDrawer'
 
 type AddMembersDrawerProps = ReturnType<typeof useAddMembersDrawer>
@@ -50,13 +54,27 @@ export function AddMembersDrawer(props: AddMembersDrawerProps) {
 
       {!props.isLoading && !props.error && (
         <div className="flex flex-col gap-5">
-          {/* Search */}
-          <SearchInput
-            placeholder="Buscar por nome..."
-            value={props.search}
-            onChange={props.setSearch}
-            fullWidth
-          />
+          {/* Search + skills filter */}
+          <div className="flex flex-wrap items-start gap-2">
+            <div className="min-w-[240px] flex-[2]">
+              <SearchInput
+                placeholder="Buscar por nome..."
+                value={props.search}
+                onChange={props.setSearch}
+                fullWidth
+              />
+            </div>
+            <div className="w-44">
+              <MultiSelector
+                options={skillFilterOptions}
+                selected={skillFilterOptions.filter((option) =>
+                  props.skillsFilter.includes(option.value)
+                )}
+                onChange={(options) => props.setSkillsFilter(options.map((option) => option.value))}
+                placeholder="Todas as habilidades"
+              />
+            </div>
+          </div>
 
           {/* Experience filter */}
           <div className="flex flex-wrap gap-2">
