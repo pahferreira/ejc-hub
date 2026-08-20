@@ -5,13 +5,14 @@ type ButtonProps = {
   children: ReactNode
   disabled?: boolean
   onClick?: () => void
-  variant?: 'primary' | 'secondary'
+  variant?: 'primary' | 'secondary' | 'destructive'
   ariaLabel?: string
 }
 
 const foregroundVariant = {
   primary: 'bg-primary text-white',
   secondary: 'bg-secondary text-dark-brown',
+  destructive: 'bg-red text-white',
 }
 
 export function Button(props: ButtonProps) {

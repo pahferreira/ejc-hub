@@ -43,6 +43,15 @@ export const Received = {
   },
 } satisfies StoryObj<typeof SubscriptionSummaryBox>
 
+export const Cancelled = {
+  args: {
+    title: 'Cortados',
+    value: 1,
+    variant: 'cancelled',
+    description: 'Inscrições canceladas',
+  },
+} satisfies StoryObj<typeof SubscriptionSummaryBox>
+
 export const Total = {
   args: {
     title: 'Total',

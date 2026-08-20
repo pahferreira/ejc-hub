@@ -18,6 +18,7 @@ import { subscriptionColumns } from './columns'
 import { ReviewSubscriptionModal } from './ReviewSubscriptionModal'
 import { useConfirmSubscriptionMutation } from '../../services/subscriptions/useConfirmSubscriptionMutation'
 import { useWaitListSubscriptionMutation } from '../../services/subscriptions/useWaitListSubscriptionMutation'
+import { useCancelSubscriptionMutation } from '../../services/subscriptions/useCancelSubscriptionMutation'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { usePagination } from '../../hooks/usePagination'
 import { useTeamOptionsQuery } from '../../services/teams/useTeamOptionsQuery'
@@ -57,6 +58,7 @@ export function EventSubscriptionsList() {
 
   const confirmMutation = useConfirmSubscriptionMutation()
   const waitListMutation = useWaitListSubscriptionMutation()
+  const cancelMutation = useCancelSubscriptionMutation()
 
   const teamOptions: Option[] = useMemo(
     () => (teamOptionsQuery.data ?? []).map((t) => ({ value: t.key, label: t.name })),
@@ -109,6 +111,11 @@ export function EventSubscriptionsList() {
     setReviewingSubscription(null)
   }
 
+  function handleCancelSubscription(id: string) {
+    cancelMutation.mutate(id)
+    setReviewingSubscription(null)
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -133,7 +140,7 @@ export function EventSubscriptionsList() {
           <p className="mt-2 text-gray-600">Todos os encontreiros inscritos no próximo encontro</p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <SubscriptionSummaryBox
             title="Montados"
             value={stats.completed}
@@ -154,6 +161,13 @@ export function EventSubscriptionsList() {
             variant="waitlist"
             active={selectedStatuses.includes('waiting_list')}
             onClick={() => toggleStatusFilter('waiting_list')}
+          />
+          <SubscriptionSummaryBox
+            title="Cortados"
+            value={stats.cancelled}
+            variant="cancelled"
+            active={selectedStatuses.includes('cancelled')}
+            onClick={() => toggleStatusFilter('cancelled')}
           />
           <SubscriptionSummaryBox title="Total de Inscrições" value={totalCount} variant="total" />
         </div>
@@ -254,6 +268,7 @@ export function EventSubscriptionsList() {
         onClose={() => setReviewingSubscription(null)}
         onConfirm={handleConfirmSubscription}
         onWaitList={handleWaitListSubscription}
+        onCancel={handleCancelSubscription}
       />
     </div>
   )

@@ -312,6 +312,7 @@ export class TeamBuilding {
       const instanceNameById = new Map(instances.map((i) => [i.id, i.templateName]))
 
       const eligibleSubscriptions = subscriptions.filter((sub) => {
+        if (sub.status === 'cancelled') return false
         // The target team's own current coordinators: kept for coordinator assignment
         // (so the drawer can show/re-pick them), excluded for member assignment (they
         // already occupy the (team, user) row and must not be added as a member too).

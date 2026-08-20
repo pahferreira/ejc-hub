@@ -28,6 +28,7 @@ const defaultStats: SubscriptionStatsResponse = {
   received: 0,
   completed: 0,
   waiting_list: 0,
+  cancelled: 0,
 }
 
 export function useSubscriptions(args: UseSubscriptionsArgs): UseSubscriptionsReturn {
@@ -38,7 +39,8 @@ export function useSubscriptions(args: UseSubscriptionsArgs): UseSubscriptionsRe
   return {
     subscriptions: listQuery.data?.items ?? [],
     total: listQuery.data?.total ?? 0,
-    totalCount: stats.pending + stats.received + stats.completed + stats.waiting_list,
+    totalCount:
+      stats.pending + stats.received + stats.completed + stats.waiting_list + stats.cancelled,
     stats,
     isLoading: listQuery.isLoading,
     error: listQuery.error,

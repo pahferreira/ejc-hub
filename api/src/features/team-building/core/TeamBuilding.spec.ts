@@ -331,6 +331,26 @@ describe('TeamBuilding.listCandidates', () => {
     expect(candidateIds).not.toContain('u3') // coordinator of another team
   })
 
+  it('excludes a cancelled subscription', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'received' }),
+      buildSub({ id: 's2', userId: 'u2', status: 'cancelled' }),
+    ]
+    const repos = makeRepos({ subscriptions, memberships: new Map() })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    const result = await tb.listCandidates(TEAM_A)
+
+    const candidateIds = result.candidates.map((c) => c.userId)
+    expect(candidateIds).toContain('u1')
+    expect(candidateIds).not.toContain('u2')
+  })
+
   it('resolves preference names from event team instances', async () => {
     const subscriptions = [
       buildSub({ id: 's1', userId: 'u1', status: 'received', teams: [TEAM_B, 'stale-id'] }),

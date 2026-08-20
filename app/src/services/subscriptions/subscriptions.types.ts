@@ -1,4 +1,4 @@
-export type SubscriptionStatus = 'pending' | 'received' | 'completed' | 'waiting_list'
+export type SubscriptionStatus = 'pending' | 'received' | 'completed' | 'waiting_list' | 'cancelled'
 
 export type SubscriberCircle = {
   key: string
