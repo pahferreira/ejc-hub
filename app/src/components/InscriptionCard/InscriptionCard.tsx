@@ -2,7 +2,7 @@ import { FiDollarSign, FiTag, FiUserCheck } from 'react-icons/fi'
 import { Badge, type BadgeVariant } from '../Badge/Badge'
 import { ProgressBar } from '../ProgressBar/ProgressBar'
 
-type SubscriptionStatus = 'pending' | 'received' | 'completed' | 'waiting_list'
+type SubscriptionStatus = 'pending' | 'received' | 'completed' | 'waiting_list' | 'cancelled'
 // `coming_soon` is a temporary placeholder until payment/shirt data exists — it
 // renders an "Em breve" chip. Remove it once real statuses are wired up.
 type PaymentStatus = 'paid' | 'pending' | 'not_required' | 'coming_soon'
@@ -17,10 +17,11 @@ export type InscriptionCardProps = {
 }
 
 const statusDisplay: Record<SubscriptionStatus, { label: string; variant: BadgeVariant }> = {
-  pending: { label: 'Pendente', variant: 'error' },
+  pending: { label: 'Pendente', variant: 'warning' },
   received: { label: 'Recebida', variant: 'info' },
   completed: { label: 'Montado', variant: 'success' },
   waiting_list: { label: 'Lista de Espera', variant: 'warning' },
+  cancelled: { label: 'Cortado', variant: 'error' },
 }
 
 const paymentDisplay: Record<PaymentStatus, { label: string; variant: BadgeVariant }> = {

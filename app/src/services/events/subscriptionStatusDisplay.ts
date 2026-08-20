@@ -20,7 +20,7 @@ export const subscriptionStatusDisplay: Record<SubscriptionStatus, SubscriptionS
     description: 'Agora é com a gente! Aguarde o processo de montagem.',
   },
   completed: {
-    label: 'Confirmada',
+    label: 'Montado',
     variant: 'success',
     description: 'Você foi montado! Aguarde o contato de seu coordenador.',
   },
@@ -28,6 +28,11 @@ export const subscriptionStatusDisplay: Record<SubscriptionStatus, SubscriptionS
     label: 'Lista de Espera',
     variant: 'pending',
     description: 'Você está na lista de espera.',
+  },
+  cancelled: {
+    label: 'Cortado',
+    variant: 'error',
+    description: 'Sua inscrição foi cancelada.',
   },
 }
 

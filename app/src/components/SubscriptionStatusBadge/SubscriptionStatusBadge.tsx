@@ -3,10 +3,11 @@ import { subscriptionStatusDisplay } from '../../services/events/subscriptionSta
 import type { SubscriptionStatus } from '../../services/events/events.types'
 
 const statusVariant: Record<SubscriptionStatus, BadgeVariant> = {
-  pending: 'error',
+  pending: 'warning',
   received: 'info',
   completed: 'success',
   waiting_list: 'warning',
+  cancelled: 'error',
 }
 
 export type SubscriptionStatusBadgeProps = {

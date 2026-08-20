@@ -56,4 +56,10 @@ export interface TeamMembershipRepository {
   listCoordinatorsByTeamInstanceIds: (
     teamInstanceIds: string[]
   ) => Promise<Map<string, TeamCoordinatorSummary[]>>
+  /** Removes every membership (member and coordinator) a user holds in one event's teams. */
+  deleteMembershipsByUserAndEvent: (
+    userId: string,
+    eventId: string,
+    executor?: DbExecutor
+  ) => Promise<void>
 }

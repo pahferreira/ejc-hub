@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { FiUsers, FiClock, FiCheck, FiInbox } from 'react-icons/fi'
+import { FiUsers, FiClock, FiCheck, FiInbox, FiUserX } from 'react-icons/fi'
 import { LuHourglass } from 'react-icons/lu'
 import { Card } from '../Card/Card'
 
@@ -8,7 +8,7 @@ type SummaryBoxProps = {
   value: string | number
   description?: string
   icon?: ReactNode
-  variant?: 'total' | 'completed' | 'pending' | 'waitlist' | 'received'
+  variant?: 'total' | 'completed' | 'pending' | 'waitlist' | 'received' | 'cancelled'
   active?: boolean
   onClick?: () => void
 }
@@ -38,6 +38,11 @@ const variantStyles = {
     iconBg: 'bg-blue-100',
     iconColor: 'text-blue-600',
     defaultIcon: <FiInbox size="20px" />,
+  },
+  cancelled: {
+    iconBg: 'bg-slate-100',
+    iconColor: 'text-slate-600',
+    defaultIcon: <FiUserX size="20px" />,
   },
 }
 

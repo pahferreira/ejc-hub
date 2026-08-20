@@ -29,4 +29,12 @@ export const Secondary = {
   },
 } satisfies StoryObj<typeof Button>
 
+export const Destructive = {
+  args: {
+    children: 'Cancelar Inscrição',
+    disabled: false,
+    variant: 'destructive',
+  },
+} satisfies StoryObj<typeof Button>
+
 export default meta

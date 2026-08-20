@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Modal } from '../../components/Modal/Modal'
 import { Button } from '../../components/Button/Button'
 import { SubscriptionStatusBadge } from '../../components/SubscriptionStatusBadge/SubscriptionStatusBadge'
@@ -12,6 +13,7 @@ type ReviewSubscriptionModalProps = {
   onClose: () => void
   onConfirm: (id: string) => void
   onWaitList: (id: string) => void
+  onCancel: (id: string) => void
 }
 
 function formatInstagram(value: string) {
@@ -24,6 +26,14 @@ function formatInstagram(value: string) {
 }
 
 export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
+
+  useEffect(() => {
+    if (!props.open) {
+      setConfirmingCancel(false)
+    }
+  }, [props.open])
+
   if (!props.subscription) return null
 
   const status = props.subscription.status
@@ -31,6 +41,12 @@ export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
     ? formatInstagram(props.subscription.user.instagram)
     : ''
   const selectedSkills = skills.filter((skill) => props.subscription!.user[skill.key])
+
+  const canConfirm = status === 'pending' || status === 'waiting_list'
+  const canWaitList = status === 'pending' || status === 'received'
+  const canCancel = status === 'received' || status === 'waiting_list' || status === 'completed'
+  // Confirming is the stronger action when both are offered, so wait-list steps down to secondary.
+  const waitListVariant = canConfirm ? 'secondary' : 'primary'
 
   return (
     <Modal open={props.open} onClose={props.onClose} title="Revisar inscrição">
@@ -102,17 +118,46 @@ export function ReviewSubscriptionModal(props: ReviewSubscriptionModalProps) {
           </div>
         )}
 
-        {status !== 'completed' && (
+        {status !== 'cancelled' && (
           <div className="flex flex-col gap-3">
-            {(status === 'pending' || status === 'waiting_list') && (
-              <Button onClick={() => props.onConfirm(props.subscription!.id)}>
-                Confirmar Recebimento
-              </Button>
-            )}
-            {(status === 'pending' || status === 'received') && (
-              <Button variant="secondary" onClick={() => props.onWaitList(props.subscription!.id)}>
-                Mover para Lista de Espera
-              </Button>
+            {confirmingCancel ? (
+              <>
+                <p className="text-sm text-gray-700">
+                  {`Cancelar a inscrição de ${props.subscription.user.name}?`}
+                  {status === 'completed' &&
+                    ' A pessoa será removida da equipe. Se a inscrição for reativada, ela voltará sem equipe e precisará ser montada novamente.'}
+                </p>
+                <Button
+                  variant="destructive"
+                  onClick={() => props.onCancel(props.subscription!.id)}
+                >
+                  Confirmar
+                </Button>
+                <Button variant="secondary" onClick={() => setConfirmingCancel(false)}>
+                  Voltar
+                </Button>
+              </>
+            ) : (
+              <>
+                {canConfirm && (
+                  <Button onClick={() => props.onConfirm(props.subscription!.id)}>
+                    Confirmar Recebimento
+                  </Button>
+                )}
+                {canWaitList && (
+                  <Button
+                    variant={waitListVariant}
+                    onClick={() => props.onWaitList(props.subscription!.id)}
+                  >
+                    Mover para Lista de Espera
+                  </Button>
+                )}
+                {canCancel && (
+                  <Button variant="secondary" onClick={() => setConfirmingCancel(true)}>
+                    Cancelar Inscrição
+                  </Button>
+                )}
+              </>
             )}
           </div>
         )}

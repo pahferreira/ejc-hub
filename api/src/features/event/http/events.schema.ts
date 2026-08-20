@@ -81,6 +81,7 @@ export const subscriptionStatusEnum = z.enum([
   SubscriptionStatus.Received,
   SubscriptionStatus.Completed,
   SubscriptionStatus.WaitingList,
+  SubscriptionStatus.Cancelled,
 ])
 
 export const statusQuerystringSchema = z.object({

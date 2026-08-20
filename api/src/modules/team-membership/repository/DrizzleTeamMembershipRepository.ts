@@ -261,6 +261,27 @@ class DrizzleTeamMembershipRepository implements TeamMembershipRepository {
 
     return coordinatorsByTeam
   }
+
+  async deleteMembershipsByUserAndEvent(
+    userId: string,
+    eventId: string,
+    executor: DbExecutor = db
+  ) {
+    await executor
+      .delete(schema.teamMemberships)
+      .where(
+        and(
+          eq(schema.teamMemberships.userId, userId),
+          inArray(
+            schema.teamMemberships.teamInstanceId,
+            db
+              .select({ id: schema.teamInstances.id })
+              .from(schema.teamInstances)
+              .where(eq(schema.teamInstances.eventId, eventId))
+          )
+        )
+      )
+  }
 }
 
 export const teamMembershipRepository = new DrizzleTeamMembershipRepository()
