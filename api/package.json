@@ -35,6 +35,7 @@
     "fastify": "^5.3.3",
     "fastify-type-provider-zod": "^5.0.1",
     "jose": "^6.0.11",
+    "pdfkit": "^0.19.1",
     "pg": "^8.16.0",
     "zod": "^3.25.67"
   },
@@ -42,6 +43,7 @@
     "@eslint/js": "^9.28.0",
     "@tsconfig/node24": "^24.0.1",
     "@types/node": "^22.15.29",
+    "@types/pdfkit": "^0.17.6",
     "@types/pg": "^8.15.4",
     "@typescript-eslint/eslint-plugin": "^8.33.1",
     "@typescript-eslint/parser": "^8.33.1",

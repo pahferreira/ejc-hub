@@ -24,6 +24,7 @@ server.setValidatorCompiler(validatorCompiler)
 
 server.register(cors, {
   methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  exposedHeaders: ['Content-Disposition'],
 })
 
 server.register(Auth0, {

@@ -6,6 +6,7 @@ import { controlPanelApp } from '../application/control-panel.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
 import {
   EventPermissions,
+  SubscriptionPermissions,
   TeamTemplatePermissions,
 } from '../../../../../common/permissions/permissions.types.ts'
 
@@ -303,6 +304,23 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
           const event = await controlPanelApp.handleEventSubscriptions(eventId, open)
 
           return reply.code(HttpStatus.Ok).send({ event })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.get(
+      '/control-panel/call-campaign/pdf',
+      { preHandler: authGuard(server, { permissions: [SubscriptionPermissions.Read] }) },
+      async (_, reply) => {
+        try {
+          const { buffer, filename } = await controlPanelApp.generateCallCampaignPdf()
+          return reply
+            .code(HttpStatus.Ok)
+            .header('Content-Type', 'application/pdf')
+            .header('Content-Disposition', `attachment; filename="${filename}"`)
+            .send(buffer)
         } catch (error) {
           fastifyErrorHandler(reply, error)
         }
