@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, ne } from 'drizzle-orm'
 import { db, type DbExecutor } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type {
+  MembershipContact,
   TeamCoordinator,
   TeamCoordinatorSummary,
   TeamMembershipRepository,
@@ -281,6 +282,32 @@ class DrizzleTeamMembershipRepository implements TeamMembershipRepository {
           )
         )
       )
+  }
+
+  async listEventMembershipContacts(eventId: string): Promise<MembershipContact[]> {
+    const rows = await db
+      .select({
+        userId: schema.users.id,
+        name: schema.users.name,
+        nickname: schema.users.nickname,
+        phone: schema.users.phone,
+        instagram: schema.users.instagram,
+        email: schema.users.email,
+        type: schema.teamMemberships.type,
+        teamInstanceId: schema.teamMemberships.teamInstanceId,
+        teamName: schema.teamTemplates.name,
+      })
+      .from(schema.teamMemberships)
+      .innerJoin(
+        schema.teamInstances,
+        eq(schema.teamMemberships.teamInstanceId, schema.teamInstances.id)
+      )
+      .innerJoin(schema.users, eq(schema.teamMemberships.userId, schema.users.id))
+      .innerJoin(schema.teamTemplates, eq(schema.teamInstances.templateId, schema.teamTemplates.id))
+      .where(eq(schema.teamInstances.eventId, eventId))
+      .orderBy(asc(schema.users.name), asc(schema.users.id))
+
+    return rows
   }
 }
 

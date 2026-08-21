@@ -17,6 +17,18 @@ export type TeamCoordinatorSummary = {
   pictureUrl: string | null
 }
 
+export type MembershipContact = {
+  userId: string
+  name: string
+  nickname: string | null
+  phone: string | null
+  instagram: string | null
+  email: string
+  type: 'member' | 'coordinator'
+  teamInstanceId: string
+  teamName: string
+}
+
 export interface TeamMembershipRepository {
   insertTeamMembership: (
     input: TeamMembershipInput,
@@ -62,4 +74,6 @@ export interface TeamMembershipRepository {
     eventId: string,
     executor?: DbExecutor
   ) => Promise<void>
+  /** Every member and coordinator contact for an event's teams, ordered by name. */
+  listEventMembershipContacts: (eventId: string) => Promise<MembershipContact[]>
 }

@@ -53,7 +53,8 @@ api/src/
 │   ├── control-panel/             # Admin operations (events & team templates CRUD)
 │   │   ├── core/ControlPanel.ts
 │   │   ├── application/control-panel.ts
-│   │   └── http/control-panel.routes.ts
+│   │   ├── http/control-panel.routes.ts
+│   │   └── services/call-campaign/    # PDF generation for the coordinator call campaign
 │   ├── event/                     # Event subscriptions, team listing, current event
 │   │   ├── core/Events.ts
 │   │   ├── application/events-app.ts
@@ -115,6 +116,7 @@ Rules for features:
 - Features depend on modules for data access; they **never** depend on another feature's data-access layer.
 - JOIN-derived types that are consumed by a single feature live in that feature's `domain/` folder, derived via `Awaited<ReturnType<Repository['method']>>[number]`.
 - HTTP payload types (request/response shapes) always stay in the feature's `domain/` folder.
+- `services/` — self-contained units of work a feature's core delegates to, with their own dependencies (e.g. PDF rendering).
 
 ### Layer Descriptions
 

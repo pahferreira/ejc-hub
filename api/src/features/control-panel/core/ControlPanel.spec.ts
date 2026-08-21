@@ -5,6 +5,7 @@ import type { TeamTemplateRepository } from '../../../modules/team-template/doma
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type { CircleRepository } from '../../../modules/circle/domain/CircleRepository.ts'
+import type { CallCampaignService } from '../services/call-campaign/CallCampaignService.ts'
 
 const TEAM_TEMPLATE_ID = 'team-template-1'
 
@@ -31,7 +32,8 @@ describe('ControlPanel.updateTeamTemplate', () => {
       teamTemplateRepository,
       eventRepository,
       teamInstanceRepository,
-      {} as CircleRepository
+      {} as CircleRepository,
+      {} as CallCampaignService
     )
   })
 
@@ -85,7 +87,8 @@ describe('ControlPanel.handleEventSubscriptions', () => {
       {} as TeamTemplateRepository,
       eventRepository,
       {} as TeamInstanceRepository,
-      {} as CircleRepository
+      {} as CircleRepository,
+      {} as CallCampaignService
     )
   })
 
