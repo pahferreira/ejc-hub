@@ -19,6 +19,11 @@ export type SidebarNavItem = {
    * render time against the caller's team-membership state.
    */
   requiresTeamMembership?: boolean
+  /**
+   * Only shown when the `current-event-my-team` feature flag is enabled. Not a
+   * permission, so it's filtered at render time against the feature-flag state.
+   */
+  requiresMyTeamFlag?: boolean
 }
 
 export type SidebarNavGroup = {
@@ -40,6 +45,7 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         path: ROUTE_PATHS.MY_TEAM,
         icon: FiUser,
         requiresTeamMembership: true,
+        requiresMyTeamFlag: true,
       },
     ],
   },

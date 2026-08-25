@@ -3,6 +3,8 @@ import { FiLogOut, FiSidebar } from 'react-icons/fi'
 import { useAuthentication } from '../../hooks/useAuthentication'
 import { useCurrentUserQuery } from '../../services/users/useCurrentUserQuery'
 import { useCurrentEventSubscriptionStatusQuery } from '../../services/events/useCurrentEventSubscriptionStatusQuery'
+import { FeatureFlag } from '../../hooks/useFeatureFlag/feature-flags'
+import { useFeatureFlag } from '../../hooks/useFeatureFlag/useFeatureFlag'
 import { hasPermission } from '../../../../common/permissions'
 import { SidebarNavGroup } from './SidebarNavGroup'
 import { SidebarUserInfo } from './SidebarUserInfo'
@@ -111,7 +113,9 @@ export function Sidebar() {
   const { permissions, user, logout } = useAuthentication()
   const currentUser = useCurrentUserQuery()
   const subscriptionStatus = useCurrentEventSubscriptionStatusQuery()
+  const { isFeatureEnabled } = useFeatureFlag()
   const hasTeam = Boolean(subscriptionStatus.data?.assignedTeam)
+  const myTeamEnabled = isFeatureEnabled(FeatureFlag.MyTeam, false)
 
   const toggleCollapsed = () => {
     setIsCollapsed((prev) => {
@@ -133,6 +137,9 @@ export function Sidebar() {
           return false
         }
         if (item.requiresTeamMembership && !hasTeam) {
+          return false
+        }
+        if (item.requiresMyTeamFlag && !myTeamEnabled) {
           return false
         }
         return true

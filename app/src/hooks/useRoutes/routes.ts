@@ -19,6 +19,11 @@ type Route = {
   name: string
   component: React.ComponentType
   permission?: string
+  /**
+   * Only accessible when the `current-event-my-team` feature flag is enabled.
+   * Not a permission, so it's filtered against the feature-flag state.
+   */
+  requiresMyTeamFlag?: boolean
 }
 
 export const routes: Route[] = [
@@ -31,6 +36,7 @@ export const routes: Route[] = [
     path: ROUTE_PATHS.MY_TEAM,
     name: 'Minha Equipe',
     component: MyTeamPage,
+    requiresMyTeamFlag: true,
   },
   {
     path: ROUTE_PATHS.SUBSCRIPTIONS,
