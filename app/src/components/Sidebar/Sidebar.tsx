@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FiLogOut, FiSidebar } from 'react-icons/fi'
 import { useAuthentication } from '../../hooks/useAuthentication'
 import { useCurrentUserQuery } from '../../services/users/useCurrentUserQuery'
+import { useCurrentEventSubscriptionStatusQuery } from '../../services/events/useCurrentEventSubscriptionStatusQuery'
 import { hasPermission } from '../../../../common/permissions'
 import { SidebarNavGroup } from './SidebarNavGroup'
 import { SidebarUserInfo } from './SidebarUserInfo'
@@ -109,6 +110,8 @@ export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(getInitialCollapsed)
   const { permissions, user, logout } = useAuthentication()
   const currentUser = useCurrentUserQuery()
+  const subscriptionStatus = useCurrentEventSubscriptionStatusQuery()
+  const hasTeam = Boolean(subscriptionStatus.data?.assignedTeam)
 
   const toggleCollapsed = () => {
     setIsCollapsed((prev) => {
@@ -125,9 +128,15 @@ export function Sidebar() {
   const filteredGroups = sidebarNavGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter(
-        (item) => !item.permission || hasPermission(permissions, item.permission)
-      ),
+      items: group.items.filter((item) => {
+        if (item.permission && !hasPermission(permissions, item.permission)) {
+          return false
+        }
+        if (item.requiresTeamMembership && !hasTeam) {
+          return false
+        }
+        return true
+      }),
     }))
     .filter((group) => group.items.length > 0)
 

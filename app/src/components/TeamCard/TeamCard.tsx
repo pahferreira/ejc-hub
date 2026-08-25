@@ -3,6 +3,7 @@ import { Button } from '../Button/Button'
 import { CoordinatorRow } from '../CoordinatorRow/CoordinatorRow'
 import { Pill } from '../Pill/Pill'
 import clsx from 'clsx'
+import { Link } from 'react-router'
 
 type TeamCoordinator = {
   id: string
@@ -112,9 +113,9 @@ function AssignedBody(props: AssignedVariantProps) {
 
       <div className="pt-1 self-center">
         <Button onClick={props.onViewProfile}>
-          <span className="inline-flex items-center gap-2">
+          <Link to="/my-team" className="inline-flex items-center gap-2">
             Ver Perfil da Equipe <FiArrowRight aria-hidden />
-          </span>
+          </Link>
         </Button>
       </div>
     </>

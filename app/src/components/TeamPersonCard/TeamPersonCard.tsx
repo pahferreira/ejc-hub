@@ -1,5 +1,5 @@
-import { PersonCard } from '../../components/PersonCard/PersonCard'
-import { ExperienceBadge } from '../../components/ExperienceBadge/ExperienceBadge'
+import { PersonCard } from '../PersonCard/PersonCard'
+import { ExperienceBadge } from '../ExperienceBadge/ExperienceBadge'
 import type { TeamPerson } from '../../services/teams/teams.types'
 
 export type TeamPersonCardProps = {

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { withRouter } from 'storybook-addon-remix-react-router'
 import { TeamCard } from './TeamCard'
 
 const meta = {
@@ -7,6 +8,8 @@ const meta = {
   parameters: {
     layout: 'padded',
   },
+  // The assigned variant renders a react-router <Link>, so stories need a router.
+  decorators: [withRouter],
   tags: ['autodocs'],
 } satisfies Meta<typeof TeamCard>
 

@@ -1,5 +1,5 @@
 import type { IconType } from 'react-icons'
-import { FiHome, FiList, FiUsers, FiCalendar, FiLayers } from 'react-icons/fi'
+import { FiHome, FiList, FiUsers, FiCalendar, FiLayers, FiUser } from 'react-icons/fi'
 import {
   EventPermissions,
   SubscriptionPermissions,
@@ -13,6 +13,12 @@ export type SidebarNavItem = {
   path: string
   icon: IconType
   permission?: string
+  /**
+   * Only shown to users who belong to a team in the current event. Not a
+   * permission (no permission models "has a membership"), so it's filtered at
+   * render time against the caller's team-membership state.
+   */
+  requiresTeamMembership?: boolean
 }
 
 export type SidebarNavGroup = {
@@ -28,6 +34,12 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         label: 'Início',
         path: ROUTE_PATHS.HOME,
         icon: FiHome,
+      },
+      {
+        label: 'Minha Equipe',
+        path: ROUTE_PATHS.MY_TEAM,
+        icon: FiUser,
+        requiresTeamMembership: true,
       },
     ],
   },

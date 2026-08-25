@@ -1,8 +1,6 @@
 import { useParams, useNavigate } from 'react-router'
 import { FiArrowLeft } from 'react-icons/fi'
-import { TeamDetailHeaderCard } from '../../components/TeamDetailHeaderCard/TeamDetailHeaderCard'
-import { SectionHeader } from '../../components/SectionHeader/SectionHeader'
-import { PersonCardEmptySlot } from '../../components/PersonCardEmptySlot/PersonCardEmptySlot'
+import { TeamDetailContent } from '../../components/TeamDetailContent/TeamDetailContent'
 import { Button } from '../../components/Button/Button'
 import { useAssignCoordinatorDrawer } from '../../components/AssignCoordinatorDrawer/useAssignCoordinatorDrawer'
 import { AssignCoordinatorDrawer } from '../../components/AssignCoordinatorDrawer/AssignCoordinatorDrawer'
@@ -11,14 +9,6 @@ import { AddMembersDrawer } from '../../components/AddMembersDrawer/AddMembersDr
 import { useTeamDetailQuery } from '../../services/teams/useTeamDetailQuery'
 import { useRemoveTeamMemberMutation } from '../../services/teams/useRemoveTeamMemberMutation'
 import { ROUTE_PATHS } from '../../constants/routePaths'
-import { TeamPersonCard } from './TeamPersonCard'
-
-// Static classes so Tailwind's JIT can see every variant. Coordinator grid caps at
-// 4 columns (1-3 slots -> 3 columns, 4 slots -> 4 columns); 2 columns from md (768px).
-const COORDINATOR_GRID_COLS: Record<number, string> = {
-  3: 'xl:grid-cols-3',
-  4: 'xl:grid-cols-4',
-}
 
 export function TeamDetailPage() {
   const navigate = useNavigate()
@@ -45,8 +35,6 @@ export function TeamDetailPage() {
   }
 
   const team = teamQuery.data
-  const emptyCoordinatorSlots = Math.max(0, team.coordinatorSlots - team.coordinators.length)
-  const coordinatorColumns = team.coordinatorSlots >= 4 ? 4 : 3
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
@@ -60,76 +48,35 @@ export function TeamDetailPage() {
           Voltar para Equipes
         </button>
 
-        <TeamDetailHeaderCard
-          name={team.name}
-          description={team.description ?? undefined}
-          memberCount={team.memberCount}
-          maxCapacity={team.maxCapacity}
-          freeSlots={team.freeSlots}
-          filledPercentage={team.filledPercentage}
+        <TeamDetailContent
+          team={team}
+          coordinatorsAction={
+            <Button onClick={() => drawer.open({ id: team.id, name: team.name })}>
+              + Adicionar Coordenador
+            </Button>
+          }
+          membersAction={
+            <Button
+              onClick={() =>
+                addMembersDrawer.open({
+                  id: team.id,
+                  name: team.name,
+                  memberCount: team.memberCount,
+                  maxCapacity: team.maxCapacity,
+                })
+              }
+            >
+              + Adicionar Membro
+            </Button>
+          }
+          onRemoveMember={(member) =>
+            removeMemberMutation.mutate({
+              teamId: team.id,
+              memberId: member.userId,
+              teamKey: team.templateKey,
+            })
+          }
         />
-
-        <div className="flex flex-col gap-4">
-          <SectionHeader
-            title="Coordenadores"
-            action={
-              <Button onClick={() => drawer.open({ id: team.id, name: team.name })}>
-                + Adicionar Coordenador
-              </Button>
-            }
-          />
-          <div
-            className={`grid grid-cols-1 gap-4 md:grid-cols-2 ${COORDINATOR_GRID_COLS[coordinatorColumns] ?? 'xl:grid-cols-3'}`}
-          >
-            {team.coordinators.map((coordinator) => (
-              <TeamPersonCard key={coordinator.userId} person={coordinator} role="Coordenador" />
-            ))}
-            {Array.from({ length: emptyCoordinatorSlots }).map((_, index) => (
-              <PersonCardEmptySlot key={`empty-coordinator-${index}`} teamName={team.name} />
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <SectionHeader
-            title="Membros"
-            action={
-              <Button
-                onClick={() =>
-                  addMembersDrawer.open({
-                    id: team.id,
-                    name: team.name,
-                    memberCount: team.memberCount,
-                    maxCapacity: team.maxCapacity,
-                  })
-                }
-              >
-                + Adicionar Membro
-              </Button>
-            }
-          />
-          {team.members.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              Nenhum membro atribuído a esta equipe.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {team.members.map((member) => (
-                <TeamPersonCard
-                  key={member.userId}
-                  person={member}
-                  onRemove={() =>
-                    removeMemberMutation.mutate({
-                      teamId: team.id,
-                      memberId: member.userId,
-                      teamKey: team.templateKey,
-                    })
-                  }
-                />
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       <AssignCoordinatorDrawer {...drawer} />
