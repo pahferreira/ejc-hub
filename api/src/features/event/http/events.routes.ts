@@ -232,5 +232,25 @@ export function eventsRoutes(server: FastifyServerInstance) {
         }
       }
     )
+
+    server.get(
+      '/events/current/team/me',
+      {
+        preHandler: authGuard(server),
+      },
+      async (request, reply) => {
+        try {
+          const token = request.getToken()
+          if (token) {
+            const { authId } = extractUserInformationFromToken(token)
+            const team = await eventsApp.getMyCurrentEventTeamDetail(authId)
+
+            return reply.code(HttpStatus.Ok).send({ team })
+          }
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
   }
 }

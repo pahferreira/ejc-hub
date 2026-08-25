@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { FiCalendar, FiPhone, FiTrash2, FiUser } from 'react-icons/fi'
 import { ButtonIcon } from '../ButtonIcon/ButtonIcon'
+import { CopyButton } from '../CopyButton/CopyButton'
 import { Card } from '../Card/Card'
 import { UserAvatar } from '../UserAvatar/UserAvatar'
 import { WeekAvailability } from '../WeekAvailability/WeekAvailability'
@@ -66,6 +67,7 @@ export function PersonCard(props: PersonCardProps) {
             <div className="flex items-center gap-1">
               <FiPhone size={12} />
               <p className="m-0 text-xs text-secondary-foreground font-medium">{props.phone}</p>
+              <CopyButton value={props.phone} ariaLabel={`Copiar telefone de ${props.nickname}`} />
             </div>
           )}
           {hasWeekAvailability && (

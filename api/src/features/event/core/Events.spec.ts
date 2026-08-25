@@ -478,3 +478,106 @@ describe('Events.getCurrentEventTeamDetail', () => {
     )
   })
 })
+
+describe('Events.getMyCurrentEventTeamDetail', () => {
+  const TEAM_INSTANCE_ID = 'instance-1'
+  const TEAM_KEY = 'liturgia'
+
+  function makeEvents(opts: {
+    user?: { id: string } | undefined
+    currentEvent?: { id: string } | undefined
+    assignedTeam?: { id: string; name: string; description: string | null } | undefined
+  }) {
+    const userRepository = {
+      getUser: vi.fn().mockResolvedValue(opts.user),
+    } as unknown as UserRepository
+
+    const eventRepository = {
+      findCurrentEvent: vi.fn().mockResolvedValue(opts.currentEvent),
+    } as unknown as EventRepository
+
+    const teamInstanceRepository = {
+      findUserTeamForEvent: vi.fn().mockResolvedValue(opts.assignedTeam),
+      listTeamInstancesWithDetails: vi.fn().mockResolvedValue([
+        {
+          id: TEAM_INSTANCE_ID,
+          eventId: EVENT_ID,
+          templateKey: TEAM_KEY,
+          templateName: 'Liturgia',
+          templateDescription: 'Cuida da liturgia',
+          maxCapacity: 10,
+        },
+      ]),
+    } as unknown as TeamInstanceRepository
+
+    const teamMembershipRepository = {
+      listMemberUserIdsByTeamInstanceIds: vi
+        .fn()
+        .mockResolvedValue(new Map([[TEAM_INSTANCE_ID, []]])),
+      getCoordinatorUserIds: vi.fn().mockResolvedValue([]),
+    } as unknown as TeamMembershipRepository
+
+    const subscriptionRepository = {
+      listSubscriptionsByEventId: vi.fn().mockResolvedValue([]),
+    } as unknown as SubscriptionRepository
+
+    const events = new Events(
+      teamInstanceRepository,
+      subscriptionRepository,
+      {} as SubscriptionOptionRepository,
+      userRepository,
+      eventRepository,
+      teamMembershipRepository,
+      {} as CircleRepository
+    )
+
+    return { events }
+  }
+
+  it('returns the full team detail for the team the user belongs to', async () => {
+    const { events } = makeEvents({
+      user: { id: USER_ID },
+      currentEvent: { id: EVENT_ID },
+      assignedTeam: { id: TEAM_INSTANCE_ID, name: 'Liturgia', description: 'Cuida da liturgia' },
+    })
+
+    const detail = await events.getMyCurrentEventTeamDetail(USER_AUTH_ID)
+
+    expect(detail).not.toBeNull()
+    expect(detail?.id).toBe(TEAM_INSTANCE_ID)
+    expect(detail?.templateKey).toBe(TEAM_KEY)
+    expect(detail?.coordinatorSlots).toBe(3)
+  })
+
+  it('returns null when the user has no team membership in the current event', async () => {
+    const { events } = makeEvents({
+      user: { id: USER_ID },
+      currentEvent: { id: EVENT_ID },
+      assignedTeam: undefined,
+    })
+
+    const detail = await events.getMyCurrentEventTeamDetail(USER_AUTH_ID)
+
+    expect(detail).toBeNull()
+  })
+
+  it('throws when the user record is not found', async () => {
+    const { events } = makeEvents({
+      user: undefined,
+      currentEvent: { id: EVENT_ID },
+    })
+
+    await expect(events.getMyCurrentEventTeamDetail(USER_AUTH_ID)).rejects.toThrow('User not found')
+  })
+
+  it('throws when there is no current event', async () => {
+    const { events } = makeEvents({
+      user: { id: USER_ID },
+      currentEvent: undefined,
+    })
+
+    await expect(events.getMyCurrentEventTeamDetail(USER_AUTH_ID)).rejects.toThrow(
+      'Current event not set'
+    )
+  })
+})

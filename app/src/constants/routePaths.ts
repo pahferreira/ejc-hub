@@ -1,5 +1,6 @@
 export const ROUTE_PATHS = {
   HOME: '/home',
+  MY_TEAM: '/my-team',
   SUBSCRIPTIONS: '/subscriptions',
   SUBSCRIPTIONS_NEW: '/subscriptions/new',
   EVENTS: '/events',

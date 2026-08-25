@@ -10,6 +10,7 @@ import { Home } from '../../pages/Home'
 import { TeamsPage } from '../../pages/TeamsPage'
 import { TeamBuildingPage } from '../../pages/TeamBuildingPage'
 import { TeamDetailPage } from '../../pages/TeamDetailPage'
+import { MyTeamPage } from '../../pages/MyTeamPage'
 import { Placeholder } from '../../pages/Placeholder/Placeholder'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 
@@ -25,6 +26,11 @@ export const routes: Route[] = [
     path: ROUTE_PATHS.HOME,
     name: 'Início',
     component: Home,
+  },
+  {
+    path: ROUTE_PATHS.MY_TEAM,
+    name: 'Minha Equipe',
+    component: MyTeamPage,
   },
   {
     path: ROUTE_PATHS.SUBSCRIPTIONS,

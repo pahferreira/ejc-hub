@@ -1,5 +1,8 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
-import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
+import type {
+  TeamInstanceRepository,
+  TeamInstanceWithDetails,
+} from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type {
   TeamCoordinator,
   TeamMembershipRepository,
@@ -252,12 +255,60 @@ export class Events {
       throw new AppError(`Team "${teamKey}" not found`)
     }
 
+    return this.#buildTeamDetail(instance, instances, currentEvent.id)
+  }
+
+  // Resolves the team the authenticated user belongs to in the current event and
+  // returns the same rich TeamDetail shape as the admin team-detail endpoint.
+  // Returns null (not an error) when the user has no membership yet, so the
+  // client can distinguish "no team" from a real failure.
+  async getMyCurrentEventTeamDetail(userAuthId: string): Promise<TeamDetail | null> {
+    const user = await this.#userRepository.getUser(userAuthId)
+
+    if (!user) {
+      throw new AppError('User not found')
+    }
+
+    const currentEvent = await this.#eventsRepository.findCurrentEvent()
+
+    if (!currentEvent) {
+      throw new AppError('Current event not set')
+    }
+
+    const assignedTeam = await this.#teamInstanceRepository.findUserTeamForEvent(
+      user.id,
+      currentEvent.id
+    )
+
+    if (!assignedTeam) {
+      return null
+    }
+
+    const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(
+      currentEvent.id
+    )
+    const instance = instances.find((candidate) => candidate.id === assignedTeam.id)
+
+    if (!instance) {
+      return null
+    }
+
+    return this.#buildTeamDetail(instance, instances, currentEvent.id)
+  }
+
+  // Projects a resolved team instance into the full TeamDetail (coordinators,
+  // members, capacity stats). Shared by the key-based and token-based lookups.
+  async #buildTeamDetail(
+    instance: TeamInstanceWithDetails,
+    instances: TeamInstanceWithDetails[],
+    eventId: string
+  ): Promise<TeamDetail> {
     const instanceNameById = new Map(instances.map((i) => [i.id, i.templateName]))
 
     const [coordinatorUserIds, membershipUserIdsByTeam, subscriptions] = await Promise.all([
       this.#teamMembershipRepository.getCoordinatorUserIds(instance.id),
       this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([instance.id]),
-      this.#subscriptionRepository.listSubscriptionsByEventId(currentEvent.id),
+      this.#subscriptionRepository.listSubscriptionsByEventId(eventId),
     ])
 
     const subscriptionByUserId = new Map(subscriptions.map((sub) => [sub.userId, sub]))

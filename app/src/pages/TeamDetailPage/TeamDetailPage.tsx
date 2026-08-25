@@ -1,8 +1,6 @@
 import { useParams, useNavigate } from 'react-router'
 import { FiArrowLeft } from 'react-icons/fi'
-import { TeamDetailHeaderCard } from '../../components/TeamDetailHeaderCard/TeamDetailHeaderCard'
-import { SectionHeader } from '../../components/SectionHeader/SectionHeader'
-import { PersonCardEmptySlot } from '../../components/PersonCardEmptySlot/PersonCardEmptySlot'
+import { TeamDetailContent } from '../../components/TeamDetailContent/TeamDetailContent'
 import { Button } from '../../components/Button/Button'
 import { useAssignCoordinatorDrawer } from '../../components/AssignCoordinatorDrawer/useAssignCoordinatorDrawer'
 import { AssignCoordinatorDrawer } from '../../components/AssignCoordinatorDrawer/AssignCoordinatorDrawer'
@@ -11,7 +9,9 @@ import { AddMembersDrawer } from '../../components/AddMembersDrawer/AddMembersDr
 import { useTeamDetailQuery } from '../../services/teams/useTeamDetailQuery'
 import { useRemoveTeamMemberMutation } from '../../services/teams/useRemoveTeamMemberMutation'
 import { ROUTE_PATHS } from '../../constants/routePaths'
-import { TeamPersonCard } from './TeamPersonCard'
+import { SectionHeader } from '../../components/SectionHeader/SectionHeader'
+import { TeamPersonCard } from '../../components/TeamPersonCard/TeamPersonCard'
+import { PersonCardEmptySlot } from '../../components/PersonCardEmptySlot/PersonCardEmptySlot'
 
 // Static classes so Tailwind's JIT can see every variant. Coordinator grid caps at
 // 4 columns (1-3 slots -> 3 columns, 4 slots -> 4 columns); 2 columns from md (768px).
@@ -60,13 +60,34 @@ export function TeamDetailPage() {
           Voltar para Equipes
         </button>
 
-        <TeamDetailHeaderCard
-          name={team.name}
-          description={team.description ?? undefined}
-          memberCount={team.memberCount}
-          maxCapacity={team.maxCapacity}
-          freeSlots={team.freeSlots}
-          filledPercentage={team.filledPercentage}
+        <TeamDetailContent
+          team={team}
+          coordinatorsAction={
+            <Button onClick={() => drawer.open({ id: team.id, name: team.name })}>
+              + Adicionar Coordenador
+            </Button>
+          }
+          membersAction={
+            <Button
+              onClick={() =>
+                addMembersDrawer.open({
+                  id: team.id,
+                  name: team.name,
+                  memberCount: team.memberCount,
+                  maxCapacity: team.maxCapacity,
+                })
+              }
+            >
+              + Adicionar Membro
+            </Button>
+          }
+          onRemoveMember={(member) =>
+            removeMemberMutation.mutate({
+              teamId: team.id,
+              memberId: member.userId,
+              teamKey: team.templateKey,
+            })
+          }
         />
 
         <div className="flex flex-col gap-4">

@@ -37,6 +37,11 @@ async function getCurrentEventTeamDetail(teamKey: string) {
   return response.data.team
 }
 
+async function getMyCurrentEventTeam() {
+  const response = await api.get<{ team: TeamDetail | null }>('/events/current/team/me')
+  return response.data.team
+}
+
 async function removeTeamMember(teamId: string, memberId: string): Promise<void> {
   await api.delete(`/teams/${teamId}/members/${memberId}`)
 }
@@ -46,5 +51,6 @@ export const teamsApi = {
   getCurrentEventTeams,
   getCurrentEventTeamsOverview,
   getCurrentEventTeamDetail,
+  getMyCurrentEventTeam,
   removeTeamMember,
 }

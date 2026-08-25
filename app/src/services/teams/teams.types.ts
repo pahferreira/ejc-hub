@@ -16,6 +16,7 @@ export const teamsOverviewQueryKeys = {
   lists: ['teams', 'overview', 'list'] as const,
   list: (filters: TeamsListFilters = {}) => [...teamsOverviewQueryKeys.lists, filters] as const,
   detail: (teamKey: string) => ['teams', 'detail', teamKey] as const,
+  myTeam: ['teams', 'me'] as const,
 }
 
 export type TeamOption = {
