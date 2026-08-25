@@ -506,6 +506,7 @@ describe('Events.getMyCurrentEventTeamDetail', () => {
           templateName: 'Liturgia',
           templateDescription: 'Cuida da liturgia',
           maxCapacity: 10,
+          maxAllowedCoordinators: 3,
         },
       ]),
     } as unknown as TeamInstanceRepository
