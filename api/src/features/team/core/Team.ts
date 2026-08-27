@@ -34,6 +34,23 @@ export class Team {
   }
 
   async addMember(teamId: string, memberId: string) {
+    const team = await this.#teamInstanceRepository.selectTeamInstance(teamId)
+
+    if (!team) {
+      throw new AppError('Team not found')
+    }
+
+    // A user holds at most one membership per event, so adding them to a second
+    // team — as member or coordinator — would be a duplicate.
+    const existingMembership = await this.#teamMembershipRepository.findMembershipByUserAndEvent(
+      memberId,
+      team.eventId
+    )
+
+    if (existingMembership) {
+      throw new AppError('This user already belongs to a team in this event')
+    }
+
     const teamMembership = await this.#teamMembershipRepository.insertTeamMembership({
       teamInstanceId: teamId,
       userId: memberId,

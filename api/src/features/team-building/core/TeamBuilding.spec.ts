@@ -293,9 +293,53 @@ describe('TeamBuilding.applyAssignments', () => {
 
     await expect(
       tb.applyAssignments([{ userId: 'coord-1', target: { kind: 'team', teamInstanceId: TEAM_A } }])
-    ).rejects.toThrow(/already coordinates this team/)
+    ).rejects.toThrow(/coordinates Liturgia/)
 
     expect(coordinatorRepos.teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
+  })
+
+  it('rejects moving a coordinator into a different team', async () => {
+    const subscriptions = [buildSub({ id: 's1', userId: 'coord-1', status: 'completed' })]
+    const coordinatorRepos = makeRepos({
+      subscriptions,
+      memberships: new Map(),
+      coordinators: new Map([[TEAM_A, ['coord-1']]]),
+    })
+    const tb = new TeamBuilding(
+      coordinatorRepos.teamInstanceRepository,
+      coordinatorRepos.teamMembershipRepository,
+      coordinatorRepos.subscriptionRepository,
+      coordinatorRepos.eventRepository
+    )
+
+    // Without this guard the coordinator row on TEAM_A survives the move and the
+    // user ends up with two memberships in the same event.
+    await expect(
+      tb.applyAssignments([{ userId: 'coord-1', target: { kind: 'team', teamInstanceId: TEAM_B } }])
+    ).rejects.toThrow(/coordinates Liturgia/)
+
+    expect(coordinatorRepos.teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
+  })
+
+  it('rejects moving a coordinator to the waiting list', async () => {
+    const subscriptions = [buildSub({ id: 's1', userId: 'coord-1', status: 'completed' })]
+    const coordinatorRepos = makeRepos({
+      subscriptions,
+      memberships: new Map(),
+      coordinators: new Map([[TEAM_A, ['coord-1']]]),
+    })
+    const tb = new TeamBuilding(
+      coordinatorRepos.teamInstanceRepository,
+      coordinatorRepos.teamMembershipRepository,
+      coordinatorRepos.subscriptionRepository,
+      coordinatorRepos.eventRepository
+    )
+
+    // The coordinator row would be left behind while the subscription says
+    // waiting_list — the role has to be cleared through the drawer first.
+    await expect(
+      tb.applyAssignments([{ userId: 'coord-1', target: { kind: 'waiting_list' } }])
+    ).rejects.toThrow(/coordinates Liturgia/)
   })
 })
 
@@ -693,6 +737,68 @@ describe('TeamBuilding.assignCoordinators', () => {
     )
     expect(repos.teamMembershipRepository.setCoordinators).not.toHaveBeenCalled()
   })
+
+  it('rejects promoting a member of another team to coordinator', async () => {
+    const subscriptions = [buildSub({ id: 's1', userId: 'u1', status: 'completed' })]
+    // u1 is already a member of TEAM_B ("Música").
+    const repos = makeRepos({ subscriptions, memberships: new Map([[TEAM_B, ['u1']]]) })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await expect(tb.assignCoordinators(TEAM_A, ['u1'])).rejects.toThrow(
+      /already a member of Música/
+    )
+    expect(repos.teamMembershipRepository.setCoordinators).not.toHaveBeenCalled()
+  })
+
+  it('rejects promoting a coordinator of another team', async () => {
+    const subscriptions = [buildSub({ id: 's1', userId: 'coord-1', status: 'completed' })]
+    const repos = makeRepos({
+      subscriptions,
+      memberships: new Map(),
+      coordinators: new Map([[TEAM_B, ['coord-1']]]),
+    })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await expect(tb.assignCoordinators(TEAM_A, ['coord-1'])).rejects.toThrow(
+      /already coordinates Música/
+    )
+    expect(repos.teamMembershipRepository.setCoordinators).not.toHaveBeenCalled()
+  })
+
+  it("allows re-picking the target team's own current coordinators", async () => {
+    const subscriptions = [buildSub({ id: 's1', userId: 'coord-1', status: 'completed' })]
+    // setCoordinators replaces the set wholesale, so an existing coordinator of the
+    // target team is not a duplicate.
+    const repos = makeRepos({
+      subscriptions,
+      memberships: new Map(),
+      coordinators: new Map([[TEAM_A, ['coord-1']]]),
+    })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await tb.assignCoordinators(TEAM_A, ['coord-1'])
+
+    expect(repos.teamMembershipRepository.setCoordinators).toHaveBeenCalledWith(
+      TEAM_A,
+      ['coord-1'],
+      expect.anything()
+    )
+  })
 })
 
 // Force-include: a team's own current coordinators must appear in the candidate
@@ -844,6 +950,30 @@ describe('TeamBuilding.addMembers', () => {
     )
 
     await expect(tb.addMembers(TEAM_A, ['u1', 'u2'])).rejects.toThrow(/already assigned to a team/)
+    expect(repos.teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
+  })
+
+  it('rejects a user who coordinates another team in the event', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'received' }),
+      buildSub({ id: 's2', userId: 'coord-1', status: 'completed' }),
+    ]
+    // coord-1 coordinates TEAM_B and is being added as a member of TEAM_A.
+    const repos = makeRepos({
+      subscriptions,
+      memberships: new Map(),
+      coordinators: new Map([[TEAM_B, ['coord-1']]]),
+    })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository
+    )
+
+    await expect(tb.addMembers(TEAM_A, ['u1', 'coord-1'])).rejects.toThrow(
+      /already coordinates a team in this event/
+    )
     expect(repos.teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
   })
 
