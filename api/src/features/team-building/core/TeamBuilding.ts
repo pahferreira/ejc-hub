@@ -167,6 +167,9 @@ export class TeamBuilding {
         await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds])
       const coordinatorIdsByTeam =
         await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds([...instanceIds])
+      const instanceNameById = new Map(
+        instances.map((instance) => [instance.id, instance.templateName])
+      )
 
       const currentTeamsByUser = new Map<string, string[]>()
       for (const [teamInstanceId, userIds] of membershipUserIdsByTeam) {
@@ -174,6 +177,15 @@ export class TeamBuilding {
           const teams = currentTeamsByUser.get(userId) ?? []
           teams.push(teamInstanceId)
           currentTeamsByUser.set(userId, teams)
+        }
+      }
+
+      // Which team, if any, each user coordinates in this event. A user holds at
+      // most one membership per event, so a single team id per user is enough.
+      const coordinatedTeamByUser = new Map<string, string>()
+      for (const [teamInstanceId, userIds] of coordinatorIdsByTeam) {
+        for (const userId of userIds) {
+          coordinatedTeamByUser.set(userId, teamInstanceId)
         }
       }
 
@@ -187,16 +199,16 @@ export class TeamBuilding {
             )
           }
 
-          // A coordinator of the target team already occupies its (team, user) row, so
-          // moving them in as a member would violate the uniqueness constraint. Reject
-          // with a clear error instead of letting the insert fail with a raw DB error.
-          if (change.target.kind === 'team') {
-            const targetCoordinatorSet = new Set(
-              coordinatorIdsByTeam.get(change.target.teamInstanceId) ?? []
+          // Coordinator rows are owned by the coordinator drawer, not the board.
+          // Moving a coordinator here would either strip the role as a silent side
+          // effect of a drag, or leave the coordinator row behind on the old team —
+          // a second membership in the same event. Reject and point at the drawer.
+          const coordinatedTeamId = coordinatedTeamByUser.get(change.userId)
+          if (coordinatedTeamId) {
+            const teamName = instanceNameById.get(coordinatedTeamId) ?? coordinatedTeamId
+            throw new AppError(
+              `User ${change.userId} coordinates ${teamName}. Remove them as coordinator before reassigning.`
             )
-            if (targetCoordinatorSet.has(change.userId)) {
-              throw new AppError(`User ${change.userId} already coordinates this team`)
-            }
           }
 
           const subscription = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
@@ -230,6 +242,7 @@ export class TeamBuilding {
               {
                 userId: change.userId,
                 teamInstanceId: change.target.teamInstanceId,
+                eventId: event.id,
                 type: 'member',
               },
               tx
@@ -407,12 +420,15 @@ export class TeamBuilding {
         for (const id of ids) assignedUserSet.add(id)
       }
 
-      // A coordinator of the target team already occupies its (team, user) row, so
-      // adding them as a member would violate the uniqueness constraint. Reject them
-      // with a clear error instead of letting the insert fail with a raw DB error.
-      const targetCoordinatorIdsByTeam =
-        await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds([teamInstanceId])
-      const targetCoordinatorSet = new Set(targetCoordinatorIdsByTeam.get(teamInstanceId) ?? [])
+      // Coordinators of *any* team in the event already hold a membership, so adding
+      // them as a member would be a second membership in the same event — not just a
+      // clash on the target team's (team, user) row.
+      const coordinatorIdsByTeam =
+        await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds([...instanceIds])
+      const coordinatorUserSet = new Set<string>()
+      for (const [, ids] of coordinatorIdsByTeam) {
+        for (const id of ids) coordinatorUserSet.add(id)
+      }
 
       // Validate and resolve subscriptions up front so a bad entry aborts the whole
       // batch cleanly before opening the transaction.
@@ -422,8 +438,8 @@ export class TeamBuilding {
             throw new AppError(`User ${userId} is already assigned to a team`)
           }
 
-          if (targetCoordinatorSet.has(userId)) {
-            throw new AppError(`User ${userId} already coordinates this team`)
+          if (coordinatorUserSet.has(userId)) {
+            throw new AppError(`User ${userId} already coordinates a team in this event`)
           }
 
           const subscription = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
@@ -442,7 +458,7 @@ export class TeamBuilding {
       await runInTransaction(async (tx) => {
         for (const { userId, subscription } of resolved) {
           await this.#teamMembershipRepository.insertTeamMembership(
-            { userId, teamInstanceId, type: 'member' },
+            { userId, teamInstanceId, eventId: event.id, type: 'member' },
             tx
           )
 
@@ -485,19 +501,44 @@ export class TeamBuilding {
         throw new AppError(`A team can have at most ${maxCoordinators} coordinators`)
       }
 
-      // A member of the target team already occupies its (team, user) row, so
-      // promoting them to coordinator would violate the uniqueness constraint.
-      // Reject with a clear error instead of a raw DB failure.
+      // A user holds at most one membership per event, so promoting someone who is
+      // already a member of any team — or who coordinates a different one — would
+      // create a second membership. The target team's own coordinators are exempt:
+      // this call replaces them wholesale, so re-picking an existing one is normal.
+      const instanceIds = instances.map((instance) => instance.id)
+      const instanceNameById = new Map(
+        instances.map((instance) => [instance.id, instance.templateName])
+      )
+
       const membershipUserIdsByTeam =
-        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([teamInstanceId])
-      const targetMemberSet = new Set(membershipUserIdsByTeam.get(teamInstanceId) ?? [])
+        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds(instanceIds)
+      const memberTeamByUser = new Map<string, string>()
+      for (const [tid, userIds] of membershipUserIdsByTeam) {
+        for (const userId of userIds) memberTeamByUser.set(userId, tid)
+      }
+
+      const coordinatorIdsByTeam =
+        await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds(instanceIds)
+      const otherTeamCoordinatedByUser = new Map<string, string>()
+      for (const [tid, userIds] of coordinatorIdsByTeam) {
+        if (tid === teamInstanceId) continue
+        for (const userId of userIds) otherTeamCoordinatedByUser.set(userId, tid)
+      }
 
       // Each userId must have a subscription in the current event. Resolve them
       // up front so a bad entry aborts before we open the transaction.
       const subscriptions = await Promise.all(
         deduped.map(async (userId) => {
-          if (targetMemberSet.has(userId)) {
-            throw new AppError(`User ${userId} is already a member of this team`)
+          const memberTeamId = memberTeamByUser.get(userId)
+          if (memberTeamId) {
+            const teamName = instanceNameById.get(memberTeamId) ?? memberTeamId
+            throw new AppError(`User ${userId} is already a member of ${teamName}`)
+          }
+
+          const coordinatedTeamId = otherTeamCoordinatedByUser.get(userId)
+          if (coordinatedTeamId) {
+            const teamName = instanceNameById.get(coordinatedTeamId) ?? coordinatedTeamId
+            throw new AppError(`User ${userId} already coordinates ${teamName}`)
           }
 
           const subscription = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
@@ -514,7 +555,7 @@ export class TeamBuilding {
       // Write the coordinators (as flat `type: 'coordinator'` membership rows) and
       // mark each coordinator's subscription "montado" atomically.
       await runInTransaction(async (tx) => {
-        await this.#teamMembershipRepository.setCoordinators(teamInstanceId, deduped, tx)
+        await this.#teamMembershipRepository.setCoordinators(teamInstanceId, event.id, deduped, tx)
 
         for (const subscription of subscriptions) {
           await this.#subscriptionRepository.updateSubscriptionStatus(

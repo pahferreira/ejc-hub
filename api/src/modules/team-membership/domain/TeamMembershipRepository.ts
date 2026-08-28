@@ -17,6 +17,12 @@ export type TeamCoordinatorSummary = {
   pictureUrl: string | null
 }
 
+export type EventMembership = {
+  id: string
+  teamInstanceId: string
+  type: 'member' | 'coordinator'
+}
+
 export type MembershipContact = {
   userId: string
   name: string
@@ -47,10 +53,19 @@ export interface TeamMembershipRepository {
     executor?: DbExecutor
   ) => Promise<TeamMembershipModel | undefined>
   listMemberUserIdsByTeamInstanceIds: (teamInstanceIds: string[]) => Promise<Map<string, string[]>>
+  /**
+   * The membership a user holds in one event's teams, if any. A user holds at most
+   * one per event, so callers can treat a result as "already assigned".
+   */
+  findMembershipByUserAndEvent: (
+    userId: string,
+    eventId: string
+  ) => Promise<EventMembership | undefined>
   /** The user ids of a team's coordinators (a flat, unordered peer set). */
   getCoordinatorUserIds: (teamInstanceId: string) => Promise<string[]>
   setCoordinators: (
     teamInstanceId: string,
+    eventId: string,
     coordinatorUserIds: string[],
     executor?: DbExecutor
   ) => Promise<void>
