@@ -149,6 +149,7 @@ export class ControlPanel {
       startsAt?: string
       endsAt?: string
       location?: string
+      feeAmountCents?: number
     }
   ) {
     const eventToUpdate = await this.#eventRepository.findEvent(eventId)
@@ -162,6 +163,9 @@ export class ControlPanel {
       startsAt: input.startsAt ? new Date(input.startsAt) : undefined,
       endsAt: input.endsAt ? new Date(input.endsAt) : undefined,
       location: input.location,
+      // Passed through as-is: drizzle's .set() skips undefined keys, so an
+      // absent fee leaves the column untouched while an explicit 0 clears it.
+      feeAmountCents: input.feeAmountCents,
     })
     return updatedEvent
   }

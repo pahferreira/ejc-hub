@@ -33,9 +33,20 @@ const createEventBodySchema = z.object({
   location: z.string().optional(),
 })
 
-const updateEventBodySchema = createEventBodySchema.partial().refine((data) => {
-  return data.name || data.description
-}, 'At least one of the following attributes needs to be present: name, description')
+const updateEventBodySchema = createEventBodySchema
+  .partial()
+  .extend({
+    // Integer cents, matching events.fee_amount_cents. Update-only rather than
+    // part of createEventBodySchema: the fee is decided — and raised — as the
+    // event approaches, so a new event starts at the column default of 0.
+    // Passing 0 clears the fee.
+    feeAmountCents: z.number().int().min(0, 'feeAmountCents must be zero or greater').optional(),
+  })
+  .refine((data) => {
+    // Compared against undefined rather than truthiness so that 0 counts as
+    // present and can clear a previously set fee.
+    return data.name || data.description || data.feeAmountCents !== undefined
+  }, 'At least one of the following attributes needs to be present: name, description, feeAmountCents')
 
 const handleSubscriptionsBodySchema = z.object({
   open: z.boolean(),
