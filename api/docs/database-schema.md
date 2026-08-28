@@ -46,6 +46,8 @@
 | location | text | Nullable |
 | is_current | boolean | Marks the active event, default `false` |
 | subscriptions_open | boolean | Gates the subscription form, default `true` |
+| fee_amount_cents | integer | Subscription fee in cents, default `0` (= no fee tracked) |
+| fee_currency | text | Default `BRL` |
 | deleted_at | timestamp | Soft delete |
 | created_at, updated_at | timestamp | |
 
@@ -116,6 +118,39 @@ Coordinators are a flat peer set (`type = 'coordinator'`) with no rank or orderi
 
 The team preferences a person picked when subscribing.
 
+**event_fee_payments**
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | Primary key |
+| event_id | uuid | FK → events |
+| user_id | uuid | FK → users |
+| status | enum | `pending`, `not_paid`, `paid`, `exempt`, `refunded` — default `pending` |
+| amount_cents | integer | Snapshot of what this person was charged, default `0` |
+| method | enum | `pix`, `cash`, `credit_card`, `transfer`, `other` — nullable |
+| paid_at | timestamp | Nullable |
+| notes | text | Nullable |
+| recorded_by | uuid | FK → users, nullable — no actor for imported rows |
+| created_at, updated_at | timestamp | |
+
+*Constraints:* `UNIQUE (event_id, user_id)` · `INDEX (event_id, status)`
+
+The subscription fee is owed by anyone holding a team membership for the event, and is paid once per event regardless of how many teams the person passes through — hence the grain is `(event, user)`, not `(team, user)`. The team is a reporting dimension, resolved by joining `team_memberships`; storing `team_instance_id` here would go stale on a team move and break the per-team "who hasn't paid" report.
+
+Rows are lazy: **no row means the person owes and nothing has been recorded yet.** Rows are not created when a membership is created.
+
+Status meanings, which are easy to confuse:
+
+| Status | Meaning |
+|---|---|
+| *(no row)* | Nobody has looked at this person yet |
+| `pending` | A row exists but nothing is settled — including a declared PIX the treasurer hasn't verified |
+| `not_paid` | A treasurer actively checked and confirmed this person has not paid |
+| `paid` | Confirmed received |
+| `exempt` | Comped — deliberately not `paid`, so totals stay honest |
+| `refunded` | Returned |
+
+`amount_cents` is snapshotted from `events.fee_amount_cents` at record time. The event fee rises as the event approaches, so two people paying in full at different times legitimately owe different amounts — the snapshot is what makes each payment reconcilable against the fee that applied when it was taken, and editing `events.fee_amount_cents` never rewrites history.
+
 **team_assignment_audit**
 | Column | Type | Notes |
 |--------|------|-------|
@@ -139,7 +174,9 @@ users ─┬─< subscriptions >── events
        │        │
        │        └──< team_assignment_audit >── team_instances
        │
-       └─< team_memberships >── team_instances
+       ├─< team_memberships >── team_instances
+       │
+       └─< event_fee_payments >── events
 
 team_templates ─< team_instances >── events
 ```
