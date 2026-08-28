@@ -13,7 +13,7 @@ const MEMBER_TYPE = 'member' as const
 
 class DrizzleTeamMembershipRepository implements TeamMembershipRepository {
   async insertTeamMembership(
-    input: { userId: string; teamInstanceId: string },
+    input: { userId: string; teamInstanceId: string; eventId: string },
     executor: DbExecutor = db
   ) {
     const teamMemberships = await executor.insert(schema.teamMemberships).values(input).returning()
@@ -109,12 +109,8 @@ class DrizzleTeamMembershipRepository implements TeamMembershipRepository {
         type: schema.teamMemberships.type,
       })
       .from(schema.teamMemberships)
-      .innerJoin(
-        schema.teamInstances,
-        eq(schema.teamMemberships.teamInstanceId, schema.teamInstances.id)
-      )
       .where(
-        and(eq(schema.teamMemberships.userId, userId), eq(schema.teamInstances.eventId, eventId))
+        and(eq(schema.teamMemberships.userId, userId), eq(schema.teamMemberships.eventId, eventId))
       )
       .limit(1)
 
@@ -138,6 +134,7 @@ class DrizzleTeamMembershipRepository implements TeamMembershipRepository {
 
   async setCoordinators(
     teamInstanceId: string,
+    eventId: string,
     coordinatorUserIds: string[],
     executor: DbExecutor = db
   ) {
@@ -158,6 +155,7 @@ class DrizzleTeamMembershipRepository implements TeamMembershipRepository {
       coordinatorUserIds.map((userId) => ({
         userId,
         teamInstanceId,
+        eventId,
         type: COORDINATOR_TYPE,
       }))
     )
@@ -291,16 +289,7 @@ class DrizzleTeamMembershipRepository implements TeamMembershipRepository {
     await executor
       .delete(schema.teamMemberships)
       .where(
-        and(
-          eq(schema.teamMemberships.userId, userId),
-          inArray(
-            schema.teamMemberships.teamInstanceId,
-            db
-              .select({ id: schema.teamInstances.id })
-              .from(schema.teamInstances)
-              .where(eq(schema.teamInstances.eventId, eventId))
-          )
-        )
+        and(eq(schema.teamMemberships.userId, userId), eq(schema.teamMemberships.eventId, eventId))
       )
   }
 

@@ -242,6 +242,7 @@ export class TeamBuilding {
               {
                 userId: change.userId,
                 teamInstanceId: change.target.teamInstanceId,
+                eventId: event.id,
                 type: 'member',
               },
               tx
@@ -457,7 +458,7 @@ export class TeamBuilding {
       await runInTransaction(async (tx) => {
         for (const { userId, subscription } of resolved) {
           await this.#teamMembershipRepository.insertTeamMembership(
-            { userId, teamInstanceId, type: 'member' },
+            { userId, teamInstanceId, eventId: event.id, type: 'member' },
             tx
           )
 
@@ -554,7 +555,7 @@ export class TeamBuilding {
       // Write the coordinators (as flat `type: 'coordinator'` membership rows) and
       // mark each coordinator's subscription "montado" atomically.
       await runInTransaction(async (tx) => {
-        await this.#teamMembershipRepository.setCoordinators(teamInstanceId, deduped, tx)
+        await this.#teamMembershipRepository.setCoordinators(teamInstanceId, event.id, deduped, tx)
 
         for (const subscription of subscriptions) {
           await this.#subscriptionRepository.updateSubscriptionStatus(

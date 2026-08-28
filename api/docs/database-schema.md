@@ -75,11 +75,17 @@
 |--------|------|-------|
 | id | uuid | Primary key |
 | user_id | uuid | FK → users |
-| team_instance_id | uuid | FK → team_instances |
+| team_instance_id | uuid | Part of the composite FK below |
+| event_id | uuid | Denormalized from team_instances; part of the composite FK below |
 | type | enum | `member`, `coordinator` — default `member` |
 | created_at, updated_at | timestamp | |
 
-*Constraints:* `UNIQUE (team_instance_id, user_id)` — one row per user per team, keeping a user's member and coordinator rows disjoint for the same team.
+*Constraints:*
+- `UNIQUE (team_instance_id, user_id)` — one row per user per team, keeping a user's member and coordinator rows disjoint for the same team.
+- `UNIQUE (event_id, user_id)` — one membership per user per event, members and coordinators alike.
+- `FOREIGN KEY (team_instance_id, event_id) → team_instances (id, event_id)` — replaces the plain FK on `team_instance_id`, which it implies.
+
+`event_id` is denormalized on purpose. A `UNIQUE` cannot span tables, so enforcing "one membership per user per event" needs the event on the row; the composite FK then makes it impossible for that column to disagree with the team instance's own event. Do not drop it as redundant.
 
 Coordinators are a flat peer set (`type = 'coordinator'`) with no rank or ordering between them. The max-coordinators cap is enforced as an API business rule, not a constraint.
 

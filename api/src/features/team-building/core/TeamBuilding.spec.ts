@@ -239,7 +239,7 @@ describe('TeamBuilding.applyAssignments', () => {
     ])
 
     expect(repos.teamMembershipRepository.insertTeamMembership).toHaveBeenCalledWith(
-      { userId: 'u1', teamInstanceId: TEAM_B, type: 'member' },
+      { userId: 'u1', teamInstanceId: TEAM_B, eventId: EVENT_ID, type: 'member' },
       expect.anything()
     )
     expect(repos.subscriptionRepository.updateSubscriptionStatus).toHaveBeenCalledWith(
@@ -573,6 +573,7 @@ describe('TeamBuilding.assignCoordinators', () => {
 
     expect(repos.teamMembershipRepository.setCoordinators).toHaveBeenCalledWith(
       TEAM_A,
+      EVENT_ID,
       ['u1', 'u2'],
       expect.anything()
     )
@@ -618,6 +619,7 @@ describe('TeamBuilding.assignCoordinators', () => {
 
     expect(repos.teamMembershipRepository.setCoordinators).toHaveBeenCalledWith(
       TEAM_A,
+      EVENT_ID,
       [],
       expect.anything()
     )
@@ -683,6 +685,7 @@ describe('TeamBuilding.assignCoordinators', () => {
 
     expect(repos.teamMembershipRepository.setCoordinators).toHaveBeenCalledWith(
       TEAM_A,
+      EVENT_ID,
       ['u1', 'u2', 'u3', 'u4'],
       expect.anything()
     )
@@ -703,6 +706,7 @@ describe('TeamBuilding.assignCoordinators', () => {
 
     expect(repos.teamMembershipRepository.setCoordinators).toHaveBeenCalledWith(
       TEAM_A,
+      EVENT_ID,
       ['u1'],
       expect.anything()
     )
@@ -795,6 +799,7 @@ describe('TeamBuilding.assignCoordinators', () => {
 
     expect(repos.teamMembershipRepository.setCoordinators).toHaveBeenCalledWith(
       TEAM_A,
+      EVENT_ID,
       ['coord-1'],
       expect.anything()
     )
@@ -873,11 +878,11 @@ describe('TeamBuilding.addMembers', () => {
     await tb.addMembers(TEAM_A, ['u1', 'u2'])
 
     expect(repos.teamMembershipRepository.insertTeamMembership).toHaveBeenCalledWith(
-      { userId: 'u1', teamInstanceId: TEAM_A, type: 'member' },
+      { userId: 'u1', teamInstanceId: TEAM_A, eventId: EVENT_ID, type: 'member' },
       expect.anything()
     )
     expect(repos.teamMembershipRepository.insertTeamMembership).toHaveBeenCalledWith(
-      { userId: 'u2', teamInstanceId: TEAM_A, type: 'member' },
+      { userId: 'u2', teamInstanceId: TEAM_A, eventId: EVENT_ID, type: 'member' },
       expect.anything()
     )
   })

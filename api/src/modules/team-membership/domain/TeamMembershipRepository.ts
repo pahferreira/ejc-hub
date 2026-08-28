@@ -65,6 +65,7 @@ export interface TeamMembershipRepository {
   getCoordinatorUserIds: (teamInstanceId: string) => Promise<string[]>
   setCoordinators: (
     teamInstanceId: string,
+    eventId: string,
     coordinatorUserIds: string[],
     executor?: DbExecutor
   ) => Promise<void>

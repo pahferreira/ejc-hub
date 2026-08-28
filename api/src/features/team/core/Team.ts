@@ -54,6 +54,7 @@ export class Team {
     const teamMembership = await this.#teamMembershipRepository.insertTeamMembership({
       teamInstanceId: teamId,
       userId: memberId,
+      eventId: team.eventId,
     })
 
     return teamMembership
