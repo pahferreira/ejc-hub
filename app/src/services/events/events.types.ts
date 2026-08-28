@@ -39,6 +39,8 @@ export type CurrentEvent = {
   location: string | null
   isCurrent: boolean
   subscriptionsOpen: boolean
+  feeAmountCents: number
+  feeCurrency: string
 }
 
 export type AssignedTeam = {

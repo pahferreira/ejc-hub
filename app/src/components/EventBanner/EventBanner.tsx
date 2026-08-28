@@ -1,4 +1,4 @@
-import { FiCalendar, FiMapPin } from 'react-icons/fi'
+import { FiCalendar, FiDollarSign, FiMapPin } from 'react-icons/fi'
 
 export type EventBannerProps = {
   name: string
@@ -6,6 +6,9 @@ export type EventBannerProps = {
   startsAt: string | null
   endsAt: string | null
   location: string | null
+  /** Subscription fee in cents. 0 means no fee is set and hides the Taxa block. */
+  feeAmountCents: number
+  feeCurrency: string
 }
 
 const monthFormatter = new Intl.DateTimeFormat('pt-BR', { month: 'long' })
@@ -50,8 +53,14 @@ function formatEventDates(startsAt: string | null, endsAt: string | null): strin
   return `${formatSingleDate(startsAt as string)} - ${formatSingleDate(endsAt as string)}`
 }
 
+function formatFee(amountCents: number, currency: string) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency }).format(amountCents / 100)
+}
+
 export function EventBanner(props: EventBannerProps) {
   const dateLabel = formatEventDates(props.startsAt, props.endsAt)
+  const feeLabel =
+    props.feeAmountCents > 0 ? formatFee(props.feeAmountCents, props.feeCurrency) : null
 
   return (
     <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-dark-brown to-primary px-6 py-8 text-white sm:px-10 sm:py-10">
@@ -89,6 +98,18 @@ export function EventBanner(props: EventBannerProps) {
               <div className="flex flex-col">
                 <span className="text-xs text-white/70">Local</span>
                 <span className="text-sm font-semibold">{props.location}</span>
+              </div>
+            </div>
+          )}
+
+          {feeLabel && (
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
+                <FiDollarSign size={18} aria-hidden />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-white/70">Taxa</span>
+                <span className="text-sm font-semibold">{feeLabel}</span>
               </div>
             </div>
           )}

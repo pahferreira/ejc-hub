@@ -54,6 +54,8 @@ export function Home() {
               startsAt={event.startsAt}
               endsAt={event.endsAt}
               location={event.location}
+              feeAmountCents={event.feeAmountCents}
+              feeCurrency={event.feeCurrency}
             />
 
             <HomeBody

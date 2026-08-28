@@ -20,6 +20,8 @@ export const FullData: Story = {
     startsAt: '2026-08-15T19:00:00.000Z',
     endsAt: '2026-08-17T18:00:00.000Z',
     location: 'Casa de Retiro São José - Itatiba/SP',
+    feeAmountCents: 3000,
+    feeCurrency: 'BRL',
   },
 }
 
@@ -30,6 +32,8 @@ export const SameDay: Story = {
     startsAt: '2026-09-10T09:00:00.000Z',
     endsAt: '2026-09-10T18:00:00.000Z',
     location: 'Paróquia Nossa Senhora do Rosário',
+    feeAmountCents: 15000,
+    feeCurrency: 'BRL',
   },
 }
 
@@ -40,6 +44,8 @@ export const CrossMonth: Story = {
     startsAt: '2026-08-29T19:00:00.000Z',
     endsAt: '2026-09-02T18:00:00.000Z',
     location: 'Casa de Retiro São José - Itatiba/SP',
+    feeAmountCents: 15000,
+    feeCurrency: 'BRL',
   },
 }
 
@@ -50,6 +56,8 @@ export const CrossYear: Story = {
     startsAt: '2026-12-30T19:00:00.000Z',
     endsAt: '2027-01-02T18:00:00.000Z',
     location: 'Casa de Retiro São José - Itatiba/SP',
+    feeAmountCents: 15000,
+    feeCurrency: 'BRL',
   },
 }
 
@@ -60,6 +68,8 @@ export const NoDates: Story = {
     startsAt: null,
     endsAt: null,
     location: 'Casa de Retiro São José - Itatiba/SP',
+    feeAmountCents: 15000,
+    feeCurrency: 'BRL',
   },
 }
 
@@ -70,6 +80,21 @@ export const NoLocation: Story = {
     startsAt: '2026-08-15T19:00:00.000Z',
     endsAt: '2026-08-17T18:00:00.000Z',
     location: null,
+    feeAmountCents: 15000,
+    feeCurrency: 'BRL',
+  },
+}
+
+export const NoFee: Story = {
+  args: {
+    name: 'EJC Rosário 2026',
+    description: 'Renascer em Cristo',
+    startsAt: '2026-08-15T19:00:00.000Z',
+    endsAt: '2026-08-17T18:00:00.000Z',
+    location: 'Casa de Retiro São José - Itatiba/SP',
+    // 0 is the column default the API returns when no fee is set — Taxa is hidden.
+    feeAmountCents: 0,
+    feeCurrency: 'BRL',
   },
 }
 
@@ -80,6 +105,8 @@ export const Minimal: Story = {
     startsAt: null,
     endsAt: null,
     location: null,
+    feeAmountCents: 0,
+    feeCurrency: 'BRL',
   },
 }
 
@@ -90,5 +117,7 @@ export const LongContent: Story = {
     startsAt: '2026-08-15T19:00:00.000Z',
     endsAt: '2026-08-17T18:00:00.000Z',
     location: 'Casa de Retiro São José - Itatiba, São Paulo',
+    feeAmountCents: 15000,
+    feeCurrency: 'BRL',
   },
 }
