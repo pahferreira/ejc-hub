@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { Table, type Action } from './index'
+import type { SortDirection } from './TableHeaderCell'
 
 const meta = {
   title: 'UI/Table',
@@ -201,5 +203,103 @@ export const EmptyState: Story = {
 
     // Verify no data rows are present
     await expect(canvas.queryByText('John Doe')).not.toBeInTheDocument()
+  },
+}
+
+function SortableExample() {
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
+
+  const sorted = [...sampleData].sort((a, b) =>
+    sortDirection === 'desc' ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name)
+  )
+
+  return (
+    <Table>
+      <Table.Header>
+        <Table.Row>
+          <Table.HeaderCell
+            sortDirection={sortDirection}
+            onSort={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+          >
+            Name
+          </Table.HeaderCell>
+          <Table.HeaderCell sortDirection={false}>Email</Table.HeaderCell>
+          <Table.HeaderCell>Status</Table.HeaderCell>
+        </Table.Row>
+      </Table.Header>
+      <Table.Body>
+        {sorted.map((row) => (
+          <Table.Row key={row.id}>
+            <Table.Cell>{row.name}</Table.Cell>
+            <Table.Cell>{row.email}</Table.Cell>
+            <Table.Cell>{row.status}</Table.Cell>
+          </Table.Row>
+        ))}
+      </Table.Body>
+    </Table>
+  )
+}
+
+/**
+ * `Name` is the active sort key, `Email` is sortable but inactive, and `Status`
+ * omits `sortDirection` entirely so it stays a plain header.
+ */
+export const Sortable: Story = {
+  args: { children: null },
+  render: () => <SortableExample />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    // The active column advertises its direction to assistive tech
+    await expect(canvas.getByRole('columnheader', { name: /name/i })).toHaveAttribute(
+      'aria-sort',
+      'ascending'
+    )
+
+    // A sortable but inactive column reports no sort
+    await expect(canvas.getByRole('columnheader', { name: /email/i })).toHaveAttribute(
+      'aria-sort',
+      'none'
+    )
+
+    // A non-sortable column has no sort affordance at all
+    await expect(canvas.getByRole('columnheader', { name: 'Status' })).not.toHaveAttribute(
+      'aria-sort'
+    )
+
+    await expect(canvas.getAllByRole('row')[1]).toHaveTextContent('Bob Johnson')
+
+    await userEvent.click(canvas.getByRole('button', { name: /name/i }))
+
+    await expect(canvas.getByRole('columnheader', { name: /name/i })).toHaveAttribute(
+      'aria-sort',
+      'descending'
+    )
+    await expect(canvas.getAllByRole('row')[1]).toHaveTextContent('John Doe')
+  },
+}
+
+/** Drops the outer frame so the header strip can run edge to edge inside a card. */
+export const Borderless: Story = {
+  args: {
+    bordered: false,
+    children: (
+      <>
+        <Table.Header>
+          <Table.Row>
+            <Table.HeaderCell>Name</Table.HeaderCell>
+            <Table.HeaderCell>Email</Table.HeaderCell>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
+          {sampleData.map((row) => (
+            <Table.Row key={row.id}>
+              <Table.Cell>{row.name}</Table.Cell>
+              <Table.Cell>{row.email}</Table.Cell>
+            </Table.Row>
+          ))}
+        </Table.Body>
+      </>
+    ),
   },
 }
