@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from 'storybook/test'
 import { FeeByTeamCard } from './FeeByTeamCard'
-import { registrationFeeOverviewMock, teamFeeRowsMock } from '../../services/finance/finance.mocks'
+import { eventFeeOverviewMock, teamFeeRowsMock } from '../../services/finance/finance.mocks'
 
 const meta = {
   title: 'Financial/FeeByTeamCard',
@@ -18,7 +18,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   args: {
     rows: teamFeeRowsMock,
-    overallPaidPercentage: registrationFeeOverviewMock.paidPercentage,
+    overallPaidPercentage: eventFeeOverviewMock.paidPercentage,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
@@ -46,7 +46,7 @@ export const Default: Story = {
 export const SortedByPendingDescending: Story = {
   args: {
     rows: teamFeeRowsMock,
-    overallPaidPercentage: registrationFeeOverviewMock.paidPercentage,
+    overallPaidPercentage: eventFeeOverviewMock.paidPercentage,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)

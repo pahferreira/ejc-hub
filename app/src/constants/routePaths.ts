@@ -8,4 +8,6 @@ export const ROUTE_PATHS = {
   TEAMS_TEAM_BUILDING: '/teams/team-building',
   TEAM_DETAIL: '/teams/:teamKey',
   TEAM_TEMPLATES: '/templates',
+  EVENT_FEE: '/financial/event-fee',
+  SHIRTS: '/financial/shirts',
 } as const

@@ -1,5 +1,5 @@
 /**
- * One team's registration-fee standing within the current event.
+ * One team's event-fee standing within the current event.
  *
  * `paid` folds together the `paid` and `exempt` payment statuses: an exempt
  * member owes nothing, so from the coordination view they are settled. Every
@@ -17,7 +17,7 @@ export type TeamFeeRow = {
   paidPercentage: number
 }
 
-export type RegistrationFeeOverview = {
+export type EventFeeOverview = {
   /** Team memberships in the event, coordinators included. */
   totalMembers: number
   paidCount: number
@@ -25,4 +25,8 @@ export type RegistrationFeeOverview = {
   /** 0–100, rounded by the API. */
   paidPercentage: number
   teams: TeamFeeRow[]
+}
+
+export const financeQueryKeys = {
+  eventFeeOverview: ['finance', 'event-fee', 'overview'] as const,
 }

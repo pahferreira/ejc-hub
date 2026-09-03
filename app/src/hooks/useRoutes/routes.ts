@@ -11,8 +11,10 @@ import { TeamsPage } from '../../pages/TeamsPage'
 import { TeamBuildingPage } from '../../pages/TeamBuildingPage'
 import { TeamDetailPage } from '../../pages/TeamDetailPage'
 import { MyTeamPage } from '../../pages/MyTeamPage'
+import { EventFeePage } from '../../pages/EventFeePage'
 import { Placeholder } from '../../pages/Placeholder/Placeholder'
 import { ROUTE_PATHS } from '../../constants/routePaths'
+import { FeatureFlag, type FeatureFlagValue } from '../useFeatureFlag/feature-flags'
 
 type Route = {
   path: string
@@ -20,10 +22,10 @@ type Route = {
   component: React.ComponentType
   permission?: string
   /**
-   * Only accessible when the `current-event-my-team` feature flag is enabled.
-   * Not a permission, so it's filtered against the feature-flag state.
+   * Only accessible when this feature flag is enabled. Not a permission, so
+   * it's filtered against the feature-flag state.
    */
-  requiresMyTeamFlag?: boolean
+  featureFlag?: FeatureFlagValue
 }
 
 export const routes: Route[] = [
@@ -36,7 +38,7 @@ export const routes: Route[] = [
     path: ROUTE_PATHS.MY_TEAM,
     name: 'Minha Equipe',
     component: MyTeamPage,
-    requiresMyTeamFlag: true,
+    featureFlag: FeatureFlag.MyTeam,
   },
   {
     path: ROUTE_PATHS.SUBSCRIPTIONS,
@@ -78,5 +80,17 @@ export const routes: Route[] = [
     name: 'Templates',
     component: Placeholder,
     permission: TeamTemplatePermissions.Read,
+  },
+  {
+    path: ROUTE_PATHS.EVENT_FEE,
+    name: 'Taxa de Inscrição',
+    component: EventFeePage,
+    featureFlag: FeatureFlag.EventFee,
+  },
+  {
+    path: ROUTE_PATHS.SHIRTS,
+    name: 'Camisetas',
+    component: Placeholder,
+    featureFlag: FeatureFlag.Shirts,
   },
 ]
