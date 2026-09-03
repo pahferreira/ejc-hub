@@ -1,5 +1,14 @@
 import type { IconType } from 'react-icons'
-import { FiHome, FiList, FiUsers, FiCalendar, FiLayers, FiUser } from 'react-icons/fi'
+import {
+  FiHome,
+  FiList,
+  FiUsers,
+  FiCalendar,
+  FiLayers,
+  FiUser,
+  FiDollarSign,
+  FiShoppingBag,
+} from 'react-icons/fi'
 import {
   EventPermissions,
   SubscriptionPermissions,
@@ -7,6 +16,7 @@ import {
   TeamTemplatePermissions,
 } from '../../../../common/permissions'
 import { ROUTE_PATHS } from '../../constants/routePaths'
+import { FeatureFlag, type FeatureFlagValue } from '../../hooks/useFeatureFlag/feature-flags'
 
 export type SidebarNavItem = {
   label: string
@@ -20,10 +30,10 @@ export type SidebarNavItem = {
    */
   requiresTeamMembership?: boolean
   /**
-   * Only shown when the `current-event-my-team` feature flag is enabled. Not a
-   * permission, so it's filtered at render time against the feature-flag state.
+   * Only shown when this feature flag is enabled. Not a permission, so it's
+   * filtered at render time against the feature-flag state.
    */
-  requiresMyTeamFlag?: boolean
+  featureFlag?: FeatureFlagValue
 }
 
 export type SidebarNavGroup = {
@@ -45,7 +55,7 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         path: ROUTE_PATHS.MY_TEAM,
         icon: FiUser,
         requiresTeamMembership: true,
-        requiresMyTeamFlag: true,
+        featureFlag: FeatureFlag.MyTeam,
       },
     ],
   },
@@ -69,6 +79,23 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         path: ROUTE_PATHS.EVENTS,
         icon: FiCalendar,
         permission: EventPermissions.Read,
+      },
+    ],
+  },
+  {
+    title: 'FINANCEIRO',
+    items: [
+      {
+        label: 'Taxa de Inscrição',
+        path: ROUTE_PATHS.EVENT_FEE,
+        icon: FiDollarSign,
+        featureFlag: FeatureFlag.EventFee,
+      },
+      {
+        label: 'Camisetas',
+        path: ROUTE_PATHS.SHIRTS,
+        icon: FiShoppingBag,
+        featureFlag: FeatureFlag.Shirts,
       },
     ],
   },

@@ -1,13 +1,11 @@
 import { routes } from './routes'
 import { useAuthentication } from '../useAuthentication'
-import { FeatureFlag } from '../useFeatureFlag/feature-flags'
 import { useFeatureFlag } from '../useFeatureFlag/useFeatureFlag'
 import { hasPermission } from '../../../../common/permissions'
 
 export function useRoutes() {
   const { isAuthenticated, permissions } = useAuthentication()
   const { isFeatureEnabled } = useFeatureFlag()
-  const myTeamEnabled = isFeatureEnabled(FeatureFlag.MyTeam, false)
 
   if (!isAuthenticated) {
     return { routes: [] }
@@ -19,7 +17,7 @@ export function useRoutes() {
         return false
       }
 
-      if (route.requiresMyTeamFlag && !myTeamEnabled) {
+      if (route.featureFlag && !isFeatureEnabled(route.featureFlag, false)) {
         return false
       }
 

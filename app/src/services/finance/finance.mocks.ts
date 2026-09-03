@@ -1,7 +1,7 @@
-import type { RegistrationFeeOverview, TeamFeeRow } from './finance.types'
+import type { EventFeeOverview, TeamFeeRow } from './finance.types'
 
 /**
- * Stand-in for `GET /events/current/registration-fee-overview` until the API
+ * Stand-in for `GET /events/current/event-fee-overview` until the API
  * lands. Totals reconcile to 119 members / 88 paid / 31 pending, and the teams
  * deliberately span every tone: seven at 100%, one at exactly 50% to pin the
  * warning/error boundary, and four below it.
@@ -171,7 +171,7 @@ export const teamFeeRowsMock: TeamFeeRow[] = [
   },
 ]
 
-export const registrationFeeOverviewMock: RegistrationFeeOverview = {
+export const eventFeeOverviewMock: EventFeeOverview = {
   totalMembers: 119,
   paidCount: 88,
   pendingCount: 31,
