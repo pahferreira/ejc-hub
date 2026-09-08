@@ -10,6 +10,7 @@ import {
   FiShoppingBag,
 } from 'react-icons/fi'
 import {
+  EventFeePermissions,
   EventPermissions,
   SubscriptionPermissions,
   TeamInstancePermissions,
@@ -89,6 +90,7 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         label: 'Taxa de Inscrição',
         path: ROUTE_PATHS.EVENT_FEE,
         icon: FiDollarSign,
+        permission: EventFeePermissions.Read,
         featureFlag: FeatureFlag.EventFee,
       },
       {

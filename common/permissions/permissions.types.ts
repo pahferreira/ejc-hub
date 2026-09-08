@@ -33,6 +33,13 @@ export const TeamTemplatePermissions = {
   Delete: "team-templates:delete",
 } as const;
 
+export const EventFeePermissions = {
+  Create: "financials-event-fee:create",
+  Read: "financials-event-fee:read",
+  Update: "financials-event-fee:update",
+  Delete: "financials-event-fee:delete",
+} as const;
+
 export const UserPermissions = {
   List: "users:list",
   Update: "users:update",
@@ -45,4 +52,5 @@ export type Permission =
   | (typeof TeamInstancePermissions)[keyof typeof TeamInstancePermissions]
   | (typeof TeamMembershipPermissions)[keyof typeof TeamMembershipPermissions]
   | (typeof TeamTemplatePermissions)[keyof typeof TeamTemplatePermissions]
+  | (typeof EventFeePermissions)[keyof typeof EventFeePermissions]
   | (typeof UserPermissions)[keyof typeof UserPermissions];

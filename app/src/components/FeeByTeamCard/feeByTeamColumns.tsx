@@ -1,9 +1,18 @@
-import { createColumnHelper } from '@tanstack/react-table'
+import { createColumnHelper, type RowData } from '@tanstack/react-table'
 import { Badge } from '../Badge/Badge'
 import { Meter } from '../Meter/Meter'
 import { getFeeTone } from './feeTone'
-import { getTeamDotColor } from './teamDotColor'
 import type { TeamFeeRow } from '../../services/finance/finance.types'
+
+declare module '@tanstack/react-table' {
+  // The type parameters are fixed by the interface being augmented; this
+  // declaration adds a field that does not reference them.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData extends RowData, TValue> {
+    /** Extra classes applied to both the header and body cells of this column. */
+    className?: string
+  }
+}
 
 const columnHelper = createColumnHelper<TeamFeeRow>()
 
@@ -12,10 +21,6 @@ export const feeByTeamColumns = [
     header: 'Equipe',
     cell: (info) => (
       <span className="inline-flex items-center gap-2">
-        <span
-          className={`size-2 shrink-0 rounded-full ${getTeamDotColor(info.row.original.teamKey)}`}
-          aria-hidden
-        />
         <span className="font-medium">{info.getValue()}</span>
       </span>
     ),
@@ -44,6 +49,10 @@ export const feeByTeamColumns = [
     id: 'progress',
     header: 'Progresso',
     enableSorting: false,
+    // The bar is the widest column and the least information-dense, so it is
+    // the first thing dropped when space is tight. Below 1440px the `% Pago`
+    // badge already carries the same number.
+    meta: { className: 'hidden min-[1440px]:table-cell' },
     cell: (info) => (
       <div className="w-32 sm:w-40">
         <Meter
