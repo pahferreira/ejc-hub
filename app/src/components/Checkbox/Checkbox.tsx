@@ -6,6 +6,12 @@ type CheckboxProps = {
   onChange?: (checked: boolean) => void
   disabled?: boolean
   error?: boolean
+  /**
+   * Keeps the label as the accessible name but hides it visually. For dense
+   * layouts (e.g. a table's selection column) where the surrounding row already
+   * says who the checkbox belongs to.
+   */
+  hideLabel?: boolean
 }
 
 export function Checkbox(props: CheckboxProps) {
@@ -26,7 +32,7 @@ export function Checkbox(props: CheckboxProps) {
           props.error ? 'border-red' : 'border-primary'
         )}
       />
-      {props.label}
+      {props.hideLabel ? <span className="sr-only">{props.label}</span> : props.label}
     </label>
   )
 }
