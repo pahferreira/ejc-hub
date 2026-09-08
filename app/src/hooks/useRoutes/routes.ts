@@ -1,6 +1,7 @@
 import { EventSubscription } from '../../pages/EventSubscription'
 import { EventSubscriptionsList } from '../../pages/EventSubscriptionsList'
 import {
+  EventFeePermissions,
   EventPermissions,
   SubscriptionPermissions,
   TeamInstancePermissions,
@@ -85,6 +86,7 @@ export const routes: Route[] = [
     path: ROUTE_PATHS.EVENT_FEE,
     name: 'Taxa de Inscrição',
     component: EventFeePage,
+    permission: EventFeePermissions.Read,
     featureFlag: FeatureFlag.EventFee,
   },
   {
