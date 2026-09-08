@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import type { MouseEventHandler, ReactNode } from 'react'
 import { FiChevronDown, FiChevronUp } from 'react-icons/fi'
 
@@ -12,6 +13,7 @@ type TableHeaderCellProps = {
    */
   sortDirection?: SortDirection
   onSort?: MouseEventHandler<HTMLButtonElement>
+  className?: string
 }
 
 const cellClasses =
@@ -41,12 +43,12 @@ function SortIcon(props: { direction: SortDirection }) {
 
 export function TableHeaderCell(props: TableHeaderCellProps) {
   if (props.sortDirection === undefined) {
-    return <th className={cellClasses}>{props.children}</th>
+    return <th className={clsx(cellClasses, props.className)}>{props.children}</th>
   }
 
   return (
     <th
-      className={cellClasses}
+      className={clsx(cellClasses, props.className)}
       aria-sort={props.sortDirection ? ariaSortByDirection[props.sortDirection] : 'none'}
     >
       <button

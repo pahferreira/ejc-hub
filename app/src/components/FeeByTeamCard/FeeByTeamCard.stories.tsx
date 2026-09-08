@@ -193,7 +193,10 @@ export const Default: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByText('18 equipes · clique no cabeçalho para ordenar')).toBeVisible()
+    // Split assertions: the sort hint lives in its own span so it can be
+    // hidden on phones, and `getByText` only reads an element's direct text.
+    await expect(canvas.getByText('18 equipes')).toBeVisible()
+    await expect(canvas.getByText('· clique no cabeçalho para ordenar')).toBeVisible()
 
     // Defaults to alphabetical by team
     await expect(canvas.getByRole('columnheader', { name: /equipe/i })).toHaveAttribute(
@@ -202,10 +205,11 @@ export const Default: Story = {
     )
     await expect(canvas.getAllByRole('row')[1]).toHaveTextContent('Acolhida')
 
-    // Progresso is presentational, so it carries no sort affordance
-    await expect(canvas.getByRole('columnheader', { name: 'Progresso' })).not.toHaveAttribute(
-      'aria-sort'
-    )
+    // Progresso is presentational, so it renders no sort button at all. Asserted
+    // via the absent button rather than the header's aria-sort: the column is
+    // display:none below 1440px, and a hidden subtree computes an empty
+    // accessible name, so a name-based columnheader query cannot find it.
+    await expect(canvas.queryByRole('button', { name: /progresso/i })).not.toBeInTheDocument()
   },
 }
 
@@ -270,7 +274,36 @@ export const Empty: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByText('Nenhuma equipe encontrada.')).toBeVisible()
-    await expect(canvas.getByText('0 equipes · clique no cabeçalho para ordenar')).toBeVisible()
+    // Once for the table, once for the card list — one of the two is always
+    // hidden by CSS, so both layouts carry their own empty state.
+    await expect(canvas.getAllByText('Nenhuma equipe encontrada.')).toHaveLength(2)
+    await expect(canvas.getByText('0 equipes')).toBeVisible()
+  },
+}
+
+/**
+ * Below `md` (768px) the table is replaced by stacked cards and a sort
+ * selector, since there are no column headers to click. Between 768px and
+ * 1440px the table returns without the `Progresso` column; at 1440px and up the
+ * bar comes back.
+ */
+export const MobileCards: Story = {
+  args: {
+    rows: sampleRows,
+    overallPaidPercentage: 74,
+  },
+  globals: {
+    viewport: { value: 'mobile1', isRotated: false },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    // Queried with `hidden` so the assertion holds whatever width the test
+    // runner uses: the card markup is rendered for every team either way.
+    const items = canvas.getAllByRole('listitem', { hidden: true })
+
+    await expect(items).toHaveLength(18)
+    await expect(items[0]).toHaveTextContent('Acolhida')
+    await expect(items[0]).toHaveTextContent('43%')
   },
 }
