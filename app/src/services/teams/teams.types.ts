@@ -2,6 +2,19 @@ import type { ExperienceType } from '../team-building/team-building.types'
 
 export type TeamStatus = 'needsMembers' | 'spotsAvailable' | 'complete'
 
+/**
+ * How a person belongs to a team. Mirrors the `team_membership_type` Postgres
+ * enum (`api/src/core/database/schemas/team-memberships.ts`), which is the
+ * source of truth: coordinators are `team_memberships` rows with
+ * `type = 'coordinator'`, a flat peer set with no rank between them.
+ *
+ * Deliberately not `CandidateRole` from `team-building.types`: that union is
+ * structurally identical but means "which role the candidate list is being
+ * fetched for", so widening it for a search feature must not silently widen
+ * how membership is modelled.
+ */
+export type TeamMembershipType = 'member' | 'coordinator'
+
 export const teamOptionsQueryKeys = {
   all: ['team-options'] as const,
 }
