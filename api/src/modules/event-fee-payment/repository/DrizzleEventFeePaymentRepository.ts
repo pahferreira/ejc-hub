@@ -1,9 +1,51 @@
 import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
-import type { EventFeePaymentRepository } from '../domain/EventFeePaymentRepository.ts'
+import type {
+  SetFeePaymentsStatusInput,
+  EventFeePaymentRepository,
+} from '../domain/EventFeePaymentRepository.ts'
+import { buildFeePaymentStatusFields } from '../domain/fee-payment-status.ts'
 
 class DrizzleEventFeePaymentRepository implements EventFeePaymentRepository {
+  async setPaymentsStatus(input: SetFeePaymentsStatusInput) {
+    if (input.userIds.length === 0) {
+      return []
+    }
+
+    // One timestamp for the whole batch, so members updated together carry the
+    // same `paidAt` instead of drifting by a few milliseconds.
+    const now = new Date()
+    const executor = input.executor ?? db
+    const statusFields = buildFeePaymentStatusFields(input.status, now)
+
+    const rows = await executor
+      .insert(schema.eventFeePayments)
+      .values(
+        input.userIds.map((userId) => ({
+          eventId: input.eventId,
+          userId,
+          amountCents: input.amountCents,
+          recordedBy: input.recordedBy,
+          ...statusFields,
+        }))
+      )
+      .onConflictDoUpdate({
+        target: [schema.eventFeePayments.eventId, schema.eventFeePayments.userId],
+        set: {
+          recordedBy: input.recordedBy,
+          updatedAt: now,
+          ...statusFields,
+          // `amountCents` is deliberately absent: an existing row already
+          // snapshotted what this person was charged, and changing their status
+          // must not silently reprice it to today's event fee.
+        },
+      })
+      .returning({ userId: schema.eventFeePayments.userId })
+
+    return rows.map((row) => row.userId)
+  }
+
   async aggregateFeeStatusByTeam(eventId: string) {
     return (
       db

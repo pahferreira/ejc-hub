@@ -1,7 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Financial } from './Financial.ts'
-import type { EventFeePaymentRepository } from '../../../modules/event-fee-payment/domain/EventFeePaymentRepository.ts'
+import type {
+  SetFeePaymentsStatusInput,
+  EventFeePaymentRepository,
+} from '../../../modules/event-fee-payment/domain/EventFeePaymentRepository.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
+import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
+import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
+import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 
 type TeamAggregate = Awaited<
   ReturnType<EventFeePaymentRepository['aggregateFeeStatusByTeam']>
@@ -27,9 +33,78 @@ function makeFinancial(rows: TeamAggregate[], currentEvent: unknown = { id: 'eve
     findCurrentEvent: vi.fn().mockResolvedValue(currentEvent),
   } as unknown as EventRepository
 
+  const teamMembershipRepository = {} as unknown as TeamMembershipRepository
+  const userRepository = {} as unknown as UserRepository
+
   return {
-    financial: new Financial(eventFeePaymentRepository, eventRepository),
+    financial: new Financial(
+      eventFeePaymentRepository,
+      eventRepository,
+      teamMembershipRepository,
+      userRepository
+    ),
     eventFeePaymentRepository,
+  }
+}
+
+type ConfirmationScenario = {
+  /**
+   * The membership the *actor* holds in the current event. Present-but-undefined
+   * means "holds none", which is why the helper tests for the key rather than
+   * falling back with `??`.
+   */
+  actorMembership?: { id: string; teamInstanceId: string; type: 'member' | 'coordinator' }
+  teamMemberIds?: string[]
+  teamCoordinatorIds?: string[]
+  actor?: unknown
+  confirmed?: string[]
+}
+
+function makeConfirmationFinancial(scenario: ConfirmationScenario = {}) {
+  const event = { id: 'event-1', feeAmountCents: 15000 }
+
+  // Typed rather than a bare `vi.fn()` so the argument assertions below read a
+  // real `SetFeePaymentsStatusInput` instead of `any`.
+  const setPaymentsStatus = vi.fn<(input: SetFeePaymentsStatusInput) => Promise<string[]>>(
+    (input) => Promise.resolve(scenario.confirmed ?? input.userIds)
+  )
+
+  const eventFeePaymentRepository = {
+    aggregateFeeStatusByTeam: vi.fn(),
+    setPaymentsStatus,
+  } as unknown as EventFeePaymentRepository
+
+  const eventRepository = {
+    findCurrentEvent: vi.fn().mockResolvedValue(event),
+  } as unknown as EventRepository
+
+  const teamMembershipRepository = {
+    findMembershipByUserAndEvent: vi
+      .fn()
+      .mockResolvedValue(
+        'actorMembership' in scenario
+          ? scenario.actorMembership
+          : { id: 'm-1', teamInstanceId: 'team-1', type: 'coordinator' }
+      ),
+    listMemberUserIdsByTeamInstanceIds: vi
+      .fn()
+      .mockResolvedValue(new Map([['team-1', scenario.teamMemberIds ?? ['user-a', 'user-b']]])),
+    getCoordinatorUserIds: vi.fn().mockResolvedValue(scenario.teamCoordinatorIds ?? ['actor-id']),
+  } as unknown as TeamMembershipRepository
+
+  const userRepository = {
+    getUser: vi.fn().mockResolvedValue('actor' in scenario ? scenario.actor : { id: 'actor-id' }),
+  } as unknown as UserRepository
+
+  return {
+    financial: new Financial(
+      eventFeePaymentRepository,
+      eventRepository,
+      teamMembershipRepository,
+      userRepository
+    ),
+    setPaymentsStatus,
+    teamMembershipRepository,
   }
 }
 
@@ -124,5 +199,179 @@ describe('Financial.getCurrentEventOverview', () => {
       paidPercentage: 0,
       teams: [],
     })
+  })
+})
+
+describe('Financial.confirmTeamFeesAsCoordinator', () => {
+  it('confirms a member of the team the caller coordinates', async () => {
+    const { financial, setPaymentsStatus } = makeConfirmationFinancial()
+
+    const result = await financial.confirmTeamFeesAsCoordinator('auth|actor', ['user-a'])
+
+    expect(result).toEqual({ updatedUserIds: ['user-a'], updatedCount: 1 })
+    expect(setPaymentsStatus).toHaveBeenCalledWith({
+      eventId: 'event-1',
+      userIds: ['user-a'],
+      status: 'paid',
+      recordedBy: 'actor-id',
+      amountCents: 15000,
+    })
+  })
+
+  it('always writes paid, since a coordinator cannot choose a status', async () => {
+    const { financial, setPaymentsStatus } = makeConfirmationFinancial()
+
+    await financial.confirmTeamFeesAsCoordinator('auth|actor', ['user-a'])
+
+    expect(setPaymentsStatus.mock.calls[0][0].status).toBe('paid')
+  })
+
+  it('snapshots the event fee onto the confirmation', async () => {
+    const { financial, setPaymentsStatus } = makeConfirmationFinancial()
+
+    await financial.confirmTeamFeesAsCoordinator('auth|actor', ['user-a'])
+
+    expect(setPaymentsStatus.mock.calls[0][0].amountCents).toBe(15000)
+  })
+
+  it('rejects a caller who holds no membership in the current event', async () => {
+    const { financial, setPaymentsStatus } = makeConfirmationFinancial({
+      actorMembership: undefined,
+    })
+
+    await expect(financial.confirmTeamFeesAsCoordinator('auth|actor', ['user-a'])).rejects.toThrow(
+      'Only a team coordinator can confirm fees for their team'
+    )
+    expect(setPaymentsStatus).not.toHaveBeenCalled()
+  })
+
+  it('rejects a plain member of the team, who coordinates nothing', async () => {
+    const { financial, setPaymentsStatus } = makeConfirmationFinancial({
+      actorMembership: { id: 'm-1', teamInstanceId: 'team-1', type: 'member' },
+    })
+
+    await expect(financial.confirmTeamFeesAsCoordinator('auth|actor', ['user-a'])).rejects.toThrow(
+      'Only a team coordinator can confirm fees for their team'
+    )
+    expect(setPaymentsStatus).not.toHaveBeenCalled()
+  })
+
+  it('answers a forbidden code so the route can map it to 403 rather than 422', async () => {
+    const { financial } = makeConfirmationFinancial({
+      actorMembership: { id: 'm-1', teamInstanceId: 'team-1', type: 'member' },
+    })
+
+    const error = await financial
+      .confirmTeamFeesAsCoordinator('auth|actor', ['user-a'])
+      .catch((thrown: AppError) => thrown)
+
+    expect(error).toBeInstanceOf(AppError)
+    expect((error as AppError).getAppErrorCode()).toBe(AppErrorCode.Forbidden)
+  })
+
+  it('refuses to confirm someone outside the coordinated team', async () => {
+    const { financial, setPaymentsStatus } = makeConfirmationFinancial({
+      teamMemberIds: ['user-a'],
+    })
+
+    await expect(
+      financial.confirmTeamFeesAsCoordinator('auth|actor', ['user-a', 'stranger'])
+    ).rejects.toThrow('Cannot confirm a fee for someone outside your team')
+    // The whole batch aborts: one outsider must not let the rest through.
+    expect(setPaymentsStatus).not.toHaveBeenCalled()
+  })
+
+  it('lets a coordinator confirm a fellow coordinator, who owes the fee too', async () => {
+    const { financial, setPaymentsStatus } = makeConfirmationFinancial({
+      teamMemberIds: ['user-a'],
+      teamCoordinatorIds: ['actor-id', 'co-coordinator'],
+    })
+
+    await financial.confirmTeamFeesAsCoordinator('auth|actor', ['co-coordinator'])
+
+    expect(setPaymentsStatus.mock.calls[0][0].userIds).toEqual(['co-coordinator'])
+  })
+
+  it('deduplicates repeated ids before writing', async () => {
+    const { financial, setPaymentsStatus } = makeConfirmationFinancial()
+
+    await financial.confirmTeamFeesAsCoordinator('auth|actor', ['user-a', 'user-a', 'user-b'])
+
+    expect(setPaymentsStatus.mock.calls[0][0].userIds).toEqual(['user-a', 'user-b'])
+  })
+
+  it('reports what the repository actually wrote, not what was requested', async () => {
+    const { financial } = makeConfirmationFinancial({ confirmed: ['user-a'] })
+
+    const result = await financial.confirmTeamFeesAsCoordinator('auth|actor', ['user-a', 'user-b'])
+
+    expect(result).toEqual({ updatedUserIds: ['user-a'], updatedCount: 1 })
+  })
+
+  it('throws when the caller has no user record', async () => {
+    const { financial, setPaymentsStatus } = makeConfirmationFinancial({ actor: undefined })
+
+    await expect(financial.confirmTeamFeesAsCoordinator('auth|ghost', ['user-a'])).rejects.toThrow(
+      'User not found'
+    )
+    expect(setPaymentsStatus).not.toHaveBeenCalled()
+  })
+})
+
+describe('Financial.setFeeStatusAsAdmin', () => {
+  it('updates a member of any team without a coordinator check', async () => {
+    const { financial, setPaymentsStatus, teamMembershipRepository } = makeConfirmationFinancial()
+
+    const result = await financial.setFeeStatusAsAdmin('auth|admin', ['stranger'], 'paid')
+
+    expect(result).toEqual({ updatedUserIds: ['stranger'], updatedCount: 1 })
+    expect(teamMembershipRepository.findMembershipByUserAndEvent).not.toHaveBeenCalled()
+    expect(setPaymentsStatus.mock.calls[0][0].userIds).toEqual(['stranger'])
+  })
+
+  it.each(['pending', 'not_paid', 'paid', 'exempt'] as const)(
+    'passes %s through to the repository',
+    async (status) => {
+      const { financial, setPaymentsStatus } = makeConfirmationFinancial()
+
+      await financial.setFeeStatusAsAdmin('auth|admin', ['user-a'], status)
+
+      expect(setPaymentsStatus.mock.calls[0][0].status).toBe(status)
+    }
+  )
+
+  it('comps a member without repricing what they were charged', async () => {
+    const { financial, setPaymentsStatus } = makeConfirmationFinancial()
+
+    await financial.setFeeStatusAsAdmin('auth|admin', ['user-a'], 'exempt')
+
+    // The amount still travels: it is the snapshot for a row being created, and
+    // the repository leaves an existing row's amount alone.
+    expect(setPaymentsStatus.mock.calls[0][0].amountCents).toBe(15000)
+  })
+
+  it('records the admin as the actor behind the change', async () => {
+    const { financial, setPaymentsStatus } = makeConfirmationFinancial()
+
+    await financial.setFeeStatusAsAdmin('auth|admin', ['user-a'], 'paid')
+
+    expect(setPaymentsStatus.mock.calls[0][0].recordedBy).toBe('actor-id')
+  })
+
+  it('deduplicates repeated ids before writing', async () => {
+    const { financial, setPaymentsStatus } = makeConfirmationFinancial()
+
+    await financial.setFeeStatusAsAdmin('auth|admin', ['user-a', 'user-a'], 'paid')
+
+    expect(setPaymentsStatus.mock.calls[0][0].userIds).toEqual(['user-a'])
+  })
+
+  it('throws when the caller has no user record', async () => {
+    const { financial, setPaymentsStatus } = makeConfirmationFinancial({ actor: undefined })
+
+    await expect(financial.setFeeStatusAsAdmin('auth|ghost', ['user-a'], 'paid')).rejects.toThrow(
+      'User not found'
+    )
+    expect(setPaymentsStatus).not.toHaveBeenCalled()
   })
 })
