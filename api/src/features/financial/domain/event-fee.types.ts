@@ -9,6 +9,12 @@ export type TeamFeeRow = {
   paidPercentage: number
 }
 
+export type FeeStatusUpdateResult = {
+  /** The user ids whose payment record was actually written. */
+  updatedUserIds: string[]
+  updatedCount: number
+}
+
 export type EventFeeOverview = {
   /** Team memberships in the event, coordinators included. */
   totalMembers: number
