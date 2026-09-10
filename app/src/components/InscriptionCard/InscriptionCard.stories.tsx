@@ -71,11 +71,12 @@ export const NoAttendance: Story = {
   },
 }
 
-// Placeholder state used on the homepage while payment/shirt data does not exist.
-export const ComingSoon: Story = {
+// Placeholder state used on the homepage while shirt data does not exist. The
+// fee is real now, so only the shirt row still reads "Em breve".
+export const ShirtComingSoon: Story = {
   args: {
     subscriptionStatus: 'completed',
-    paymentStatus: 'coming_soon',
+    paymentStatus: 'pending',
     shirtStatus: 'coming_soon',
   },
 }

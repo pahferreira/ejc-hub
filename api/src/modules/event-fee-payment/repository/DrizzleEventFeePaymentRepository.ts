@@ -47,6 +47,20 @@ class DrizzleEventFeePaymentRepository implements EventFeePaymentRepository {
     return rows.map((row) => row.userId)
   }
 
+  async findPaymentByUserAndEvent(userId: string, eventId: string) {
+    const result = await db
+      .select()
+      .from(schema.eventFeePayments)
+      .where(
+        and(
+          eq(schema.eventFeePayments.userId, userId),
+          eq(schema.eventFeePayments.eventId, eventId)
+        )
+      )
+
+    return result[0]
+  }
+
   async aggregateFeeStatusByTeam(eventId: string) {
     return (
       db

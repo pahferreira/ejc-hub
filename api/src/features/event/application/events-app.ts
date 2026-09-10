@@ -6,6 +6,7 @@ import { subscriptionOptionRepository } from '../../../modules/subscription-opti
 import { userRepository } from '../../../modules/user/repository/DrizzleUserRepository.ts'
 import { eventRepository } from '../../../modules/event/repository/DrizzleEventRepository.ts'
 import { circleRepository } from '../../../modules/circle/repository/DrizzleCircleRepository.ts'
+import { eventFeePaymentRepository } from '../../../modules/event-fee-payment/repository/DrizzleEventFeePaymentRepository.ts'
 
 export const eventsApp = new Events(
   teamInstanceRepository,
@@ -14,5 +15,6 @@ export const eventsApp = new Events(
   userRepository,
   eventRepository,
   teamMembershipRepository,
-  circleRepository
+  circleRepository,
+  eventFeePaymentRepository
 )

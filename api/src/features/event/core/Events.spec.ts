@@ -8,6 +8,7 @@ import type { SubscriptionOptionRepository } from '../../../modules/subscription
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { CircleRepository } from '../../../modules/circle/domain/CircleRepository.ts'
+import type { EventFeePaymentRepository } from '../../../modules/event-fee-payment/domain/EventFeePaymentRepository.ts'
 import type { CurrentEventSubscriptionPayload } from '../domain/subscription-types.ts'
 
 const EVENT_ID = 'event-1'
@@ -81,7 +82,8 @@ describe('Events.subscribeCurrentEvent', () => {
       userRepository,
       eventRepository,
       {} as TeamMembershipRepository,
-      circleRepository
+      circleRepository,
+      {} as EventFeePaymentRepository
     )
   })
 
@@ -374,7 +376,8 @@ describe('Events.getCurrentEventTeamDetail', () => {
       {} as UserRepository,
       eventRepository,
       teamMembershipRepository,
-      {} as CircleRepository
+      {} as CircleRepository,
+      {} as EventFeePaymentRepository
     )
 
     return { events, teamInstanceRepository, teamMembershipRepository, subscriptionRepository }
@@ -470,7 +473,8 @@ describe('Events.getCurrentEventTeamDetail', () => {
       {} as UserRepository,
       eventRepository,
       {} as TeamMembershipRepository,
-      {} as CircleRepository
+      {} as CircleRepository,
+      {} as EventFeePaymentRepository
     )
 
     await expect(eventsWithoutCurrentEvent.getCurrentEventTeamDetail(TEAM_KEY)).rejects.toThrow(
@@ -529,7 +533,8 @@ describe('Events.getMyCurrentEventTeamDetail', () => {
       userRepository,
       eventRepository,
       teamMembershipRepository,
-      {} as CircleRepository
+      {} as CircleRepository,
+      {} as EventFeePaymentRepository
     )
 
     return { events }
@@ -580,5 +585,140 @@ describe('Events.getMyCurrentEventTeamDetail', () => {
     await expect(events.getMyCurrentEventTeamDetail(USER_AUTH_ID)).rejects.toThrow(
       'Current event not set'
     )
+  })
+})
+
+describe('Events.getCurrentEventSubscriptionStatus', () => {
+  function makeEvents(opts: {
+    subscription?: { id: string; status: string } | undefined
+    feePayment?: { status: string } | undefined
+  }) {
+    const userRepository = {
+      getUser: vi.fn().mockResolvedValue({ id: USER_ID, authId: USER_AUTH_ID }),
+    } as unknown as UserRepository
+
+    const eventRepository = {
+      findCurrentEvent: vi.fn().mockResolvedValue({ id: EVENT_ID, name: 'EJC 2026' }),
+    } as unknown as EventRepository
+
+    const subscriptionRepository = {
+      getSubscriptionByUserAndEvent: vi.fn().mockResolvedValue(opts.subscription),
+    } as unknown as SubscriptionRepository
+
+    const subscriptionOptionRepository = {
+      listTeamOptionsBySubscription: vi.fn().mockResolvedValue([]),
+    } as unknown as SubscriptionOptionRepository
+
+    const teamInstanceRepository = {
+      findUserTeamForEvent: vi.fn().mockResolvedValue(undefined),
+    } as unknown as TeamInstanceRepository
+
+    const eventFeePaymentRepository = {
+      findPaymentByUserAndEvent: vi.fn().mockResolvedValue(opts.feePayment),
+    } as unknown as EventFeePaymentRepository
+
+    const events = new Events(
+      teamInstanceRepository,
+      subscriptionRepository,
+      subscriptionOptionRepository,
+      userRepository,
+      eventRepository,
+      {} as TeamMembershipRepository,
+      {} as CircleRepository,
+      eventFeePaymentRepository
+    )
+
+    return { events, eventFeePaymentRepository }
+  }
+
+  it('reports no fee status at all for someone who has not subscribed', async () => {
+    // Null rather than pending: a person with no place in the event owes nothing.
+    const { events } = makeEvents({ subscription: undefined })
+
+    const result = await events.getCurrentEventSubscriptionStatus(USER_AUTH_ID)
+
+    expect(result.eventFeeStatus).toBeNull()
+  })
+
+  it('does not look up a payment for someone who has not subscribed', async () => {
+    const { events, eventFeePaymentRepository } = makeEvents({ subscription: undefined })
+
+    await events.getCurrentEventSubscriptionStatus(USER_AUTH_ID)
+
+    expect(eventFeePaymentRepository.findPaymentByUserAndEvent).not.toHaveBeenCalled()
+  })
+
+  it('reports a pending fee for a subscriber with no payment record yet', async () => {
+    const { events } = makeEvents({
+      subscription: { id: 'subscription-1', status: 'completed' },
+      feePayment: undefined,
+    })
+
+    const result = await events.getCurrentEventSubscriptionStatus(USER_AUTH_ID)
+
+    expect(result.eventFeeStatus).toBe('pending')
+  })
+
+  it('reports a settled fee once the payment is recorded', async () => {
+    const { events } = makeEvents({
+      subscription: { id: 'subscription-1', status: 'completed' },
+      feePayment: { status: 'paid' },
+    })
+
+    const result = await events.getCurrentEventSubscriptionStatus(USER_AUTH_ID)
+
+    expect(result.eventFeeStatus).toBe('paid')
+  })
+
+  it('reads a comped fee as settled, since the member owes nothing', async () => {
+    const { events } = makeEvents({
+      subscription: { id: 'subscription-1', status: 'completed' },
+      feePayment: { status: 'exempt' },
+    })
+
+    const result = await events.getCurrentEventSubscriptionStatus(USER_AUTH_ID)
+
+    expect(result.eventFeeStatus).toBe('paid')
+  })
+
+  it.each(['pending', 'not_paid', 'refunded'])(
+    'reads a %s fee as outstanding',
+    async (feeStatus) => {
+      const { events } = makeEvents({
+        subscription: { id: 'subscription-1', status: 'completed' },
+        feePayment: { status: feeStatus },
+      })
+
+      const result = await events.getCurrentEventSubscriptionStatus(USER_AUTH_ID)
+
+      expect(result.eventFeeStatus).toBe('pending')
+    }
+  )
+
+  it('scopes the payment lookup to the current event', async () => {
+    // A person who attended a previous event has a fee row there too.
+    const { events, eventFeePaymentRepository } = makeEvents({
+      subscription: { id: 'subscription-1', status: 'completed' },
+    })
+
+    await events.getCurrentEventSubscriptionStatus(USER_AUTH_ID)
+
+    expect(eventFeePaymentRepository.findPaymentByUserAndEvent).toHaveBeenCalledWith(
+      USER_ID,
+      EVENT_ID
+    )
+  })
+
+  it('reports a fee status for a subscriber who has not been placed on a team yet', async () => {
+    // The fee is owed once per (event, user), so it does not wait on team
+    // assignment the way the treasurer's membership-driven list does.
+    const { events } = makeEvents({
+      subscription: { id: 'subscription-1', status: 'pending' },
+    })
+
+    const result = await events.getCurrentEventSubscriptionStatus(USER_AUTH_ID)
+
+    expect(result.assignedTeam).toBeNull()
+    expect(result.eventFeeStatus).toBe('pending')
   })
 })

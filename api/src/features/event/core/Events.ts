@@ -17,6 +17,8 @@ import type {
   SubscriptionPayload,
   SubscriptionWithDetails,
 } from '../domain/subscription-types.ts'
+import type { EventFeePaymentRepository } from '../../../modules/event-fee-payment/domain/EventFeePaymentRepository.ts'
+import { toMemberFeeStanding } from '../../../modules/event-fee-payment/domain/fee-payment-status.ts'
 import type { TeamDetail, TeamOverview, TeamsOverviewStats } from '../domain/team-overview.types.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
@@ -36,6 +38,7 @@ export class Events {
   #userRepository: UserRepository
   #eventsRepository: EventRepository
   #circleRepository: CircleRepository
+  #eventFeePaymentRepository: EventFeePaymentRepository
 
   constructor(
     teamInstanceRepo: TeamInstanceRepository,
@@ -44,7 +47,8 @@ export class Events {
     userRepo: UserRepository,
     eventRepo: EventRepository,
     teamMembershipRepo: TeamMembershipRepository,
-    circleRepo: CircleRepository
+    circleRepo: CircleRepository,
+    eventFeePaymentRepo: EventFeePaymentRepository
   ) {
     this.#teamInstanceRepository = teamInstanceRepo
     this.#subscriptionRepository = subscriptionRepo
@@ -53,6 +57,7 @@ export class Events {
     this.#eventsRepository = eventRepo
     this.#teamMembershipRepository = teamMembershipRepo
     this.#circleRepository = circleRepo
+    this.#eventFeePaymentRepository = eventFeePaymentRepo
   }
 
   async subscribe(eventId: string, userAuthId: string, input: SubscriptionPayload) {
@@ -476,18 +481,25 @@ export class Events {
     )
 
     if (!subscription) {
+      // Null, not `pending`: someone who has not subscribed owes nothing yet,
+      // and reporting `pending` would put a debt on a card for a person with no
+      // place in the event.
       return {
         eventName: currentEvent.name,
         subscriptionStatus: null,
         assignedTeam: null,
         preferences: [],
+        eventFeeStatus: null,
       }
     }
 
-    const team = await this.#teamInstanceRepository.findUserTeamForEvent(user.id, currentEvent.id)
-    const preferences = await this.#subscriptionOptionRepository.listTeamOptionsBySubscription(
-      subscription.id
-    )
+    // Three independent reads for one page load; the coordinators below are the
+    // only part that has to wait, since it needs the resolved team.
+    const [team, preferences, feePayment] = await Promise.all([
+      this.#teamInstanceRepository.findUserTeamForEvent(user.id, currentEvent.id),
+      this.#subscriptionOptionRepository.listTeamOptionsBySubscription(subscription.id),
+      this.#eventFeePaymentRepository.findPaymentByUserAndEvent(user.id, currentEvent.id),
+    ])
 
     let coordinators: TeamCoordinator[] = []
 
@@ -500,6 +512,16 @@ export class Events {
       subscriptionStatus: subscription.status,
       assignedTeam: team ? { ...team, coordinators } : null,
       preferences,
+      // Folded through the same `toMemberFeeStanding` the treasurer's list and
+      // the by-team overview use, so a member's own card can never disagree with
+      // the coordination screens about whether they have settled. It takes the
+      // undefined directly: no payment record means nothing has been collected,
+      // which is exactly `pending`.
+      //
+      // Not membership-scoped, unlike the treasurer's list: the fee is owed once
+      // per (event, user), so a subscriber still waiting to be placed on a team
+      // has a fee standing just as much as someone already assigned.
+      eventFeeStatus: toMemberFeeStanding(feePayment?.status),
     }
   }
 

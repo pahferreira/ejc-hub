@@ -1,4 +1,5 @@
 import type { DbExecutor } from '../../../core/database/client.ts'
+import type { EventFeePaymentModel } from '../../../core/database/schemas/index.ts'
 import type { SettableFeeStatus } from './fee-payment-status.ts'
 
 export type SetFeePaymentsStatusInput = {
@@ -57,6 +58,30 @@ export interface EventFeePaymentRepository {
    * changed — the caller's requested list is only an intent.
    */
   setPaymentsStatus: (input: SetFeePaymentsStatusInput) => Promise<string[]>
+
+  /**
+   * The fee record of one person in one event, or `undefined` when none exists.
+   *
+   * At most one row by construction, not a first-of-many: the table is unique on
+   * `(event_id, user_id)`.
+   *
+   * `undefined` is an ordinary answer rather than a miss — a row is only written
+   * the first time someone records a status, so most people legitimately have
+   * none. What that absence means for a fee is `toMemberFeeStanding`'s call, not
+   * this method's, which is why the whole row comes back untranslated.
+   *
+   * Returns the record rather than a single column even though today's only
+   * caller reads `status`. A point lookup on the unique index costs the same
+   * either way, and a `findStatusBy...` would bake one caller's present appetite
+   * into the data layer — the next screen wanting `method` or `paidAt` for a
+   * receipt would have to widen it or add a near-duplicate. Mirrors
+   * `getSubscriptionByUserAndEvent` on the sibling table, which has the same
+   * `(event_id, user_id)` shape.
+   */
+  findPaymentByUserAndEvent: (
+    userId: string,
+    eventId: string
+  ) => Promise<EventFeePaymentModel | undefined>
 
   /**
    * Fee standing per team for one event.
