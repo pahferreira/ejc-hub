@@ -339,6 +339,8 @@ describe('Events.getCurrentEventTeamDetail', () => {
     coordinatorUserIds?: string[]
     maxCapacity?: number
     maxAllowedCoordinators?: number
+    /** Stored `event_fee_payments.status` per user id; absent means no row. */
+    feeStatusByUserId?: Record<string, string>
   }) {
     const eventRepository = {
       findCurrentEvent: vi.fn().mockResolvedValue({ id: EVENT_ID }),
@@ -369,6 +371,12 @@ describe('Events.getCurrentEventTeamDetail', () => {
       listSubscriptionsByEventId: vi.fn().mockResolvedValue(opts.subscriptions),
     } as unknown as SubscriptionRepository
 
+    const eventFeePaymentRepository = {
+      listPaymentStatusesByUserIds: vi
+        .fn()
+        .mockResolvedValue(new Map(Object.entries(opts.feeStatusByUserId ?? {}))),
+    } as unknown as EventFeePaymentRepository
+
     const events = new Events(
       teamInstanceRepository,
       subscriptionRepository,
@@ -377,10 +385,16 @@ describe('Events.getCurrentEventTeamDetail', () => {
       eventRepository,
       teamMembershipRepository,
       {} as CircleRepository,
-      {} as EventFeePaymentRepository
+      eventFeePaymentRepository
     )
 
-    return { events, teamInstanceRepository, teamMembershipRepository, subscriptionRepository }
+    return {
+      events,
+      teamInstanceRepository,
+      teamMembershipRepository,
+      subscriptionRepository,
+      eventFeePaymentRepository,
+    }
   }
 
   it('resolves the team by templateKey', async () => {
@@ -459,6 +473,115 @@ describe('Events.getCurrentEventTeamDetail', () => {
     expect(detail.coordinators.map((c) => c.userId)).toEqual(['coord-1', 'coord-3'])
   })
 
+  it('marks a roster member as paid once their fee is recorded', async () => {
+    const { events } = makeEvents({
+      subscriptions: [buildSubscription('member-1')],
+      memberUserIds: ['member-1'],
+      feeStatusByUserId: { 'member-1': 'paid' },
+    })
+
+    const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    expect(detail.members[0].eventFeeStatus).toBe('paid')
+  })
+
+  it('marks a roster member with no payment row as pending', async () => {
+    // Most people have no row at all until someone records a status.
+    const { events } = makeEvents({
+      subscriptions: [buildSubscription('member-1')],
+      memberUserIds: ['member-1'],
+      feeStatusByUserId: {},
+    })
+
+    const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    expect(detail.members[0].eventFeeStatus).toBe('pending')
+  })
+
+  it('reads a comped fee as settled, since the member owes nothing', async () => {
+    const { events } = makeEvents({
+      subscriptions: [buildSubscription('member-1')],
+      memberUserIds: ['member-1'],
+      feeStatusByUserId: { 'member-1': 'exempt' },
+    })
+
+    const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    expect(detail.members[0].eventFeeStatus).toBe('paid')
+  })
+
+  it.each(['pending', 'not_paid', 'refunded'])('reads a %s fee as outstanding', async (status) => {
+    const { events } = makeEvents({
+      subscriptions: [buildSubscription('member-1')],
+      memberUserIds: ['member-1'],
+      feeStatusByUserId: { 'member-1': status },
+    })
+
+    const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    expect(detail.members[0].eventFeeStatus).toBe('pending')
+  })
+
+  it('reports a fee status for coordinators too, who owe the fee like everyone else', async () => {
+    const { events } = makeEvents({
+      subscriptions: [buildSubscription('coord-1')],
+      coordinatorUserIds: ['coord-1'],
+      feeStatusByUserId: { 'coord-1': 'paid' },
+    })
+
+    const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    expect(detail.coordinators[0].eventFeeStatus).toBe('paid')
+  })
+
+  it('reads the whole roster in a single batched query rather than one call per person', async () => {
+    // The guard against an N+1 on a page-load endpoint.
+    const { events, eventFeePaymentRepository } = makeEvents({
+      subscriptions: [
+        buildSubscription('coord-1'),
+        buildSubscription('member-1'),
+        buildSubscription('member-2'),
+      ],
+      coordinatorUserIds: ['coord-1'],
+      memberUserIds: ['member-1', 'member-2'],
+    })
+
+    await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    expect(eventFeePaymentRepository.listPaymentStatusesByUserIds).toHaveBeenCalledTimes(1)
+  })
+
+  it('asks for the coordinators and members of the team in one id list', async () => {
+    const { events, eventFeePaymentRepository } = makeEvents({
+      subscriptions: [buildSubscription('coord-1'), buildSubscription('member-1')],
+      coordinatorUserIds: ['coord-1'],
+      memberUserIds: ['member-1'],
+    })
+
+    await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    expect(eventFeePaymentRepository.listPaymentStatusesByUserIds).toHaveBeenCalledWith(EVENT_ID, [
+      'coord-1',
+      'member-1',
+    ])
+  })
+
+  it('does not ask for the same person twice when ids overlap', async () => {
+    // Belt and braces: memberships and coordinators are disjoint by constraint,
+    // but the roster list must not be able to send a duplicate to `inArray`.
+    const { events, eventFeePaymentRepository } = makeEvents({
+      subscriptions: [buildSubscription('person-1')],
+      coordinatorUserIds: ['person-1'],
+      memberUserIds: ['person-1'],
+    })
+
+    await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    expect(eventFeePaymentRepository.listPaymentStatusesByUserIds).toHaveBeenCalledWith(EVENT_ID, [
+      'person-1',
+    ])
+  })
+
   it('rejects when there is no current event', async () => {
     const { teamInstanceRepository } = makeEvents({ subscriptions: [] })
 
@@ -526,6 +649,10 @@ describe('Events.getMyCurrentEventTeamDetail', () => {
       listSubscriptionsByEventId: vi.fn().mockResolvedValue([]),
     } as unknown as SubscriptionRepository
 
+    const eventFeePaymentRepository = {
+      listPaymentStatusesByUserIds: vi.fn().mockResolvedValue(new Map()),
+    } as unknown as EventFeePaymentRepository
+
     const events = new Events(
       teamInstanceRepository,
       subscriptionRepository,
@@ -534,7 +661,7 @@ describe('Events.getMyCurrentEventTeamDetail', () => {
       eventRepository,
       teamMembershipRepository,
       {} as CircleRepository,
-      {} as EventFeePaymentRepository
+      eventFeePaymentRepository
     )
 
     return { events }

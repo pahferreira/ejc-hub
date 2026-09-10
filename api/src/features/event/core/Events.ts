@@ -19,7 +19,12 @@ import type {
 } from '../domain/subscription-types.ts'
 import type { EventFeePaymentRepository } from '../../../modules/event-fee-payment/domain/EventFeePaymentRepository.ts'
 import { toMemberFeeStanding } from '../../../modules/event-fee-payment/domain/fee-payment-status.ts'
-import type { TeamDetail, TeamOverview, TeamsOverviewStats } from '../domain/team-overview.types.ts'
+import type {
+  TeamDetail,
+  TeamOverview,
+  TeamRosterPerson,
+  TeamsOverviewStats,
+} from '../domain/team-overview.types.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
 import { getTeamSummaryBucket } from './team-summary.ts'
@@ -316,24 +321,46 @@ export class Events {
       this.#subscriptionRepository.listSubscriptionsByEventId(eventId),
     ])
 
+    const memberUserIds = membershipUserIdsByTeam.get(instance.id) ?? []
+
+    // One read for the whole roster, not one per person: this is a page-load
+    // endpoint, and a per-member lookup would be an N+1 that grows with team
+    // size. Deduped because a roster id set is the union of two membership
+    // queries, and `inArray` should not carry the same id twice.
+    //
+    // It cannot join the Promise.all above — the ids it filters on are that
+    // batch's output.
+    const rosterUserIds = [...new Set([...coordinatorUserIds, ...memberUserIds])]
+    const feeStatusByUserId = await this.#eventFeePaymentRepository.listPaymentStatusesByUserIds(
+      eventId,
+      rosterUserIds
+    )
+
     const subscriptionByUserId = new Map(subscriptions.map((sub) => [sub.userId, sub]))
 
     // Coordinators are a flat peer set (no ordering).
     const coordinatorIdSet = new Set(coordinatorUserIds)
 
+    // Folded through the same `toMemberFeeStanding` the treasurer's list and the
+    // by-team overview use, so a roster card and the financial screens can never
+    // disagree about who has settled. A user absent from the map has no payment
+    // row, which the fold reads as `pending`.
+    const toRosterPerson = (subscription: SubscriptionWithDetails): TeamRosterPerson => ({
+      ...mapSubscriptionToPerson(subscription, instanceNameById),
+      eventFeeStatus: toMemberFeeStanding(feeStatusByUserId.get(subscription.userId)),
+    })
+
     const coordinators = coordinatorUserIds
       .map((userId) => subscriptionByUserId.get(userId))
       .filter((subscription) => subscription !== undefined)
-      .map((subscription) => mapSubscriptionToPerson(subscription, instanceNameById))
-
-    const memberUserIds = membershipUserIdsByTeam.get(instance.id) ?? []
+      .map(toRosterPerson)
 
     // Members (type='member') and coordinators (type='coordinator') are disjoint
     // by the team_memberships unique constraint, so no dedup guard is needed here.
     const members = memberUserIds
       .map((userId) => subscriptionByUserId.get(userId))
       .filter((subscription) => subscription !== undefined)
-      .map((subscription) => mapSubscriptionToPerson(subscription, instanceNameById))
+      .map(toRosterPerson)
 
     const memberCount = this.#countDistinctMembers(memberUserIds, [...coordinatorIdSet])
     const freeSlots = Math.max(0, instance.maxCapacity - memberCount)

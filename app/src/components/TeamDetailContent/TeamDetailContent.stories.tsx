@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { TeamDetailContent } from './TeamDetailContent'
 import { Button } from '../Button/Button'
-import type { TeamDetail, TeamPerson } from '../../services/teams/teams.types'
+import type { TeamDetail, TeamRosterPerson } from '../../services/teams/teams.types'
 
 const person = (
-  overrides: Partial<TeamPerson> & Pick<TeamPerson, 'userId' | 'name'>
-): TeamPerson => ({
+  overrides: Partial<TeamRosterPerson> & Pick<TeamRosterPerson, 'userId' | 'name'>
+): TeamRosterPerson => ({
   nickname: overrides.name,
   phone: '(11) 91000-4000',
   pictureUrl: null,
@@ -14,6 +14,7 @@ const person = (
   areas: ['Liderança', 'Organização'],
   preferences: [],
   weekAvailability: ['monday', 'wednesday', 'friday'],
+  eventFeeStatus: 'pending',
   ...overrides,
 })
 
@@ -28,12 +29,12 @@ const team: TeamDetail = {
   filledPercentage: 53,
   coordinatorSlots: 3,
   coordinators: [
-    person({ userId: 'coord-1', name: 'Maria Silva', nickname: 'Mari' }),
+    person({ userId: 'coord-1', name: 'Maria Silva', nickname: 'Mari', eventFeeStatus: 'paid' }),
     person({ userId: 'coord-2', name: 'João Santos', nickname: 'Joca' }),
   ],
   members: [
     person({ userId: 'm-1', name: 'Alice Santos', nickname: 'Ali', experienceType: 'newbie' }),
-    person({ userId: 'm-2', name: 'Júlia Barbosa', nickname: 'Ju' }),
+    person({ userId: 'm-2', name: 'Júlia Barbosa', nickname: 'Ju', eventFeeStatus: 'paid' }),
     person({ userId: 'm-3', name: 'Mariana Martins', nickname: 'Mari' }),
   ],
 }

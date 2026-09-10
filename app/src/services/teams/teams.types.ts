@@ -81,6 +81,25 @@ export type TeamPerson = {
   weekAvailability: string[]
 }
 
+/**
+ * A person on a team detail roster: a `TeamPerson` plus their event-fee standing.
+ *
+ * Extends rather than widening `TeamPerson` because the team-building board maps
+ * the same person shape without ever loading fee data — mirroring how the API
+ * splits `TeamRosterPerson` off `TeamPerson`.
+ *
+ * `eventFeeStatus` is never null: a person only reaches this roster by having a
+ * subscription in the event, and the API reads "no payment record" as `pending`.
+ *
+ * The union is spelled out rather than imported from `finance.types` to keep the
+ * dependency one-way — finance already imports `TeamMembershipType` from here.
+ * It is structurally identical to `TeamMemberFeeStatus`, so it passes straight
+ * into `MemberFeeStatusPill`. `paid` covers a comped (exempt) fee too.
+ */
+export type TeamRosterPerson = TeamPerson & {
+  eventFeeStatus: 'paid' | 'pending'
+}
+
 export type TeamDetail = {
   id: string
   templateKey: string
@@ -93,6 +112,6 @@ export type TeamDetail = {
   /** Total number of coordinator slots a team can have. */
   coordinatorSlots: number
   /** Slot-ordered coordinators (0..coordinatorSlots), unfilled slots omitted. */
-  coordinators: TeamPerson[]
-  members: TeamPerson[]
+  coordinators: TeamRosterPerson[]
+  members: TeamRosterPerson[]
 }

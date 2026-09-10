@@ -84,6 +84,25 @@ export interface EventFeePaymentRepository {
   ) => Promise<EventFeePaymentModel | undefined>
 
   /**
+   * The stored fee status of many people in one event, keyed by user id.
+   *
+   * The batch answer to `findPaymentByUserAndEvent`, for callers holding a
+   * roster: one statement for the whole list instead of a lookup per person,
+   * which is what keeps a team-detail page load off an N+1.
+   *
+   * Users with no payment record are simply absent from the map rather than
+   * present with a null. `Map.get` already returns `undefined` for them, which
+   * `toMemberFeeStanding` reads as `pending` — so the caller folds missing and
+   * recorded statuses through one path and cannot invent a third state for
+   * "no row".
+   *
+   * Returns the raw column, not a folded standing: the fold is presentation
+   * (`toMemberFeeStanding`), and pre-folding here would leave a caller unable to
+   * tell `exempt` from `paid` if a future screen needs to.
+   */
+  listPaymentStatusesByUserIds: (eventId: string, userIds: string[]) => Promise<Map<string, string>>
+
+  /**
    * Fee standing per team for one event.
    *
    * Driven from team instances rather than memberships so a team with nobody

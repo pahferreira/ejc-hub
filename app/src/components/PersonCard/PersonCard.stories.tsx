@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
 import { PersonCard } from './PersonCard'
+import { MemberFeeStatusPill } from '../TeamMembersFeeCard/MemberFeeStatusPill'
 import { ExperienceBadge } from '../ExperienceBadge/ExperienceBadge'
 
 const meta = {
@@ -31,6 +32,7 @@ export const Coordinator: Story = {
     weekAvailability: ['monday', 'wednesday', 'friday'],
     attributes: ['Música', 'Teatro'],
     showStatusChips: true,
+    feeStatusChip: <MemberFeeStatusPill status="paid" />,
   },
 }
 
@@ -42,6 +44,7 @@ export const Member: Story = {
     weekAvailability: ['saturday', 'sunday'],
     attributes: ['Cozinha'],
     showStatusChips: true,
+    feeStatusChip: <MemberFeeStatusPill status="pending" />,
     onRemove: fn(),
     removeAriaLabel: 'Remover Bruno Carvalho da equipe',
   },
