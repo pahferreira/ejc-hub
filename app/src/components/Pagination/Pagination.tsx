@@ -20,14 +20,14 @@ export function Pagination(props: PaginationProps) {
   return (
     <div className="flex items-center justify-between gap-4 text-sm text-dark-brown">
       <span className="font-medium">
-        {from}-{to} of {props.total}
+        {from}-{to} de {props.total}
       </span>
       <div className="flex items-center gap-2">
         <Button
           variant="secondary"
           onClick={props.onPrev}
           disabled={isFirstPage}
-          ariaLabel="Previous page"
+          ariaLabel="Página anterior"
         >
           <FiChevronLeft size={16} aria-hidden />
         </Button>
@@ -35,7 +35,7 @@ export function Pagination(props: PaginationProps) {
           variant="primary"
           onClick={props.onNext}
           disabled={isLastPage}
-          ariaLabel="Next page"
+          ariaLabel="Próxima página"
         >
           <FiChevronRight size={16} aria-hidden />
         </Button>

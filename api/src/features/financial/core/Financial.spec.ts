@@ -3,6 +3,7 @@ import { Financial } from './Financial.ts'
 import type {
   SetFeePaymentsStatusInput,
   EventFeePaymentRepository,
+  MemberFeeStatusRow,
 } from '../../../modules/event-fee-payment/domain/EventFeePaymentRepository.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
@@ -44,6 +45,49 @@ function makeFinancial(rows: TeamAggregate[], currentEvent: unknown = { id: 'eve
       userRepository
     ),
     eventFeePaymentRepository,
+  }
+}
+
+function buildMemberFeeStatusRow(
+  overrides: Partial<MemberFeeStatusRow> & Pick<MemberFeeStatusRow, 'userId' | 'name'>
+): MemberFeeStatusRow {
+  return {
+    nickname: null,
+    phone: '(11) 91000-4000',
+    pictureUrl: null,
+    experienceType: 'experienced',
+    circleKey: null,
+    membershipType: 'member',
+    teamId: 'team-1',
+    teamKey: 'acolhida',
+    teamName: 'Acolhida',
+    feeStatus: null,
+    ...overrides,
+  }
+}
+
+function makeMemberListFinancial(
+  rows: MemberFeeStatusRow[],
+  currentEvent: unknown = { id: 'e-1' }
+) {
+  const listMemberFeeStatus = vi.fn().mockResolvedValue(rows)
+
+  const eventFeePaymentRepository = {
+    listMemberFeeStatus,
+  } as unknown as EventFeePaymentRepository
+
+  const eventRepository = {
+    findCurrentEvent: vi.fn().mockResolvedValue(currentEvent),
+  } as unknown as EventRepository
+
+  return {
+    financial: new Financial(
+      eventFeePaymentRepository,
+      eventRepository,
+      {} as unknown as TeamMembershipRepository,
+      {} as unknown as UserRepository
+    ),
+    listMemberFeeStatus,
   }
 }
 
@@ -198,6 +242,151 @@ describe('Financial.getCurrentEventOverview', () => {
       pendingCount: 0,
       paidPercentage: 0,
       teams: [],
+    })
+  })
+})
+
+describe('Financial.listCurrentEventMemberFees', () => {
+  it('throws when no event is marked as current', async () => {
+    const { financial } = makeMemberListFinancial([], null)
+
+    await expect(financial.listCurrentEventMemberFees()).rejects.toThrow('Current event not set')
+  })
+
+  it('lists against the current event id', async () => {
+    const { financial, listMemberFeeStatus } = makeMemberListFinancial([], { id: 'event-42' })
+
+    await financial.listCurrentEventMemberFees()
+
+    expect(listMemberFeeStatus).toHaveBeenCalledWith('event-42')
+  })
+
+  it('falls back to the first name when a member has no nickname', async () => {
+    const { financial } = makeMemberListFinancial([
+      buildMemberFeeStatusRow({ userId: 'u-1', name: 'Maria Silva', nickname: null }),
+    ])
+
+    const result = await financial.listCurrentEventMemberFees()
+
+    expect(result.items[0].nickname).toBe('Maria')
+  })
+
+  it('prefers the stored nickname when there is one', async () => {
+    const { financial } = makeMemberListFinancial([
+      buildMemberFeeStatusRow({ userId: 'u-1', name: 'Maria Silva', nickname: 'Mari' }),
+    ])
+
+    const result = await financial.listCurrentEventMemberFees()
+
+    expect(result.items[0].nickname).toBe('Mari')
+  })
+
+  it.each([
+    ['paid', 'paid'],
+    // Comped: the member owes nothing, so the list reads them as settled.
+    ['exempt', 'paid'],
+    ['pending', 'pending'],
+    ['not_paid', 'pending'],
+    ['refunded', 'pending'],
+  ] as const)('reads a stored %s status as %s', async (stored, expected) => {
+    const { financial } = makeMemberListFinancial([
+      buildMemberFeeStatusRow({ userId: 'u-1', name: 'Maria Silva', feeStatus: stored }),
+    ])
+
+    const result = await financial.listCurrentEventMemberFees()
+
+    expect(result.items[0].status).toBe(expected)
+  })
+
+  it('reads a member with no payment row as pending', async () => {
+    const { financial } = makeMemberListFinancial([
+      buildMemberFeeStatusRow({ userId: 'u-1', name: 'Maria Silva', feeStatus: null }),
+    ])
+
+    const result = await financial.listCurrentEventMemberFees()
+
+    expect(result.items[0].status).toBe('pending')
+  })
+
+  it('reports the filtered total, not the event total', async () => {
+    const { financial } = makeMemberListFinancial([
+      buildMemberFeeStatusRow({ userId: 'u-1', name: 'Maria Silva', teamKey: 'acolhida' }),
+      buildMemberFeeStatusRow({ userId: 'u-2', name: 'João Santos', teamKey: 'cozinha' }),
+    ])
+
+    const result = await financial.listCurrentEventMemberFees({ teamKey: 'cozinha' })
+
+    expect(result.total).toBe(1)
+    expect(result.items.map((item) => item.userId)).toEqual(['u-2'])
+  })
+
+  it('summarises the filtered set, so the cards agree with the table', async () => {
+    const { financial } = makeMemberListFinancial([
+      buildMemberFeeStatusRow({
+        userId: 'u-1',
+        name: 'Maria Silva',
+        teamKey: 'cozinha',
+        feeStatus: 'paid',
+      }),
+      buildMemberFeeStatusRow({ userId: 'u-2', name: 'João Santos', teamKey: 'cozinha' }),
+      // Outside the filter, so it must not move any card.
+      buildMemberFeeStatusRow({
+        userId: 'u-3',
+        name: 'Ana Lima',
+        teamKey: 'acolhida',
+        feeStatus: 'paid',
+      }),
+    ])
+
+    const result = await financial.listCurrentEventMemberFees({ teamKey: 'cozinha' })
+
+    expect(result.stats).toEqual({
+      totalMembers: 2,
+      paidCount: 1,
+      pendingCount: 1,
+      paidPercentage: 50,
+    })
+  })
+
+  it('defaults to the first page of twenty', async () => {
+    const rows = Array.from({ length: 25 }, (_, index) =>
+      buildMemberFeeStatusRow({ userId: `u-${index}`, name: `Member ${index}` })
+    )
+    const { financial } = makeMemberListFinancial(rows)
+
+    const result = await financial.listCurrentEventMemberFees()
+
+    expect(result.items).toHaveLength(20)
+    expect(result.page).toBe(1)
+    expect(result.pageSize).toBe(20)
+    expect(result.total).toBe(25)
+  })
+
+  it('echoes back the page it served', async () => {
+    const rows = Array.from({ length: 25 }, (_, index) =>
+      buildMemberFeeStatusRow({ userId: `u-${index}`, name: `Member ${index}` })
+    )
+    const { financial } = makeMemberListFinancial(rows)
+
+    const result = await financial.listCurrentEventMemberFees({}, { page: 2, pageSize: 20 })
+
+    expect(result.items).toHaveLength(5)
+    expect(result.page).toBe(2)
+    // The stats still cover every match, not just the five rows on this page.
+    expect(result.stats.totalMembers).toBe(25)
+  })
+
+  it('returns an empty list for an event with nobody assigned', async () => {
+    const { financial } = makeMemberListFinancial([])
+
+    const result = await financial.listCurrentEventMemberFees()
+
+    expect(result).toEqual({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 20,
+      stats: { totalMembers: 0, paidCount: 0, pendingCount: 0, paidPercentage: 0 },
     })
   })
 })

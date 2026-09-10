@@ -6,10 +6,8 @@ import type { TeamMembershipRepository } from '../../../modules/team-membership/
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import { formatAreas } from '../../event/core/format-areas.ts'
-import {
-  mapSubscriptionToPerson,
-  resolveNickname,
-} from '../../event/core/subscription-to-person.ts'
+import { mapSubscriptionToPerson } from '../../event/core/subscription-to-person.ts'
+import { resolveNickname } from '../../../shared/resolve-nickname.ts'
 import {
   COMPLETED_STATUS,
   UNASSIGNED_STATUS,

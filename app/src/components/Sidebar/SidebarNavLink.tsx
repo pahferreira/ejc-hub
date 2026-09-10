@@ -6,6 +6,7 @@ type SidebarNavLinkProps = {
   label: string
   icon: IconType
   isCollapsed: boolean
+  end?: boolean
 }
 
 export function SidebarNavLink(props: SidebarNavLinkProps) {
@@ -14,6 +15,7 @@ export function SidebarNavLink(props: SidebarNavLinkProps) {
   return (
     <NavLink
       to={props.path}
+      end={props.end}
       title={props.isCollapsed ? props.label : undefined}
       className={({ isActive }) =>
         `flex items-center py-2 rounded-lg text-sm transition-colors no-underline ${

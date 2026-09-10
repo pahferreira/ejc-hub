@@ -25,6 +25,7 @@ export function SidebarNavGroup(props: SidebarNavGroupProps) {
             label={item.label}
             icon={item.icon}
             isCollapsed={props.isCollapsed}
+            end={item.end}
           />
         ))}
       </div>

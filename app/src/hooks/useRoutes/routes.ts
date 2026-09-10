@@ -13,6 +13,7 @@ import { TeamBuildingPage } from '../../pages/TeamBuildingPage'
 import { TeamDetailPage } from '../../pages/TeamDetailPage'
 import { MyTeamPage } from '../../pages/MyTeamPage'
 import { EventFeePage } from '../../pages/EventFeePage'
+import { EventFeeMembersPage } from '../../pages/EventFeeMembersPage'
 import { Placeholder } from '../../pages/Placeholder/Placeholder'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import { FeatureFlag, type FeatureFlagValue } from '../useFeatureFlag/feature-flags'
@@ -84,8 +85,18 @@ export const routes: Route[] = [
   },
   {
     path: ROUTE_PATHS.EVENT_FEE,
-    name: 'Taxa de Inscrição',
+    name: 'Taxa por Equipe',
     component: EventFeePage,
+    permission: EventFeePermissions.Read,
+    featureFlag: FeatureFlag.EventFee,
+  },
+  {
+    path: ROUTE_PATHS.EVENT_FEE_MEMBERS,
+    name: 'Taxa por Membro',
+    component: EventFeeMembersPage,
+    // Read access only. Confirming is gated separately, inside the page, on
+    // `financials-event-fee:update` — a treasurer's assistant may legitimately
+    // see who owes without being able to settle it.
     permission: EventFeePermissions.Read,
     featureFlag: FeatureFlag.EventFee,
   },

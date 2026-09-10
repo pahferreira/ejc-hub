@@ -9,5 +9,6 @@ export const ROUTE_PATHS = {
   TEAM_DETAIL: '/teams/:teamKey',
   TEAM_TEMPLATES: '/templates',
   EVENT_FEE: '/financial/event-fee',
+  EVENT_FEE_MEMBERS: '/financial/event-fee/members',
   SHIRTS: '/financial/shirts',
 } as const

@@ -1,11 +1,32 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import type { EventModel } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
-import type { EventFeePaymentRepository } from '../../../modules/event-fee-payment/domain/EventFeePaymentRepository.ts'
-import type { SettableFeeStatus } from '../../../modules/event-fee-payment/domain/fee-payment-status.ts'
+import type {
+  EventFeePaymentRepository,
+  MemberFeeStatusRow,
+} from '../../../modules/event-fee-payment/domain/EventFeePaymentRepository.ts'
+import {
+  toMemberFeeStanding,
+  type SettableFeeStatus,
+} from '../../../modules/event-fee-payment/domain/fee-payment-status.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
-import type { EventFeeOverview, FeeStatusUpdateResult } from '../domain/event-fee.types.ts'
+import { resolveNickname } from '../../../shared/resolve-nickname.ts'
+import type {
+  EventFeeMemberFilters,
+  EventFeeMemberList,
+  EventFeeMemberPagination,
+  EventFeeMemberRow,
+  EventFeeOverview,
+  FeeStatusUpdateResult,
+} from '../domain/event-fee.types.ts'
+import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  filterMemberFees,
+  paginateMemberFees,
+  summarizeMemberFees,
+} from './member-fee-list.ts'
 
 const COORDINATOR_TYPE = 'coordinator'
 const PAID_STATUS = 'paid' as const
@@ -16,6 +37,26 @@ function toPercentage(paid: number, total: number): number {
   }
 
   return Math.round((paid / total) * 100)
+}
+
+// The repository speaks in stored columns; the page speaks in people. This is
+// the one place the two are reconciled, so a new consumer of the member list
+// cannot invent its own nickname fallback or its own idea of "paid".
+function toMemberRow(row: MemberFeeStatusRow): EventFeeMemberRow {
+  return {
+    userId: row.userId,
+    name: row.name,
+    nickname: resolveNickname(row.name, row.nickname),
+    phone: row.phone,
+    pictureUrl: row.pictureUrl,
+    experienceType: row.experienceType,
+    circleKey: row.circleKey,
+    membershipType: row.membershipType,
+    teamId: row.teamId,
+    teamKey: row.teamKey,
+    teamName: row.teamName,
+    status: toMemberFeeStanding(row.feeStatus),
+  }
 }
 
 export class Financial {
@@ -77,6 +118,39 @@ export class Financial {
         pendingCount: totalMembers - paidCount,
         paidPercentage: toPercentage(paidCount, totalMembers),
         teams,
+      }
+    })
+  }
+
+  /**
+   * The current event's team members with their fee standing, filtered and paged.
+   *
+   * Reads the whole event once and narrows in memory, the same shape as
+   * `Events.listCurrentEventSubscriptions`. That keeps the stat cards and the
+   * page on screen derived from one snapshot: counting in SQL and paging in SQL
+   * would be two queries that can disagree under a concurrent confirmation.
+   *
+   * `stats` covers the filtered set rather than the whole event, because the
+   * cards sit directly above the table and read as a summary of it — which is
+   * also why `stats.totalMembers` and `total` are the same number.
+   */
+  async listCurrentEventMemberFees(
+    filters: EventFeeMemberFilters = {},
+    pagination: EventFeeMemberPagination = {}
+  ): Promise<EventFeeMemberList> {
+    return this.#withCurrentEvent(async (event) => {
+      const rows = await this.#eventFeePaymentRepository.listMemberFeeStatus(event.id)
+      const filtered = filterMemberFees(rows.map(toMemberRow), filters)
+
+      const page = pagination.page ?? DEFAULT_PAGE
+      const pageSize = pagination.pageSize ?? DEFAULT_PAGE_SIZE
+
+      return {
+        items: paginateMemberFees(filtered, page, pageSize),
+        total: filtered.length,
+        page,
+        pageSize,
+        stats: summarizeMemberFees(filtered),
       }
     })
   }

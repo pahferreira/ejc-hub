@@ -10,9 +10,20 @@ import {
   confirmFeeBodySchema,
   confirmFeesBatchBodySchema,
   feePaymentUserParamsSchema,
+  listEventFeeMembersQuerystringSchema,
   setFeeStatusBatchBodySchema,
   setFeeStatusBodySchema,
 } from './financial.schema.ts'
+
+/**
+ * Who may write a fee status through the admin routes.
+ *
+ * `any` of create-or-update rather than create alone: recording a payment for
+ * someone who already has a row is an update, and the "Taxa por Membro" page
+ * gates its confirm controls on `financials-event-fee:update`. Requiring only
+ * `create` here would leave that page showing buttons that answer 403.
+ */
+const ADMIN_FEE_WRITE_PERMISSIONS = [EventFeePermissions.Create, EventFeePermissions.Update]
 
 // Every fee-status route resolves the caller the same way and reports the same
 // shape; only the targets, the status, and the authorization rule differ.
@@ -48,6 +59,29 @@ export function financialRoutes(server: FastifyServerInstance) {
           const overview = await financialApp.getCurrentEventOverview()
 
           return reply.code(HttpStatus.Ok).send({ overview })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    // The member-level read sibling of the overview above: same current-event
+    // scope, same permission, one row per person instead of one per team.
+    server.get(
+      '/events/current/event-fee-members',
+      {
+        schema: { querystring: listEventFeeMembersQuerystringSchema },
+        preHandler: authGuard(server, { permissions: [EventFeePermissions.Read] }),
+      },
+      async (request, reply) => {
+        try {
+          const { name, teamKey, status, page, pageSize } = request.query
+          const members = await financialApp.listCurrentEventMemberFees(
+            { name, teamKey, status },
+            { page, pageSize }
+          )
+
+          return reply.code(HttpStatus.Ok).send(members)
         } catch (error) {
           fastifyErrorHandler(reply, error)
         }
@@ -98,7 +132,10 @@ export function financialRoutes(server: FastifyServerInstance) {
       '/financial/event-fee/admin/payments/:userId/status',
       {
         schema: { params: feePaymentUserParamsSchema, body: setFeeStatusBodySchema },
-        preHandler: authGuard(server, { permissions: [EventFeePermissions.Create] }),
+        preHandler: authGuard(server, {
+          permissions: ADMIN_FEE_WRITE_PERMISSIONS,
+          mode: 'any',
+        }),
       },
       async (request, reply) => {
         try {
@@ -115,7 +152,10 @@ export function financialRoutes(server: FastifyServerInstance) {
       '/financial/event-fee/admin/payments/status',
       {
         schema: { body: setFeeStatusBatchBodySchema },
-        preHandler: authGuard(server, { permissions: [EventFeePermissions.Create] }),
+        preHandler: authGuard(server, {
+          permissions: ADMIN_FEE_WRITE_PERMISSIONS,
+          mode: 'any',
+        }),
       },
       async (request, reply) => {
         try {

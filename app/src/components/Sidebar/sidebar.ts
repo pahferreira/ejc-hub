@@ -8,6 +8,7 @@ import {
   FiUser,
   FiDollarSign,
   FiShoppingBag,
+  FiUserCheck,
 } from 'react-icons/fi'
 import {
   EventFeePermissions,
@@ -35,6 +36,14 @@ export type SidebarNavItem = {
    * filtered at render time against the feature-flag state.
    */
   featureFlag?: FeatureFlagValue
+  /**
+   * Highlights only on an exact path match. Needed when another nav item sits
+   * below this one's path (`/financial/event-fee` vs `/financial/event-fee/members`),
+   * since `NavLink` otherwise treats the ancestor as active too and both light up.
+   * Leave unset for items whose sub-routes have no nav entry of their own — the
+   * default prefix match is what keeps "Equipes" lit on `/teams/:teamKey`.
+   */
+  end?: boolean
 }
 
 export type SidebarNavGroup = {
@@ -87,9 +96,17 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
     title: 'FINANCEIRO',
     items: [
       {
-        label: 'Taxa de Inscrição',
+        label: 'Taxa por Equipe',
         path: ROUTE_PATHS.EVENT_FEE,
         icon: FiDollarSign,
+        permission: EventFeePermissions.Read,
+        featureFlag: FeatureFlag.EventFee,
+        end: true,
+      },
+      {
+        label: 'Taxa por Membro',
+        path: ROUTE_PATHS.EVENT_FEE_MEMBERS,
+        icon: FiUserCheck,
         permission: EventFeePermissions.Read,
         featureFlag: FeatureFlag.EventFee,
       },

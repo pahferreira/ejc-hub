@@ -21,7 +21,7 @@ export const Default = {
   },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    const next = canvas.getByLabelText('Next page')
+    const next = canvas.getByLabelText('Próxima página')
     await userEvent.click(next)
     expect(args.onNext).toHaveBeenCalled()
   },

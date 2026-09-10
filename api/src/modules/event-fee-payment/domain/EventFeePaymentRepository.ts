@@ -12,6 +12,32 @@ export type SetFeePaymentsStatusInput = {
   executor?: DbExecutor
 }
 
+/**
+ * One team member of an event alongside the fee status stored for them, exactly
+ * as the column holds it — `null` when no payment row exists yet.
+ *
+ * Deliberately not reduced to paid/pending here: folding is a presentation rule
+ * (`toMemberFeeStanding`), and a repository that pre-folded would leave callers
+ * unable to tell `exempt` from `paid` if a future screen needs to.
+ */
+export type MemberFeeStatusRow = {
+  userId: string
+  name: string
+  /** Raw column value; may be null, in which case the caller falls back. */
+  nickname: string | null
+  phone: string | null
+  pictureUrl: string | null
+  experienceType: 'newbie' | 'experienced' | 'experienced_outsider'
+  /** Key of the person's circle (newbies only); null when unset. */
+  circleKey: string | null
+  membershipType: 'member' | 'coordinator'
+  teamId: string
+  teamKey: string
+  teamName: string
+  /** The stored `event_fee_payments.status`, or null when no row exists. */
+  feeStatus: string | null
+}
+
 export interface EventFeePaymentRepository {
   /**
    * Sets the fee status for every given user in one event, creating the row when
@@ -52,4 +78,21 @@ export interface EventFeePaymentRepository {
       paid: number
     }[]
   >
+
+  /**
+   * Every person assigned to a team in one event, with the fee status stored for
+   * them.
+   *
+   * Driven from memberships rather than team instances — the mirror image of
+   * `aggregateFeeStatusByTeam` — because this list is about people: an empty team
+   * contributes no rows, which is the correct answer for a member list.
+   *
+   * Coordinators are included: they owe the fee like everyone else, and the
+   * per-team totals already count them.
+   *
+   * Returns the whole event unpaginated. Search, filtering and paging are applied
+   * in `Financial`, matching how `Events.listCurrentEventSubscriptions` works, so
+   * the aggregate counts and the page are derived from one consistent snapshot.
+   */
+  listMemberFeeStatus: (eventId: string) => Promise<MemberFeeStatusRow[]>
 }

@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { buildFeePaymentStatusFields, SETTABLE_FEE_STATUSES } from './fee-payment-status.ts'
+import {
+  buildFeePaymentStatusFields,
+  SETTABLE_FEE_STATUSES,
+  toMemberFeeStanding,
+} from './fee-payment-status.ts'
 
 const NOW = new Date('2026-09-08T12:00:00.000Z')
 
@@ -34,5 +38,24 @@ describe('buildFeePaymentStatusFields', () => {
 
   it('excludes refunded, which has nowhere to record when the money went back', () => {
     expect(SETTABLE_FEE_STATUSES).not.toContain('refunded')
+  })
+})
+
+describe('toMemberFeeStanding', () => {
+  it('reads a paid fee as settled', () => {
+    expect(toMemberFeeStanding('paid')).toBe('paid')
+  })
+
+  it('reads a comped fee as settled, since the member owes nothing', () => {
+    expect(toMemberFeeStanding('exempt')).toBe('paid')
+  })
+
+  it.each(['pending', 'not_paid', 'refunded'] as const)('reads %s as outstanding', (status) => {
+    expect(toMemberFeeStanding(status)).toBe('pending')
+  })
+
+  it('reads a member with no payment row at all as outstanding', () => {
+    expect(toMemberFeeStanding(null)).toBe('pending')
+    expect(toMemberFeeStanding(undefined)).toBe('pending')
   })
 })
