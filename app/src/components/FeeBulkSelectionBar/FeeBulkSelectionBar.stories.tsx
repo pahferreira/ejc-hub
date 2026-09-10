@@ -40,7 +40,7 @@ export const OneSelected: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByText('membro selecionado')).toBeVisible()
+    await expect(canvas.getByText('Membro selecionado')).toBeVisible()
     await expect(canvas.getByRole('button', { name: /Confirmar 1 taxa$/ })).toBeVisible()
   },
 }
@@ -54,7 +54,7 @@ export const TwoSelected: Story = {
 
     await expect(canvas.getByRole('status')).toBeVisible()
     await expect(canvas.getByText('2')).toBeVisible()
-    await expect(canvas.getByText('membros selecionados')).toBeVisible()
+    await expect(canvas.getByText('Membros selecionados')).toBeVisible()
     await expect(canvas.getByRole('button', { name: /Confirmar 2 taxas/ })).toBeVisible()
   },
 }
@@ -124,8 +124,8 @@ export const TogglesWithoutFlashingZero: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Cancelar' }))
 
     // Still on screen mid-exit: the label holds at 3 instead of flashing "0".
-    await expect(canvas.getByText('membros selecionados')).toBeInTheDocument()
-    await expect(canvas.queryByText('0 membros selecionados')).not.toBeInTheDocument()
+    await expect(canvas.getByText('Membros selecionados')).toBeInTheDocument()
+    await expect(canvas.queryByText('0 Membros selecionados')).not.toBeInTheDocument()
 
     await waitFor(() => expect(canvas.queryByRole('status')).not.toBeInTheDocument())
 
