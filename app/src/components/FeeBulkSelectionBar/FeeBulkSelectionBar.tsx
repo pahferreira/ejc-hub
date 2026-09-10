@@ -51,25 +51,22 @@ export function FeeBulkSelectionBar(props: FeeBulkSelectionBarProps) {
         // Padded past the home indicator on phones; `env()` resolves to 0 on
         // hardware that has none.
         style={{ bottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
-        className="fixed inset-x-0 z-50 mx-auto flex w-fit max-w-[calc(100vw-2rem)] flex-wrap items-center justify-center gap-3 rounded-full bg-dark-brown px-4 py-3 text-white shadow-lg sm:gap-4"
+        className="fixed inset-x-0 z-50 mx-auto flex w-fit max-w-[calc(100vw-2rem)] flex-wrap items-center justify-center gap-3 rounded-full bg-tertiary-background px-6 py-4 text-dark-brown shadow-lg sm:gap-4"
       >
-        <span className="inline-flex items-center gap-2">
+        <span className="items-center gap-2 hidden md:inline-flex">
           <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary-foreground font-semibold text-white">
             {displayCount}
           </span>
-          <span className="text-sm">
-            {pluralize(displayCount, 'membro selecionado', 'membros selecionados')}
+          <span className="text-sm font-semibold">
+            {pluralize(displayCount, 'Membro selecionado', 'Membros selecionados')}
           </span>
         </span>
 
         <span aria-hidden="true" className="hidden h-6 w-px bg-white/25 sm:block" />
-
-        {/* A one-off ghost button: no text-only variant exists on `Button`, and
-            growing a shared primitive for a single caller is the worse trade. */}
         <button
           type="button"
           onClick={props.onCancel}
-          className="cursor-pointer rounded-lg px-2 py-1 text-sm font-medium text-white/70 transition-colors hover:text-white"
+          className="cursor-pointer rounded-lg px-2 py-1 text-sm font-medium text-dark-brown/70 transition-colors hover:text-dark-brown"
         >
           Cancelar
         </button>

@@ -10,6 +10,38 @@ export const SETTABLE_FEE_STATUSES = ['pending', 'not_paid', 'paid', 'exempt'] a
 
 export type SettableFeeStatus = (typeof SETTABLE_FEE_STATUSES)[number]
 
+/**
+ * How a member's fee reads on a coordination screen: either they owe nothing or
+ * they still do. Not a storage concept — the `event_fee_payment_status` enum
+ * keeps every distinction — but the only two states a fee list acts on.
+ */
+export type MemberFeeStanding = 'paid' | 'pending'
+
+/**
+ * The stored statuses that settle a member's fee.
+ *
+ * `exempt` folds in with `paid`: a comped member owes nothing, so from the
+ * coordination view they are settled. `refunded` does not — the money went back
+ * out, so the fee is outstanding again.
+ */
+export const SETTLED_FEE_STATUSES = ['paid', 'exempt'] as const
+
+/**
+ * Reduces a stored payment status to what a fee list shows.
+ *
+ * Accepts `null` because most members have no payment row at all: nothing has
+ * been recorded for them, which is exactly `pending`. Taking the null here
+ * rather than at each call site is what stops a left join from silently
+ * producing a third state.
+ *
+ * Mirrors the `filter (where status in ('paid','exempt'))` in
+ * `aggregateFeeStatusByTeam`, so the per-team totals and the per-member rows
+ * cannot disagree about who has settled.
+ */
+export function toMemberFeeStanding(status: string | null | undefined): MemberFeeStanding {
+  return SETTLED_FEE_STATUSES.some((settled) => settled === status) ? 'paid' : 'pending'
+}
+
 export type FeePaymentStatusFields = {
   status: SettableFeeStatus
   paidAt: Date | null

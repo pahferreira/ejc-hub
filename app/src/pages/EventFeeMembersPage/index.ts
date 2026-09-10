@@ -1,0 +1,1 @@
+export { EventFeeMembersPage } from './EventFeeMembersPage'

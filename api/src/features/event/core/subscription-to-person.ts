@@ -1,11 +1,7 @@
 import type { SubscriptionWithDetails } from '../domain/subscription-types.ts'
 import type { TeamPerson } from '../domain/team-overview.types.ts'
+import { resolveNickname } from '../../../shared/resolve-nickname.ts'
 import { formatAreas } from './format-areas.ts'
-
-// Falls back to the first word of the full name when the user has no nickname.
-export function resolveNickname(name: string, nickname: string | null): string {
-  return nickname?.trim() || name.trim().split(/\s+/)[0] || name
-}
 
 // Maps a subscription row onto the common person shape shared by the
 // team-building board members and the team detail roster (coordinators/members).

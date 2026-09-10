@@ -5,6 +5,12 @@ import type { TeamMemberFeeRow } from '../../services/finance/finance.types'
 
 export type MemberFeeIdentityProps = {
   member: TeamMemberFeeRow
+  /**
+   * Drops the experience badge for layouts that already give experience its own
+   * column — showing it twice in one row reads as two different facts. The
+   * coordinator badge stays either way: nothing else carries it.
+   */
+  hideExperienceBadge?: boolean
 }
 
 /**
@@ -25,10 +31,12 @@ export function MemberFeeIdentity(props: MemberFeeIdentityProps) {
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-semibold text-dark-brown">{props.member.nickname}</span>
-          <ExperienceBadge
-            experienceType={props.member.experienceType}
-            circleKey={props.member.circleKey}
-          />
+          {!props.hideExperienceBadge && (
+            <ExperienceBadge
+              experienceType={props.member.experienceType}
+              circleKey={props.member.circleKey}
+            />
+          )}
           {props.member.membershipType === 'coordinator' && (
             <Badge variant="default">Coordenador</Badge>
           )}

@@ -3,6 +3,7 @@ import { MemberFeeConfirmAction } from './MemberFeeConfirmAction'
 import { MemberFeeIdentity } from './MemberFeeIdentity'
 import { MemberFeeSelectControl } from './MemberFeeSelectControl'
 import { MemberFeeStatusPill } from './MemberFeeStatusPill'
+import { TeamAvatar } from '../TeamAvatar/TeamAvatar'
 import type { TeamMemberFeeRow } from '../../services/finance/finance.types'
 
 export type FeeMemberListItemProps = {
@@ -10,6 +11,16 @@ export type FeeMemberListItemProps = {
   isSelected: boolean
   onToggle: (memberId: string) => void
   onConfirm: (memberId: string) => void
+  /**
+   * The member's team, for lists that mix several. Omitted by the coordinator's
+   * own-team card, where every row would repeat the same name.
+   */
+  team?: { key: string; name: string }
+  /**
+   * Drops the selection control and the confirm action, leaving the row purely
+   * informational. For callers whose user may read fees but not settle them.
+   */
+  readOnly?: boolean
 }
 
 /**
@@ -23,15 +34,27 @@ export function FeeMemberListItem(props: FeeMemberListItemProps) {
   return (
     <li className="flex flex-col gap-3 px-6 py-4">
       <div className="flex items-start gap-3">
-        <span className="pt-3">
-          <MemberFeeSelectControl
-            member={props.member}
-            isSelected={props.isSelected}
-            onToggle={props.onToggle}
-          />
-        </span>
+        {!props.readOnly && (
+          <span className="pt-3">
+            <MemberFeeSelectControl
+              member={props.member}
+              isSelected={props.isSelected}
+              onToggle={props.onToggle}
+            />
+          </span>
+        )}
         <MemberFeeIdentity member={props.member} />
       </div>
+
+      {props.team && (
+        <span className="inline-flex items-center gap-2">
+          {/* Decorative: the name beside it already carries the information. */}
+          <span aria-hidden="true">
+            <TeamAvatar name={props.team.name} size="sm" />
+          </span>
+          <span className="font-medium text-dark-brown">{props.team.name}</span>
+        </span>
+      )}
 
       {props.member.phone && (
         <div className="flex items-center gap-1.5 text-xs font-medium text-secondary-foreground">
@@ -42,7 +65,9 @@ export function FeeMemberListItem(props: FeeMemberListItemProps) {
 
       <div className="flex items-center justify-between gap-3">
         <MemberFeeStatusPill status={props.member.status} />
-        <MemberFeeConfirmAction member={props.member} onConfirm={props.onConfirm} />
+        {!props.readOnly && (
+          <MemberFeeConfirmAction member={props.member} onConfirm={props.onConfirm} />
+        )}
       </div>
     </li>
   )

@@ -1,9 +1,10 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, asc, eq, sql } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type {
   SetFeePaymentsStatusInput,
   EventFeePaymentRepository,
+  MemberFeeStatusRow,
 } from '../domain/EventFeePaymentRepository.ts'
 import { buildFeePaymentStatusFields } from '../domain/fee-payment-status.ts'
 
@@ -78,6 +79,52 @@ class DrizzleEventFeePaymentRepository implements EventFeePaymentRepository {
         )
         .where(eq(schema.teamInstances.eventId, eventId))
         .groupBy(schema.teamInstances.id, schema.teamTemplates.key, schema.teamTemplates.name)
+    )
+  }
+
+  async listMemberFeeStatus(eventId: string): Promise<MemberFeeStatusRow[]> {
+    return (
+      db
+        .select({
+          userId: schema.users.id,
+          name: schema.users.name,
+          nickname: schema.users.nickname,
+          phone: schema.users.phone,
+          pictureUrl: schema.users.pictureUrl,
+          experienceType: schema.users.experienceType,
+          circleKey: schema.circles.key,
+          membershipType: schema.teamMemberships.type,
+          teamId: schema.teamInstances.id,
+          teamKey: schema.teamTemplates.key,
+          teamName: schema.teamTemplates.name,
+          feeStatus: schema.eventFeePayments.status,
+        })
+        .from(schema.teamMemberships)
+        .innerJoin(schema.users, eq(schema.teamMemberships.userId, schema.users.id))
+        .innerJoin(
+          schema.teamInstances,
+          eq(schema.teamMemberships.teamInstanceId, schema.teamInstances.id)
+        )
+        .innerJoin(
+          schema.teamTemplates,
+          eq(schema.teamInstances.templateId, schema.teamTemplates.id)
+        )
+        // Left, not inner: a newbie with no circle on file still belongs on the list.
+        .leftJoin(schema.circles, eq(schema.users.circleId, schema.circles.id))
+        // Scoped to the membership's own event as well as the user: a person who
+        // attended a previous event has a fee row there too.
+        .leftJoin(
+          schema.eventFeePayments,
+          and(
+            eq(schema.eventFeePayments.userId, schema.teamMemberships.userId),
+            eq(schema.eventFeePayments.eventId, schema.teamMemberships.eventId)
+          )
+        )
+        // Filters the denormalized column rather than the instance's, so Postgres
+        // can use the `(event_id, user_id)` unique index on team_memberships.
+        .where(eq(schema.teamMemberships.eventId, eventId))
+        // Tie-broken by id so paging is stable for two people sharing a name.
+        .orderBy(asc(schema.users.name), asc(schema.users.id))
     )
   }
 }

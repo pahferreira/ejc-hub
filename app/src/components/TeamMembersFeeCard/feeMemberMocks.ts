@@ -1,4 +1,4 @@
-import type { TeamMemberFeeRow } from '../../services/finance/finance.types'
+import type { EventFeeMemberRow, TeamMemberFeeRow } from '../../services/finance/finance.types'
 
 /**
  * Shared fixtures for the stories and the unit specs. Kept in one place because
@@ -85,3 +85,31 @@ export const mixedMemberFeeRows: TeamMemberFeeRow[] = [
     status: 'paid',
   }),
 ]
+
+const MOCK_TEAMS = [
+  { teamId: 't-1', teamKey: 'acolhida', teamName: 'Acolhida' },
+  { teamId: 't-2', teamKey: 'cozinha', teamName: 'Cozinha' },
+  { teamId: 't-3', teamKey: 'liturgia', teamName: 'Liturgia' },
+]
+
+/** The event-wide row: the same person, plus the team they belong to. */
+export function buildEventFeeMemberRow(
+  overrides: Partial<EventFeeMemberRow> & Pick<EventFeeMemberRow, 'userId' | 'name'>
+): EventFeeMemberRow {
+  return {
+    ...buildMemberFeeRow(overrides),
+    ...MOCK_TEAMS[0],
+    ...overrides,
+  }
+}
+
+/**
+ * The same eight people spread across three teams, so the mixed-team columns
+ * (dot + name) have something to distinguish. Still 5 paid / 3 pending.
+ */
+export const mixedEventFeeMemberRows: EventFeeMemberRow[] = mixedMemberFeeRows.map(
+  (row, index) => ({
+    ...row,
+    ...MOCK_TEAMS[index % MOCK_TEAMS.length],
+  })
+)

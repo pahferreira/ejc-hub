@@ -58,6 +58,62 @@ export type TeamMemberFeeRow = {
   status: TeamMemberFeeStatus
 }
 
+/**
+ * One member's fee standing anywhere in the current event.
+ *
+ * Extends `TeamMemberFeeRow` rather than restating it: the "Taxa por Membro"
+ * page shows the same person the coordinator's own list shows, plus the team
+ * they belong to — which the coordinator view never needs, since every row there
+ * is already their team. Being a supertype is what lets both pages share
+ * `MemberFeeIdentity`, `MemberFeeSelectControl`, `feeMemberSelection` and
+ * `feeMemberStats` unchanged.
+ */
+export type EventFeeMemberRow = TeamMemberFeeRow & {
+  teamId: string
+  /** `team_templates.key`; stable across events, so it is what filters send. */
+  teamKey: string
+  teamName: string
+}
+
+export type EventFeeMemberFilters = {
+  /** Matches the full name or the nickname, accent-insensitively. */
+  name?: string
+  teamKey?: string
+  status?: TeamMemberFeeStatus
+}
+
+export type EventFeeMemberPagination = {
+  page?: number
+  pageSize?: number
+}
+
+/**
+ * Counts for the page's stat cards, computed by the API over the *filtered* set.
+ * `totalMembers` is therefore the same number as `total` — the cards summarise
+ * what the table is showing, not the whole event.
+ */
+export type EventFeeMemberStats = {
+  totalMembers: number
+  paidCount: number
+  pendingCount: number
+  /** 0–100, rounded by the API. Clients must not re-derive it. */
+  paidPercentage: number
+}
+
+export type EventFeeMemberListResponse = {
+  items: EventFeeMemberRow[]
+  /** Members matching the filters, across every page. */
+  total: number
+  page: number
+  pageSize: number
+  stats: EventFeeMemberStats
+}
+
 export const financeQueryKeys = {
+  /** Root of everything financial; invalidated after any fee write. */
+  all: ['finance'] as const,
   eventFeeOverview: ['finance', 'event-fee', 'overview'] as const,
+  eventFeeMembers: ['finance', 'event-fee', 'members'] as const,
+  eventFeeMembersList: (filters: EventFeeMemberFilters, pagination: EventFeeMemberPagination) =>
+    ['finance', 'event-fee', 'members', filters, pagination] as const,
 }
