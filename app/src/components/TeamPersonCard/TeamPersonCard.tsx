@@ -1,9 +1,10 @@
 import { PersonCard } from '../PersonCard/PersonCard'
 import { ExperienceBadge } from '../ExperienceBadge/ExperienceBadge'
-import type { TeamPerson } from '../../services/teams/teams.types'
+import { MemberFeeStatusPill } from '../TeamMembersFeeCard/MemberFeeStatusPill'
+import type { TeamRosterPerson } from '../../services/teams/teams.types'
 
 export type TeamPersonCardProps = {
-  person: TeamPerson
+  person: TeamRosterPerson
   /** Role label shown next to the name (e.g. "Coordenador"). Omitted for members. */
   role?: string
   /** Shows a top-right delete button when provided. */
@@ -28,6 +29,9 @@ export function TeamPersonCard(props: TeamPersonCardProps) {
       weekAvailability={props.person.weekAvailability}
       role={props.role}
       showStatusChips
+      // The same pill the treasurer's member list uses, so "Pago"/"Pendente"
+      // reads identically on a roster card and on the financial screens.
+      feeStatusChip={<MemberFeeStatusPill status={props.person.eventFeeStatus} />}
       onRemove={props.onRemove}
     />
   )

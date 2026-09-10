@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type {
@@ -45,6 +45,46 @@ class DrizzleEventFeePaymentRepository implements EventFeePaymentRepository {
       .returning({ userId: schema.eventFeePayments.userId })
 
     return rows.map((row) => row.userId)
+  }
+
+  async findPaymentByUserAndEvent(userId: string, eventId: string) {
+    const result = await db
+      .select()
+      .from(schema.eventFeePayments)
+      .where(
+        and(
+          eq(schema.eventFeePayments.userId, userId),
+          eq(schema.eventFeePayments.eventId, eventId)
+        )
+      )
+
+    return result[0]
+  }
+
+  async listPaymentStatusesByUserIds(eventId: string, userIds: string[]) {
+    // No ids means no query: `inArray` with an empty list is a degenerate
+    // predicate, and a roster can legitimately be empty (a team with nobody on
+    // it yet).
+    if (userIds.length === 0) {
+      return new Map<string, string>()
+    }
+
+    const rows = await db
+      .select({
+        userId: schema.eventFeePayments.userId,
+        status: schema.eventFeePayments.status,
+      })
+      .from(schema.eventFeePayments)
+      .where(
+        and(
+          eq(schema.eventFeePayments.eventId, eventId),
+          inArray(schema.eventFeePayments.userId, userIds)
+        )
+      )
+
+    // At most one row per user by the `(event_id, user_id)` unique constraint,
+    // so no key here can be overwritten by a later row.
+    return new Map(rows.map((row) => [row.userId, row.status]))
   }
 
   async aggregateFeeStatusByTeam(eventId: string) {

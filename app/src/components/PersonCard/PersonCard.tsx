@@ -23,12 +23,31 @@ export type PersonCardProps = {
   weekAvailability?: string[]
   /** Role label shown next to the name (e.g. "Coordenador"). Omitted from the subtitle when absent. */
   role?: string
-  /** Shows the "coming soon" status chips (fee/shirt) below a divider. */
+  /** Shows the status chip row (fee + shirt) below a divider. */
   showStatusChips?: boolean
+  /**
+   * The person's fee standing chip (e.g. a `MemberFeeStatusPill`). A slot rather
+   * than a status value so this stays presentational and free of finance types,
+   * the same way `badge` takes an `ExperienceBadge`.
+   *
+   * Omitted simply renders no fee chip. There is deliberately no "em breve"
+   * fallback: the fee is real data now, and a placeholder no caller can reach
+   * would only invite someone to start showing it again.
+   */
+  feeStatusChip?: ReactNode
   /** Shows a top-right delete button when provided. */
   onRemove?: () => void
   /** Accessible label for the delete button. Defaults to "Remover". */
   removeAriaLabel?: string
+}
+
+/** Dashed placeholder for a status the API cannot answer yet. */
+function ComingSoonChip(props: { label: string }) {
+  return (
+    <span className="inline-flex items-center rounded-full border border-dashed border-tertiary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground">
+      {props.label}
+    </span>
+  )
 }
 
 export function PersonCard(props: PersonCardProps) {
@@ -85,14 +104,10 @@ export function PersonCard(props: PersonCardProps) {
           <>
             <hr className="m-0 border-t border-tertiary" />
             <div className="flex flex-wrap gap-2">
-              {['Taxa · em breve', 'Camisa · em breve'].map((label) => (
-                <span
-                  key={label}
-                  className="inline-flex items-center rounded-full border border-dashed border-tertiary px-2.5 py-0.5 text-xs font-medium text-secondary-foreground"
-                >
-                  {label}
-                </span>
-              ))}
+              {props.feeStatusChip}
+              {/* Shirt data does not exist yet. Replace this with a real chip
+                  once the API can answer it, as the fee chip already does. */}
+              <ComingSoonChip label="Camisa · em breve" />
             </div>
           </>
         )}

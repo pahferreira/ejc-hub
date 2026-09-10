@@ -59,11 +59,22 @@ export type TeamPreference = {
   name: string
 }
 
+/**
+ * Whether the signed-in member has settled their own event fee.
+ *
+ * `paid` folds together the `paid` and `exempt` payment statuses, exactly as the
+ * treasurer's list does: a comped member owes nothing, so they are settled.
+ * Everything else — including having no payment record at all — is `pending`.
+ */
+export type MyEventFeeStatus = 'paid' | 'pending'
+
 export type CurrentEventSubscriptionStatus = {
   eventName: string
   subscriptionStatus: SubscriptionStatus | null
   assignedTeam: AssignedTeam | null
   preferences: TeamPreference[]
+  /** Null for someone who has not subscribed — no place in the event, no fee. */
+  eventFeeStatus: MyEventFeeStatus | null
 }
 
 export type SubscriptionListFilters = {

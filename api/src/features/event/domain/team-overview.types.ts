@@ -1,4 +1,5 @@
 import type { TeamCoordinatorSummary } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
+import type { MemberFeeStanding } from '../../../modules/event-fee-payment/domain/fee-payment-status.ts'
 import type { ExperienceType } from './subscription-types.ts'
 
 export type TeamOverview = {
@@ -40,6 +41,23 @@ export type TeamPerson = {
   weekAvailability: string[]
 }
 
+/**
+ * A person on a team detail roster: a `TeamPerson` plus their event-fee standing.
+ *
+ * Extends rather than widening `TeamPerson` because the team-building board maps
+ * the same subscription shape (`mapSubscriptionToPerson`) without ever loading
+ * fee data. Putting `eventFeeStatus` on `TeamPerson` itself would force that
+ * board to invent a value it has no query for.
+ *
+ * `eventFeeStatus` is not nullable: a person only reaches this roster by having
+ * a subscription in the event (`#buildTeamDetail` drops roster ids with no
+ * matching subscription), and `toMemberFeeStanding` maps a missing payment row
+ * to `pending`. There is no third answer to represent.
+ */
+export type TeamRosterPerson = TeamPerson & {
+  eventFeeStatus: MemberFeeStanding
+}
+
 export type TeamDetail = {
   id: string
   templateKey: string
@@ -52,6 +70,6 @@ export type TeamDetail = {
   /** Total number of coordinator slots a team can have. */
   coordinatorSlots: number
   /** Slot-ordered coordinators (0..coordinatorSlots), unfilled slots omitted. */
-  coordinators: TeamPerson[]
-  members: TeamPerson[]
+  coordinators: TeamRosterPerson[]
+  members: TeamRosterPerson[]
 }

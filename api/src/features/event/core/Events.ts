@@ -17,7 +17,14 @@ import type {
   SubscriptionPayload,
   SubscriptionWithDetails,
 } from '../domain/subscription-types.ts'
-import type { TeamDetail, TeamOverview, TeamsOverviewStats } from '../domain/team-overview.types.ts'
+import type { EventFeePaymentRepository } from '../../../modules/event-fee-payment/domain/EventFeePaymentRepository.ts'
+import { toMemberFeeStanding } from '../../../modules/event-fee-payment/domain/fee-payment-status.ts'
+import type {
+  TeamDetail,
+  TeamOverview,
+  TeamRosterPerson,
+  TeamsOverviewStats,
+} from '../domain/team-overview.types.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
 import { getTeamSummaryBucket } from './team-summary.ts'
@@ -36,6 +43,7 @@ export class Events {
   #userRepository: UserRepository
   #eventsRepository: EventRepository
   #circleRepository: CircleRepository
+  #eventFeePaymentRepository: EventFeePaymentRepository
 
   constructor(
     teamInstanceRepo: TeamInstanceRepository,
@@ -44,7 +52,8 @@ export class Events {
     userRepo: UserRepository,
     eventRepo: EventRepository,
     teamMembershipRepo: TeamMembershipRepository,
-    circleRepo: CircleRepository
+    circleRepo: CircleRepository,
+    eventFeePaymentRepo: EventFeePaymentRepository
   ) {
     this.#teamInstanceRepository = teamInstanceRepo
     this.#subscriptionRepository = subscriptionRepo
@@ -53,6 +62,7 @@ export class Events {
     this.#eventsRepository = eventRepo
     this.#teamMembershipRepository = teamMembershipRepo
     this.#circleRepository = circleRepo
+    this.#eventFeePaymentRepository = eventFeePaymentRepo
   }
 
   async subscribe(eventId: string, userAuthId: string, input: SubscriptionPayload) {
@@ -311,24 +321,46 @@ export class Events {
       this.#subscriptionRepository.listSubscriptionsByEventId(eventId),
     ])
 
+    const memberUserIds = membershipUserIdsByTeam.get(instance.id) ?? []
+
+    // One read for the whole roster, not one per person: this is a page-load
+    // endpoint, and a per-member lookup would be an N+1 that grows with team
+    // size. Deduped because a roster id set is the union of two membership
+    // queries, and `inArray` should not carry the same id twice.
+    //
+    // It cannot join the Promise.all above — the ids it filters on are that
+    // batch's output.
+    const rosterUserIds = [...new Set([...coordinatorUserIds, ...memberUserIds])]
+    const feeStatusByUserId = await this.#eventFeePaymentRepository.listPaymentStatusesByUserIds(
+      eventId,
+      rosterUserIds
+    )
+
     const subscriptionByUserId = new Map(subscriptions.map((sub) => [sub.userId, sub]))
 
     // Coordinators are a flat peer set (no ordering).
     const coordinatorIdSet = new Set(coordinatorUserIds)
 
+    // Folded through the same `toMemberFeeStanding` the treasurer's list and the
+    // by-team overview use, so a roster card and the financial screens can never
+    // disagree about who has settled. A user absent from the map has no payment
+    // row, which the fold reads as `pending`.
+    const toRosterPerson = (subscription: SubscriptionWithDetails): TeamRosterPerson => ({
+      ...mapSubscriptionToPerson(subscription, instanceNameById),
+      eventFeeStatus: toMemberFeeStanding(feeStatusByUserId.get(subscription.userId)),
+    })
+
     const coordinators = coordinatorUserIds
       .map((userId) => subscriptionByUserId.get(userId))
       .filter((subscription) => subscription !== undefined)
-      .map((subscription) => mapSubscriptionToPerson(subscription, instanceNameById))
-
-    const memberUserIds = membershipUserIdsByTeam.get(instance.id) ?? []
+      .map(toRosterPerson)
 
     // Members (type='member') and coordinators (type='coordinator') are disjoint
     // by the team_memberships unique constraint, so no dedup guard is needed here.
     const members = memberUserIds
       .map((userId) => subscriptionByUserId.get(userId))
       .filter((subscription) => subscription !== undefined)
-      .map((subscription) => mapSubscriptionToPerson(subscription, instanceNameById))
+      .map(toRosterPerson)
 
     const memberCount = this.#countDistinctMembers(memberUserIds, [...coordinatorIdSet])
     const freeSlots = Math.max(0, instance.maxCapacity - memberCount)
@@ -476,18 +508,25 @@ export class Events {
     )
 
     if (!subscription) {
+      // Null, not `pending`: someone who has not subscribed owes nothing yet,
+      // and reporting `pending` would put a debt on a card for a person with no
+      // place in the event.
       return {
         eventName: currentEvent.name,
         subscriptionStatus: null,
         assignedTeam: null,
         preferences: [],
+        eventFeeStatus: null,
       }
     }
 
-    const team = await this.#teamInstanceRepository.findUserTeamForEvent(user.id, currentEvent.id)
-    const preferences = await this.#subscriptionOptionRepository.listTeamOptionsBySubscription(
-      subscription.id
-    )
+    // Three independent reads for one page load; the coordinators below are the
+    // only part that has to wait, since it needs the resolved team.
+    const [team, preferences, feePayment] = await Promise.all([
+      this.#teamInstanceRepository.findUserTeamForEvent(user.id, currentEvent.id),
+      this.#subscriptionOptionRepository.listTeamOptionsBySubscription(subscription.id),
+      this.#eventFeePaymentRepository.findPaymentByUserAndEvent(user.id, currentEvent.id),
+    ])
 
     let coordinators: TeamCoordinator[] = []
 
@@ -500,6 +539,16 @@ export class Events {
       subscriptionStatus: subscription.status,
       assignedTeam: team ? { ...team, coordinators } : null,
       preferences,
+      // Folded through the same `toMemberFeeStanding` the treasurer's list and
+      // the by-team overview use, so a member's own card can never disagree with
+      // the coordination screens about whether they have settled. It takes the
+      // undefined directly: no payment record means nothing has been collected,
+      // which is exactly `pending`.
+      //
+      // Not membership-scoped, unlike the treasurer's list: the fee is owed once
+      // per (event, user), so a subscriber still waiting to be placed on a team
+      // has a fee standing just as much as someone already assigned.
+      eventFeeStatus: toMemberFeeStanding(feePayment?.status),
     }
   }
 

@@ -1,4 +1,5 @@
 import type { DbExecutor } from '../../../core/database/client.ts'
+import type { EventFeePaymentModel } from '../../../core/database/schemas/index.ts'
 import type { SettableFeeStatus } from './fee-payment-status.ts'
 
 export type SetFeePaymentsStatusInput = {
@@ -57,6 +58,49 @@ export interface EventFeePaymentRepository {
    * changed — the caller's requested list is only an intent.
    */
   setPaymentsStatus: (input: SetFeePaymentsStatusInput) => Promise<string[]>
+
+  /**
+   * The fee record of one person in one event, or `undefined` when none exists.
+   *
+   * At most one row by construction, not a first-of-many: the table is unique on
+   * `(event_id, user_id)`.
+   *
+   * `undefined` is an ordinary answer rather than a miss — a row is only written
+   * the first time someone records a status, so most people legitimately have
+   * none. What that absence means for a fee is `toMemberFeeStanding`'s call, not
+   * this method's, which is why the whole row comes back untranslated.
+   *
+   * Returns the record rather than a single column even though today's only
+   * caller reads `status`. A point lookup on the unique index costs the same
+   * either way, and a `findStatusBy...` would bake one caller's present appetite
+   * into the data layer — the next screen wanting `method` or `paidAt` for a
+   * receipt would have to widen it or add a near-duplicate. Mirrors
+   * `getSubscriptionByUserAndEvent` on the sibling table, which has the same
+   * `(event_id, user_id)` shape.
+   */
+  findPaymentByUserAndEvent: (
+    userId: string,
+    eventId: string
+  ) => Promise<EventFeePaymentModel | undefined>
+
+  /**
+   * The stored fee status of many people in one event, keyed by user id.
+   *
+   * The batch answer to `findPaymentByUserAndEvent`, for callers holding a
+   * roster: one statement for the whole list instead of a lookup per person,
+   * which is what keeps a team-detail page load off an N+1.
+   *
+   * Users with no payment record are simply absent from the map rather than
+   * present with a null. `Map.get` already returns `undefined` for them, which
+   * `toMemberFeeStanding` reads as `pending` — so the caller folds missing and
+   * recorded statuses through one path and cannot invent a third state for
+   * "no row".
+   *
+   * Returns the raw column, not a folded standing: the fold is presentation
+   * (`toMemberFeeStanding`), and pre-folding here would leave a caller unable to
+   * tell `exempt` from `paid` if a future screen needs to.
+   */
+  listPaymentStatusesByUserIds: (eventId: string, userIds: string[]) => Promise<Map<string, string>>
 
   /**
    * Fee standing per team for one event.

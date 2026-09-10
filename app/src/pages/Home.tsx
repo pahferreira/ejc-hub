@@ -9,7 +9,11 @@ import { FeatureFlag } from '../hooks/useFeatureFlag/feature-flags'
 import { useFeatureFlag } from '../hooks/useFeatureFlag/useFeatureFlag'
 import { useCurrentEventQuery } from '../services/events/useCurrentEventQuery'
 import { useCurrentEventSubscriptionStatusQuery } from '../services/events/useCurrentEventSubscriptionStatusQuery'
-import type { SubscriptionStatus, TeamPreference } from '../services/events/events.types'
+import type {
+  MyEventFeeStatus,
+  SubscriptionStatus,
+  TeamPreference,
+} from '../services/events/events.types'
 import { useCurrentUserQuery } from '../services/users/useCurrentUserQuery'
 import { getHomeView, type HomeView } from './getHomeView'
 
@@ -29,6 +33,7 @@ export function Home() {
   const subscriptionStatus = subscriptionStatusQuery.data?.subscriptionStatus ?? null
   const assignedTeam = subscriptionStatusQuery.data?.assignedTeam ?? null
   const preferences = subscriptionStatusQuery.data?.preferences ?? []
+  const eventFeeStatus = subscriptionStatusQuery.data?.eventFeeStatus ?? null
 
   return (
     <div className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-8">
@@ -65,6 +70,7 @@ export function Home() {
               })}
               eventName={event.name}
               subscriptionStatus={subscriptionStatus}
+              eventFeeStatus={eventFeeStatus}
               preferences={preferences}
               onSubscribe={() => navigate(ROUTE_PATHS.SUBSCRIPTIONS_NEW)}
             />
@@ -79,6 +85,7 @@ type HomeBodyProps = {
   view: HomeView
   eventName: string
   subscriptionStatus: SubscriptionStatus | null
+  eventFeeStatus: MyEventFeeStatus | null
   preferences: TeamPreference[]
   onSubscribe: () => void
 }
@@ -98,11 +105,15 @@ function HomeBody(props: HomeBodyProps) {
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      {/* Taxa/Camisa data does not exist yet — show "Em breve" placeholders.
-          Replace these literals with real values from the API once available. */}
+      {/* Camisa data does not exist yet — still an "Em breve" placeholder.
+          Replace it with a real value from the API once available. */}
       <InscriptionCard
         subscriptionStatus={props.subscriptionStatus}
-        paymentStatus="coming_soon"
+        // Undefined hides the fee row entirely rather than inventing a status
+        // for it. It only happens when the API reports no fee at all, which
+        // means no subscription — and this branch already returned above in
+        // that case, so in practice the row is always shown.
+        paymentStatus={props.eventFeeStatus ?? undefined}
         shirtStatus="coming_soon"
       />
       {props.view.kind === 'assignedTeam' && <TeamCard variant="assigned" team={props.view.team} />}
