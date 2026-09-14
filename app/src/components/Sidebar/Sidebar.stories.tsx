@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, within } from 'storybook/test'
 import { SidebarView } from './Sidebar.tsx'
-import { sidebarNavGroups } from './sidebar.ts'
+import { sidebarNavGroups } from './sidebarNav'
 import { reactRouterParameters, withRouter } from 'storybook-addon-remix-react-router'
 import { ROUTE_PATHS } from '../../constants/routePaths.ts'
 
