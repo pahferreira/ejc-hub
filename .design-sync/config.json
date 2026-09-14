@@ -1,0 +1,65 @@
+{
+  "shape": "storybook",
+  "pkg": "app",
+  "globalName": "EjcHub",
+  "srcDir": "src/components",
+  "tsconfig": "tsconfig.app.json",
+  "storybookConfigDir": "app/.storybook",
+  "storybookStatic": ".design-sync/sb-reference",
+  "buildCmd": "bash .design-sync/build-ds.sh",
+  "titleMap": {
+    "Configure your project": null
+  },
+  "extraEntries": [
+    "../.design-sync/ds-providers.ts"
+  ],
+  "provider": {
+    "component": "MemoryRouter",
+    "props": {
+      "initialEntries": [
+        "/"
+      ]
+    }
+  },
+  "storyImports": {
+    "inert": [
+      "storybook-addon-remix-react-router",
+      "vitest"
+    ]
+  },
+  "overrides": {
+    "FeeBulkSelectionBar": {
+      "cardMode": "single",
+      "primaryStory": "TwoSelected",
+      "skip": [
+        "financial-feebulkselectionbar--hidden"
+      ]
+    },
+    "FeeConfirmationModal": {
+      "cardMode": "single",
+      "primaryStory": "SingleMember"
+    },
+    "FilterCheck": {
+      "cardMode": "column"
+    },
+    "FilterToggle": {
+      "cardMode": "column"
+    },
+    "TeamDetailContent": {
+      "cardMode": "column"
+    },
+    "WeekAvailability": {
+      "skip": [
+        "ui-weekavailability--empty"
+      ]
+    },
+    "Sidebar": {
+      "cardMode": "column"
+    }
+  },
+  "libOverrides": {
+    "story-imports.mjs": "widens the inert-stub set via cfg.storyImports.inert — this repo’s stories import storybook-addon-remix-react-router and vitest, neither matched by the upstream @storybook/* filter"
+  },
+  "projectId": "a7fdc77a-371d-4087-908a-83ee831cd555",
+  "readmeHeader": ".design-sync/conventions.md"
+}

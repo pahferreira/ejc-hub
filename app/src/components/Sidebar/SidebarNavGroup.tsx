@@ -1,5 +1,5 @@
 import { SidebarNavLink } from './SidebarNavLink'
-import type { SidebarNavItem } from './sidebar'
+import type { SidebarNavItem } from './sidebarNav'
 
 type SidebarNavGroupProps = {
   title: string

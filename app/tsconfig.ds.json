@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./dist-ds",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "composite": false,
+    "incremental": false,
+    "tsBuildInfoFile": null
+  },
+  "include": [
+    ".ds-entry/index.ts",
+    "src/vite-env.d.ts"
+  ]
+}
