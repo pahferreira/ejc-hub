@@ -66,8 +66,27 @@ async function confirmEventFeePayments(userIds: string[]) {
   return response.data.result
 }
 
+/**
+ * Marks members of the caller's own team as paid.
+ *
+ * The coordinator sibling of `confirmEventFeePayments`, and deliberately a
+ * separate function rather than a flag on it: this route takes no status, since
+ * comping or writing off a fee is a treasury decision the API refuses to accept
+ * from a coordinator. Which team the ids must belong to is never sent — the API
+ * resolves the caller's own membership and rejects anyone outside it.
+ */
+async function confirmTeamFeePayments(userIds: string[]) {
+  const response = await api.post<{ result: { updatedUserIds: string[]; updatedCount: number } }>(
+    '/financial/event-fee/confirmations/batch',
+    { userIds }
+  )
+
+  return response.data.result
+}
+
 export const financeApi = {
   getEventFeeOverview,
   getEventFeeMembers,
   confirmEventFeePayments,
+  confirmTeamFeePayments,
 }

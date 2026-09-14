@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { formatMemberFeeLabel, formatSelectedMemberLabels } from './memberFeeLabels'
-import { buildEventFeeMemberRow } from '../../components/TeamMembersFeeCard/feeMemberMocks'
+import { formatMemberFeeLabel, formatSelectedMemberLabels } from './feeMemberLabels'
+import { buildEventFeeMemberRow } from './feeMemberMocks'
 
 describe('formatMemberFeeLabel', () => {
   it('pairs the nickname with the full name', () => {

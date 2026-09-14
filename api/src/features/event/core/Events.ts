@@ -1,5 +1,6 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import type {
+  AssignedTeamForUser,
   TeamInstanceRepository,
   TeamInstanceWithDetails,
 } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
@@ -34,6 +35,31 @@ import { mapSubscriptionToPerson } from './subscription-to-person.ts'
 const DEFAULT_PAGE = 1
 const DEFAULT_SIZE = 10
 const DEFAULT_PAGE_SIZE = 20
+
+/**
+ * How the caller belongs to the team they were placed on, or null when they
+ * have no team in the event.
+ *
+ * Derived from the coordinator list already loaded for `assignedTeam` rather
+ * than from a second membership read: that list is exactly the team's
+ * `team_memberships` rows of type `coordinator`, so being absent from it while
+ * holding a team is what `member` means.
+ *
+ * Clients use it to decide whether the coordinator-only screens exist for this
+ * person. It is a visibility signal, never an authorization one — every write
+ * re-derives the caller's membership server-side.
+ */
+function toMyMembershipType(
+  team: AssignedTeamForUser | undefined,
+  coordinators: TeamCoordinator[],
+  userId: string
+): 'member' | 'coordinator' | null {
+  if (!team) {
+    return null
+  }
+
+  return coordinators.some((coordinator) => coordinator.id === userId) ? 'coordinator' : 'member'
+}
 
 export class Events {
   #teamInstanceRepository: TeamInstanceRepository
@@ -516,6 +542,7 @@ export class Events {
         subscriptionStatus: null,
         assignedTeam: null,
         preferences: [],
+        myMembershipType: null,
         eventFeeStatus: null,
       }
     }
@@ -539,6 +566,7 @@ export class Events {
       subscriptionStatus: subscription.status,
       assignedTeam: team ? { ...team, coordinators } : null,
       preferences,
+      myMembershipType: toMyMembershipType(team, coordinators, user.id),
       // Folded through the same `toMemberFeeStanding` the treasurer's list and
       // the by-team overview use, so a member's own card can never disagree with
       // the coordination screens about whether they have settled. It takes the

@@ -7,6 +7,7 @@ import { Pagination } from '../../components/Pagination/Pagination'
 import { SearchInput } from '../../components/SearchInput/SearchInput'
 import { Selector, type Option } from '../../components/Selector/Selector'
 import { StatusCard } from '../../components/StatusCard/StatusCard'
+import { formatSelectedMemberLabels } from '../../components/TeamMembersFeeCard/feeMemberLabels'
 import { toggleMemberSelection } from '../../components/TeamMembersFeeCard/feeMemberSelection'
 import { useAuthentication } from '../../hooks/useAuthentication'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
@@ -16,7 +17,6 @@ import { useEventFeeMembersQuery } from '../../services/finance/useEventFeeMembe
 import { useTeamOptionsQuery } from '../../services/teams/useTeamOptionsQuery'
 import { EventFeePermissions, hasPermission } from '../../../../common/permissions'
 import { toastPromise } from '../../utils/toast/toast'
-import { formatSelectedMemberLabels } from './memberFeeLabels'
 import type {
   EventFeeMemberFilters,
   EventFeeMemberStats,

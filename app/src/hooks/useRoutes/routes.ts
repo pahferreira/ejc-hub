@@ -14,6 +14,7 @@ import { TeamDetailPage } from '../../pages/TeamDetailPage'
 import { MyTeamPage } from '../../pages/MyTeamPage'
 import { EventFeePage } from '../../pages/EventFeePage'
 import { EventFeeMembersPage } from '../../pages/EventFeeMembersPage'
+import { CoordinatorEventFeePage } from '../../pages/CoordinatorEventFeePage'
 import { Placeholder } from '../../pages/Placeholder/Placeholder'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import { FeatureFlag, type FeatureFlagValue } from '../useFeatureFlag/feature-flags'
@@ -41,6 +42,18 @@ export const routes: Route[] = [
     name: 'Minha Equipe',
     component: MyTeamPage,
     featureFlag: FeatureFlag.MyTeam,
+  },
+  {
+    path: ROUTE_PATHS.MY_TEAM_FEE,
+    name: 'Taxa de Inscrição',
+    component: CoordinatorEventFeePage,
+    // No permission and no membership filter, matching how `MY_TEAM` is
+    // registered: whether the caller coordinates a team is data the route table
+    // cannot know without waiting on a request, and filtering the route out
+    // while that request is in flight would answer a coordinator's own bookmark
+    // with "página não encontrada". The page itself holds the check, which is
+    // the only place that can tell "still loading" from "not a coordinator".
+    featureFlag: FeatureFlag.CoordinatorEventFee,
   },
   {
     path: ROUTE_PATHS.SUBSCRIPTIONS,

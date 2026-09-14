@@ -1,4 +1,4 @@
-import type { EventFeeMemberRow } from '../../services/finance/finance.types'
+import type { TeamMemberFeeRow } from '../../services/finance/finance.types'
 
 /**
  * How a member is named in the confirmation dialog.
@@ -8,7 +8,7 @@ import type { EventFeeMemberRow } from '../../services/finance/finance.types'
  * and is dropped when it adds nothing (someone with no nickname on file, whose
  * nickname is already their first name, would otherwise read "Maria (Maria)").
  */
-export function formatMemberFeeLabel(member: EventFeeMemberRow): string {
+export function formatMemberFeeLabel(member: TeamMemberFeeRow): string {
   return member.nickname === member.name ? member.name : `${member.nickname} (${member.name})`
 }
 
@@ -21,7 +21,7 @@ export function formatMemberFeeLabel(member: EventFeeMemberRow): string {
  * instead of rendering "undefined".
  */
 export function formatSelectedMemberLabels(
-  rows: EventFeeMemberRow[],
+  rows: TeamMemberFeeRow[],
   selectedIds: string[]
 ): string[] {
   const selected = new Set(selectedIds)

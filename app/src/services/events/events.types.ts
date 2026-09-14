@@ -27,6 +27,7 @@ import type {
   SubscriptionStatus,
   SubscriptionWithDetails,
 } from '../subscriptions/subscriptions.types'
+import type { TeamMembershipType } from '../teams/teams.types'
 
 export type { SubscriptionStatus, SubscriptionWithDetails }
 
@@ -73,6 +74,19 @@ export type CurrentEventSubscriptionStatus = {
   subscriptionStatus: SubscriptionStatus | null
   assignedTeam: AssignedTeam | null
   preferences: TeamPreference[]
+  /**
+   * How the signed-in member belongs to their team, or null when they have no
+   * team in the event.
+   *
+   * Carried on this endpoint rather than on the team detail one because the
+   * sidebar needs it on every route: this response is already fetched app-wide
+   * and is a fraction of the size of a full roster.
+   *
+   * Drives which coordinator-only screens are offered. The API enforces the same
+   * rule again on every write, so a client that ignores this is denied, not let
+   * through.
+   */
+  myMembershipType: TeamMembershipType | null
   /** Null for someone who has not subscribed — no place in the event, no fee. */
   eventFeeStatus: MyEventFeeStatus | null
 }
