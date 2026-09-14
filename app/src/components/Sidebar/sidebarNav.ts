@@ -9,6 +9,7 @@ import {
   FiDollarSign,
   FiShoppingBag,
   FiUserCheck,
+  FiGrid,
 } from 'react-icons/fi'
 import {
   EventFeePermissions,
@@ -67,20 +68,10 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         path: ROUTE_PATHS.HOME,
         icon: FiHome,
       },
-      {
-        label: 'Minha Equipe',
-        path: ROUTE_PATHS.MY_TEAM,
-        icon: FiUser,
-        requiresTeamMembership: true,
-        featureFlag: FeatureFlag.MyTeam,
-        // `MY_TEAM_FEE` sits below this path and has a nav entry of its own, so
-        // without this both light up while a coordinator is on the fee page.
-        end: true,
-      },
     ],
   },
   {
-    title: 'GERENCIAMENTO',
+    title: 'ENCONTRO',
     items: [
       {
         label: 'Inscrições',
@@ -95,10 +86,10 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         permission: TeamInstancePermissions.Read,
       },
       {
-        label: 'Eventos',
-        path: ROUTE_PATHS.EVENTS,
-        icon: FiCalendar,
-        permission: EventPermissions.Read,
+        label: 'Montagem',
+        path: ROUTE_PATHS.TEAMS_TEAM_BUILDING,
+        icon: FiGrid,
+        permission: TeamInstancePermissions.Read,
       },
     ],
   },
@@ -133,8 +124,18 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
     // treasurer's event-wide screens, and this one is a coordinator's own team.
     // The empty-group filter in `Sidebar` drops the whole heading for everyone
     // who is not a coordinator.
-    title: 'FINANCEIRO DA EQUIPE',
+    title: 'MINHA EQUIPE',
     items: [
+      {
+        label: 'Minha Equipe',
+        path: ROUTE_PATHS.MY_TEAM,
+        icon: FiUser,
+        requiresTeamMembership: true,
+        featureFlag: FeatureFlag.MyTeam,
+        // `MY_TEAM_FEE` sits below this path and has a nav entry of its own, so
+        // without this both light up while a coordinator is on the fee page.
+        end: true,
+      },
       {
         label: 'Taxa de Inscrição',
         path: ROUTE_PATHS.MY_TEAM_FEE,
@@ -147,6 +148,12 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
   {
     title: 'ADMINISTRAÇÃO',
     items: [
+      {
+        label: 'Encontros',
+        path: ROUTE_PATHS.EVENTS,
+        icon: FiCalendar,
+        permission: EventPermissions.Read,
+      },
       {
         label: 'Modelos de Equipe',
         path: ROUTE_PATHS.TEAM_TEMPLATES,

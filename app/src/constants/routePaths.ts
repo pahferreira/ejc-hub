@@ -6,7 +6,7 @@ export const ROUTE_PATHS = {
   SUBSCRIPTIONS_NEW: '/subscriptions/new',
   EVENTS: '/events',
   TEAMS: '/teams',
-  TEAMS_TEAM_BUILDING: '/teams/team-building',
+  TEAMS_TEAM_BUILDING: '/team-building',
   TEAM_DETAIL: '/teams/:teamKey',
   TEAM_TEMPLATES: '/templates',
   EVENT_FEE: '/financial/event-fee',
