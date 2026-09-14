@@ -46,7 +46,9 @@ export const Mixed: Story = {
     const canvas = within(canvasElement)
 
     await expect(
-      canvas.getByText('3 pagamentos pendentes · selecione para confirmar em lote')
+      canvas.getByText(
+        '3 pagamentos pendentes · selecione pendentes para confirmar todos de uma vez.'
+      )
     ).toBeVisible()
 
     // Footer reconciles with the rows above it.
@@ -75,7 +77,9 @@ export const AllPaid: Story = {
     const canvas = within(canvasElement)
 
     await expect(
-      canvas.getByText('0 pagamentos pendentes · selecione para confirmar em lote')
+      canvas.getByText(
+        '0 pagamentos pendentes · selecione pendentes para confirmar todos de uma vez.'
+      )
     ).toBeVisible()
     await expect(canvas.getByText('100%')).toBeVisible()
 
@@ -125,7 +129,9 @@ export const SinglePending: Story = {
     const canvas = within(canvasElement)
 
     await expect(
-      canvas.getByText('1 pagamento pendente · selecione para confirmar em lote')
+      canvas.getByText(
+        '1 pagamento pendente · selecione pendentes para confirmar todos de uma vez.'
+      )
     ).toBeVisible()
   },
 }
