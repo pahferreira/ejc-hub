@@ -14,6 +14,7 @@ import type { CurrentEventSubscriptionPayload } from '../domain/subscription-typ
 const EVENT_ID = 'event-1'
 const USER_ID = 'user-1'
 const USER_AUTH_ID = 'auth|user-1'
+const TEAM_ID = 'team-1'
 
 function buildPayload(
   overrides: Partial<CurrentEventSubscriptionPayload> = {}
@@ -719,6 +720,8 @@ describe('Events.getCurrentEventSubscriptionStatus', () => {
   function makeEvents(opts: {
     subscription?: { id: string; status: string } | undefined
     feePayment?: { status: string } | undefined
+    team?: { id: string; name: string } | undefined
+    coordinators?: { id: string; name: string; phone: string | null }[]
   }) {
     const userRepository = {
       getUser: vi.fn().mockResolvedValue({ id: USER_ID, authId: USER_AUTH_ID }),
@@ -737,12 +740,16 @@ describe('Events.getCurrentEventSubscriptionStatus', () => {
     } as unknown as SubscriptionOptionRepository
 
     const teamInstanceRepository = {
-      findUserTeamForEvent: vi.fn().mockResolvedValue(undefined),
+      findUserTeamForEvent: vi.fn().mockResolvedValue(opts.team),
     } as unknown as TeamInstanceRepository
 
     const eventFeePaymentRepository = {
       findPaymentByUserAndEvent: vi.fn().mockResolvedValue(opts.feePayment),
     } as unknown as EventFeePaymentRepository
+
+    const teamMembershipRepository = {
+      listTeamCoordinators: vi.fn().mockResolvedValue(opts.coordinators ?? []),
+    } as unknown as TeamMembershipRepository
 
     const events = new Events(
       teamInstanceRepository,
@@ -750,12 +757,12 @@ describe('Events.getCurrentEventSubscriptionStatus', () => {
       subscriptionOptionRepository,
       userRepository,
       eventRepository,
-      {} as TeamMembershipRepository,
+      teamMembershipRepository,
       {} as CircleRepository,
       eventFeePaymentRepository
     )
 
-    return { events, eventFeePaymentRepository }
+    return { events, eventFeePaymentRepository, teamMembershipRepository }
   }
 
   it('reports no fee status at all for someone who has not subscribed', async () => {
@@ -847,5 +854,61 @@ describe('Events.getCurrentEventSubscriptionStatus', () => {
 
     expect(result.assignedTeam).toBeNull()
     expect(result.eventFeeStatus).toBe('pending')
+  })
+
+  it('reports no membership type for a subscriber with no team', async () => {
+    const { events } = makeEvents({
+      subscription: { id: 'subscription-1', status: 'pending' },
+    })
+
+    const result = await events.getCurrentEventSubscriptionStatus(USER_AUTH_ID)
+
+    expect(result.myMembershipType).toBeNull()
+  })
+
+  it('reports no membership type for someone who has not subscribed', async () => {
+    const { events } = makeEvents({ subscription: undefined })
+
+    const result = await events.getCurrentEventSubscriptionStatus(USER_AUTH_ID)
+
+    expect(result.myMembershipType).toBeNull()
+  })
+
+  it('reports a coordinator membership when the caller coordinates their team', async () => {
+    const { events } = makeEvents({
+      subscription: { id: 'subscription-1', status: 'completed' },
+      team: { id: TEAM_ID, name: 'Liturgia' },
+      coordinators: [{ id: USER_ID, name: 'Ana', phone: null }],
+    })
+
+    const result = await events.getCurrentEventSubscriptionStatus(USER_AUTH_ID)
+
+    expect(result.myMembershipType).toBe('coordinator')
+  })
+
+  it('reports a plain membership when the caller is on a team they do not coordinate', async () => {
+    const { events } = makeEvents({
+      subscription: { id: 'subscription-1', status: 'completed' },
+      team: { id: TEAM_ID, name: 'Liturgia' },
+      coordinators: [{ id: 'other-user', name: 'Ana', phone: null }],
+    })
+
+    const result = await events.getCurrentEventSubscriptionStatus(USER_AUTH_ID)
+
+    expect(result.myMembershipType).toBe('member')
+  })
+
+  it('reports a plain membership for a team with no coordinator assigned yet', async () => {
+    // `every`-style emptiness traps aside: an unstaffed team must not promote
+    // its members, so an empty coordinator list reads as `member`.
+    const { events } = makeEvents({
+      subscription: { id: 'subscription-1', status: 'completed' },
+      team: { id: TEAM_ID, name: 'Liturgia' },
+      coordinators: [],
+    })
+
+    const result = await events.getCurrentEventSubscriptionStatus(USER_AUTH_ID)
+
+    expect(result.myMembershipType).toBe('member')
   })
 })

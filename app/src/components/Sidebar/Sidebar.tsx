@@ -114,6 +114,7 @@ export function Sidebar() {
   const subscriptionStatus = useCurrentEventSubscriptionStatusQuery()
   const { isFeatureEnabled } = useFeatureFlag()
   const hasTeam = Boolean(subscriptionStatus.data?.assignedTeam)
+  const isCoordinator = subscriptionStatus.data?.myMembershipType === 'coordinator'
 
   const toggleCollapsed = () => {
     setIsCollapsed((prev) => {
@@ -135,6 +136,9 @@ export function Sidebar() {
           return false
         }
         if (item.requiresTeamMembership && !hasTeam) {
+          return false
+        }
+        if (item.requiresCoordinator && !isCoordinator) {
           return false
         }
         if (item.featureFlag && !isFeatureEnabled(item.featureFlag, false)) {

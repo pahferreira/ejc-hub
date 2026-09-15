@@ -9,6 +9,7 @@ import {
   FiDollarSign,
   FiShoppingBag,
   FiUserCheck,
+  FiGrid,
 } from 'react-icons/fi'
 import {
   EventFeePermissions,
@@ -31,6 +32,13 @@ export type SidebarNavItem = {
    * render time against the caller's team-membership state.
    */
   requiresTeamMembership?: boolean
+  /**
+   * Only shown to coordinators of a team in the current event. Not a permission
+   * for the same reason `requiresTeamMembership` is not: coordinating is a
+   * `team_memberships` row, not a role grant, so it is filtered at render time
+   * against the caller's membership type.
+   */
+  requiresCoordinator?: boolean
   /**
    * Only shown when this feature flag is enabled. Not a permission, so it's
    * filtered at render time against the feature-flag state.
@@ -60,17 +68,10 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         path: ROUTE_PATHS.HOME,
         icon: FiHome,
       },
-      {
-        label: 'Minha Equipe',
-        path: ROUTE_PATHS.MY_TEAM,
-        icon: FiUser,
-        requiresTeamMembership: true,
-        featureFlag: FeatureFlag.MyTeam,
-      },
     ],
   },
   {
-    title: 'GERENCIAMENTO',
+    title: 'ENCONTRO',
     items: [
       {
         label: 'Inscrições',
@@ -85,10 +86,10 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         permission: TeamInstancePermissions.Read,
       },
       {
-        label: 'Eventos',
-        path: ROUTE_PATHS.EVENTS,
-        icon: FiCalendar,
-        permission: EventPermissions.Read,
+        label: 'Montagem',
+        path: ROUTE_PATHS.TEAMS_TEAM_BUILDING,
+        icon: FiGrid,
+        permission: TeamInstancePermissions.Read,
       },
     ],
   },
@@ -119,8 +120,40 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
     ],
   },
   {
+    // Its own group rather than an entry under FINANCEIRO: that group is the
+    // treasurer's event-wide screens, and this one is a coordinator's own team.
+    // The empty-group filter in `Sidebar` drops the whole heading for everyone
+    // who is not a coordinator.
+    title: 'MINHA EQUIPE',
+    items: [
+      {
+        label: 'Minha Equipe',
+        path: ROUTE_PATHS.MY_TEAM,
+        icon: FiUser,
+        requiresTeamMembership: true,
+        featureFlag: FeatureFlag.MyTeam,
+        // `MY_TEAM_FEE` sits below this path and has a nav entry of its own, so
+        // without this both light up while a coordinator is on the fee page.
+        end: true,
+      },
+      {
+        label: 'Taxa de Inscrição',
+        path: ROUTE_PATHS.MY_TEAM_FEE,
+        icon: FiDollarSign,
+        requiresCoordinator: true,
+        featureFlag: FeatureFlag.CoordinatorEventFee,
+      },
+    ],
+  },
+  {
     title: 'ADMINISTRAÇÃO',
     items: [
+      {
+        label: 'Encontros',
+        path: ROUTE_PATHS.EVENTS,
+        icon: FiCalendar,
+        permission: EventPermissions.Read,
+      },
       {
         label: 'Modelos de Equipe',
         path: ROUTE_PATHS.TEAM_TEMPLATES,

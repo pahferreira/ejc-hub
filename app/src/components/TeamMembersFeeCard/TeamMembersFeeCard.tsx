@@ -63,7 +63,7 @@ export function TeamMembersFeeCard(props: TeamMembersFeeCardProps) {
           <p className="mt-1 text-sm text-gray-600">
             {counts.pending}{' '}
             {pluralize(counts.pending, 'pagamento pendente', 'pagamentos pendentes')} · selecione
-            para confirmar em lote
+            pendentes para confirmar todos de uma vez.
           </p>
         </div>
 
