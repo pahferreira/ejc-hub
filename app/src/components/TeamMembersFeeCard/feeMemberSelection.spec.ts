@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   getPendingMemberIds,
   isAllPendingSelected,
+  removeMemberFromSelection,
   toggleMemberSelection,
   toggleSelectAllPending,
 } from './feeMemberSelection'
@@ -82,5 +83,25 @@ describe('toggleMemberSelection', () => {
     toggleMemberSelection(selected, 'u-5')
 
     expect(selected).toEqual(['u-3'])
+  })
+})
+
+describe('removeMemberFromSelection', () => {
+  it('drops a member the bulk bar was still holding', () => {
+    // The review case: a checked member is reviewed to `exempt`, and a bulk
+    // "confirmar" must not then write `paid` over the exemption.
+    expect(removeMemberFromSelection(['u-3', 'u-5'], 'u-3')).toEqual(['u-5'])
+  })
+
+  it('leaves the selection alone for a member who was never in it', () => {
+    expect(removeMemberFromSelection(['u-3'], 'u-9')).toEqual(['u-3'])
+  })
+
+  it('does not mutate the selection it was given', () => {
+    const selected = ['u-3', 'u-5']
+
+    removeMemberFromSelection(selected, 'u-3')
+
+    expect(selected).toEqual(['u-3', 'u-5'])
   })
 })

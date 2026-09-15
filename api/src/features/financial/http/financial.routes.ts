@@ -49,14 +49,33 @@ async function handleConfirmation(
 
 export function financialRoutes(server: FastifyServerInstance) {
   return () => {
+    // Two overviews rather than one shared payload: the by-member page renders
+    // counts and the by-team page renders counts, a table and the money, so a
+    // single endpoint would always be shipping one of them a payload it drops.
     server.get(
-      '/events/current/event-fee-overview',
+      '/events/current/event-fee-overview-members',
       {
         preHandler: authGuard(server, { permissions: [EventFeePermissions.Read] }),
       },
       async (_, reply) => {
         try {
-          const overview = await financialApp.getCurrentEventOverview()
+          const overview = await financialApp.getCurrentEventMembersOverview()
+
+          return reply.code(HttpStatus.Ok).send({ overview })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.get(
+      '/events/current/event-fee-overview-teams',
+      {
+        preHandler: authGuard(server, { permissions: [EventFeePermissions.Read] }),
+      },
+      async (_, reply) => {
+        try {
+          const overview = await financialApp.getCurrentEventTeamsOverview()
 
           return reply.code(HttpStatus.Ok).send({ overview })
         } catch (error) {

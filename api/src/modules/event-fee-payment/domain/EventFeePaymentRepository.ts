@@ -119,7 +119,11 @@ export interface EventFeePaymentRepository {
       teamKey: string
       teamName: string
       total: number
+      /** Members whose money actually came in; excludes the comped ones. */
       paid: number
+      exempt: number
+      /** Sum of the per-row `amount_cents` snapshots on paid rows. */
+      collectedCents: number
     }[]
   >
 

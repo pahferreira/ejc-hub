@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { filterMemberFees, paginateMemberFees, summarizeMemberFees } from './member-fee-list.ts'
+import { filterMemberFees, paginateMemberFees } from './member-fee-list.ts'
 import type { EventFeeMemberRow } from '../domain/event-fee.types.ts'
 
 function buildMember(overrides: Partial<EventFeeMemberRow> = {}): EventFeeMemberRow {
@@ -16,6 +16,7 @@ function buildMember(overrides: Partial<EventFeeMemberRow> = {}): EventFeeMember
     teamKey: 'acolhida',
     teamName: 'Acolhida',
     status: 'pending',
+    paymentStatus: 'pending',
     ...overrides,
   }
 }
@@ -100,47 +101,6 @@ describe('filterMemberFees', () => {
     filterMemberFees(rows, { status: 'paid' })
 
     expect(rows).toHaveLength(2)
-  })
-})
-
-describe('summarizeMemberFees', () => {
-  it('counts paid and pending separately', () => {
-    const rows = [
-      buildMember({ userId: 'u1', status: 'paid' }),
-      buildMember({ userId: 'u2', status: 'paid' }),
-      buildMember({ userId: 'u3', status: 'pending' }),
-    ]
-
-    expect(summarizeMemberFees(rows)).toEqual({
-      totalMembers: 3,
-      paidCount: 2,
-      pendingCount: 1,
-      paidPercentage: 67,
-    })
-  })
-
-  it('matches the design mock: 75 of 119 paid reads as 63%', () => {
-    const rows = Array.from({ length: 119 }, (_, index) =>
-      buildMember({ userId: `u${index}`, status: index < 75 ? 'paid' : 'pending' })
-    )
-
-    const stats = summarizeMemberFees(rows)
-
-    expect(stats).toEqual({
-      totalMembers: 119,
-      paidCount: 75,
-      pendingCount: 44,
-      paidPercentage: 63,
-    })
-  })
-
-  it('reports zero percent for an empty list instead of dividing by zero', () => {
-    expect(summarizeMemberFees([])).toEqual({
-      totalMembers: 0,
-      paidCount: 0,
-      pendingCount: 0,
-      paidPercentage: 0,
-    })
   })
 })
 

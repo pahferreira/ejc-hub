@@ -42,3 +42,19 @@ export function toggleMemberSelection(selectedIds: string[], memberId: string): 
     ? selectedIds.filter((id) => id !== memberId)
     : [...selectedIds, memberId]
 }
+
+/**
+ * Drops one member from the selection, whatever their status.
+ *
+ * The counterpart to `toggleMemberSelection` for actions that happen *outside*
+ * the checkbox. The treasurer's review dialog is the case: reviewing a checked
+ * member to `exempt` leaves their id in a bulk bar that writes `paid`, which
+ * would quietly overwrite the exemption that was just granted. The row stops
+ * rendering a checkbox once it is settled, so there is no way to untick it
+ * either — the selection has to be pruned here.
+ *
+ * Idempotent, and cheap enough to call for a member who was never selected.
+ */
+export function removeMemberFromSelection(selectedIds: string[], memberId: string): string[] {
+  return selectedIds.filter((id) => id !== memberId)
+}

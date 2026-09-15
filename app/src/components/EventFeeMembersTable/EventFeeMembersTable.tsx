@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
 import { Table } from '../Table'
 import { FeeMemberListItem } from '../TeamMembersFeeCard/FeeMemberListItem'
+import { MemberFeeReviewAction } from './MemberFeeReviewAction'
 import { createEventFeeMembersColumns } from './eventFeeMembersColumns'
 import type { EventFeeMemberRow } from '../../services/finance/finance.types'
 
@@ -15,7 +16,8 @@ export type EventFeeMembersTableProps = {
    */
   selectedIds: string[]
   onToggleMember: (memberId: string) => void
-  onConfirmMember: (memberId: string) => void
+  /** Opens the status review dialog for one member. */
+  onReviewMember: (memberId: string) => void
   /**
    * Whether the viewer may settle a fee (`financials-event-fee:update`). False
    * strips the selection column and the row actions, leaving a read-only table.
@@ -43,10 +45,10 @@ export function EventFeeMembersTable(props: EventFeeMembersTableProps) {
       createEventFeeMembersColumns({
         selectedIds: props.selectedIds,
         onToggleMember: props.onToggleMember,
-        onConfirmMember: props.onConfirmMember,
+        onReviewMember: props.onReviewMember,
         canConfirm,
       }),
-    [props.selectedIds, props.onToggleMember, props.onConfirmMember, canConfirm]
+    [props.selectedIds, props.onToggleMember, props.onReviewMember, canConfirm]
   )
 
   const table = useReactTable({
@@ -65,11 +67,16 @@ export function EventFeeMembersTable(props: EventFeeMembersTableProps) {
             <FeeMemberListItem
               key={member.userId}
               member={member}
+              status={member.paymentStatus}
               team={{ key: member.teamKey, name: member.teamName }}
               isSelected={props.selectedIds.includes(member.userId)}
               readOnly={!canConfirm}
               onToggle={props.onToggleMember}
-              onConfirm={props.onConfirmMember}
+              action={
+                canConfirm ? (
+                  <MemberFeeReviewAction member={member} onReview={props.onReviewMember} />
+                ) : undefined
+              }
             />
           ))
         )}

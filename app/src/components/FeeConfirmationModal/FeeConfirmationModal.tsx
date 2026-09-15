@@ -64,8 +64,11 @@ export function FeeConfirmationModal(props: FeeConfirmationModalProps) {
           </ul>
         )}
 
+        {/* No longer "cannot be undone": the row's own review dialog can reverse
+            or exempt a fee. What it cannot do is reverse a whole batch at once,
+            which is what makes the bulk action worth confirming. */}
         <p className="m-0 text-xs text-secondary-foreground">
-          Esta ação registra o pagamento e não pode ser desfeita nesta tela.
+          Esta ação registra o pagamento. Para corrigir, revise a taxa de cada membro.
         </p>
 
         <div className="flex justify-end gap-3">

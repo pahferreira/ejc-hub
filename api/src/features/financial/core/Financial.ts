@@ -7,6 +7,7 @@ import type {
 } from '../../../modules/event-fee-payment/domain/EventFeePaymentRepository.ts'
 import {
   toMemberFeeStanding,
+  toSettableFeeStatus,
   type SettableFeeStatus,
 } from '../../../modules/event-fee-payment/domain/fee-payment-status.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
@@ -17,16 +18,20 @@ import type {
   EventFeeMemberList,
   EventFeeMemberPagination,
   EventFeeMemberRow,
-  EventFeeOverview,
+  EventFeeCounts,
+  EventFeeMembersOverview,
+  EventFeeTeamsOverview,
+  EventFeeRates,
   FeeStatusUpdateResult,
+  TeamFeeRow,
 } from '../domain/event-fee.types.ts'
 import {
   DEFAULT_PAGE,
   DEFAULT_PAGE_SIZE,
   filterMemberFees,
   paginateMemberFees,
-  summarizeMemberFees,
 } from './member-fee-list.ts'
+import { toFeeRates } from './fee-rates.ts'
 
 const COORDINATOR_TYPE = 'coordinator'
 const PAID_STATUS = 'paid' as const
@@ -56,6 +61,9 @@ function toMemberRow(row: MemberFeeStatusRow): EventFeeMemberRow {
     teamKey: row.teamKey,
     teamName: row.teamName,
     status: toMemberFeeStanding(row.feeStatus),
+    // Both readings of the same column: the fold the list acts on, and the
+    // stored status the review dialog preselects.
+    paymentStatus: toSettableFeeStatus(row.feeStatus),
   }
 }
 
@@ -89,37 +97,93 @@ export class Financial {
     return fn(currentEvent)
   }
 
-  async getCurrentEventOverview(): Promise<EventFeeOverview> {
+  /**
+   * The counts behind the "Taxa por Membro" cards.
+   *
+   * Reads the same per-team aggregate the teams overview does and throws the
+   * breakdown away. That is deliberate: one SQL aggregate is the single place
+   * "how many paid" is decided, so the two pages cannot drift into disagreeing
+   * about the same event.
+   */
+  async getCurrentEventMembersOverview(): Promise<EventFeeMembersOverview> {
     return this.#withCurrentEvent(async (event) => {
-      const rows = await this.#eventFeePaymentRepository.aggregateFeeStatusByTeam(event.id)
+      const teams = await this.#aggregateTeams(event.id)
+      const counts = this.#countsFrom(teams)
 
-      const teams = rows
-        .map((row) => ({
+      return { ...counts, ...this.#ratesFrom(counts) }
+    })
+  }
+
+  /**
+   * Everything the "Taxa de Inscrição" page shows: the counts, the per-team
+   * table, and the money.
+   */
+  async getCurrentEventTeamsOverview(): Promise<EventFeeTeamsOverview> {
+    return this.#withCurrentEvent(async (event) => {
+      const teams = await this.#aggregateTeams(event.id)
+      const counts = this.#countsFrom(teams)
+
+      return {
+        // Rates, not counts: the head counts stay on the by-member page, and the
+        // per-team table below carries the absolute numbers for this one.
+        ...this.#ratesFrom(counts),
+        collectedCents: teams.reduce((sum, team) => sum + team.collectedCents, 0),
+        // Only the members who owe: an exemption removes that person's fee from
+        // the target rather than leaving it permanently outstanding.
+        expectedCents: event.feeAmountCents * (counts.totalMembers - counts.exemptCount),
+        currency: event.feeCurrency,
+        teams: teams.map((team) => team.row),
+      }
+    })
+  }
+
+  // One query, one shape, sorted once. Both overviews start here so that "how
+  // many paid" is answered by a single `filter (where ...)` in one place.
+  async #aggregateTeams(eventId: string) {
+    const rows = await this.#eventFeePaymentRepository.aggregateFeeStatusByTeam(eventId)
+
+    return rows
+      .map((row) => ({
+        collectedCents: row.collectedCents,
+        row: {
           teamId: row.teamId,
           teamKey: row.teamKey,
           teamName: row.teamName,
           total: row.total,
           paid: row.paid,
-          // Everything that is not paid-or-exempt is outstanding, including
-          // members with no payment row at all, so the two always sum to total.
-          pending: row.total - row.paid,
+          exempt: row.exempt,
+          // The three partition the team, so a member with no payment row at all
+          // lands here rather than vanishing from the totals.
+          pending: row.total - row.paid - row.exempt,
           paidPercentage: toPercentage(row.paid, row.total),
-        }))
-        .sort((first, second) => first.teamName.localeCompare(second.teamName))
+        } satisfies TeamFeeRow,
+      }))
+      .sort((first, second) => first.row.teamName.localeCompare(second.row.teamName))
+  }
 
-      // Summed from the team rows rather than queried again: every membership
-      // belongs to exactly one team instance, so the totals agree by construction.
-      const totalMembers = teams.reduce((sum, team) => sum + team.total, 0)
-      const paidCount = teams.reduce((sum, team) => sum + team.paid, 0)
-
-      return {
-        totalMembers,
-        paidCount,
-        pendingCount: totalMembers - paidCount,
-        paidPercentage: toPercentage(paidCount, totalMembers),
-        teams,
-      }
+  // Derived from the counts rather than the rows, so the rates and the
+  // by-member page's head counts are two readings of one aggregate.
+  #ratesFrom(counts: EventFeeCounts): EventFeeRates {
+    return toFeeRates({
+      paid: counts.paidCount,
+      exempt: counts.exemptCount,
+      pending: counts.pendingCount,
     })
+  }
+
+  // Summed from the team rows rather than queried again: every membership
+  // belongs to exactly one team instance, so the totals agree by construction.
+  #countsFrom(teams: { row: TeamFeeRow }[]): EventFeeCounts {
+    const totalMembers = teams.reduce((sum, team) => sum + team.row.total, 0)
+    const paidCount = teams.reduce((sum, team) => sum + team.row.paid, 0)
+    const exemptCount = teams.reduce((sum, team) => sum + team.row.exempt, 0)
+
+    return {
+      totalMembers,
+      paidCount,
+      exemptCount,
+      pendingCount: totalMembers - paidCount - exemptCount,
+    }
   }
 
   /**
@@ -150,7 +214,6 @@ export class Financial {
         total: filtered.length,
         page,
         pageSize,
-        stats: summarizeMemberFees(filtered),
       }
     })
   }

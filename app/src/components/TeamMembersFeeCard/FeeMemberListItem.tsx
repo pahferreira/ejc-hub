@@ -1,24 +1,41 @@
+import type { ReactNode } from 'react'
 import { FiPhone } from 'react-icons/fi'
-import { MemberFeeConfirmAction } from './MemberFeeConfirmAction'
 import { MemberFeeIdentity } from './MemberFeeIdentity'
 import { MemberFeeSelectControl } from './MemberFeeSelectControl'
 import { MemberFeeStatusPill } from './MemberFeeStatusPill'
 import { TeamAvatar } from '../TeamAvatar/TeamAvatar'
-import type { TeamMemberFeeRow } from '../../services/finance/finance.types'
+import type { MemberFeePaymentStatus, TeamMemberFeeRow } from '../../services/finance/finance.types'
 
 export type FeeMemberListItemProps = {
   member: TeamMemberFeeRow
   isSelected: boolean
   onToggle: (memberId: string) => void
-  onConfirm: (memberId: string) => void
+  /**
+   * The row's trailing action, rendered beside the status pill.
+   *
+   * A slot rather than a callback, the way `PersonCard` takes its chips: the two
+   * lists that use this row disagree about what the action *is* — a coordinator
+   * confirms a pending payment, a treasurer reviews any status — and that is
+   * their decision to make, not a flag for this component to branch on. Omitted
+   * renders no action at all.
+   */
+  action?: ReactNode
+  /**
+   * The status to show, when the caller knows a more precise one than the row's
+   * folded `status`. Same reasoning as `action`: the treasurer's list holds the
+   * stored status and wants "Isento" spelled out, while a coordinator's list only
+   * ever has the fold. Omitted falls back to `member.status`.
+   */
+  status?: MemberFeePaymentStatus
   /**
    * The member's team, for lists that mix several. Omitted by the coordinator's
    * own-team card, where every row would repeat the same name.
    */
   team?: { key: string; name: string }
   /**
-   * Drops the selection control and the confirm action, leaving the row purely
-   * informational. For callers whose user may read fees but not settle them.
+   * Drops the selection control, leaving the row purely informational. For
+   * callers whose user may read fees but not settle them; such a caller passes
+   * no `action` either.
    */
   readOnly?: boolean
 }
@@ -64,10 +81,8 @@ export function FeeMemberListItem(props: FeeMemberListItemProps) {
       )}
 
       <div className="flex items-center justify-between gap-3">
-        <MemberFeeStatusPill status={props.member.status} />
-        {!props.readOnly && (
-          <MemberFeeConfirmAction member={props.member} onConfirm={props.onConfirm} />
-        )}
+        <MemberFeeStatusPill status={props.status ?? props.member.status} />
+        {props.action}
       </div>
     </li>
   )

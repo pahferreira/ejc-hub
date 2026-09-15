@@ -37,9 +37,19 @@ class DrizzleEventFeePaymentRepository implements EventFeePaymentRepository {
           recordedBy: input.recordedBy,
           updatedAt: now,
           ...statusFields,
-          // `amountCents` is deliberately absent: an existing row already
-          // snapshotted what this person was charged, and changing their status
-          // must not silently reprice it to today's event fee.
+          // Re-prices only a row that was never priced.
+          //
+          // A row already carrying an amount keeps it: that is the snapshot this
+          // column exists for, and changing someone's status must not silently
+          // reprice them to today's event fee. But a row stamped 0 was written
+          // while the event had no fee configured, and it is indistinguishable
+          // from a real charge of nothing — so re-confirming that member is the
+          // one moment we can correct it.
+          //
+          // The trade-off is deliberate: a member genuinely charged 0 under a
+          // free event gets priced the moment someone re-confirms them. An
+          // exemption, not a zero charge, is how a comped member is recorded.
+          amountCents: sql`case when ${schema.eventFeePayments.amountCents} = 0 then excluded.amount_cents else ${schema.eventFeePayments.amountCents} end`,
         },
       })
       .returning({ userId: schema.eventFeePayments.userId })
@@ -97,7 +107,15 @@ class DrizzleEventFeePaymentRepository implements EventFeePaymentRepository {
           // Counts the membership id, not `*`: the left join leaves one all-null
           // row for a team with no members, which `count(*)` would score as 1.
           total: sql<number>`count(${schema.teamMemberships.id})::int`,
-          paid: sql<number>`(count(*) filter (where ${schema.eventFeePayments.status} in ('paid', 'exempt')))::int`,
+          // Money-only, no longer folded with 'exempt': a comped member settles
+          // their fee without contributing, and the treasurer's cards now count
+          // the two separately so `collectedCents` and `paid` tell one story.
+          paid: sql<number>`(count(*) filter (where ${schema.eventFeePayments.status} = 'paid'))::int`,
+          exempt: sql<number>`(count(*) filter (where ${schema.eventFeePayments.status} = 'exempt'))::int`,
+          // Summed from the per-row snapshot rather than the event's current fee:
+          // `amount_cents` records what this person was actually charged, so a
+          // mid-event fee change cannot retroactively rewrite what came in.
+          collectedCents: sql<number>`(coalesce(sum(${schema.eventFeePayments.amountCents}) filter (where ${schema.eventFeePayments.status} = 'paid'), 0))::int`,
         })
         .from(schema.teamInstances)
         .innerJoin(
