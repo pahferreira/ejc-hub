@@ -6,6 +6,7 @@ import { StatBlock } from '../StatBlock/StatBlock'
 import { Table } from '../Table'
 import { getFeeTone } from '../FeeByTeamCard/feeTone'
 import { FeeMemberListItem } from './FeeMemberListItem'
+import { MemberFeeConfirmAction } from './MemberFeeConfirmAction'
 import { createTeamMembersFeeColumns } from './teamMembersFeeColumns'
 import { getMemberFeeCounts } from './feeMemberStats'
 import { isAllPendingSelected } from './feeMemberSelection'
@@ -89,7 +90,7 @@ export function TeamMembersFeeCard(props: TeamMembersFeeCardProps) {
               member={member}
               isSelected={props.selectedIds.includes(member.userId)}
               onToggle={props.onToggleMember}
-              onConfirm={props.onConfirmMember}
+              action={<MemberFeeConfirmAction member={member} onConfirm={props.onConfirmMember} />}
             />
           ))
         )}

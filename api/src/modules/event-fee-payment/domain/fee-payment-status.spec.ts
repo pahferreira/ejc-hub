@@ -3,6 +3,7 @@ import {
   buildFeePaymentStatusFields,
   SETTABLE_FEE_STATUSES,
   toMemberFeeStanding,
+  toSettableFeeStatus,
 } from './fee-payment-status.ts'
 
 const NOW = new Date('2026-09-08T12:00:00.000Z')
@@ -57,5 +58,31 @@ describe('toMemberFeeStanding', () => {
   it('reads a member with no payment row at all as outstanding', () => {
     expect(toMemberFeeStanding(null)).toBe('pending')
     expect(toMemberFeeStanding(undefined)).toBe('pending')
+  })
+})
+
+describe('toSettableFeeStatus', () => {
+  it.each(SETTABLE_FEE_STATUSES)('passes %s through untouched', (status) => {
+    expect(toSettableFeeStatus(status)).toBe(status)
+  })
+
+  it('keeps a comped fee distinct from a paid one, unlike the standing fold', () => {
+    // The whole reason this exists next to `toMemberFeeStanding`: a review
+    // dialog that cannot tell the two apart cannot preselect the right option.
+    expect(toSettableFeeStatus('exempt')).toBe('exempt')
+    expect(toMemberFeeStanding('exempt')).toBe('paid')
+  })
+
+  it('reads a member with no payment row as pending', () => {
+    expect(toSettableFeeStatus(null)).toBe('pending')
+    expect(toSettableFeeStatus(undefined)).toBe('pending')
+  })
+
+  it('reads refunded as pending, since no screen can set it back', () => {
+    expect(toSettableFeeStatus('refunded')).toBe('pending')
+  })
+
+  it('reads an unknown status as pending rather than trusting the column', () => {
+    expect(toSettableFeeStatus('something_else')).toBe('pending')
   })
 })

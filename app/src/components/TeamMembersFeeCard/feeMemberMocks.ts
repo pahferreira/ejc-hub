@@ -92,24 +92,41 @@ const MOCK_TEAMS = [
   { teamId: 't-3', teamKey: 'liturgia', teamName: 'Liturgia' },
 ]
 
-/** The event-wide row: the same person, plus the team they belong to. */
+/**
+ * The event-wide row: the same person, plus the team they belong to and the
+ * stored status behind their standing.
+ *
+ * `paymentStatus` defaults to the plain reading of `status` — a paid member is
+ * `paid`, an unsettled one is `pending`. The interesting cases (`exempt`,
+ * `not_paid`) are opted into per fixture, because they are exactly what the
+ * review dialog exists to distinguish.
+ */
 export function buildEventFeeMemberRow(
   overrides: Partial<EventFeeMemberRow> & Pick<EventFeeMemberRow, 'userId' | 'name'>
 ): EventFeeMemberRow {
+  const member = buildMemberFeeRow(overrides)
+
   return {
-    ...buildMemberFeeRow(overrides),
+    ...member,
     ...MOCK_TEAMS[0],
+    paymentStatus: member.status,
     ...overrides,
   }
 }
 
 /**
  * The same eight people spread across three teams, so the mixed-team columns
- * (dot + name) have something to distinguish. Still 5 paid / 3 pending.
+ * (dot + name) have something to distinguish. Still 5 paid / 3 pending — one of
+ * the settled members is comped rather than paid, and one of the outstanding
+ * ones has a recorded non-payment, so both readings of the column are covered.
  */
 export const mixedEventFeeMemberRows: EventFeeMemberRow[] = mixedMemberFeeRows.map(
   (row, index) => ({
     ...row,
     ...MOCK_TEAMS[index % MOCK_TEAMS.length],
+    paymentStatus: row.status,
   })
 )
+
+mixedEventFeeMemberRows[3].paymentStatus = 'exempt'
+mixedEventFeeMemberRows[4].paymentStatus = 'not_paid'

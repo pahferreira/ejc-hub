@@ -1,3 +1,5 @@
+import type { SettableFeeStatus } from '../../../modules/event-fee-payment/domain/fee-payment-status.ts'
+
 export type TeamFeeRow = {
   teamId: string
   teamKey: string
@@ -48,6 +50,16 @@ export type EventFeeMemberRow = {
   teamKey: string
   teamName: string
   status: MemberFeeStanding
+  /**
+   * The stored payment status, unfolded.
+   *
+   * Carried *alongside* `status` rather than instead of it: `status` is what the
+   * filters, the stat cards and the row pill read, and collapsing it here once
+   * is what keeps every one of them agreeing with `aggregateFeeStatusByTeam`.
+   * This field exists for the review dialog, which has to preselect the member's
+   * actual status and so must tell `exempt` from `paid`.
+   */
+  paymentStatus: SettableFeeStatus
 }
 
 export type EventFeeMemberFilters = {

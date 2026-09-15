@@ -16,7 +16,7 @@ const meta = {
   },
   args: {
     onToggleMember: fn(),
-    onConfirmMember: fn(),
+    onReviewMember: fn(),
     canConfirm: true,
   },
   tags: ['autodocs'],
@@ -37,9 +37,10 @@ export const Default: Story = {
     await expect(canvas.getAllByText('Acolhida').length).toBeGreaterThan(0)
     await expect(canvas.getAllByText('Cozinha').length).toBeGreaterThan(0)
 
-    // Only the three pending members offer an action or a checkbox; paid rows
-    // expose a static marker instead.
-    await expect(canvas.getAllByRole('button', { name: /^Confirmar taxa de/ })).toHaveLength(3)
+    // Every row can be reviewed — correcting a confirmation and comping someone
+    // both start from a settled row — but only the three unsettled members can
+    // be checked, since the bulk action is confirm-as-paid.
+    await expect(canvas.getAllByRole('button', { name: /^Revisar taxa de/ })).toHaveLength(8)
     await expect(canvas.getAllByRole('checkbox')).toHaveLength(3)
   },
 }
@@ -58,9 +59,12 @@ export const ReadOnly: Story = {
     const canvas = within(canvasElement)
 
     await expect(canvas.queryAllByRole('checkbox')).toHaveLength(0)
+    // Queried with `hidden` so the stacked mobile list counts too: it is in the
+    // DOM at every width, and an action leaking into it would be invisible here
+    // but live on a phone.
     await expect(
-      canvas.queryByRole('button', { name: /^Confirmar taxa de/ })
-    ).not.toBeInTheDocument()
+      canvas.queryAllByRole('button', { name: /^Revisar taxa de/, hidden: true })
+    ).toHaveLength(0)
     await expect(canvas.queryByText('Ação')).not.toBeInTheDocument()
     // The informational columns are all still there.
     await expect(canvas.getByText('Status')).toBeVisible()
@@ -100,6 +104,41 @@ export const MissingPhone: Story = {
     const canvas = within(canvasElement)
 
     await expect(canvas.getAllByText('—').length).toBeGreaterThan(0)
+  },
+}
+
+/**
+ * The status column keeps the folded reading — a comped member shows "Pago",
+ * like the filters and the stat cards do. The exemption itself only surfaces in
+ * the review dialog, so filtering by "Pago" can never return a row labelled
+ * something else.
+ */
+export const SettledMembers: Story = {
+  args: {
+    rows: [
+      buildEventFeeMemberRow({
+        userId: 'u-1',
+        name: 'Maria Silva',
+        nickname: 'Mari',
+        status: 'paid',
+        paymentStatus: 'exempt',
+      }),
+      buildEventFeeMemberRow({
+        userId: 'u-2',
+        name: 'João Santos',
+        nickname: 'Joca',
+        status: 'paid',
+        paymentStatus: 'paid',
+      }),
+    ],
+    selectedIds: [],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.queryByText('Isento')).not.toBeInTheDocument()
+    // Both rows are reviewable even though neither owes anything.
+    await expect(canvas.getAllByRole('button', { name: /^Revisar taxa de/ })).toHaveLength(2)
   },
 }
 
@@ -153,7 +192,7 @@ function InteractiveExample() {
       selectedIds={selectedIds}
       canConfirm
       onToggleMember={(memberId) => setSelectedIds(toggleMemberSelection(selectedIds, memberId))}
-      onConfirmMember={fn()}
+      onReviewMember={fn()}
     />
   )
 }

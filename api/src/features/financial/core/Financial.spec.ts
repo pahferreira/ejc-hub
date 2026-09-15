@@ -308,6 +308,69 @@ describe('Financial.listCurrentEventMemberFees', () => {
     expect(result.items[0].status).toBe('pending')
   })
 
+  it.each([
+    ['paid', 'paid'],
+    ['exempt', 'exempt'],
+    ['pending', 'pending'],
+    ['not_paid', 'not_paid'],
+    // Neither settable nor recorded: both read as pending, the only honest
+    // answer a review dialog can preselect.
+    ['refunded', 'pending'],
+  ] as const)(
+    'carries a stored %s status through as paymentStatus %s',
+    async (stored, expected) => {
+      const { financial } = makeMemberListFinancial([
+        buildMemberFeeStatusRow({ userId: 'u-1', name: 'Maria Silva', feeStatus: stored }),
+      ])
+
+      const result = await financial.listCurrentEventMemberFees()
+
+      expect(result.items[0].paymentStatus).toBe(expected)
+    }
+  )
+
+  it('reports a comped member as settled but keeps the exemption visible', async () => {
+    // The pair the review dialog depends on: `status` drives the filters and the
+    // stat cards, `paymentStatus` drives which option is preselected.
+    const { financial } = makeMemberListFinancial([
+      buildMemberFeeStatusRow({ userId: 'u-1', name: 'Maria Silva', feeStatus: 'exempt' }),
+    ])
+
+    const result = await financial.listCurrentEventMemberFees()
+
+    expect(result.items[0]).toMatchObject({ status: 'paid', paymentStatus: 'exempt' })
+  })
+
+  it('keeps the two readings of the same column consistent', async () => {
+    // Both come off `row.feeStatus` in one mapper, and this is the cheap guard
+    // that they never drift: a row reads as settled exactly when its stored
+    // status is `paid` or `exempt`.
+    const stored = ['paid', 'exempt', 'pending', 'not_paid', 'refunded'] as const
+    const { financial } = makeMemberListFinancial(
+      stored.map((feeStatus, index) =>
+        buildMemberFeeStatusRow({ userId: `u-${index}`, name: `Member ${index}`, feeStatus })
+      )
+    )
+
+    const result = await financial.listCurrentEventMemberFees()
+
+    for (const item of result.items) {
+      expect(item.status === 'paid').toBe(
+        item.paymentStatus === 'paid' || item.paymentStatus === 'exempt'
+      )
+    }
+  })
+
+  it('reports a member with no payment row as pending in both readings', async () => {
+    const { financial } = makeMemberListFinancial([
+      buildMemberFeeStatusRow({ userId: 'u-1', name: 'Maria Silva', feeStatus: null }),
+    ])
+
+    const result = await financial.listCurrentEventMemberFees()
+
+    expect(result.items[0]).toMatchObject({ status: 'pending', paymentStatus: 'pending' })
+  })
+
   it('reports the filtered total, not the event total', async () => {
     const { financial } = makeMemberListFinancial([
       buildMemberFeeStatusRow({ userId: 'u-1', name: 'Maria Silva', teamKey: 'acolhida' }),

@@ -3,25 +3,30 @@ import { FiXCircle } from 'react-icons/fi'
 import { EventFeeMembersTable } from '../../components/EventFeeMembersTable/EventFeeMembersTable'
 import { FeeBulkSelectionBar } from '../../components/FeeBulkSelectionBar/FeeBulkSelectionBar'
 import { FeeConfirmationModal } from '../../components/FeeConfirmationModal/FeeConfirmationModal'
+import { FeeStatusReviewModal } from '../../components/FeeStatusReviewModal/FeeStatusReviewModal'
 import { Pagination } from '../../components/Pagination/Pagination'
 import { SearchInput } from '../../components/SearchInput/SearchInput'
 import { Selector, type Option } from '../../components/Selector/Selector'
 import { StatusCard } from '../../components/StatusCard/StatusCard'
-import { formatSelectedMemberLabels } from '../../components/TeamMembersFeeCard/feeMemberLabels'
-import { toggleMemberSelection } from '../../components/TeamMembersFeeCard/feeMemberSelection'
+import {
+  removeMemberFromSelection,
+  toggleMemberSelection,
+} from '../../components/TeamMembersFeeCard/feeMemberSelection'
 import { useAuthentication } from '../../hooks/useAuthentication'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { usePagination } from '../../hooks/usePagination'
-import { useConfirmEventFeesMutation } from '../../services/finance/useConfirmEventFeesMutation'
+import { useSetEventFeeStatusMutation } from '../../services/finance/useSetEventFeeStatusMutation'
 import { useEventFeeMembersQuery } from '../../services/finance/useEventFeeMembersQuery'
 import { useTeamOptionsQuery } from '../../services/teams/useTeamOptionsQuery'
 import { EventFeePermissions, hasPermission } from '../../../../common/permissions'
 import { toastPromise } from '../../utils/toast/toast'
+import type { ReviewableFeeStatus } from '../../components/FeeStatusReviewModal/feeReviewOptions'
 import type {
   EventFeeMemberFilters,
   EventFeeMemberStats,
   TeamMemberFeeStatus,
 } from '../../services/finance/finance.types'
+import { formatSelectedMemberLabels } from '../../components/TeamMembersFeeCard/feeMemberLabels'
 
 const ALL_TEAMS = 'all'
 const ALL_STATUSES = 'all'
@@ -40,12 +45,14 @@ const statusOptions: Option[] = [
 ]
 
 /**
- * Which members the confirmation dialog is about, or `null` when it is closed.
+ * Which members the bulk confirmation dialog is about, or `null` when it is
+ * closed.
  *
- * One piece of state for both entry points: a row's "Confirmar" is a selection
- * of one, and the bulk bar's is a selection of many. Holding ids rather than a
- * boolean is what lets the dialog name people, and what stops a stale bulk
- * selection from being submitted after the row action opened the dialog.
+ * Only the bulk bar feeds it now: a row's action opens the review dialog
+ * instead, which is about one person and every status rather than many people
+ * and only `paid`. Holding ids rather than a boolean is what lets the dialog
+ * name people, and what stops a selection changed behind the dialog from being
+ * submitted in place of the one the user saw.
  */
 type PendingConfirmation = { userIds: string[] } | null
 
@@ -58,6 +65,10 @@ export function EventFeeMembersPage() {
   const [status, setStatus] = useState<TeamMemberFeeStatus | typeof ALL_STATUSES>(ALL_STATUSES)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation>(null)
+  // The row under review, by id rather than by row: the member is looked up in
+  // the live `rows` on every render, so a refetch that changes someone's status
+  // is reflected in the open dialog instead of leaving it showing a stale one.
+  const [reviewUserId, setReviewUserId] = useState<string | null>(null)
 
   const debouncedSearch = useDebouncedValue(search, 300)
   const { page, pageSize, nextPage, prevPage, resetPage } = usePagination()
@@ -84,7 +95,7 @@ export function EventFeeMembersPage() {
 
   const membersQuery = useEventFeeMembersQuery(filters, { page, pageSize })
   const teamOptionsQuery = useTeamOptionsQuery()
-  const confirmMutation = useConfirmEventFeesMutation()
+  const setStatusMutation = useSetEventFeeStatusMutation()
 
   const teamOptions: Option[] = useMemo(
     () => [
@@ -102,6 +113,20 @@ export function EventFeeMembersPage() {
     ? formatSelectedMemberLabels(rows, pendingConfirmation.userIds)
     : []
 
+  // Resolved from the page on screen, so an id left over from a filter change or
+  // a page turn simply closes the dialog rather than reviewing a ghost.
+  const memberUnderReview = rows.find((row) => row.userId === reviewUserId) ?? null
+
+  // Forgets an id the list no longer holds. Closing the dialog is already
+  // handled by `memberUnderReview` going null, but leaving the id behind means a
+  // later refetch that brings the row back — clearing the status filter, say —
+  // would pop the dialog open again on its own.
+  useEffect(() => {
+    if (reviewUserId !== null && memberUnderReview === null) {
+      setReviewUserId(null)
+    }
+  }, [reviewUserId, memberUnderReview])
+
   const handleConfirm = () => {
     if (!pendingConfirmation) {
       return
@@ -109,12 +134,31 @@ export function EventFeeMembersPage() {
 
     const { userIds } = pendingConfirmation
 
-    toastPromise(confirmMutation.mutateAsync(userIds), {
+    toastPromise(setStatusMutation.mutateAsync({ userIds, status: 'paid' }), {
       message: `${userIds.length === 1 ? 'Taxa confirmada' : 'Taxas confirmadas'} com sucesso!`,
       callback: () => setSelectedIds([]),
     })
 
     setPendingConfirmation(null)
+  }
+
+  const handleSaveReview = (status: ReviewableFeeStatus) => {
+    if (!memberUnderReview) {
+      return
+    }
+
+    const { userId } = memberUnderReview
+
+    toastPromise(setStatusMutation.mutateAsync({ userIds: [userId], status }), {
+      message: 'Status da taxa atualizado com sucesso!',
+    })
+
+    // Pruned rather than left in place: a member reviewed to `exempt` while
+    // checked would otherwise still be in the bulk bar, whose one action writes
+    // `paid` straight over the exemption — and their row no longer renders a
+    // checkbox to untick.
+    setSelectedIds((current) => removeMemberFromSelection(current, userId))
+    setReviewUserId(null)
   }
 
   if (membersQuery.isLoading) {
@@ -172,7 +216,7 @@ export function EventFeeMembersPage() {
         </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-3">
-          <div className="min-w-[220px] flex-1 lg:max-w-sm lg:flex-none">
+          <div className="min-w-55 flex-1 lg:max-w-sm lg:flex-none">
             <SearchInput
               fullWidth
               placeholder="Pesquisar por nome"
@@ -182,7 +226,7 @@ export function EventFeeMembersPage() {
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-3">
-            <div className="w-[200px]">
+            <div className="w-50">
               <Selector
                 options={teamOptions}
                 selected={teamOptions.find((option) => option.value === teamKey)}
@@ -190,7 +234,7 @@ export function EventFeeMembersPage() {
                 onChange={(option) => setTeamKey(option.value)}
               />
             </div>
-            <div className="w-[180px]">
+            <div className="w-45">
               <Selector
                 options={statusOptions}
                 selected={statusOptions.find((option) => option.value === status)}
@@ -220,7 +264,7 @@ export function EventFeeMembersPage() {
           onToggleMember={(memberId) =>
             setSelectedIds((current) => toggleMemberSelection(current, memberId))
           }
-          onConfirmMember={(memberId) => setPendingConfirmation({ userIds: [memberId] })}
+          onReviewMember={setReviewUserId}
         />
       </div>
 
@@ -235,9 +279,17 @@ export function EventFeeMembersPage() {
       <FeeConfirmationModal
         open={pendingConfirmation !== null}
         memberNames={confirmationNames}
-        isConfirming={confirmMutation.isPending}
+        isConfirming={setStatusMutation.isPending}
         onClose={() => setPendingConfirmation(null)}
         onConfirm={handleConfirm}
+      />
+
+      <FeeStatusReviewModal
+        open={memberUnderReview !== null}
+        member={memberUnderReview}
+        isSaving={setStatusMutation.isPending}
+        onClose={() => setReviewUserId(null)}
+        onSave={handleSaveReview}
       />
     </div>
   )

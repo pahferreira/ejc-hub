@@ -4,6 +4,7 @@ import type {
   EventFeeMemberListResponse,
   EventFeeMemberPagination,
   EventFeeOverview,
+  MemberFeePaymentStatus,
 } from './finance.types'
 
 async function getEventFeeOverview() {
@@ -50,17 +51,20 @@ async function getEventFeeMembers(
 }
 
 /**
- * Marks every given member's fee as paid in the current event.
+ * Writes one fee status for every given member in the current event.
  *
  * Always the batch route, even for a single row. The one-member route exists and
  * does the same thing, but two call paths for one action means two places to
  * keep the error handling and cache invalidation in step — and the API's batch
  * handler is a one-item list away from the single handler anyway.
+ *
+ * Takes the status rather than fixing it to `paid`: the row action is a review
+ * (confirm, comp, or reverse), and the bulk bar is that same write with `paid`.
  */
-async function confirmEventFeePayments(userIds: string[]) {
+async function setEventFeePaymentsStatus(userIds: string[], status: MemberFeePaymentStatus) {
   const response = await api.put<{ result: { updatedUserIds: string[]; updatedCount: number } }>(
     '/financial/event-fee/admin/payments/status',
-    { userIds, status: 'paid' }
+    { userIds, status }
   )
 
   return response.data.result
@@ -87,6 +91,6 @@ async function confirmTeamFeePayments(userIds: string[]) {
 export const financeApi = {
   getEventFeeOverview,
   getEventFeeMembers,
-  confirmEventFeePayments,
   confirmTeamFeePayments,
+  setEventFeePaymentsStatus,
 }

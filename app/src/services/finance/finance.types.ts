@@ -59,6 +59,20 @@ export type TeamMemberFeeRow = {
 }
 
 /**
+ * A stored event-fee payment status, as the treasurer can set it.
+ *
+ * Mirrors the API's `SETTABLE_FEE_STATUSES`. Where `TeamMemberFeeStatus` is the
+ * two-state fold a list acts on, this is the full set a review dialog has to
+ * distinguish — `exempt` and `paid` both read as settled, but comping someone
+ * and receiving their money are not the same decision.
+ *
+ * `refunded` is absent for the same reason it is absent on the API: the table
+ * has nowhere to record when the money went back out, so no screen can set it.
+ * A refunded row arrives here as `pending`.
+ */
+export type MemberFeePaymentStatus = 'pending' | 'not_paid' | 'paid' | 'exempt'
+
+/**
  * One member's fee standing anywhere in the current event.
  *
  * Extends `TeamMemberFeeRow` rather than restating it: the "Taxa por Membro"
@@ -73,6 +87,14 @@ export type EventFeeMemberRow = TeamMemberFeeRow & {
   /** `team_templates.key`; stable across events, so it is what filters send. */
   teamKey: string
   teamName: string
+  /**
+   * The stored status behind the folded `status`, for the review dialog.
+   *
+   * Only on this row, not on `TeamMemberFeeRow`: a coordinator confirms payments
+   * and never comps anyone, so their list has no use for the distinction and
+   * should not carry a field nothing reads.
+   */
+  paymentStatus: MemberFeePaymentStatus
 }
 
 export type EventFeeMemberFilters = {

@@ -42,6 +42,26 @@ export function toMemberFeeStanding(status: string | null | undefined): MemberFe
   return SETTLED_FEE_STATUSES.some((settled) => settled === status) ? 'paid' : 'pending'
 }
 
+/**
+ * Narrows a stored payment status to one a treasurer can set again.
+ *
+ * The complement of `toMemberFeeStanding`: where that folds four statuses into
+ * the two a list acts on, this keeps every distinction the review screen needs —
+ * telling `exempt` from `paid` is the whole point of showing a member's current
+ * status before changing it.
+ *
+ * Both absent and unsettable statuses read as `pending`, for different reasons
+ * that land in the same place. `null` means no payment row exists, which is
+ * literally "nothing recorded yet". `refunded` is a real stored state with no
+ * way back through this screen (see `SETTABLE_FEE_STATUSES`), so reporting it as
+ * itself would preselect an option the UI does not offer; `pending` is the
+ * honest reading — the fee is outstanding again — and matches what
+ * `toMemberFeeStanding` already says about the same row.
+ */
+export function toSettableFeeStatus(status: string | null | undefined): SettableFeeStatus {
+  return SETTABLE_FEE_STATUSES.find((settable) => settable === status) ?? 'pending'
+}
+
 export type FeePaymentStatusFields = {
   status: SettableFeeStatus
   paidAt: Date | null

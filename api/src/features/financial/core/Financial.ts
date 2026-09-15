@@ -7,6 +7,7 @@ import type {
 } from '../../../modules/event-fee-payment/domain/EventFeePaymentRepository.ts'
 import {
   toMemberFeeStanding,
+  toSettableFeeStatus,
   type SettableFeeStatus,
 } from '../../../modules/event-fee-payment/domain/fee-payment-status.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
@@ -56,6 +57,9 @@ function toMemberRow(row: MemberFeeStatusRow): EventFeeMemberRow {
     teamKey: row.teamKey,
     teamName: row.teamName,
     status: toMemberFeeStanding(row.feeStatus),
+    // Both readings of the same column: the fold the list acts on, and the
+    // stored status the review dialog preselects.
+    paymentStatus: toSettableFeeStatus(row.feeStatus),
   }
 }
 

@@ -1,10 +1,10 @@
 import { createColumnHelper } from '@tanstack/react-table'
 import { ExperienceBadge } from '../ExperienceBadge/ExperienceBadge'
-import { MemberFeeConfirmAction } from '../TeamMembersFeeCard/MemberFeeConfirmAction'
 import { MemberFeeIdentity } from '../TeamMembersFeeCard/MemberFeeIdentity'
 import { MemberFeeSelectControl } from '../TeamMembersFeeCard/MemberFeeSelectControl'
 import { MemberFeeStatusPill } from '../TeamMembersFeeCard/MemberFeeStatusPill'
 import { TeamAvatar } from '../TeamAvatar/TeamAvatar'
+import { MemberFeeReviewAction } from './MemberFeeReviewAction'
 import type { EventFeeMemberRow } from '../../services/finance/finance.types'
 
 // The `ColumnMeta.className` augmentation these columns rely on is declared once
@@ -14,12 +14,17 @@ import type { EventFeeMemberRow } from '../../services/finance/finance.types'
 export type EventFeeMembersColumnsOptions = {
   selectedIds: string[]
   onToggleMember: (memberId: string) => void
-  onConfirmMember: (memberId: string) => void
+  onReviewMember: (memberId: string) => void
   /**
    * Whether the viewer may settle a fee. When false the selection and action
    * columns are not rendered at all — an "Ação" header over a column of em
    * dashes claims an affordance that is not there, and a disabled checkbox
    * invites clicking. The read-only table is purely informational.
+   *
+   * Note the asymmetry with the selection column when it *is* rendered: every
+   * row can be reviewed, but only unsettled rows can be bulk-selected, because
+   * the bulk action is confirm-as-paid and a settled member has nothing to
+   * confirm.
    */
   canConfirm: boolean
 }
@@ -49,7 +54,7 @@ export function createEventFeeMembersColumns(options: EventFeeMembersColumnsOpti
     header: 'Ação',
     meta: { className: 'text-right' },
     cell: (info) => (
-      <MemberFeeConfirmAction member={info.row.original} onConfirm={options.onConfirmMember} />
+      <MemberFeeReviewAction member={info.row.original} onReview={options.onReviewMember} />
     ),
   })
 
