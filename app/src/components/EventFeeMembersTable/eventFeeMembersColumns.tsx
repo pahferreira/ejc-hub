@@ -91,7 +91,10 @@ export function createEventFeeMembersColumns(options: EventFeeMembersColumnsOpti
         <ExperienceBadge experienceType={info.getValue()} circleKey={info.row.original.circleKey} />
       ),
     }),
-    columnHelper.accessor('status', {
+    // The stored status, not the folded `status` the filters and stat cards use:
+    // a treasurer reconciling money received has to be able to tell a comped
+    // member from one who actually paid, and the row is where they look first.
+    columnHelper.accessor('paymentStatus', {
       header: 'Status',
       cell: (info) => <MemberFeeStatusPill status={info.getValue()} />,
     }),

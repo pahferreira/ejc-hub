@@ -108,10 +108,10 @@ export const MissingPhone: Story = {
 }
 
 /**
- * The status column keeps the folded reading — a comped member shows "Pago",
- * like the filters and the stat cards do. The exemption itself only surfaces in
- * the review dialog, so filtering by "Pago" can never return a row labelled
- * something else.
+ * The status column spells out the stored status, so a comped member reads
+ * "Isento" rather than folding into "Pago" the way the filters and stat cards
+ * still do. That gap is deliberate and handled in the page's filter labels
+ * ("Pagos e isentos"), which name both halves of the fold they apply.
  */
 export const SettledMembers: Story = {
   args: {
@@ -136,7 +136,10 @@ export const SettledMembers: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.queryByText('Isento')).not.toBeInTheDocument()
+    // Both settle the fee, but only one of them involved any money. Two of each:
+    // the stacked and table layouts both render, as the empty state asserts too.
+    await expect(canvas.getAllByText('Isento')).toHaveLength(2)
+    await expect(canvas.getAllByText('Pago')).toHaveLength(2)
     // Both rows are reviewable even though neither owes anything.
     await expect(canvas.getAllByRole('button', { name: /^Revisar taxa de/ })).toHaveLength(2)
   },

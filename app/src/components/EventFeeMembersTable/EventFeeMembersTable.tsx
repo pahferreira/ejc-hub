@@ -67,6 +67,7 @@ export function EventFeeMembersTable(props: EventFeeMembersTableProps) {
             <FeeMemberListItem
               key={member.userId}
               member={member}
+              status={member.paymentStatus}
               team={{ key: member.teamKey, name: member.teamName }}
               isSelected={props.selectedIds.includes(member.userId)}
               readOnly={!canConfirm}

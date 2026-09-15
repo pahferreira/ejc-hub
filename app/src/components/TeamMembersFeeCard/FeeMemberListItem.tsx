@@ -4,7 +4,7 @@ import { MemberFeeIdentity } from './MemberFeeIdentity'
 import { MemberFeeSelectControl } from './MemberFeeSelectControl'
 import { MemberFeeStatusPill } from './MemberFeeStatusPill'
 import { TeamAvatar } from '../TeamAvatar/TeamAvatar'
-import type { TeamMemberFeeRow } from '../../services/finance/finance.types'
+import type { MemberFeePaymentStatus, TeamMemberFeeRow } from '../../services/finance/finance.types'
 
 export type FeeMemberListItemProps = {
   member: TeamMemberFeeRow
@@ -20,6 +20,13 @@ export type FeeMemberListItemProps = {
    * renders no action at all.
    */
   action?: ReactNode
+  /**
+   * The status to show, when the caller knows a more precise one than the row's
+   * folded `status`. Same reasoning as `action`: the treasurer's list holds the
+   * stored status and wants "Isento" spelled out, while a coordinator's list only
+   * ever has the fold. Omitted falls back to `member.status`.
+   */
+  status?: MemberFeePaymentStatus
   /**
    * The member's team, for lists that mix several. Omitted by the coordinator's
    * own-team card, where every row would repeat the same name.
@@ -74,7 +81,7 @@ export function FeeMemberListItem(props: FeeMemberListItemProps) {
       )}
 
       <div className="flex items-center justify-between gap-3">
-        <MemberFeeStatusPill status={props.member.status} />
+        <MemberFeeStatusPill status={props.status ?? props.member.status} />
         {props.action}
       </div>
     </li>

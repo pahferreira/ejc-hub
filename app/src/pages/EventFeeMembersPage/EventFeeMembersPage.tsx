@@ -38,10 +38,18 @@ const EMPTY_STATS: EventFeeMemberStats = {
   paidPercentage: 0,
 }
 
+/**
+ * Labelled for the fold they actually apply, not for the pill they resemble.
+ *
+ * The filter still asks the API for the two-state standing, while the table now
+ * spells out the stored status — so a plain "Pago" would return a page of rows
+ * badged "Isento" and read as a bug. Naming both halves is what keeps the
+ * result honest without pushing per-status filtering into the API.
+ */
 const statusOptions: Option[] = [
   { value: ALL_STATUSES, label: 'Todos os status' },
-  { value: 'paid', label: 'Pago' },
-  { value: 'pending', label: 'Pendente' },
+  { value: 'paid', label: 'Pagos e isentos' },
+  { value: 'pending', label: 'Pendentes e não pagos' },
 ]
 
 /**
@@ -189,6 +197,12 @@ export function EventFeeMembersPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatusCard
+            title="Membros Listados"
+            value={stats.totalMembers}
+            variant="neutral"
+            description="membros e coordenadores das equipes"
+          />
+          <StatusCard
             title="Taxas Pagas"
             value={stats.paidCount}
             variant="success"
@@ -206,12 +220,6 @@ export function EventFeeMembersPage() {
             value={`${stats.paidPercentage}%`}
             variant="info"
             description={`${stats.paidCount} de ${stats.totalMembers} membros`}
-          />
-          <StatusCard
-            title="Membros Listados"
-            value={stats.totalMembers}
-            variant="neutral"
-            description="membros e coordenadores das equipes"
           />
         </div>
 
