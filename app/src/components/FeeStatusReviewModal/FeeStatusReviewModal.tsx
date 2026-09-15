@@ -35,6 +35,33 @@ const optionIcons: Record<ReviewableFeeStatus, typeof FiCheckCircle> = {
 }
 
 /**
+ * How a card reads once it is the chosen outcome.
+ *
+ * The same vocabulary `MemberFeeStatusPill` already speaks — green for the two
+ * statuses that settle a fee, red for the one that puts it back outstanding — so
+ * the card a treasurer is about to save matches the pill they will see on the
+ * row afterwards. Unselected cards stay neutral: the colour is here to state the
+ * decision, not to label the options before one is made.
+ */
+const selectedTone: Record<ReviewableFeeStatus, { card: string; icon: string; radio: string }> = {
+  paid: {
+    card: 'border-green bg-green/10',
+    icon: 'bg-green/20 text-green',
+    radio: 'checked:border-green',
+  },
+  exempt: {
+    card: 'border-green bg-green/10',
+    icon: 'bg-green/20 text-green',
+    radio: 'checked:border-green',
+  },
+  not_paid: {
+    card: 'border-red bg-red/10',
+    icon: 'bg-red/20 text-red',
+    radio: 'checked:border-red',
+  },
+}
+
+/**
  * Reviews one member's event fee.
  *
  * Replaces the one-way "confirmar pagamento" the row used to offer: every status
@@ -99,6 +126,7 @@ export function FeeStatusReviewModal(props: FeeStatusReviewModalProps) {
 
             {FEE_REVIEW_OPTIONS.map((option) => {
               const Icon = optionIcons[option.value]
+              const tone = selectedTone[option.value]
               const isSelected = selected === option.value
 
               return (
@@ -106,16 +134,14 @@ export function FeeStatusReviewModal(props: FeeStatusReviewModalProps) {
                   key={option.value}
                   className={clsx(
                     'flex cursor-pointer items-center gap-3 rounded-xl border-2 px-4 py-3 transition-colors',
-                    isSelected
-                      ? 'border-green bg-green/10'
-                      : 'border-tertiary bg-white hover:bg-tertiary/30'
+                    isSelected ? tone.card : 'border-tertiary bg-white hover:bg-tertiary/30'
                   )}
                 >
                   <span
                     aria-hidden="true"
                     className={clsx(
                       'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
-                      isSelected ? 'bg-green/20 text-green' : 'bg-tertiary/50 text-dark-brown'
+                      isSelected ? tone.icon : 'bg-tertiary/50 text-dark-brown'
                     )}
                   >
                     <Icon size={18} />
@@ -132,7 +158,10 @@ export function FeeStatusReviewModal(props: FeeStatusReviewModalProps) {
                     value={option.value}
                     checked={isSelected}
                     onChange={() => setSelected(option.value)}
-                    className="h-4 w-4 shrink-0 cursor-pointer appearance-none rounded-full border border-primary checked:border-4 checked:border-green disabled:cursor-not-allowed"
+                    className={clsx(
+                      'h-4 w-4 shrink-0 cursor-pointer appearance-none rounded-full border border-primary checked:border-4 disabled:cursor-not-allowed',
+                      tone.radio
+                    )}
                   />
                 </label>
               )
