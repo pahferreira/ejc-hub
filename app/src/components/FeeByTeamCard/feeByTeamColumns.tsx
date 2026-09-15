@@ -33,6 +33,12 @@ export const feeByTeamColumns = [
     header: 'Pagos',
     cell: (info) => <Badge variant="success">{info.getValue()}</Badge>,
   }),
+  // Between Pagos and Pendentes, so the three buckets read left to right in the
+  // order they partition the team and visibly add up to Total.
+  columnHelper.accessor('exempt', {
+    header: 'Isentos',
+    cell: (info) => <Badge variant="info">{info.getValue()}</Badge>,
+  }),
   columnHelper.accessor('pending', {
     header: 'Pendentes',
     cell: (info) => <Badge variant="error">{info.getValue()}</Badge>,

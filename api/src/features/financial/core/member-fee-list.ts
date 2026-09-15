@@ -1,8 +1,4 @@
-import type {
-  EventFeeMemberFilters,
-  EventFeeMemberRow,
-  EventFeeMemberStats,
-} from '../domain/event-fee.types.ts'
+import type { EventFeeMemberFilters, EventFeeMemberRow } from '../domain/event-fee.types.ts'
 
 export const DEFAULT_PAGE = 1
 export const DEFAULT_PAGE_SIZE = 20
@@ -60,27 +56,6 @@ export function filterMemberFees(
 
     return true
   })
-}
-
-/**
- * Counts for the stat cards, derived from whatever set is handed in.
- *
- * The caller decides the scope by choosing what to pass — the page passes the
- * filtered rows, so the cards summarise what the table is showing rather than
- * contradicting it.
- */
-export function summarizeMemberFees(rows: EventFeeMemberRow[]): EventFeeMemberStats {
-  const totalMembers = rows.length
-  const paidCount = rows.filter((row) => row.status === 'paid').length
-
-  return {
-    totalMembers,
-    paidCount,
-    // Every row is one standing or the other, so the two always sum to the total.
-    pendingCount: totalMembers - paidCount,
-    // Guarded rather than left as 0/0, which would serialize as null.
-    paidPercentage: totalMembers === 0 ? 0 : Math.round((paidCount / totalMembers) * 100),
-  }
 }
 
 /**

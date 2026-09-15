@@ -21,11 +21,16 @@ function buildTeam(overrides: Partial<TeamAggregate> = {}): TeamAggregate {
     teamName: 'Acolhida',
     total: 7,
     paid: 3,
+    exempt: 0,
+    collectedCents: 0,
     ...overrides,
   }
 }
 
-function makeFinancial(rows: TeamAggregate[], currentEvent: unknown = { id: 'event-1' }) {
+function makeFinancial(
+  rows: TeamAggregate[],
+  currentEvent: unknown = { id: 'event-1', feeAmountCents: 0, feeCurrency: 'BRL' }
+) {
   const eventFeePaymentRepository = {
     aggregateFeeStatusByTeam: vi.fn().mockResolvedValue(rows),
   } as unknown as EventFeePaymentRepository
@@ -152,29 +157,29 @@ function makeConfirmationFinancial(scenario: ConfirmationScenario = {}) {
   }
 }
 
-describe('Financial.getCurrentEventOverview', () => {
+describe('Financial.getCurrentEventTeamsOverview', () => {
   it('throws when no event is marked as current', async () => {
     // `null`, not `undefined`: an explicit `undefined` would fall back to the
     // helper's default event and quietly pass.
     const { financial } = makeFinancial([], null)
 
-    await expect(financial.getCurrentEventOverview()).rejects.toThrow('Current event not set')
+    await expect(financial.getCurrentEventTeamsOverview()).rejects.toThrow('Current event not set')
   })
 
   it('aggregates against the current event id', async () => {
     const { financial, eventFeePaymentRepository } = makeFinancial([], { id: 'event-42' })
 
-    await financial.getCurrentEventOverview()
+    await financial.getCurrentEventTeamsOverview()
 
     expect(eventFeePaymentRepository.aggregateFeeStatusByTeam).toHaveBeenCalledWith('event-42')
   })
 
-  it('derives pending as everything that is not paid or exempt', async () => {
-    const { financial } = makeFinancial([buildTeam({ total: 15, paid: 7 })])
+  it('derives pending as everything neither paid nor exempt', async () => {
+    const { financial } = makeFinancial([buildTeam({ total: 15, paid: 7, exempt: 2 })])
 
-    const overview = await financial.getCurrentEventOverview()
+    const overview = await financial.getCurrentEventTeamsOverview()
 
-    expect(overview.teams[0].pending).toBe(8)
+    expect(overview.teams[0].pending).toBe(6)
   })
 
   it('rounds each team percentage to a whole number', async () => {
@@ -183,7 +188,7 @@ describe('Financial.getCurrentEventOverview', () => {
       buildTeam({ teamId: 'team-2', teamName: 'Fotografia', total: 3, paid: 2 }),
     ])
 
-    const overview = await financial.getCurrentEventOverview()
+    const overview = await financial.getCurrentEventTeamsOverview()
 
     expect(overview.teams.map((team) => team.paidPercentage)).toEqual([47, 67])
   })
@@ -191,7 +196,7 @@ describe('Financial.getCurrentEventOverview', () => {
   it('reports a team with no members as zero percent rather than dividing by zero', async () => {
     const { financial } = makeFinancial([buildTeam({ total: 0, paid: 0 })])
 
-    const overview = await financial.getCurrentEventOverview()
+    const overview = await financial.getCurrentEventTeamsOverview()
 
     expect(overview.teams[0].paidPercentage).toBe(0)
     expect(overview.teams[0].pending).toBe(0)
@@ -204,11 +209,95 @@ describe('Financial.getCurrentEventOverview', () => {
       buildTeam({ teamId: 'team-2', teamName: 'Animação' }),
     ])
 
-    const overview = await financial.getCurrentEventOverview()
+    const overview = await financial.getCurrentEventTeamsOverview()
 
     expect(overview.teams.map((team) => team.teamName)).toEqual(['Acolhida', 'Animação', 'Cozinha'])
   })
 
+  it('reports the buckets as shares that account for everyone', async () => {
+    const { financial } = makeFinancial([
+      buildTeam({ teamId: 'team-1', teamName: 'Acolhida', total: 10, paid: 6, exempt: 2 }),
+      buildTeam({ teamId: 'team-2', teamName: 'Cozinha', total: 10, paid: 2, exempt: 0 }),
+    ])
+
+    const overview = await financial.getCurrentEventTeamsOverview()
+
+    expect(overview.paidPercentage).toBe(40)
+    expect(overview.exemptPercentage).toBe(10)
+    expect(overview.pendingPercentage).toBe(50)
+  })
+
+  it('carries no head counts, which belong to the by-member page', async () => {
+    const { financial } = makeFinancial([buildTeam({ total: 10, paid: 4, exempt: 1 })])
+
+    const overview = await financial.getCurrentEventTeamsOverview()
+
+    expect(overview).not.toHaveProperty('totalMembers')
+    expect(overview).not.toHaveProperty('paidCount')
+  })
+
+  it('sums what actually came in from the per-payment snapshots', async () => {
+    const { financial } = makeFinancial([
+      buildTeam({ teamId: 'team-1', teamName: 'Acolhida', collectedCents: 12_000 }),
+      buildTeam({ teamId: 'team-2', teamName: 'Cozinha', collectedCents: 8_500 }),
+    ])
+
+    const overview = await financial.getCurrentEventTeamsOverview()
+
+    expect(overview.collectedCents).toBe(20_500)
+  })
+
+  it('bills the event fee only to the members who owe it', async () => {
+    const { financial } = makeFinancial([buildTeam({ total: 10, paid: 4, exempt: 3 })], {
+      id: 'event-1',
+      feeAmountCents: 5_000,
+      feeCurrency: 'BRL',
+    })
+
+    const overview = await financial.getCurrentEventTeamsOverview()
+
+    // Seven owe it, not ten: an exemption removes that fee from the target
+    // rather than leaving it permanently outstanding.
+    expect(overview.expectedCents).toBe(35_000)
+    expect(overview.currency).toBe('BRL')
+  })
+
+  it('rounds the global percentage', async () => {
+    const { financial } = makeFinancial([buildTeam({ total: 119, paid: 88 })])
+
+    const overview = await financial.getCurrentEventTeamsOverview()
+
+    expect(overview.paidPercentage).toBe(74)
+  })
+
+  it('reports zeroed rates for an event with nobody on a team', async () => {
+    const { financial } = makeFinancial([buildTeam({ total: 0, paid: 0 })])
+
+    const overview = await financial.getCurrentEventTeamsOverview()
+
+    // Not "100% pendente": there is no roster to describe a share of.
+    expect(overview.paidPercentage).toBe(0)
+    expect(overview.pendingPercentage).toBe(0)
+  })
+
+  it('returns zeroed totals for an event with no teams', async () => {
+    const { financial } = makeFinancial([])
+
+    const overview = await financial.getCurrentEventTeamsOverview()
+
+    expect(overview).toEqual({
+      paidPercentage: 0,
+      exemptPercentage: 0,
+      pendingPercentage: 0,
+      collectedCents: 0,
+      expectedCents: 0,
+      currency: 'BRL',
+      teams: [],
+    })
+  })
+})
+
+describe('Financial.getCurrentEventMembersOverview', () => {
   it('sums the event totals from the team rows', async () => {
     const { financial } = makeFinancial([
       buildTeam({ teamId: 'team-1', teamName: 'Acolhida', total: 7, paid: 3 }),
@@ -216,33 +305,50 @@ describe('Financial.getCurrentEventOverview', () => {
       buildTeam({ teamId: 'team-3', teamName: 'Animação', total: 9, paid: 9 }),
     ])
 
-    const overview = await financial.getCurrentEventOverview()
+    const overview = await financial.getCurrentEventMembersOverview()
 
     expect(overview.totalMembers).toBe(31)
     expect(overview.paidCount).toBe(19)
     expect(overview.pendingCount).toBe(12)
   })
 
-  it('rounds the global percentage', async () => {
-    const { financial } = makeFinancial([buildTeam({ total: 119, paid: 88 })])
+  it('counts exempt members apart from paid ones, so the three partition the roster', async () => {
+    const { financial } = makeFinancial([
+      buildTeam({ teamId: 'team-1', teamName: 'Acolhida', total: 10, paid: 6, exempt: 2 }),
+      buildTeam({ teamId: 'team-2', teamName: 'Cozinha', total: 5, paid: 1, exempt: 1 }),
+    ])
 
-    const overview = await financial.getCurrentEventOverview()
+    const overview = await financial.getCurrentEventMembersOverview()
 
-    expect(overview.paidPercentage).toBe(74)
+    expect(overview.paidCount).toBe(7)
+    expect(overview.exemptCount).toBe(3)
+    expect(overview.pendingCount).toBe(5)
+    // The load-bearing invariant: no member is counted twice or dropped.
+    expect(overview.paidCount + overview.exemptCount + overview.pendingCount).toBe(
+      overview.totalMembers
+    )
   })
 
-  it('returns zeroed totals for an event with no teams', async () => {
-    const { financial } = makeFinancial([])
+  it('reports rates alongside the counts, so no card derives its own', async () => {
+    // 10 paid, 1 exempt, 12 pending of 23. The pending share is 52%, not the 57%
+    // that `100 - paidPercentage` would give by folding the exempt member in.
+    const { financial } = makeFinancial([buildTeam({ total: 23, paid: 10, exempt: 1 })])
 
-    const overview = await financial.getCurrentEventOverview()
+    const overview = await financial.getCurrentEventMembersOverview()
 
-    expect(overview).toEqual({
-      totalMembers: 0,
-      paidCount: 0,
-      pendingCount: 0,
-      paidPercentage: 0,
-      teams: [],
-    })
+    expect(overview.pendingPercentage).toBe(52)
+    expect(overview.exemptPercentage).toBe(4)
+    expect(overview.paidPercentage + overview.exemptPercentage + overview.pendingPercentage).toBe(
+      100
+    )
+  })
+
+  it('carries no per-team breakdown, which the by-team page owns', async () => {
+    const { financial } = makeFinancial([buildTeam()])
+
+    const overview = await financial.getCurrentEventMembersOverview()
+
+    expect(overview).not.toHaveProperty('teams')
   })
 })
 
@@ -383,7 +489,7 @@ describe('Financial.listCurrentEventMemberFees', () => {
     expect(result.items.map((item) => item.userId)).toEqual(['u-2'])
   })
 
-  it('summarises the filtered set, so the cards agree with the table', async () => {
+  it('carries no summary, leaving the event-wide totals to the overview', async () => {
     const { financial } = makeMemberListFinancial([
       buildMemberFeeStatusRow({
         userId: 'u-1',
@@ -391,24 +497,15 @@ describe('Financial.listCurrentEventMemberFees', () => {
         teamKey: 'cozinha',
         feeStatus: 'paid',
       }),
-      buildMemberFeeStatusRow({ userId: 'u-2', name: 'João Santos', teamKey: 'cozinha' }),
-      // Outside the filter, so it must not move any card.
-      buildMemberFeeStatusRow({
-        userId: 'u-3',
-        name: 'Ana Lima',
-        teamKey: 'acolhida',
-        feeStatus: 'paid',
-      }),
+      buildMemberFeeStatusRow({ userId: 'u-2', name: 'Ana Lima', teamKey: 'acolhida' }),
     ])
 
     const result = await financial.listCurrentEventMemberFees({ teamKey: 'cozinha' })
 
-    expect(result.stats).toEqual({
-      totalMembers: 2,
-      paidCount: 1,
-      pendingCount: 1,
-      paidPercentage: 50,
-    })
+    // Deliberately absent rather than unfiltered-in-place: two endpoints counting
+    // the same people two ways is exactly how the cards and the by-team page
+    // start disagreeing. `getCurrentEventOverview` is the one that counts.
+    expect(result).not.toHaveProperty('stats')
   })
 
   it('defaults to the first page of twenty', async () => {
@@ -435,8 +532,8 @@ describe('Financial.listCurrentEventMemberFees', () => {
 
     expect(result.items).toHaveLength(5)
     expect(result.page).toBe(2)
-    // The stats still cover every match, not just the five rows on this page.
-    expect(result.stats.totalMembers).toBe(25)
+    // Still the count of every match, not just the five rows on this page.
+    expect(result.total).toBe(25)
   })
 
   it('returns an empty list for an event with nobody assigned', async () => {
@@ -449,7 +546,6 @@ describe('Financial.listCurrentEventMemberFees', () => {
       total: 0,
       page: 1,
       pageSize: 20,
-      stats: { totalMembers: 0, paidCount: 0, pendingCount: 0, paidPercentage: 0 },
     })
   })
 })

@@ -16,7 +16,8 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * Totals reconcile to 119 members / 88 paid / 31 pending (74%), and the teams
+ * Totals reconcile to 119 members / 88 paid / 0 exempt / 31 pending (74%), and
+ * the teams
  * deliberately span every tone: seven at 100%, one at exactly 50% to pin the
  * warning/error boundary, and four below it.
  */
@@ -27,6 +28,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Acolhida',
     total: 7,
     paid: 3,
+    exempt: 0,
     pending: 4,
     paidPercentage: 43,
   },
@@ -36,6 +38,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Animação',
     total: 9,
     paid: 9,
+    exempt: 0,
     pending: 0,
     paidPercentage: 100,
   },
@@ -45,6 +48,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Apoio',
     total: 7,
     paid: 7,
+    exempt: 0,
     pending: 0,
     paidPercentage: 100,
   },
@@ -54,6 +58,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Comunicação',
     total: 6,
     paid: 6,
+    exempt: 0,
     pending: 0,
     paidPercentage: 100,
   },
@@ -63,6 +68,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Cozinha',
     total: 15,
     paid: 7,
+    exempt: 0,
     pending: 8,
     paidPercentage: 47,
   },
@@ -72,6 +78,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Decoração',
     total: 3,
     paid: 3,
+    exempt: 0,
     pending: 0,
     paidPercentage: 100,
   },
@@ -81,6 +88,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Evangelização',
     total: 7,
     paid: 3,
+    exempt: 0,
     pending: 4,
     paidPercentage: 43,
   },
@@ -90,6 +98,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Fotografia',
     total: 3,
     paid: 2,
+    exempt: 0,
     pending: 1,
     paidPercentage: 67,
   },
@@ -99,6 +108,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Garçom',
     total: 8,
     paid: 6,
+    exempt: 0,
     pending: 2,
     paidPercentage: 75,
   },
@@ -108,6 +118,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Liturgia',
     total: 5,
     paid: 5,
+    exempt: 0,
     pending: 0,
     paidPercentage: 100,
   },
@@ -117,6 +128,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Música',
     total: 7,
     paid: 6,
+    exempt: 0,
     pending: 1,
     paidPercentage: 86,
   },
@@ -126,6 +138,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Ordem',
     total: 6,
     paid: 3,
+    exempt: 0,
     pending: 3,
     paidPercentage: 50,
   },
@@ -135,6 +148,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Oração',
     total: 4,
     paid: 4,
+    exempt: 0,
     pending: 0,
     paidPercentage: 100,
   },
@@ -144,6 +158,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Recepção',
     total: 6,
     paid: 5,
+    exempt: 0,
     pending: 1,
     paidPercentage: 83,
   },
@@ -153,6 +168,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Secretaria',
     total: 4,
     paid: 4,
+    exempt: 0,
     pending: 0,
     paidPercentage: 100,
   },
@@ -162,6 +178,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Som',
     total: 5,
     paid: 2,
+    exempt: 0,
     pending: 3,
     paidPercentage: 40,
   },
@@ -171,6 +188,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Tarefas',
     total: 9,
     paid: 7,
+    exempt: 0,
     pending: 2,
     paidPercentage: 78,
   },
@@ -180,6 +198,7 @@ const sampleRows: TeamFeeRow[] = [
     teamName: 'Vigília',
     total: 8,
     paid: 6,
+    exempt: 0,
     pending: 2,
     paidPercentage: 75,
   },
@@ -258,6 +277,7 @@ export const TeamWithoutMembers: Story = {
         teamName: 'Nova Equipe',
         total: 0,
         paid: 0,
+        exempt: 0,
         pending: 0,
         paidPercentage: 0,
       },
@@ -305,5 +325,42 @@ export const MobileCards: Story = {
     await expect(items).toHaveLength(18)
     await expect(items[0]).toHaveTextContent('Acolhida')
     await expect(items[0]).toHaveTextContent('43%')
+  },
+}
+
+/**
+ * A team with comped members. `paid` counts only the money that came in, so the
+ * row reads 4 + 3 + 3 = 10 and the percentage is 40% — not the 70% it would show
+ * if exemptions were still folded into "Pagos".
+ */
+export const TeamWithExemptions: Story = {
+  args: {
+    rows: [
+      {
+        teamId: '77',
+        teamKey: 'liturgia',
+        teamName: 'Liturgia',
+        total: 10,
+        paid: 4,
+        exempt: 3,
+        pending: 3,
+        paidPercentage: 40,
+      },
+    ],
+    overallPaidPercentage: 40,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const row = canvas.getAllByRole('row')[1]
+
+    // By cell, not by text: `exempt` and `pending` are both 3 here, which is
+    // exactly the collision a text query cannot tell apart. Reading the columns
+    // in order also pins that Isentos sits between Pagos and Pendentes.
+    const cells = within(row)
+      .getAllByRole('cell')
+      .map((cell) => cell.textContent)
+
+    expect(cells.slice(0, 5)).toEqual(['Liturgia', '10', '4', '3', '3'])
+    expect(cells[5]).toBe('40%')
   },
 }

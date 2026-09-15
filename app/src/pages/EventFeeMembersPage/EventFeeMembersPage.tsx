@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiXCircle } from 'react-icons/fi'
+import { FiGift, FiXCircle } from 'react-icons/fi'
 import { EventFeeMembersTable } from '../../components/EventFeeMembersTable/EventFeeMembersTable'
 import { FeeBulkSelectionBar } from '../../components/FeeBulkSelectionBar/FeeBulkSelectionBar'
 import { FeeConfirmationModal } from '../../components/FeeConfirmationModal/FeeConfirmationModal'
@@ -17,13 +17,13 @@ import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { usePagination } from '../../hooks/usePagination'
 import { useSetEventFeeStatusMutation } from '../../services/finance/useSetEventFeeStatusMutation'
 import { useEventFeeMembersQuery } from '../../services/finance/useEventFeeMembersQuery'
+import { useEventFeeMembersOverviewQuery } from '../../services/finance/useEventFeeMembersOverviewQuery'
 import { useTeamOptionsQuery } from '../../services/teams/useTeamOptionsQuery'
 import { EventFeePermissions, hasPermission } from '../../../../common/permissions'
 import { toastPromise } from '../../utils/toast/toast'
 import type { ReviewableFeeStatus } from '../../components/FeeStatusReviewModal/feeReviewOptions'
 import type {
   EventFeeMemberFilters,
-  EventFeeMemberStats,
   TeamMemberFeeStatus,
 } from '../../services/finance/finance.types'
 import { formatSelectedMemberLabels } from '../../components/TeamMembersFeeCard/feeMemberLabels'
@@ -31,11 +31,18 @@ import { formatSelectedMemberLabels } from '../../components/TeamMembersFeeCard/
 const ALL_TEAMS = 'all'
 const ALL_STATUSES = 'all'
 
-const EMPTY_STATS: EventFeeMemberStats = {
+/**
+ * Stands in until the overview lands, so the four cards keep their slots instead
+ * of the filters jumping down the page on every load.
+ */
+const EMPTY_STATS = {
   totalMembers: 0,
   paidCount: 0,
+  exemptCount: 0,
   pendingCount: 0,
   paidPercentage: 0,
+  exemptPercentage: 0,
+  pendingPercentage: 0,
 }
 
 /**
@@ -102,6 +109,10 @@ export function EventFeeMembersPage() {
   }, [page])
 
   const membersQuery = useEventFeeMembersQuery(filters, { page, pageSize })
+  // The cards summarise the whole event, so they read from the overview rather
+  // than the filtered list: narrowing to one team answers "how is that team
+  // doing", which is a question the by-team page already exists to answer.
+  const overviewQuery = useEventFeeMembersOverviewQuery()
   const teamOptionsQuery = useTeamOptionsQuery()
   const setStatusMutation = useSetEventFeeStatusMutation()
 
@@ -114,7 +125,16 @@ export function EventFeeMembersPage() {
   )
 
   const rows = membersQuery.data?.items ?? []
-  const stats = membersQuery.data?.stats ?? EMPTY_STATS
+  const stats = overviewQuery.data ?? EMPTY_STATS
+  /**
+   * Everyone who owes nothing further, comped or paid up.
+   *
+   * The count is a plain sum and the rate comes off `pendingPercentage`, which
+   * the API guarantees completes the other two to 100 — so this cannot drift
+   * from the three cards beside it the way a fourth rounding of its own would.
+   */
+  const settledCount = stats.paidCount + stats.exemptCount
+  const settledPercentage = 100 - stats.pendingPercentage
   const total = membersQuery.data?.total ?? 0
 
   const confirmationNames = pendingConfirmation
@@ -195,9 +215,11 @@ export function EventFeeMembersPage() {
           <p className="mt-2 text-gray-600">Todos os encontreiros designados a uma equipe.</p>
         </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Worded for the event, not the page: these no longer move when the
+            filters do, and "listados" would now be a lie on a filtered view. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <StatusCard
-            title="Membros Listados"
+            title="Membros no Evento"
             value={stats.totalMembers}
             variant="neutral"
             description="membros e coordenadores das equipes"
@@ -206,20 +228,33 @@ export function EventFeeMembersPage() {
             title="Taxas Pagas"
             value={stats.paidCount}
             variant="success"
-            description={`${stats.paidPercentage}% dos membros listados`}
+            description={`${stats.paidPercentage}% dos membros do evento`}
+          />
+          {/* Its own card rather than a share of "Pagas": a comped member settles
+              without contributing, and the treasurer reconciling a bank statement
+              needs the two numbers apart. */}
+          <StatusCard
+            title="Isentos"
+            value={stats.exemptCount}
+            variant="info"
+            description={`${stats.exemptPercentage}% dos membros do evento`}
+            icon={<FiGift size="24px" />}
           />
           <StatusCard
             title="Pendentes"
             value={stats.pendingCount}
             variant="error"
-            description={`${100 - stats.paidPercentage}% dos membros listados`}
+            description={`${stats.pendingPercentage}% dos membros do evento`}
             icon={<FiXCircle size="24px" />}
           />
+          {/* "Quitação", not "Pagamento": this counts the comped members too, and
+              a card labelled payment that includes people who never paid is the
+              kind of number someone quotes in a meeting and later has to retract. */}
           <StatusCard
-            title="Taxa de Pagamento"
-            value={`${stats.paidPercentage}%`}
+            title="Taxa de Quitação"
+            value={`${settledPercentage}%`}
             variant="info"
-            description={`${stats.paidCount} de ${stats.totalMembers} membros`}
+            description={`${settledCount} de ${stats.totalMembers} pagos ou isentos`}
           />
         </div>
 

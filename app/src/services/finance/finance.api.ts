@@ -3,13 +3,21 @@ import type {
   EventFeeMemberFilters,
   EventFeeMemberListResponse,
   EventFeeMemberPagination,
-  EventFeeOverview,
+  EventFeeMembersOverview,
+  EventFeeTeamsOverview,
   MemberFeePaymentStatus,
 } from './finance.types'
 
-async function getEventFeeOverview() {
-  const response = await api.get<{ overview: EventFeeOverview }>(
-    '/events/current/event-fee-overview'
+async function getEventFeeMembersOverview() {
+  const response = await api.get<{ overview: EventFeeMembersOverview }>(
+    '/events/current/event-fee-overview-members'
+  )
+  return response.data.overview
+}
+
+async function getEventFeeTeamsOverview() {
+  const response = await api.get<{ overview: EventFeeTeamsOverview }>(
+    '/events/current/event-fee-overview-teams'
   )
   return response.data.overview
 }
@@ -89,7 +97,8 @@ async function confirmTeamFeePayments(userIds: string[]) {
 }
 
 export const financeApi = {
-  getEventFeeOverview,
+  getEventFeeMembersOverview,
+  getEventFeeTeamsOverview,
   getEventFeeMembers,
   confirmTeamFeePayments,
   setEventFeePaymentsStatus,

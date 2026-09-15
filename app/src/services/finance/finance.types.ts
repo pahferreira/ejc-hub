@@ -4,10 +4,9 @@ import type { TeamMembershipType } from '../teams/teams.types'
 /**
  * One team's event-fee standing within the current event.
  *
- * `paid` folds together the `paid` and `exempt` payment statuses: an exempt
- * member owes nothing, so from the coordination view they are settled. Every
- * other status — plus members with no payment row at all — counts as `pending`,
- * so `paid + pending` always equals `total`.
+ * `paid`, `exempt` and `pending` partition the team and always sum to `total`.
+ * `paid` counts money received only — a comped member settles without paying, so
+ * folding them in would make this row disagree with `collectedCents`.
  */
 export type TeamFeeRow = {
   teamId: string
@@ -15,18 +14,54 @@ export type TeamFeeRow = {
   teamName: string
   total: number
   paid: number
+  exempt: number
   pending: number
   /** 0–100, rounded by the API. Clients must not re-derive it. */
   paidPercentage: number
 }
 
-export type EventFeeOverview = {
+/**
+ * The three ways a member's fee can stand, counted over the whole event.
+ *
+ * Both fee pages read these, and both get them from the same SQL aggregate, so
+ * the by-member cards and the by-team cards cannot drift apart.
+ */
+export type EventFeeCounts = {
   /** Team memberships in the event, coordinators included. */
   totalMembers: number
   paidCount: number
+  exemptCount: number
   pendingCount: number
-  /** 0–100, rounded by the API. */
+}
+
+/**
+ * The three buckets as shares of the roster, guaranteed by the API to sum to
+ * exactly 100 (or all-zero for an empty event). Clients must not re-derive them
+ * — in particular, pending is *not* `100 - paidPercentage`, which would count the
+ * exempt members as outstanding.
+ */
+export type EventFeeRates = {
   paidPercentage: number
+  exemptPercentage: number
+  pendingPercentage: number
+}
+
+/** What the "Taxa por Membro" cards read: counts and rates, no team breakdown. */
+export type EventFeeMembersOverview = EventFeeCounts & EventFeeRates
+
+/**
+ * What the "Taxa de Inscrição" page reads: the rates, the team table, the money.
+ *
+ * No head counts and no `totalMembers` — that page asks how the event is doing,
+ * which is a proportion, and its per-team table already carries the absolutes.
+ */
+export type EventFeeTeamsOverview = EventFeeRates & {
+  /** What actually came in, summed from the per-payment snapshots. */
+  collectedCents: number
+  /** The event fee times everyone who owes it; comped members are excluded. */
+  expectedCents: number
+  /** ISO code from the event, so no screen hardcodes a currency symbol. */
+  currency: string
   teams: TeamFeeRow[]
 }
 
@@ -109,32 +144,19 @@ export type EventFeeMemberPagination = {
   pageSize?: number
 }
 
-/**
- * Counts for the page's stat cards, computed by the API over the *filtered* set.
- * `totalMembers` is therefore the same number as `total` — the cards summarise
- * what the table is showing, not the whole event.
- */
-export type EventFeeMemberStats = {
-  totalMembers: number
-  paidCount: number
-  pendingCount: number
-  /** 0–100, rounded by the API. Clients must not re-derive it. */
-  paidPercentage: number
-}
-
 export type EventFeeMemberListResponse = {
   items: EventFeeMemberRow[]
   /** Members matching the filters, across every page. */
   total: number
   page: number
   pageSize: number
-  stats: EventFeeMemberStats
 }
 
 export const financeQueryKeys = {
   /** Root of everything financial; invalidated after any fee write. */
   all: ['finance'] as const,
-  eventFeeOverview: ['finance', 'event-fee', 'overview'] as const,
+  eventFeeMembersOverview: ['finance', 'event-fee', 'overview', 'members'] as const,
+  eventFeeTeamsOverview: ['finance', 'event-fee', 'overview', 'teams'] as const,
   eventFeeMembers: ['finance', 'event-fee', 'members'] as const,
   eventFeeMembersList: (filters: EventFeeMemberFilters, pagination: EventFeeMemberPagination) =>
     ['finance', 'event-fee', 'members', filters, pagination] as const,

@@ -1,21 +1,24 @@
-import { FiXCircle } from 'react-icons/fi'
+import { FiGift, FiXCircle } from 'react-icons/fi'
 import { StatusCard } from '../../components/StatusCard/StatusCard'
 import { FeeByTeamCard } from '../../components/FeeByTeamCard/FeeByTeamCard'
 import { useCurrentEventQuery } from '../../services/events/useCurrentEventQuery'
-import { useEventFeeOverviewQuery } from '../../services/finance/useEventFeeOverviewQuery'
-import type { EventFeeOverview } from '../../services/finance/finance.types'
+import { useEventFeeTeamsOverviewQuery } from '../../services/finance/useEventFeeTeamsOverviewQuery'
+import { formatCurrency } from '../../utils/formatCurrency/formatCurrency'
+import type { EventFeeTeamsOverview } from '../../services/finance/finance.types'
 
-const EMPTY_OVERVIEW: EventFeeOverview = {
-  totalMembers: 0,
-  paidCount: 0,
-  pendingCount: 0,
+const EMPTY_OVERVIEW: EventFeeTeamsOverview = {
   paidPercentage: 0,
+  exemptPercentage: 0,
+  pendingPercentage: 0,
+  collectedCents: 0,
+  expectedCents: 0,
+  currency: 'BRL',
   teams: [],
 }
 
 export function EventFeePage() {
   const eventQuery = useCurrentEventQuery()
-  const overviewQuery = useEventFeeOverviewQuery()
+  const overviewQuery = useEventFeeTeamsOverviewQuery()
 
   if (overviewQuery.isLoading) {
     return (
@@ -46,31 +49,39 @@ export function EventFeePage() {
           </p>
         </header>
 
+        {/* Money first: it is the number a treasurer opens this page for, and the
+            rates beside it explain how far along the collection is.
+
+            Rates rather than head counts — "Taxa de Pagamento Global" used to sit
+            here as a fourth card showing the same number as "Taxas Pagas" now
+            does, so the two collapsed into one. The absolute numbers live on the
+            by-member page and in the per-team table below. */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatusCard
-            title="Total de Membros nas Equipes"
-            value={overview.totalMembers}
-            variant="neutral"
-            description="membros e coordenadores das equipes"
+            title="Taxas Pagas"
+            value={`${overview.paidPercentage}%`}
+            variant="success"
+            description="dos membros das equipes"
           />
           <StatusCard
-            title="Taxas Pagas"
-            value={overview.paidCount}
-            variant="success"
-            description={`${overview.paidPercentage}% do total`}
+            title="Isentos"
+            value={`${overview.exemptPercentage}%`}
+            variant="info"
+            description="dispensados do pagamento"
+            icon={<FiGift size="24px" />}
           />
           <StatusCard
             title="Taxas Pendentes"
-            value={overview.pendingCount}
+            value={`${overview.pendingPercentage}%`}
             variant="error"
-            description={`${100 - overview.paidPercentage}% do total`}
+            description="ainda não quitados"
             icon={<FiXCircle size="24px" />}
           />
           <StatusCard
-            title="Taxa de Pagamento Global"
-            value={`${overview.paidPercentage}%`}
-            variant="info"
-            description={`${overview.paidCount} de ${overview.totalMembers} membros`}
+            title="Total Arrecadado"
+            value={formatCurrency(overview.collectedCents, overview.currency)}
+            variant="success"
+            description={`de ${formatCurrency(overview.expectedCents, overview.currency)} previstos`}
           />
         </div>
 

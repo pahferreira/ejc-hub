@@ -1,4 +1,5 @@
 import { FiCalendar, FiDollarSign, FiMapPin } from 'react-icons/fi'
+import { formatCurrency } from '../../utils/formatCurrency/formatCurrency'
 
 export type EventBannerProps = {
   name: string
@@ -53,14 +54,10 @@ function formatEventDates(startsAt: string | null, endsAt: string | null): strin
   return `${formatSingleDate(startsAt as string)} - ${formatSingleDate(endsAt as string)}`
 }
 
-function formatFee(amountCents: number, currency: string) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency }).format(amountCents / 100)
-}
-
 export function EventBanner(props: EventBannerProps) {
   const dateLabel = formatEventDates(props.startsAt, props.endsAt)
   const feeLabel =
-    props.feeAmountCents > 0 ? formatFee(props.feeAmountCents, props.feeCurrency) : null
+    props.feeAmountCents > 0 ? formatCurrency(props.feeAmountCents, props.feeCurrency) : null
 
   return (
     <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-dark-brown to-primary px-6 py-8 text-white sm:px-10 sm:py-10">
