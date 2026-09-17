@@ -1,18 +1,16 @@
 import { useState } from 'react'
-import { FiLogOut, FiSidebar } from 'react-icons/fi'
 import { useAuthentication } from '../../hooks/useAuthentication'
 import { useCurrentUserQuery } from '../../services/users/useCurrentUserQuery'
 import { useCurrentEventSubscriptionStatusQuery } from '../../services/events/useCurrentEventSubscriptionStatusQuery'
 import { useFeatureFlag } from '../../hooks/useFeatureFlag/useFeatureFlag'
 import { hasPermission } from '../../../../common/permissions'
-import { SidebarNavGroup } from './SidebarNavGroup'
-import { SidebarUserInfo } from './SidebarUserInfo'
+import { SidebarContent } from './SidebarContent'
+import type { SidebarNavProps } from './SidebarContent'
+import { MobileSidebar } from './MobileSidebar'
 import { sidebarNavGroups } from './sidebarNav'
-import type { SidebarNavGroup as SidebarNavGroupType } from './sidebarNav'
-import { Logo } from '../Logo/Logo'
+import { MOBILE_MEDIA_QUERY } from '../../constants/breakpoints'
 
 const STORAGE_KEY = 'ejc-sidebar-collapsed'
-const MOBILE_BREAKPOINT = '(max-width: 767px)'
 
 const getInitialCollapsed = (): boolean => {
   try {
@@ -20,22 +18,18 @@ const getInitialCollapsed = (): boolean => {
     if (stored !== null) {
       return stored === 'true'
     }
-    return window.matchMedia(MOBILE_BREAKPOINT).matches
+    return window.matchMedia(MOBILE_MEDIA_QUERY).matches
   } catch {
     return false
   }
 }
 
-export type SidebarViewProps = {
-  groups: SidebarNavGroupType[]
-  userName?: string
-  userNickname?: string
-  userPicture?: string
-  onLogout: () => void
+export type SidebarViewProps = SidebarNavProps & {
   isCollapsed: boolean
   onToggleCollapse: () => void
 }
 
+/** The desktop rail: an in-flow column the page content sits next to. */
 export function SidebarView(props: SidebarViewProps) {
   return (
     <aside
@@ -43,71 +37,26 @@ export function SidebarView(props: SidebarViewProps) {
         props.isCollapsed ? 'w-14' : 'w-64'
       }`}
     >
-      {/* Logo */}
-      <div className={`p-4 border-b border-secondary/30 ${props.isCollapsed ? 'px-3' : ''}`}>
-        <div className={`flex items-center gap-2 ${props.isCollapsed ? 'justify-center' : ''}`}>
-          <Logo iconOnly={props.isCollapsed} />
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-4">
-        {props.groups.map((group) => (
-          <SidebarNavGroup
-            key={group.title}
-            title={group.title}
-            items={group.items}
-            isCollapsed={props.isCollapsed}
-          />
-        ))}
-
-        {/* Logout */}
-        <div>
-          {props.isCollapsed ? (
-            <div className="border-t border-secondary/30 my-2 mx-2" />
-          ) : (
-            <h3 className="text-xs font-semibold text-secondary-foreground/50 uppercase tracking-wider mb-2 px-3">
-              LOGOUT
-            </h3>
-          )}
-          <button
-            type="button"
-            onClick={props.onLogout}
-            title={props.isCollapsed ? 'Sair da conta' : undefined}
-            className={`w-full flex items-center py-2 rounded-lg text-sm text-red font-medium hover:bg-red/5 transition-colors cursor-pointer border-0 bg-transparent ${
-              props.isCollapsed ? 'justify-center px-0' : 'gap-3 px-3'
-            }`}
-          >
-            <FiLogOut size={18} className="shrink-0" />
-            {!props.isCollapsed && <span>Sair da conta</span>}
-          </button>
-        </div>
-      </nav>
-
-      {/* Collapse toggle */}
-      <div className="px-3 py-2">
-        <button
-          type="button"
-          onClick={props.onToggleCollapse}
-          title={props.isCollapsed ? 'Expandir menu' : 'Recolher menu'}
-          className="p-2 rounded-lg text-sm text-secondary-foreground/60 hover:bg-sidebar-highlight transition-colors cursor-pointer border-0 bg-transparent"
-        >
-          <FiSidebar size={18} />
-        </button>
-      </div>
-
-      {/* User info */}
-      <SidebarUserInfo
+      <SidebarContent
+        groups={props.groups}
         userName={props.userName}
         userNickname={props.userNickname}
         userPicture={props.userPicture}
+        onLogout={props.onLogout}
         isCollapsed={props.isCollapsed}
+        onToggleCollapse={props.onToggleCollapse}
       />
     </aside>
   )
 }
 
-export function Sidebar() {
+export type SidebarProps = {
+  /** Mobile only — on desktop the rail is always visible. */
+  isMobileOpen: boolean
+  onCloseMobile: () => void
+}
+
+export function Sidebar(props: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(getInitialCollapsed)
   const { permissions, user, logout } = useAuthentication()
   const currentUser = useCurrentUserQuery()
@@ -149,15 +98,26 @@ export function Sidebar() {
     }))
     .filter((group) => group.items.length > 0)
 
+  const navProps: SidebarNavProps = {
+    groups: filteredGroups,
+    userName: currentUser.data?.name ?? user?.name,
+    userNickname: currentUser.data?.nickname ?? undefined,
+    userPicture: currentUser.data?.pictureUrl ?? user?.picture,
+    onLogout: logout,
+  }
+
   return (
-    <SidebarView
-      groups={filteredGroups}
-      userName={currentUser.data?.name ?? user?.name}
-      userNickname={currentUser.data?.nickname ?? undefined}
-      userPicture={currentUser.data?.pictureUrl ?? user?.picture}
-      onLogout={logout}
-      isCollapsed={isCollapsed}
-      onToggleCollapse={toggleCollapsed}
-    />
+    <>
+      {/*
+        The rail is desktop-only. The wrapper (rather than `SidebarView` itself)
+        carries the breakpoint so `SidebarView` stays a plain presentational
+        component that renders everywhere, Storybook's mobile viewport included.
+      */}
+      <div className="hidden md:flex">
+        <SidebarView {...navProps} isCollapsed={isCollapsed} onToggleCollapse={toggleCollapsed} />
+      </div>
+
+      <MobileSidebar {...navProps} open={props.isMobileOpen} onClose={props.onCloseMobile} />
+    </>
   )
 }
