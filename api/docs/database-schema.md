@@ -45,11 +45,32 @@
 | starts_at, ends_at | timestamp | Nullable |
 | location | text | Nullable |
 | is_current | boolean | Marks the active event, default `false` |
-| subscriptions_open | boolean | Gates the subscription form, default `true` |
+| subscription_mode | enum | `open`, `waiting_list`, `closed` — default `open` |
 | fee_amount_cents | integer | Subscription fee in cents, default `0` (= no fee tracked) |
 | fee_currency | text | Default `BRL` |
 | deleted_at | timestamp | Soft delete |
 | created_at, updated_at | timestamp | |
+
+`subscription_mode` governs both whether the form is offered and what status a new subscription
+lands on:
+
+| Mode | New subscriptions | Form |
+|---|---|---|
+| `open` | land `pending` | shown |
+| `waiting_list` | land `waiting_list` | shown, with a warning that the spot is not guaranteed |
+| `closed` | rejected with `subscriptions_closed` | replaced by a closed notice |
+
+It replaced a `subscriptions_open` boolean in migrations 0046/0047. One enum rather than the
+boolean plus a second `waiting_list_mode` flag, because two booleans would allow
+`subscriptions_open = false` together with waiting-list mode — a state with no meaning, since
+nothing is created while subscriptions are closed. Waiting-list mode *is* open; only the
+resulting status differs.
+
+The mode shapes **new** subscriptions only. Flipping an event to `waiting_list` does not move
+anyone already `pending` — reassigning existing people is the team-building board's job.
+
+There is no UI for changing it: `PATCH /control-panel/events/:eventId/subscription-mode` with
+`{ "mode": … }`, gated on `events:update`.
 
 **team_templates**
 | Column | Type | Notes |
@@ -151,17 +172,42 @@ Status meanings, which are easy to confuse:
 
 `amount_cents` is snapshotted from `events.fee_amount_cents` at record time. The event fee rises as the event approaches, so two people paying in full at different times legitimately owe different amounts — the snapshot is what makes each payment reconcilable against the fee that applied when it was taken, and editing `events.fee_amount_cents` never rewrites history.
 
-**team_assignment_audit**
+**member_requests**
 | Column | Type | Notes |
 |--------|------|-------|
 | id | uuid | Primary key |
-| subscription_id | uuid | FK → subscriptions |
-| team_instance_id | uuid | FK → team_instances, nullable |
-| action | enum | `assign`, `unassign`, `move`, `cancel` |
-| actor_id | uuid | FK → users |
-| at | timestamp | Default now |
+| user_id | uuid | The person being asked for |
+| team_instance_id | uuid | The asking team |
+| event_id | uuid | Denormalized from `team_instances` |
+| status | enum | `pending`, `approved`, `denied`, `cancelled`, `outdated` — default `pending` |
+| requested_by | uuid | FK → users — the coordinator who asked |
+| message | text | Nullable — why the team wants this person |
+| resolved_at | timestamp | Nullable |
+| resolved_by | uuid | FK → users, nullable — no actor for system-written rows |
+| resolution_reason | text | Nullable, free text |
+| created_at, updated_at | timestamp | |
 
-> Currently unused — the table exists but nothing under `api/src` reads or writes it.
+*Constraints:* `FK (team_instance_id, event_id) → team_instances` · `FK (user_id, event_id) → subscriptions` · `UNIQUE (team_instance_id, user_id) WHERE status = 'pending'` · `INDEX (team_instance_id, status)` · `INDEX (event_id, status)`
+
+A coordinator asks for a specific person; an admin approves or denies. The member is the resource being requested — there is no member-initiated path.
+
+Keyed by `user_id` rather than `subscription_id` because every team-building write path is user-keyed, so an approval hands the id straight through to `insertTeamMembership`. The composite FK to `subscriptions (user_id, event_id)` still guarantees the person holds a subscription to this event, and supplies `user_id`'s reference to `users` transitively. It proves a subscription *exists*, not that it is active — a cancelled subscription keeps its row, so "is this person still coming" stays an API-level check.
+
+`event_id` is denormalized for the same reason it is on `team_memberships`: a UNIQUE cannot span tables, and both composite FKs need it here.
+
+The unique index is **partial** — one *open* request per (team, person). A plain unique would make a denial permanent; an event-wide one would forbid two teams asking for the same person, which is allowed and is the signal this queue exists to surface. Only the *acceptance* is exclusive, and `team_memberships (event_id, user_id)` is what enforces that.
+
+Status meanings:
+
+| Status | Written by | `resolved_by` | Meaning |
+|---|---|---|---|
+| `pending` | default | null | Open, in the admin queue |
+| `approved` | admin | the admin | The membership was written in the same transaction |
+| `denied` | admin | the admin | An explicit "no" to *this* request |
+| `cancelled` | coordinator, or subscription cancellation | the coordinator, or null | Withdrawn — nobody answered it |
+| `outdated` | system | **null** | The person took a membership elsewhere in the event, so the request became unanswerable |
+
+A set `resolved_at` paired with a null `resolved_by` is the encoding of "the system closed this"; there is no other signal for it.
 
 ### Relationships
 
@@ -172,7 +218,7 @@ users ─┬─< subscriptions >── events
        │        │
        │        ├──< subscription_options >── team_instances
        │        │
-       │        └──< team_assignment_audit >── team_instances
+       │        └──< member_requests >── team_instances
        │
        ├─< team_memberships >── team_instances
        │

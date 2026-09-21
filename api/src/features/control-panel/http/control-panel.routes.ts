@@ -4,6 +4,7 @@ import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { controlPanelApp } from '../application/control-panel.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
+import { EVENT_SUBSCRIPTION_MODES } from '../../../modules/event/domain/event-subscription-mode.ts'
 import {
   EventPermissions,
   SubscriptionPermissions,
@@ -48,8 +49,8 @@ const updateEventBodySchema = createEventBodySchema
     return data.name || data.description || data.feeAmountCents !== undefined
   }, 'At least one of the following attributes needs to be present: name, description, feeAmountCents')
 
-const handleSubscriptionsBodySchema = z.object({
-  open: z.boolean(),
+const subscriptionModeBodySchema = z.object({
+  mode: z.enum(EVENT_SUBSCRIPTION_MODES),
 })
 
 export const patchTeamTemplateBodySchema = postTeamTemplateBodySchema
@@ -302,17 +303,17 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
     )
 
     server.patch(
-      '/control-panel/events/:eventId/handle-subscriptions',
+      '/control-panel/events/:eventId/subscription-mode',
       {
-        schema: { params: eventIdParamSchema, body: handleSubscriptionsBodySchema },
+        schema: { params: eventIdParamSchema, body: subscriptionModeBodySchema },
 
         preHandler: authGuard(server, { permissions: [EventPermissions.Update] }),
       },
       async (request, reply) => {
         try {
           const { eventId } = request.params
-          const { open } = request.body
-          const event = await controlPanelApp.handleEventSubscriptions(eventId, open)
+          const { mode } = request.body
+          const event = await controlPanelApp.setEventSubscriptionMode(eventId, mode)
 
           return reply.code(HttpStatus.Ok).send({ event })
         } catch (error) {

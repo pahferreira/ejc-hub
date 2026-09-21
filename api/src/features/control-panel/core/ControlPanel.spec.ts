@@ -72,15 +72,15 @@ describe('ControlPanel.updateTeamTemplate', () => {
   })
 })
 
-describe('ControlPanel.handleEventSubscriptions', () => {
+describe('ControlPanel.setEventSubscriptionMode', () => {
   const EVENT_ID = 'event-1'
   let eventRepository: EventRepository
   let controlPanel: ControlPanel
 
   beforeEach(() => {
     eventRepository = {
-      findEvent: vi.fn().mockResolvedValue({ id: EVENT_ID, subscriptionsOpen: true }),
-      updateEvent: vi.fn().mockResolvedValue({ id: EVENT_ID, subscriptionsOpen: false }),
+      findEvent: vi.fn().mockResolvedValue({ id: EVENT_ID, subscriptionMode: 'open' }),
+      updateEvent: vi.fn().mockResolvedValue({ id: EVENT_ID, subscriptionMode: 'closed' }),
     } as unknown as EventRepository
 
     controlPanel = new ControlPanel(
@@ -92,24 +92,32 @@ describe('ControlPanel.handleEventSubscriptions', () => {
     )
   })
 
-  it('updates the event subscriptionsOpen flag with the provided value', async () => {
-    await controlPanel.handleEventSubscriptions(EVENT_ID, false)
+  it('updates the event subscription mode with the provided value', async () => {
+    await controlPanel.setEventSubscriptionMode(EVENT_ID, 'closed')
 
     expect(eventRepository.updateEvent).toHaveBeenCalledWith(EVENT_ID, {
-      subscriptionsOpen: false,
+      subscriptionMode: 'closed',
+    })
+  })
+
+  it('accepts waiting-list mode, which keeps signups open but reroutes them', async () => {
+    await controlPanel.setEventSubscriptionMode(EVENT_ID, 'waiting_list')
+
+    expect(eventRepository.updateEvent).toHaveBeenCalledWith(EVENT_ID, {
+      subscriptionMode: 'waiting_list',
     })
   })
 
   it('returns the updated event', async () => {
-    const result = await controlPanel.handleEventSubscriptions(EVENT_ID, false)
+    const result = await controlPanel.setEventSubscriptionMode(EVENT_ID, 'closed')
 
-    expect(result).toEqual(expect.objectContaining({ subscriptionsOpen: false }))
+    expect(result).toEqual(expect.objectContaining({ subscriptionMode: 'closed' }))
   })
 
   it('throws when the event does not exist', async () => {
     eventRepository.findEvent = vi.fn().mockResolvedValue(undefined)
 
-    await expect(controlPanel.handleEventSubscriptions(EVENT_ID, false)).rejects.toThrow(
+    await expect(controlPanel.setEventSubscriptionMode(EVENT_ID, 'closed')).rejects.toThrow(
       'Event not found, please check the event id.'
     )
 

@@ -11,21 +11,34 @@ const team: AssignedTeam = {
 
 describe('getHomeView', () => {
   it('returns subscribe when there is no subscription', () => {
-    expect(getHomeView(null, null)).toEqual({ kind: 'subscribe' })
+    expect(getHomeView(null, null)).toEqual({ kind: 'subscribe', waitingList: false })
   })
 
   it('returns subscribe even if a stale assignedTeam was provided alongside null status', () => {
-    expect(getHomeView(null, team)).toEqual({ kind: 'subscribe' })
+    expect(getHomeView(null, team)).toEqual({ kind: 'subscribe', waitingList: false })
   })
 
   it('returns subscriptionsClosed when there is no subscription and subscriptions are closed', () => {
-    expect(getHomeView(null, null, { subscriptionsOpen: false })).toEqual({
+    expect(getHomeView(null, null, { subscriptionMode: 'closed' })).toEqual({
       kind: 'subscriptionsClosed',
     })
   })
 
+  it('still offers the form in waiting-list mode, flagged so the card can warn about it', () => {
+    expect(getHomeView(null, null, { subscriptionMode: 'waiting_list' })).toEqual({
+      kind: 'subscribe',
+      waitingList: true,
+    })
+  })
+
   it('keeps showing the existing subscription status even when subscriptions are closed', () => {
-    expect(getHomeView('pending', null, { subscriptionsOpen: false })).toEqual({
+    expect(getHomeView('pending', null, { subscriptionMode: 'closed' })).toEqual({
+      kind: 'pendingTeam',
+    })
+  })
+
+  it('ignores waiting-list mode once a subscription exists, since the mode only shapes new ones', () => {
+    expect(getHomeView('pending', null, { subscriptionMode: 'waiting_list' })).toEqual({
       kind: 'pendingTeam',
     })
   })

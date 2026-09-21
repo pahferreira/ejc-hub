@@ -27,6 +27,8 @@ import type {
   TeamsOverviewStats,
 } from '../domain/team-overview.types.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
+import { EventSubscriptionMode } from '../../../modules/event/domain/event-subscription-mode.ts'
+import { resolveInitialSubscriptionStatus } from './resolve-initial-subscription-status.ts'
 import type { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
 import { getTeamSummaryBucket } from './team-summary.ts'
 import { getTeamStatus, type TeamStatus } from './team-status.ts'
@@ -104,7 +106,7 @@ export class Events {
       throw new AppError('Event not found')
     }
 
-    if (!event.subscriptionsOpen) {
+    if (event.subscriptionMode === EventSubscriptionMode.Closed) {
       throw new AppError(
         'Subscriptions are closed for this event',
         AppErrorCode.SubscriptionsClosed
@@ -139,6 +141,7 @@ export class Events {
       userId: user.id,
       eventId: eventId,
       availability: input.availability,
+      status: resolveInitialSubscriptionStatus(event.subscriptionMode),
     }
 
     const subscription = await this.#subscriptionRepository.insertSubscription(subscriptionInput)
@@ -593,7 +596,7 @@ export class Events {
       throw new AppError('Current event not set')
     }
 
-    if (!currentEvent.subscriptionsOpen) {
+    if (currentEvent.subscriptionMode === EventSubscriptionMode.Closed) {
       throw new AppError(
         'Subscriptions are closed for this event',
         AppErrorCode.SubscriptionsClosed
@@ -651,6 +654,7 @@ export class Events {
       alreadyWorkedEvent,
       alreadyWorkedTeams,
       groups,
+      status: resolveInitialSubscriptionStatus(currentEvent.subscriptionMode),
     }
 
     const subscription = await this.#subscriptionRepository.insertSubscription(subscriptionInput)

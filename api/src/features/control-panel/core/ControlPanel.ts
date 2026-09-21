@@ -1,6 +1,7 @@
 import { AppError } from '../../../shared/AppError.ts'
 import type { CircleRepository } from '../../../modules/circle/domain/CircleRepository.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
+import type { EventSubscriptionMode } from '../../../modules/event/domain/event-subscription-mode.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type { TeamTemplateRepository } from '../../../modules/team-template/domain/TeamTemplateRepository.ts'
 import type { CallCampaignService } from '../services/call-campaign/CallCampaignService.ts'
@@ -175,14 +176,14 @@ export class ControlPanel {
     return deletedEvent
   }
 
-  async handleEventSubscriptions(eventId: string, open: boolean) {
+  async setEventSubscriptionMode(eventId: string, mode: EventSubscriptionMode) {
     const eventToUpdate = await this.#eventRepository.findEvent(eventId)
     if (!eventToUpdate) {
       throw new AppError('Event not found, please check the event id.')
     }
 
     const updatedEvent = await this.#eventRepository.updateEvent(eventId, {
-      subscriptionsOpen: open,
+      subscriptionMode: mode,
     })
 
     return updatedEvent

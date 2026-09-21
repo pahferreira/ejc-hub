@@ -40,6 +40,13 @@ export const EventFeePermissions = {
   Delete: "financials-event-fee:delete",
 } as const;
 
+export const MemberRequestPermissions = {
+  Create: "member-requests:create",
+  Read: "member-requests:read",
+  Update: "member-requests:update",
+  Delete: "member-requests:delete",
+} as const;
+
 export const UserPermissions = {
   List: "users:list",
   Update: "users:update",
@@ -53,4 +60,5 @@ export type Permission =
   | (typeof TeamMembershipPermissions)[keyof typeof TeamMembershipPermissions]
   | (typeof TeamTemplatePermissions)[keyof typeof TeamTemplatePermissions]
   | (typeof EventFeePermissions)[keyof typeof EventFeePermissions]
+  | (typeof MemberRequestPermissions)[keyof typeof MemberRequestPermissions]
   | (typeof UserPermissions)[keyof typeof UserPermissions];

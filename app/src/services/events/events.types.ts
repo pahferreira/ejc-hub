@@ -31,6 +31,8 @@ import type { TeamMembershipType } from '../teams/teams.types'
 
 export type { SubscriptionStatus, SubscriptionWithDetails }
 
+export type EventSubscriptionMode = 'open' | 'waiting_list' | 'closed'
+
 export type CurrentEvent = {
   id: string
   name: string
@@ -39,7 +41,7 @@ export type CurrentEvent = {
   endsAt: string | null
   location: string | null
   isCurrent: boolean
-  subscriptionsOpen: boolean
+  subscriptionMode: EventSubscriptionMode
   feeAmountCents: number
   feeCurrency: string
 }
