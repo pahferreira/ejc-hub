@@ -56,7 +56,7 @@ describe('Events.subscribeCurrentEvent', () => {
     eventRepository = {
       findCurrentEvent: vi
         .fn()
-        .mockResolvedValue({ id: EVENT_ID, name: 'EJC 2026', subscriptionsOpen: true }),
+        .mockResolvedValue({ id: EVENT_ID, name: 'EJC 2026', subscriptionMode: 'open' }),
     } as unknown as EventRepository
 
     subscriptionRepository = {
@@ -92,7 +92,7 @@ describe('Events.subscribeCurrentEvent', () => {
     vi.mocked(eventRepository.findCurrentEvent).mockResolvedValue({
       id: EVENT_ID,
       name: 'EJC 2026',
-      subscriptionsOpen: false,
+      subscriptionMode: 'closed',
     } as unknown as Awaited<ReturnType<EventRepository['findCurrentEvent']>>)
 
     await expect(events.subscribeCurrentEvent(USER_AUTH_ID, buildPayload())).rejects.toThrow(
@@ -100,6 +100,20 @@ describe('Events.subscribeCurrentEvent', () => {
     )
 
     expect(subscriptionRepository.insertSubscription).not.toHaveBeenCalled()
+  })
+
+  it('lands a new subscription on the waiting list when the event is in waiting-list mode', async () => {
+    vi.mocked(eventRepository.findCurrentEvent).mockResolvedValue({
+      id: EVENT_ID,
+      name: 'EJC 2026',
+      subscriptionMode: 'waiting_list',
+    } as unknown as Awaited<ReturnType<EventRepository['findCurrentEvent']>>)
+
+    await events.subscribeCurrentEvent(USER_AUTH_ID, buildPayload())
+
+    expect(subscriptionRepository.insertSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'waiting_list' })
+    )
   })
 
   it('persists details, previous experience teams and workingAnotherEvent on the subscription', async () => {
@@ -118,6 +132,7 @@ describe('Events.subscribeCurrentEvent', () => {
       details: 'Só posso à noite',
       previousExperienceTeams: ['cozinha', 'garcom'],
       workingAnotherEvent: true,
+      status: 'pending',
     })
   })
 

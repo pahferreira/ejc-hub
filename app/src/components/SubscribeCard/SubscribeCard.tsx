@@ -5,6 +5,7 @@ export type SubscribeCardProps = {
   eventName: string
   onSubscribe: () => void
   onBrowseTeams?: () => void
+  waitingList?: boolean
 }
 
 export function SubscribeCard(props: SubscribeCardProps) {
@@ -26,6 +27,13 @@ export function SubscribeCard(props: SubscribeCardProps) {
           Para participar do {props.eventName}, você precisa fazer sua inscrição. Não perca a
           oportunidade de viver essa experiência transformadora!
         </p>
+
+        {props.waitingList && (
+          <p className="m-0 max-w-md rounded-lg bg-orange/10 px-4 py-3 text-sm text-dark-brown">
+            <strong className="font-semibold">As vagas já foram preenchidas.</strong> Você ainda
+            pode se inscrever, mas sua inscrição entrará na lista de espera.
+          </p>
+        )}
 
         <Button onClick={props.onSubscribe}>
           <span className="inline-flex items-center gap-2">

@@ -65,7 +65,7 @@ export function Home() {
 
             <HomeBody
               view={getHomeView(subscriptionStatus, assignedTeam, {
-                subscriptionsOpen: event.subscriptionsOpen,
+                subscriptionMode: event.subscriptionMode,
                 myTeamEnabled,
               })}
               eventName={event.name}
@@ -92,7 +92,13 @@ type HomeBodyProps = {
 
 function HomeBody(props: HomeBodyProps) {
   if (props.view.kind === 'subscribe') {
-    return <SubscribeCard eventName={props.eventName} onSubscribe={props.onSubscribe} />
+    return (
+      <SubscribeCard
+        eventName={props.eventName}
+        onSubscribe={props.onSubscribe}
+        waitingList={props.view.waitingList}
+      />
+    )
   }
 
   if (props.view.kind === 'subscriptionsClosed') {

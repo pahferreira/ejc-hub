@@ -150,12 +150,22 @@ export function EventSubscription() {
     return <AlreadySubscribed status={status} eventName={statusQuery.data?.eventName} />
   }
 
-  if (currentEventQuery.data && !currentEventQuery.data.subscriptionsOpen) {
+  if (currentEventQuery.data && currentEventQuery.data.subscriptionMode === 'closed') {
     return <SubscriptionsClosed />
   }
 
+  const waitingListMode = currentEventQuery.data?.subscriptionMode === 'waiting_list'
+
   return (
     <EventSubscriptionProvider initialUser={currentUser.data!}>
+      {waitingListMode && (
+        <div className="max-w-4xl mx-auto pt-8 px-4">
+          <p className="rounded-lg bg-orange/10 px-4 py-3 text-sm text-dark-brown">
+            <strong className="font-semibold">As vagas já foram preenchidas.</strong> Sua inscrição
+            será registrada na lista de espera e você será avisado caso surja uma vaga.
+          </p>
+        </div>
+      )}
       <EventSubscriptionWizardShell />
     </EventSubscriptionProvider>
   )

@@ -19,3 +19,11 @@ export const LongEventName: Story = {
     onSubscribe: () => alert('Subscribe clicked'),
   },
 }
+
+export const WaitingListMode: Story = {
+  args: {
+    eventName: 'EJC Rosário 2026',
+    onSubscribe: () => alert('Subscribe clicked'),
+    waitingList: true,
+  },
+}

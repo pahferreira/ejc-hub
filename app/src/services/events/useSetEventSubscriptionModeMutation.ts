@@ -1,18 +1,18 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { eventsApi } from './events.api'
-import { eventsQueryKeys } from './events.types'
+import { eventsQueryKeys, type EventSubscriptionMode } from './events.types'
 
-type HandleEventSubscriptionsInput = {
+type SetEventSubscriptionModeInput = {
   eventId: string
-  open: boolean
+  mode: EventSubscriptionMode
 }
 
-export function useHandleEventSubscriptionsMutation() {
+export function useSetEventSubscriptionModeMutation() {
   const queryClient = useQueryClient()
 
   const mutation = useMutation({
-    mutationFn: (input: HandleEventSubscriptionsInput) =>
-      eventsApi.handleEventSubscriptions(input.eventId, input.open),
+    mutationFn: (input: SetEventSubscriptionModeInput) =>
+      eventsApi.setEventSubscriptionMode(input.eventId, input.mode),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: eventsQueryKeys.currentEvent })
     },

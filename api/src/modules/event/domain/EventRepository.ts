@@ -2,7 +2,7 @@ import type { EventInput, EventModel } from '../../../core/database/schemas/inde
 
 export interface EventRepository {
   insertEvent: (input: EventInput) => Promise<EventModel>
-  findEvent: (id: string) => Promise<EventInput | undefined>
+  findEvent: (id: string) => Promise<EventModel | undefined>
   findAllEvents: () => Promise<EventModel[]>
   softDeleteEvent: (id: string) => Promise<EventModel>
   updateEvent: (id: string, input: Partial<EventInput>) => Promise<EventModel>

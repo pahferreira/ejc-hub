@@ -3,6 +3,7 @@ import type {
   CreateEventSubscriptionPayload,
   CurrentEvent,
   CurrentEventSubscriptionStatus,
+  EventSubscriptionMode,
   SubscriptionListFilters,
   SubscriptionListPagination,
   SubscriptionListResponse,
@@ -84,10 +85,10 @@ async function getCurrentEvent() {
   return response.data.currentEvent
 }
 
-async function handleEventSubscriptions(eventId: string, open: boolean) {
+async function setEventSubscriptionMode(eventId: string, mode: EventSubscriptionMode) {
   const response = await api.patch<{ event: CurrentEvent }>(
-    `/control-panel/events/${eventId}/handle-subscriptions`,
-    { open }
+    `/control-panel/events/${eventId}/subscription-mode`,
+    { mode }
   )
 
   return response.data.event
@@ -99,5 +100,5 @@ export const eventsApi = {
   getCurrentEventSubscriptionStats,
   getCurrentEventSubscriptionStatus,
   getCurrentEvent,
-  handleEventSubscriptions,
+  setEventSubscriptionMode,
 }
