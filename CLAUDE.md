@@ -55,3 +55,17 @@ EJC Hub - A event management application for managing events, teams, subscriptio
 ## Testing
 
 - Use descriptive test names
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in the Ponto EJC "Tasks Tracker" Notion database, via the Notion MCP tools. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical roles, unchanged, held in a `Triage` multi-select property. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
