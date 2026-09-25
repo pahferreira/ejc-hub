@@ -6,6 +6,11 @@ export const AppErrorCode = {
   // touch. Distinct from the token-level checks in `fastifyRequirePermission`,
   // which cannot see the data an authorization decision depends on.
   Forbidden: 'forbidden',
+  // The person already holds a team membership in the event, so placing them
+  // again is impossible. Raised from a unique violation rather than a
+  // read-then-write check, because a concurrent approval can slip between the
+  // two. The app maps this code to its own pt-BR message.
+  MemberAlreadyAssigned: 'member_already_assigned',
 } as const
 
 type AppErrorCode = (typeof AppErrorCode)[keyof typeof AppErrorCode]

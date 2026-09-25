@@ -14,6 +14,7 @@ import { controlPanelRoutes } from './features/control-panel/http/control-panel.
 import { subscriptionRoutes } from './features/subscription/http/subscription.routes.ts'
 import { teamBuildingRoutes } from './features/team-building/http/team-building.routes.ts'
 import { financialRoutes } from './features/financial/http/financial.routes.ts'
+import { memberRequestRoutes } from './features/member-request/http/member-request.routes.ts'
 
 const server = fastify({
   logger: true,
@@ -44,6 +45,7 @@ server.register(controlPanelRoutes(server))
 server.register(subscriptionRoutes(server))
 server.register(teamBuildingRoutes(server))
 server.register(financialRoutes(server))
+server.register(memberRequestRoutes(server))
 
 async function startServer() {
   try {

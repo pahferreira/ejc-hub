@@ -9,6 +9,7 @@ vi.mock('../../../core/database/client.ts', () => ({
 import { Subscription } from './Subscription.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
+import type { MemberRequestRepository } from '../../../modules/member-request/domain/MemberRequestRepository.ts'
 import { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
 
 type SubModel = Awaited<ReturnType<SubscriptionRepository['getSubscription']>>
@@ -47,7 +48,11 @@ function makeRepos(subscription: NonNullable<SubModel> | undefined) {
     deleteMembershipsByUserAndEvent: vi.fn().mockResolvedValue(undefined),
   } as unknown as TeamMembershipRepository
 
-  return { subscriptionRepository, teamMembershipRepository }
+  const memberRequestRepository = {
+    cancelOpenRequestsByUserAndEvent: vi.fn().mockResolvedValue([]),
+  } as unknown as MemberRequestRepository
+
+  return { subscriptionRepository, teamMembershipRepository, memberRequestRepository }
 }
 
 describe('Subscription.cancelSubscription', () => {
@@ -64,7 +69,8 @@ describe('Subscription.cancelSubscription', () => {
     const repos = makeRepos(subscription)
     const subscriptionApp = new Subscription(
       repos.subscriptionRepository,
-      repos.teamMembershipRepository
+      repos.teamMembershipRepository,
+      repos.memberRequestRepository
     )
 
     await subscriptionApp.cancelSubscription('sub-1')
@@ -76,6 +82,41 @@ describe('Subscription.cancelSubscription', () => {
     )
   })
 
+  it("closes the subscriber's open member requests inside the same transaction", async () => {
+    // Fourth of the four paths that make a person unrequestable. A pending
+    // request left behind sits in the admin queue and, if approved, writes a
+    // membership for someone who is not coming.
+    const subscription = buildSubscription({ status: SubscriptionStatus.Received })
+    const repos = makeRepos(subscription)
+    const subscriptionApp = new Subscription(
+      repos.subscriptionRepository,
+      repos.teamMembershipRepository,
+      repos.memberRequestRepository
+    )
+
+    await subscriptionApp.cancelSubscription('sub-1')
+
+    expect(repos.memberRequestRepository.cancelOpenRequestsByUserAndEvent).toHaveBeenCalledWith(
+      'user-1',
+      'event-1',
+      {}
+    )
+  })
+
+  it('does not touch member requests when the status forbids cancelling', async () => {
+    const subscription = buildSubscription({ status: SubscriptionStatus.Pending })
+    const repos = makeRepos(subscription)
+    const subscriptionApp = new Subscription(
+      repos.subscriptionRepository,
+      repos.teamMembershipRepository,
+      repos.memberRequestRepository
+    )
+
+    await expect(subscriptionApp.cancelSubscription('sub-1')).rejects.toThrow()
+
+    expect(repos.memberRequestRepository.cancelOpenRequestsByUserAndEvent).not.toHaveBeenCalled()
+  })
+
   it.each([SubscriptionStatus.Pending, SubscriptionStatus.Cancelled])(
     'rejects cancelling from %s',
     async (status) => {
@@ -83,7 +124,8 @@ describe('Subscription.cancelSubscription', () => {
       const repos = makeRepos(subscription)
       const subscriptionApp = new Subscription(
         repos.subscriptionRepository,
-        repos.teamMembershipRepository
+        repos.teamMembershipRepository,
+        repos.memberRequestRepository
       )
 
       await expect(subscriptionApp.cancelSubscription('sub-1')).rejects.toThrow(
@@ -96,7 +138,8 @@ describe('Subscription.cancelSubscription', () => {
     const repos = makeRepos(undefined)
     const subscriptionApp = new Subscription(
       repos.subscriptionRepository,
-      repos.teamMembershipRepository
+      repos.teamMembershipRepository,
+      repos.memberRequestRepository
     )
 
     await expect(subscriptionApp.cancelSubscription('missing')).rejects.toThrow(
@@ -113,7 +156,8 @@ describe('Subscription.cancelSubscription', () => {
     const repos = makeRepos(subscription)
     const subscriptionApp = new Subscription(
       repos.subscriptionRepository,
-      repos.teamMembershipRepository
+      repos.teamMembershipRepository,
+      repos.memberRequestRepository
     )
 
     await subscriptionApp.cancelSubscription('sub-1')
@@ -132,7 +176,8 @@ describe('Subscription.cancelSubscription', () => {
       const repos = makeRepos(subscription)
       const subscriptionApp = new Subscription(
         repos.subscriptionRepository,
-        repos.teamMembershipRepository
+        repos.teamMembershipRepository,
+        repos.memberRequestRepository
       )
 
       await subscriptionApp.cancelSubscription('sub-1')
@@ -146,7 +191,8 @@ describe('Subscription.cancelSubscription', () => {
     const repos = makeRepos(subscription)
     const subscriptionApp = new Subscription(
       repos.subscriptionRepository,
-      repos.teamMembershipRepository
+      repos.teamMembershipRepository,
+      repos.memberRequestRepository
     )
 
     await subscriptionApp.cancelSubscription('sub-1')
@@ -174,7 +220,8 @@ describe('Subscription.confirmSubscription', () => {
     const repos = makeRepos(subscription)
     const subscriptionApp = new Subscription(
       repos.subscriptionRepository,
-      repos.teamMembershipRepository
+      repos.teamMembershipRepository,
+      repos.memberRequestRepository
     )
 
     await subscriptionApp.confirmSubscription('sub-1')
@@ -190,7 +237,8 @@ describe('Subscription.confirmSubscription', () => {
     const repos = makeRepos(subscription)
     const subscriptionApp = new Subscription(
       repos.subscriptionRepository,
-      repos.teamMembershipRepository
+      repos.teamMembershipRepository,
+      repos.memberRequestRepository
     )
 
     await subscriptionApp.confirmSubscription('sub-1')
@@ -203,7 +251,8 @@ describe('Subscription.confirmSubscription', () => {
     const repos = makeRepos(subscription)
     const subscriptionApp = new Subscription(
       repos.subscriptionRepository,
-      repos.teamMembershipRepository
+      repos.teamMembershipRepository,
+      repos.memberRequestRepository
     )
 
     await expect(subscriptionApp.confirmSubscription('sub-1')).rejects.toThrow(
@@ -224,7 +273,8 @@ describe('Subscription.waitListSubscription', () => {
       const repos = makeRepos(subscription)
       const subscriptionApp = new Subscription(
         repos.subscriptionRepository,
-        repos.teamMembershipRepository
+        repos.teamMembershipRepository,
+        repos.memberRequestRepository
       )
 
       await subscriptionApp.waitListSubscription('sub-1')
@@ -241,7 +291,8 @@ describe('Subscription.waitListSubscription', () => {
     const repos = makeRepos(subscription)
     const subscriptionApp = new Subscription(
       repos.subscriptionRepository,
-      repos.teamMembershipRepository
+      repos.teamMembershipRepository,
+      repos.memberRequestRepository
     )
 
     await expect(subscriptionApp.waitListSubscription('sub-1')).rejects.toThrow(
