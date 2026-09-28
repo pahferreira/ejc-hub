@@ -9,7 +9,15 @@ export type RequestMembersTableProps = {
   rows: RequestMemberRow[]
   /** Opens the request modal for one row. Only offered on `requestable` rows. */
   onRequest: (row: RequestMemberRow) => void
+  /**
+   * What the empty state says. Owned by the caller because "there is nobody"
+   * and "your filters match nobody" are different facts (plan G.5) that only
+   * the page — which holds the active filters — can tell apart.
+   */
+  emptyMessage?: string
 }
+
+const DEFAULT_EMPTY_MESSAGE = 'Nenhum inscrito encontrado.'
 
 /**
  * The "Solicitar Membros" candidate list: desktop table plus a `md:hidden`
@@ -21,6 +29,7 @@ export type RequestMembersTableProps = {
  */
 export function RequestMembersTable(props: RequestMembersTableProps) {
   const isEmpty = props.rows.length === 0
+  const emptyMessage = props.emptyMessage ?? DEFAULT_EMPTY_MESSAGE
 
   const columns = useMemo(
     () => createRequestMembersColumns({ onRequest: props.onRequest }),
@@ -37,7 +46,7 @@ export function RequestMembersTable(props: RequestMembersTableProps) {
     <section className="w-full overflow-hidden rounded-xl border border-tertiary bg-white shadow-md">
       <ul className="m-0 list-none divide-y divide-gray-200 p-0 md:hidden">
         {isEmpty ? (
-          <li className="px-6 py-4 text-sm text-dark-brown">Nenhum inscrito encontrado.</li>
+          <li className="px-6 py-4 text-sm text-dark-brown">{emptyMessage}</li>
         ) : (
           props.rows.map((row) => (
             <RequestMembersListItem key={row.userId} row={row} onRequest={props.onRequest} />
@@ -64,7 +73,7 @@ export function RequestMembersTable(props: RequestMembersTableProps) {
           <Table.Body>
             {isEmpty ? (
               <Table.Row>
-                <Table.Cell colSpan={columns.length}>Nenhum inscrito encontrado.</Table.Cell>
+                <Table.Cell colSpan={columns.length}>{emptyMessage}</Table.Cell>
               </Table.Row>
             ) : (
               table.getRowModel().rows.map((row) => (
