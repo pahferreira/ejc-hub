@@ -7,6 +7,13 @@ type ModalProps = {
   onClose: () => void
   title: string
   children: ReactNode
+  /** Panel width. `lg` widens the default `max-w-md`. Defaults to `md`. */
+  size?: 'md' | 'lg'
+}
+
+const panelSizeClasses: Record<NonNullable<ModalProps['size']>, string> = {
+  md: 'max-w-md',
+  lg: 'max-w-lg',
 }
 
 export function Modal(props: ModalProps) {
@@ -35,7 +42,9 @@ export function Modal(props: ModalProps) {
             leaveFrom="opacity-100 scale-100"
             leaveTo="opacity-0 scale-95"
           >
-            <DialogPanel className="w-full max-w-md rounded-lg bg-white shadow-xl border-t-primary border-t-6">
+            <DialogPanel
+              className={`w-full ${panelSizeClasses[props.size ?? 'md']} rounded-lg bg-white shadow-xl border-t-primary border-t-6`}
+            >
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                 <DialogTitle className="text-lg font-semibold text-gray-900 m-0">
                   {props.title}

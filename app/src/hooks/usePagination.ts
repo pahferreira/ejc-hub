@@ -2,9 +2,15 @@ import { useCallback, useState } from 'react'
 
 const DEFAULT_PAGE_SIZE = 20
 
-export function usePagination() {
+/**
+ * @param initialPageSize Page size to start on. Defaults to 20, the size every
+ * page but "Solicitar Membros" (15) uses. Passed in rather than set with
+ * `changePageSize` from a mount effect, which would cost that page an extra
+ * render and refetch on load.
+ */
+export function usePagination(initialPageSize: number = DEFAULT_PAGE_SIZE) {
   const [page, setPage] = useState(1)
-  const [currentSize, setCurrentPageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [currentSize, setCurrentPageSize] = useState(initialPageSize)
 
   const changePageSize = useCallback((size: number) => {
     setCurrentPageSize(size)
