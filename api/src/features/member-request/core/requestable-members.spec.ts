@@ -81,9 +81,32 @@ describe('filterRequestableCandidates', () => {
   })
 
   it('narrows by experience', () => {
-    const found = filterRequestableCandidates(rows, { experience: 'experienced' }, TEAM_A)
+    const found = filterRequestableCandidates(rows, { experience: ['experienced'] }, TEAM_A)
 
     expect(found.map((row) => row.userId)).toEqual(['u2'])
+  })
+
+  it('keeps rows carrying any of the selected experience levels', () => {
+    // The union of two disjoint sets: `newbie` alone is u1 and u3, `experienced`
+    // alone is u2, and ticking both boxes must return all three rather than the
+    // intersection a single-valued filter would have forced the UI to fake.
+    const found = filterRequestableCandidates(
+      rows,
+      { experience: ['newbie', 'experienced'] },
+      TEAM_A
+    )
+
+    expect(found.map((row) => row.userId)).toEqual(['u1', 'u2', 'u3'])
+  })
+
+  it('drops every row when the selected experience matches nobody', () => {
+    expect(
+      filterRequestableCandidates(rows, { experience: ['experienced_outsider'] }, TEAM_A)
+    ).toEqual([])
+  })
+
+  it('keeps everyone when every experience box is cleared', () => {
+    expect(filterRequestableCandidates(rows, { experience: [] }, TEAM_A)).toHaveLength(3)
   })
 
   it("keeps only people who chose the caller's team when preference is team", () => {
