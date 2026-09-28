@@ -1,19 +1,19 @@
 import { AppError } from '../../../shared/AppError.ts'
-import { runInTransaction } from '../../../core/database/client.ts'
+import { runInTransaction, type DbExecutor } from '../../../core/database/client.ts'
 import type { EventModel } from '../../../core/database/schemas/index.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
-import { formatAreas } from '../../event/core/format-areas.ts'
+import type { MemberRequestRepository } from '../../../modules/member-request/domain/MemberRequestRepository.ts'
 import { mapSubscriptionToPerson } from '../../event/core/subscription-to-person.ts'
-import { resolveNickname } from '../../../shared/resolve-nickname.ts'
+import { listTeamCandidates } from './list-team-candidates.ts'
+import { placeMembers } from './place-members.ts'
 import {
   COMPLETED_STATUS,
   UNASSIGNED_STATUS,
   WAITING_LIST_STATUS,
   type AssignmentChange,
-  type Candidate,
   type CandidateListResult,
   type CandidateRole,
   type TeamBoard,
@@ -30,17 +30,20 @@ export class TeamBuilding {
   #teamMembershipRepository: TeamMembershipRepository
   #subscriptionRepository: SubscriptionRepository
   #eventRepository: EventRepository
+  #memberRequestRepository: MemberRequestRepository
 
   constructor(
     teamInstanceRepo: TeamInstanceRepository,
     teamMembershipRepo: TeamMembershipRepository,
     subscriptionRepo: SubscriptionRepository,
-    eventRepo: EventRepository
+    eventRepo: EventRepository,
+    memberRequestRepo: MemberRequestRepository
   ) {
     this.#teamInstanceRepository = teamInstanceRepo
     this.#teamMembershipRepository = teamMembershipRepo
     this.#subscriptionRepository = subscriptionRepo
     this.#eventRepository = eventRepo
+    this.#memberRequestRepository = memberRequestRepo
   }
 
   // Resolves the current event once per call and hands it to `fn`. The id is a
@@ -271,205 +274,75 @@ export class TeamBuilding {
             tx
           )
         }
+
+        // Only the people moved *into* a team. Moving someone to the waiting
+        // list or back to unassigned deletes their membership and leaves them
+        // requestable, so their open requests must survive the move.
+        const placedUserIds = resolved
+          .filter(({ change }) => change.target.kind === 'team')
+          .map(({ change }) => change.userId)
+
+        await this.#memberRequestRepository.outdateOpenRequestsForUsers(
+          { eventId: event.id, userIds: placedUserIds },
+          tx
+        )
       })
     })
 
     return this.getCurrentEventBoard()
   }
 
-  // Returns the list of users who subscribed to the event and are not assigned to a team.
-  // `role` distinguishes the two callers of this endpoint: 'coordinator' keeps the target
-  // team's own coordinators in the list (the coordinator drawer shows/re-picks them),
-  // while 'member' excludes them so a coordinator can't also be added as a plain member.
+  /**
+   * Who may be picked for this team.
+   *
+   * The rules themselves live in `listTeamCandidates`, which the coordinator's
+   * "Solicitar Membros" list also reads — one answer to "who is available in
+   * this event", not one per screen.
+   */
   async listCandidates(
     teamInstanceId: string,
     role: CandidateRole = 'coordinator'
   ): Promise<CandidateListResult> {
-    return this.#withCurrentEvent(async (event) => {
-      const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(event.id)
-      const instanceIds = new Set(instances.map((i) => i.id))
-
-      const targetInstance = instances.find((i) => i.id === teamInstanceId)
-
-      if (!targetInstance) {
-        throw new AppError(`Team instance ${teamInstanceId} does not belong to the current event`)
-      }
-
-      // Build member exclusion set — everyone who has a team membership in the event.
-      const membershipUserIdsByTeam =
-        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds])
-      const memberExclusionSet = new Set<string>()
-      for (const [, userIds] of membershipUserIdsByTeam) {
-        for (const userId of userIds) {
-          memberExclusionSet.add(userId)
-        }
-      }
-
-      // Build coordinator exclusion set from OTHER teams only, and capture the
-      // target team's own coordinator IDs for force-include.
-      const coordinatorIdsByTeam =
-        await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds([...instanceIds])
-      const otherTeamCoordinatorSet = new Set<string>()
-      const targetCoordinatorSet = new Set<string>()
-      for (const [tid, coordIds] of coordinatorIdsByTeam) {
-        if (tid === teamInstanceId) {
-          for (const id of coordIds) targetCoordinatorSet.add(id)
-        } else {
-          for (const id of coordIds) otherTeamCoordinatorSet.add(id)
-        }
-      }
-
-      const subscriptions = await this.#subscriptionRepository.listSubscriptionsByEventId(event.id)
-      const instanceNameById = new Map(instances.map((i) => [i.id, i.templateName]))
-
-      const eligibleSubscriptions = subscriptions.filter((sub) => {
-        if (sub.status === 'cancelled') return false
-        // The target team's own current coordinators: kept for coordinator assignment
-        // (so the drawer can show/re-pick them), excluded for member assignment (they
-        // already occupy the (team, user) row and must not be added as a member too).
-        if (targetCoordinatorSet.has(sub.userId)) return role === 'coordinator'
-        // Exclude members of any team.
-        if (memberExclusionSet.has(sub.userId)) return false
-        // Exclude coordinators of other teams.
-        if (otherTeamCoordinatorSet.has(sub.userId)) return false
-        return true
-      })
-
-      // Resolve prior coordinator experience (teams coordinated in other events)
-      // for the eligible candidates only.
-      const coordinatorExperienceByUser =
-        await this.#teamMembershipRepository.listCoordinatorExperienceByUserIds(
-          eligibleSubscriptions.map((sub) => sub.userId),
-          event.id
-        )
-
-      const candidates: Candidate[] = eligibleSubscriptions
-        .map((sub) => {
-          const experienceTeams = coordinatorExperienceByUser.get(sub.userId) ?? []
-          return {
-            userId: sub.userId,
-            name: sub.user.name,
-            nickname: resolveNickname(sub.user.name, sub.user.nickname),
-            pictureUrl: sub.user.pictureUrl,
-            experienceType: sub.user.experienceType,
-            circleKey: sub.user.circle?.key ?? null,
-            areas: formatAreas(sub.user),
-            details: sub.details ?? '',
-            preferenceTeamIds: sub.teams ?? [],
-            preferences: (sub.teams ?? [])
-              .map((tid) => instanceNameById.get(tid))
-              .filter((name): name is string => Boolean(name)),
-            // Self-declared flag OR at least one recorded past coordination.
-            hasCoordinatorExperience:
-              sub.user.hasCoordinatorExperience || experienceTeams.length > 0,
-            coordinatorExperienceTeams: experienceTeams,
-            weekAvailability: sub.availability ?? [],
-          }
-        })
-        .sort((a, b) => a.nickname.localeCompare(b.nickname, 'pt-BR', { sensitivity: 'base' }))
-
-      const currentCoordinators =
-        await this.#teamMembershipRepository.getCoordinatorUserIds(teamInstanceId)
-
-      return {
-        team: {
-          id: targetInstance.id,
-          name: targetInstance.templateName,
-          maxAllowedCoordinators: targetInstance.maxAllowedCoordinators,
+    return this.#withCurrentEvent((event) =>
+      listTeamCandidates(
+        {
+          teamInstanceRepository: this.#teamInstanceRepository,
+          teamMembershipRepository: this.#teamMembershipRepository,
+          subscriptionRepository: this.#subscriptionRepository,
         },
-        currentCoordinators,
-        candidates,
-      }
-    })
+        { eventId: event.id, teamInstanceId, role }
+      )
+    )
   }
 
-  // Adds a batch of members to a single team instance atomically. All-or-nothing:
-  // if any candidate is invalid (already on a team, or missing a subscription) the
-  // whole batch aborts before the DB is touched. Capacity is intentionally not
-  // enforced here — matching applyAssignments, the UI owns the "vagas" guardrail.
-  async addMembers(teamInstanceId: string, userIds: string[]): Promise<void> {
-    await this.#withCurrentEvent(async (event) => {
-      const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(event.id)
-      const instanceIds = new Set(instances.map((i) => i.id))
-
-      if (!instanceIds.has(teamInstanceId)) {
-        throw new AppError(`Team instance ${teamInstanceId} does not belong to the current event`)
-      }
-
-      // Dedupe while preserving order.
-      const seen = new Set<string>()
-      const deduped: string[] = []
-      for (const id of userIds) {
-        if (!seen.has(id)) {
-          seen.add(id)
-          deduped.push(id)
-        }
-      }
-
-      if (deduped.length === 0) {
-        throw new AppError('At least one member is required')
-      }
-
-      // Anyone with a membership in the event is already assigned and cannot be added.
-      const membershipUserIdsByTeam =
-        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds])
-      const assignedUserSet = new Set<string>()
-      for (const [, ids] of membershipUserIdsByTeam) {
-        for (const id of ids) assignedUserSet.add(id)
-      }
-
-      // Coordinators of *any* team in the event already hold a membership, so adding
-      // them as a member would be a second membership in the same event — not just a
-      // clash on the target team's (team, user) row.
-      const coordinatorIdsByTeam =
-        await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds([...instanceIds])
-      const coordinatorUserSet = new Set<string>()
-      for (const [, ids] of coordinatorIdsByTeam) {
-        for (const id of ids) coordinatorUserSet.add(id)
-      }
-
-      // Validate and resolve subscriptions up front so a bad entry aborts the whole
-      // batch cleanly before opening the transaction.
-      const resolved = await Promise.all(
-        deduped.map(async (userId) => {
-          if (assignedUserSet.has(userId)) {
-            throw new AppError(`User ${userId} is already assigned to a team`)
-          }
-
-          if (coordinatorUserSet.has(userId)) {
-            throw new AppError(`User ${userId} already coordinates a team in this event`)
-          }
-
-          const subscription = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
-            userId,
-            event.id
-          )
-
-          if (!subscription) {
-            throw new AppError(`No subscription found for user ${userId} in the current event`)
-          }
-
-          return { userId, subscription }
-        })
+  /**
+   * Adds a batch of members to a single team instance atomically.
+   *
+   * The write sequence itself lives in `placeMembers`, which approving a member
+   * request also calls. One implementation of the membership write path, so the
+   * outdating that must follow every placement cannot be forgotten by one of
+   * them — see the plan's Phase D.
+   *
+   * Resolves to the ids of the member requests this placement made
+   * unanswerable. `executor` lets a caller run it inside a transaction it
+   * already owns.
+   */
+  async addMembers(
+    teamInstanceId: string,
+    userIds: string[],
+    executor?: DbExecutor
+  ): Promise<string[]> {
+    return this.#withCurrentEvent((event) =>
+      placeMembers(
+        {
+          teamInstanceRepository: this.#teamInstanceRepository,
+          teamMembershipRepository: this.#teamMembershipRepository,
+          subscriptionRepository: this.#subscriptionRepository,
+          memberRequestRepository: this.#memberRequestRepository,
+        },
+        { eventId: event.id, teamInstanceId, userIds, executor }
       )
-
-      await runInTransaction(async (tx) => {
-        for (const { userId, subscription } of resolved) {
-          await this.#teamMembershipRepository.insertTeamMembership(
-            { userId, teamInstanceId, eventId: event.id, type: 'member' },
-            tx
-          )
-
-          // Adding a member to a team means they are "montado" — mark the
-          // subscription completed regardless of its prior status.
-          await this.#subscriptionRepository.updateSubscriptionStatus(
-            subscription.id,
-            COMPLETED_STATUS,
-            tx
-          )
-        }
-      })
-    })
+    )
   }
 
   // Replaces a team instance's coordinators atomically. Coordinators are a flat
@@ -562,6 +435,13 @@ export class TeamBuilding {
             tx
           )
         }
+
+        // Promotion grants an event membership too, so a coordinator is just as
+        // unrequestable as a member. Same statement, same reason.
+        await this.#memberRequestRepository.outdateOpenRequestsForUsers(
+          { eventId: event.id, userIds: deduped },
+          tx
+        )
       })
     })
   }

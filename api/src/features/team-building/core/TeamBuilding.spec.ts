@@ -11,6 +11,7 @@ import type { TeamInstanceRepository } from '../../../modules/team-instance/doma
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
+import type { MemberRequestRepository } from '../../../modules/member-request/domain/MemberRequestRepository.ts'
 
 const EVENT_ID = 'event-1'
 const TEAM_A = 'team-a'
@@ -99,11 +100,16 @@ function makeRepos(opts: {
     setCoordinators: vi.fn().mockResolvedValue(undefined),
   } as unknown as TeamMembershipRepository
 
+  const memberRequestRepository = {
+    outdateOpenRequestsForUsers: vi.fn().mockResolvedValue([]),
+  } as unknown as MemberRequestRepository
+
   return {
     eventRepository,
     subscriptionRepository,
     teamInstanceRepository,
     teamMembershipRepository,
+    memberRequestRepository,
   }
 }
 
@@ -122,7 +128,8 @@ describe('TeamBuilding.getCurrentEventBoard', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const { columns } = await teamBuilding.getCurrentEventBoard()
@@ -144,7 +151,8 @@ describe('TeamBuilding.getCurrentEventBoard', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const { columns } = await teamBuilding.getCurrentEventBoard()
@@ -173,7 +181,8 @@ describe('TeamBuilding.getCurrentEventBoard', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const { columns } = await teamBuilding.getCurrentEventBoard()
@@ -197,7 +206,8 @@ describe('TeamBuilding.getCurrentEventBoard', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const { columns } = await teamBuilding.getCurrentEventBoard()
@@ -229,7 +239,8 @@ describe('TeamBuilding.applyAssignments', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
   })
 
@@ -288,7 +299,8 @@ describe('TeamBuilding.applyAssignments', () => {
       coordinatorRepos.teamInstanceRepository,
       coordinatorRepos.teamMembershipRepository,
       coordinatorRepos.subscriptionRepository,
-      coordinatorRepos.eventRepository
+      coordinatorRepos.eventRepository,
+      coordinatorRepos.memberRequestRepository
     )
 
     await expect(
@@ -309,7 +321,8 @@ describe('TeamBuilding.applyAssignments', () => {
       coordinatorRepos.teamInstanceRepository,
       coordinatorRepos.teamMembershipRepository,
       coordinatorRepos.subscriptionRepository,
-      coordinatorRepos.eventRepository
+      coordinatorRepos.eventRepository,
+      coordinatorRepos.memberRequestRepository
     )
 
     // Without this guard the coordinator row on TEAM_A survives the move and the
@@ -332,7 +345,8 @@ describe('TeamBuilding.applyAssignments', () => {
       coordinatorRepos.teamInstanceRepository,
       coordinatorRepos.teamMembershipRepository,
       coordinatorRepos.subscriptionRepository,
-      coordinatorRepos.eventRepository
+      coordinatorRepos.eventRepository,
+      coordinatorRepos.memberRequestRepository
     )
 
     // The coordinator row would be left behind while the subscription says
@@ -363,7 +377,8 @@ describe('TeamBuilding.listCandidates', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const result = await tb.listCandidates(TEAM_A)
@@ -385,7 +400,8 @@ describe('TeamBuilding.listCandidates', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const result = await tb.listCandidates(TEAM_A)
@@ -404,7 +420,8 @@ describe('TeamBuilding.listCandidates', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const result = await tb.listCandidates(TEAM_A)
@@ -424,7 +441,8 @@ describe('TeamBuilding.listCandidates', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const result = await tb.listCandidates(TEAM_A)
@@ -440,7 +458,8 @@ describe('TeamBuilding.listCandidates', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await expect(tb.listCandidates('foreign-team')).rejects.toThrow(
@@ -474,7 +493,8 @@ describe('TeamBuilding.listCandidates', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const result = await tb.listCandidates(TEAM_A)
@@ -503,7 +523,8 @@ describe('TeamBuilding.listCandidates', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const result = await tb.listCandidates(TEAM_A)
@@ -528,7 +549,8 @@ describe('TeamBuilding.listCandidates', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const result = await tb.listCandidates(TEAM_A)
@@ -542,7 +564,8 @@ describe('TeamBuilding.listCandidates', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const result = await tb.listCandidates(TEAM_A)
@@ -566,7 +589,8 @@ describe('TeamBuilding.assignCoordinators', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await tb.assignCoordinators(TEAM_A, ['u1', 'u2'])
@@ -589,7 +613,8 @@ describe('TeamBuilding.assignCoordinators', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await tb.assignCoordinators(TEAM_A, ['u1', 'u2'])
@@ -612,7 +637,8 @@ describe('TeamBuilding.assignCoordinators', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await tb.assignCoordinators(TEAM_A, [])
@@ -637,7 +663,8 @@ describe('TeamBuilding.assignCoordinators', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await expect(tb.assignCoordinators(TEAM_A, ['u1', 'u2', 'u3', 'u4'])).rejects.toThrow(
@@ -657,7 +684,8 @@ describe('TeamBuilding.assignCoordinators', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await expect(tb.assignCoordinators(TEAM_A, ['u1', 'u2', 'u3'])).rejects.toThrow(
@@ -678,7 +706,8 @@ describe('TeamBuilding.assignCoordinators', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await expect(tb.assignCoordinators(TEAM_A, ['u1', 'u2', 'u3', 'u4'])).resolves.toBeUndefined()
@@ -698,7 +727,8 @@ describe('TeamBuilding.assignCoordinators', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     // 4 entries but all the same userId — should dedupe to 1 and pass validation
@@ -718,7 +748,8 @@ describe('TeamBuilding.assignCoordinators', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await expect(tb.assignCoordinators(TEAM_A, ['unknown-user'])).rejects.toThrow(
@@ -733,7 +764,8 @@ describe('TeamBuilding.assignCoordinators', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await expect(tb.assignCoordinators('foreign-team', [])).rejects.toThrow(
@@ -750,7 +782,8 @@ describe('TeamBuilding.assignCoordinators', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await expect(tb.assignCoordinators(TEAM_A, ['u1'])).rejects.toThrow(
@@ -770,7 +803,8 @@ describe('TeamBuilding.assignCoordinators', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await expect(tb.assignCoordinators(TEAM_A, ['coord-1'])).rejects.toThrow(
@@ -792,7 +826,8 @@ describe('TeamBuilding.assignCoordinators', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await tb.assignCoordinators(TEAM_A, ['coord-1'])
@@ -825,7 +860,8 @@ describe('own-team coordinator force-include', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const result = await tb.listCandidates(TEAM_A)
@@ -850,7 +886,8 @@ describe('own-team coordinator force-include', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     const result = await tb.listCandidates(TEAM_A, 'member')
@@ -872,7 +909,8 @@ describe('TeamBuilding.addMembers', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await tb.addMembers(TEAM_A, ['u1', 'u2'])
@@ -894,7 +932,8 @@ describe('TeamBuilding.addMembers', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await tb.addMembers(TEAM_A, ['u1'])
@@ -913,7 +952,8 @@ describe('TeamBuilding.addMembers', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await tb.addMembers(TEAM_A, ['u1'])
@@ -932,7 +972,8 @@ describe('TeamBuilding.addMembers', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await tb.addMembers(TEAM_A, ['u1', 'u1'])
@@ -951,7 +992,8 @@ describe('TeamBuilding.addMembers', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await expect(tb.addMembers(TEAM_A, ['u1', 'u2'])).rejects.toThrow(/already assigned to a team/)
@@ -973,7 +1015,8 @@ describe('TeamBuilding.addMembers', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await expect(tb.addMembers(TEAM_A, ['u1', 'coord-1'])).rejects.toThrow(
@@ -988,7 +1031,8 @@ describe('TeamBuilding.addMembers', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await expect(tb.addMembers('foreign-team', ['u1'])).rejects.toThrow(
@@ -1003,10 +1047,125 @@ describe('TeamBuilding.addMembers', () => {
       repos.teamInstanceRepository,
       repos.teamMembershipRepository,
       repos.subscriptionRepository,
-      repos.eventRepository
+      repos.eventRepository,
+      repos.memberRequestRepository
     )
 
     await expect(tb.addMembers(TEAM_A, ['ghost'])).rejects.toThrow(/No subscription found/)
     expect(repos.teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
+  })
+})
+
+// One test per membership write path. Wire the outdating into only some of them
+// and stale requests reappear the first time an admin touches the board.
+describe('member requests are outdated on every membership write path', () => {
+  it("addMembers closes the placed members' open requests and returns their ids", async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'received' }),
+      buildSub({ id: 's2', userId: 'u2', status: 'received' }),
+    ]
+    const repos = makeRepos({ subscriptions, memberships: new Map() })
+    const outdate = vi.mocked(repos.memberRequestRepository.outdateOpenRequestsForUsers)
+    outdate.mockResolvedValue(['req-1', 'req-2'])
+
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository,
+      repos.memberRequestRepository
+    )
+
+    const superseded = await tb.addMembers(TEAM_A, ['u1', 'u2'])
+
+    // One set-based statement after the loop, not one per member.
+    expect(outdate).toHaveBeenCalledTimes(1)
+    expect(outdate).toHaveBeenCalledWith(
+      { eventId: EVENT_ID, userIds: ['u1', 'u2'] },
+      expect.anything()
+    )
+    // The ids have to come back: an approval reports them as
+    // `supersededRequestIds`, and a statement that closes rows silently cannot.
+    expect(superseded).toEqual(['req-1', 'req-2'])
+  })
+
+  it('addMembers runs on a caller-supplied executor instead of opening its own transaction', async () => {
+    // The composition Phase C exists for: calling this from inside the approve
+    // transaction must join it, not take a second connection.
+    const subscriptions = [buildSub({ id: 's1', userId: 'u1', status: 'received' })]
+    const repos = makeRepos({ subscriptions, memberships: new Map() })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository,
+      repos.memberRequestRepository
+    )
+    const outerTx = { outer: true } as unknown as Parameters<typeof tb.addMembers>[2]
+
+    await tb.addMembers(TEAM_A, ['u1'], outerTx)
+
+    expect(repos.teamMembershipRepository.insertTeamMembership).toHaveBeenCalledWith(
+      expect.anything(),
+      outerTx
+    )
+    expect(repos.memberRequestRepository.outdateOpenRequestsForUsers).toHaveBeenCalledWith(
+      expect.anything(),
+      outerTx
+    )
+  })
+
+  it('applyAssignments closes requests only for people moved into a team', async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'waiting_list' }),
+      buildSub({ id: 's2', userId: 'u2', status: 'received' }),
+      buildSub({ id: 's3', userId: 'u3', status: 'completed' }),
+    ]
+    // u3 currently sits in TEAM_A, so moving them out deletes their membership.
+    const repos = makeRepos({ subscriptions, memberships: new Map([[TEAM_A, ['u3']]]) })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository,
+      repos.memberRequestRepository
+    )
+
+    await tb.applyAssignments([
+      { userId: 'u1', target: { kind: 'team', teamInstanceId: TEAM_B } },
+      { userId: 'u2', target: { kind: 'waiting_list' } },
+      { userId: 'u3', target: { kind: 'unassigned' } },
+    ])
+
+    // Only u1 took a membership. u2 and u3 are requestable again, so their open
+    // requests must survive the move.
+    expect(repos.memberRequestRepository.outdateOpenRequestsForUsers).toHaveBeenCalledWith(
+      { eventId: EVENT_ID, userIds: ['u1'] },
+      expect.anything()
+    )
+  })
+
+  it("assignCoordinators closes the promoted coordinators' open requests", async () => {
+    const subscriptions = [
+      buildSub({ id: 's1', userId: 'u1', status: 'received' }),
+      buildSub({ id: 's2', userId: 'u2', status: 'received' }),
+    ]
+    const repos = makeRepos({ subscriptions, memberships: new Map() })
+    const tb = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository,
+      repos.memberRequestRepository
+    )
+
+    await tb.assignCoordinators(TEAM_A, ['u1', 'u2'])
+
+    // Promotion grants an event membership, so a coordinator is as unrequestable
+    // as a member.
+    expect(repos.memberRequestRepository.outdateOpenRequestsForUsers).toHaveBeenCalledWith(
+      { eventId: EVENT_ID, userIds: ['u1', 'u2'] },
+      expect.anything()
+    )
   })
 })

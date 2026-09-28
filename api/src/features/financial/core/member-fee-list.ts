@@ -1,22 +1,8 @@
+import { normalizeText as normalize } from '../../../shared/normalize-text.ts'
 import type { EventFeeMemberFilters, EventFeeMemberRow } from '../domain/event-fee.types.ts'
 
 export const DEFAULT_PAGE = 1
 export const DEFAULT_PAGE_SIZE = 20
-
-/**
- * Lowercases and strips diacritics so "Julia" finds "Júlia".
- *
- * pt-BR names carry accents that nobody types into a search box, and the plain
- * `toLowerCase().includes()` used for the subscriptions list quietly returns
- * nothing for them. `NFD` splits an accented letter into its base plus a
- * combining mark, which the range below then removes.
- */
-function normalize(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-}
 
 /**
  * Narrows the event's members to what the page asked for.

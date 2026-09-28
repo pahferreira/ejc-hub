@@ -1,0 +1,1 @@
+export const MEMBER_REQUEST_MESSAGE_MAX = 400;

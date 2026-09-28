@@ -3,6 +3,7 @@ import { runInTransaction } from '../../../core/database/client.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
 import { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
+import type { MemberRequestRepository } from '../../../modules/member-request/domain/MemberRequestRepository.ts'
 
 const CANCELLABLE_STATUSES: SubscriptionStatus[] = [
   SubscriptionStatus.Received,
@@ -13,13 +14,16 @@ const CANCELLABLE_STATUSES: SubscriptionStatus[] = [
 export class Subscription {
   #subscriptionRepository: SubscriptionRepository
   #teamMembershipRepository: TeamMembershipRepository
+  #memberRequestRepository: MemberRequestRepository
 
   constructor(
     subscriptionRepository: SubscriptionRepository,
-    teamMembershipRepository: TeamMembershipRepository
+    teamMembershipRepository: TeamMembershipRepository,
+    memberRequestRepository: MemberRequestRepository
   ) {
     this.#subscriptionRepository = subscriptionRepository
     this.#teamMembershipRepository = teamMembershipRepository
+    this.#memberRequestRepository = memberRequestRepository
   }
 
   async listSubscriptions() {
@@ -70,6 +74,19 @@ export class Subscription {
     )
   }
 
+  /**
+   * Cancels a subscription and clears everything it was holding open.
+   *
+   * Cancelling *means* the person is not coming, so their team placements and
+   * their open member requests go with it. A pending request left behind sits in
+   * the admin queue and, if approved, writes a membership for someone who is not
+   * attending — the composite subscription FK does not check status, so nothing
+   * else would stop it.
+   *
+   * `confirmSubscription` allows `cancelled -> received`, so this is reversible;
+   * the requests are not. A coordinator has to ask again, which is the honest
+   * outcome: nobody re-offers a withdrawn person without saying so.
+   */
   async cancelSubscription(id: string) {
     const subscription = await this.getSubscription(id)
 
@@ -79,6 +96,12 @@ export class Subscription {
 
     return await runInTransaction(async (tx) => {
       await this.#teamMembershipRepository.deleteMembershipsByUserAndEvent(
+        subscription.userId,
+        subscription.eventId,
+        tx
+      )
+
+      await this.#memberRequestRepository.cancelOpenRequestsByUserAndEvent(
         subscription.userId,
         subscription.eventId,
         tx

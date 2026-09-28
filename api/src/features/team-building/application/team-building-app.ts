@@ -3,10 +3,12 @@ import { teamInstanceRepository } from '../../../modules/team-instance/repositor
 import { teamMembershipRepository } from '../../../modules/team-membership/repository/DrizzleTeamMembershipRepository.ts'
 import { subscriptionRepository } from '../../../modules/subscription/repository/DrizzleSubscriptionRepository.ts'
 import { eventRepository } from '../../../modules/event/repository/DrizzleEventRepository.ts'
+import { memberRequestRepository } from '../../../modules/member-request/repository/DrizzleMemberRequestRepository.ts'
 
 export const teamBuildingApp = new TeamBuilding(
   teamInstanceRepository,
   teamMembershipRepository,
   subscriptionRepository,
-  eventRepository
+  eventRepository,
+  memberRequestRepository
 )
