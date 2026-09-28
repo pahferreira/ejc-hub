@@ -8,6 +8,12 @@ export const FeatureFlag = {
    */
   CoordinatorEventFee: 'coordinator-financials-event-fee',
   Shirts: 'admin-financials-shirts',
+  /**
+   * The coordinator's "Solicitar Membros" page. Its own flag, admin-first: the
+   * page is useless until admins can answer requests, so the two roll out on
+   * separate flags (plan Phase F).
+   */
+  CoordinatorMemberRequests: 'coordinator-member-requests',
 } as const
 
 export type FeatureFlagValue = (typeof FeatureFlag)[keyof typeof FeatureFlag]

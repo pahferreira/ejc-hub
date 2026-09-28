@@ -15,6 +15,7 @@ import { MyTeamPage } from '../../pages/MyTeamPage'
 import { EventFeePage } from '../../pages/EventFeePage'
 import { EventFeeMembersPage } from '../../pages/EventFeeMembersPage'
 import { CoordinatorEventFeePage } from '../../pages/CoordinatorEventFeePage'
+import { RequestMembersPage } from '../../pages/RequestMembersPage'
 import { Placeholder } from '../../pages/Placeholder/Placeholder'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import { FeatureFlag, type FeatureFlagValue } from '../useFeatureFlag/feature-flags'
@@ -54,6 +55,18 @@ export const routes: Route[] = [
     // with "página não encontrada". The page itself holds the check, which is
     // the only place that can tell "still loading" from "not a coordinator".
     featureFlag: FeatureFlag.CoordinatorEventFee,
+  },
+  {
+    path: ROUTE_PATHS.MY_TEAM_REQUEST_MEMBERS,
+    name: 'Solicitar Membros',
+    component: RequestMembersPage,
+    // Same precedent as `MY_TEAM_FEE`, comment included: coordinating is a
+    // `team_memberships` row, not a role grant, so the route table cannot
+    // filter on it without waiting on a request, and filtering while that
+    // request is in flight would answer a coordinator's own bookmark with
+    // "página não encontrada". The page itself holds the check; the API
+    // re-derives the membership on every call and answers 403.
+    featureFlag: FeatureFlag.CoordinatorMemberRequests,
   },
   {
     path: ROUTE_PATHS.SUBSCRIPTIONS,
