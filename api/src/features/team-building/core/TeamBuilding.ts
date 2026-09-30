@@ -1,4 +1,5 @@
 import { AppError } from '../../../shared/AppError.ts'
+import { comparePeopleByNickname } from '../../../shared/compare-people-by-nickname.ts'
 import { runInTransaction, type DbExecutor } from '../../../core/database/client.ts'
 import type { EventModel } from '../../../core/database/schemas/index.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
@@ -119,6 +120,12 @@ export class TeamBuilding {
         }
       }
 
+      // Sorted only once every subscription has been dealt into its column: the
+      // loop above appends in subscription order, which is no order at all to
+      // the coordinator reading the board.
+      unassigned.sort(comparePeopleByNickname)
+      waitingList.sort(comparePeopleByNickname)
+
       const columns: TeamBoardColumn[] = [
         {
           id: 'unassigned',
@@ -141,7 +148,14 @@ export class TeamBuilding {
             .map((userId) => subscriptionByUserId.get(userId))
             .filter((sub): sub is SubscriptionRow => sub !== undefined)
             .map((sub) => toMember(sub, true))
-          const members = [...coordinatorMembers, ...(membersByTeam.get(instance.id) ?? [])]
+            .sort(comparePeopleByNickname)
+          // Sorted within each group rather than across the whole column:
+          // coordinators stay pinned above the members they coordinate, which is
+          // what the `isCoordinator` flag on the card is for.
+          const members = [
+            ...coordinatorMembers,
+            ...(membersByTeam.get(instance.id) ?? []).sort(comparePeopleByNickname),
+          ]
           return {
             id: instance.id,
             kind: 'team',

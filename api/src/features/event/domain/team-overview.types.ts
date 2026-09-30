@@ -69,7 +69,12 @@ export type TeamDetail = {
   filledPercentage: number
   /** Total number of coordinator slots a team can have. */
   coordinatorSlots: number
-  /** Slot-ordered coordinators (0..coordinatorSlots), unfilled slots omitted. */
+  /**
+   * The team's coordinators, a flat peer set with no rank — packed, so unfilled
+   * slots are absent rather than represented as holes. Ordered by nickname like
+   * every other roster; the position carries no meaning beyond that.
+   */
   coordinators: TeamRosterPerson[]
+  /** The team's members, ordered by nickname. */
   members: TeamRosterPerson[]
 }

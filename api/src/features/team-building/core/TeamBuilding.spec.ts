@@ -222,6 +222,51 @@ describe('TeamBuilding.getCurrentEventBoard', () => {
     expect(byId.get('unassigned')?.members.some((m) => m.userId === 'coord-1')).toBe(false)
     expect(byId.get('waiting_list')?.members.some((m) => m.userId === 'coord-1')).toBe(false)
   })
+  it('orders every column by nickname, keeping coordinators above the members they coordinate', async () => {
+    const named = (id: string, nickname: string, status: Sub['status']) =>
+      buildSub({
+        id: `s-${id}`,
+        userId: id,
+        status,
+        user: { ...buildSub({ id: 'x', userId: 'x', status }).user, nickname },
+      })
+
+    const subscriptions = [
+      named('u1', 'Carla', 'completed'),
+      named('u2', 'Ana', 'completed'),
+      named('c1', 'Zeca', 'completed'),
+      named('c2', 'Bia', 'completed'),
+      named('w1', 'Rita', 'waiting_list'),
+      named('w2', 'Bruno', 'waiting_list'),
+      named('n1', 'Yara', 'received'),
+      named('n2', 'Ivo', 'received'),
+    ]
+    const memberships = new Map([[TEAM_A, ['u1', 'u2']]])
+    const coordinators = new Map([[TEAM_A, ['c1', 'c2']]])
+
+    const repos = makeRepos({ subscriptions, memberships, coordinators })
+    const teamBuilding = new TeamBuilding(
+      repos.teamInstanceRepository,
+      repos.teamMembershipRepository,
+      repos.subscriptionRepository,
+      repos.eventRepository,
+      repos.memberRequestRepository
+    )
+
+    const { columns } = await teamBuilding.getCurrentEventBoard()
+    const byId = new Map(columns.map((column) => [column.id, column]))
+
+    expect(byId.get('unassigned')?.members.map((m) => m.nickname)).toEqual(['Ivo', 'Yara'])
+    expect(byId.get('waiting_list')?.members.map((m) => m.nickname)).toEqual(['Bruno', 'Rita'])
+    // Coordinators sorted among themselves, then members sorted among
+    // themselves — never interleaved.
+    expect(byId.get(TEAM_A)?.members.map((m) => m.nickname)).toEqual([
+      'Bia',
+      'Zeca',
+      'Ana',
+      'Carla',
+    ])
+  })
 })
 
 describe('TeamBuilding.applyAssignments', () => {

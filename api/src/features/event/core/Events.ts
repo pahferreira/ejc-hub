@@ -1,4 +1,5 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
+import { comparePeopleByNickname } from '../../../shared/compare-people-by-nickname.ts'
 import type {
   AssignedTeamForUser,
   TeamInstanceRepository,
@@ -379,10 +380,14 @@ export class Events {
       eventFeeStatus: toMemberFeeStanding(feeStatusByUserId.get(subscription.userId)),
     })
 
+    // Both rosters are sorted, not left in the order the membership rows came
+    // back in: `getCoordinatorUserIds` orders by `createdAt` and the member ids
+    // have no order at all, neither of which a reader can perceive.
     const coordinators = coordinatorUserIds
       .map((userId) => subscriptionByUserId.get(userId))
       .filter((subscription) => subscription !== undefined)
       .map(toRosterPerson)
+      .sort(comparePeopleByNickname)
 
     // Members (type='member') and coordinators (type='coordinator') are disjoint
     // by the team_memberships unique constraint, so no dedup guard is needed here.
@@ -390,6 +395,7 @@ export class Events {
       .map((userId) => subscriptionByUserId.get(userId))
       .filter((subscription) => subscription !== undefined)
       .map(toRosterPerson)
+      .sort(comparePeopleByNickname)
 
     const memberCount = this.#countDistinctMembers(memberUserIds, [...coordinatorIdSet])
     const freeSlots = Math.max(0, instance.maxCapacity - memberCount)
