@@ -458,6 +458,25 @@ describe('Events.getCurrentEventTeamDetail', () => {
     expect(detail.members.map((m) => m.userId)).toEqual(['member-1'])
   })
 
+  it('orders members and coordinators by nickname, not by the order the ids arrived in', async () => {
+    const subs = [
+      buildSubscription('u-1', { user: { ...buildSubscription('u-1').user, nickname: 'Carla' } }),
+      buildSubscription('u-2', { user: { ...buildSubscription('u-2').user, nickname: 'Ana' } }),
+      buildSubscription('c-1', { user: { ...buildSubscription('c-1').user, nickname: 'Zeca' } }),
+      buildSubscription('c-2', { user: { ...buildSubscription('c-2').user, nickname: 'Bia' } }),
+    ]
+    const { events } = makeEvents({
+      subscriptions: subs,
+      memberUserIds: ['u-1', 'u-2'],
+      coordinatorUserIds: ['c-1', 'c-2'],
+    })
+
+    const detail = await events.getCurrentEventTeamDetail(TEAM_KEY)
+
+    expect(detail.members.map((m) => m.nickname)).toEqual(['Ana', 'Carla'])
+    expect(detail.coordinators.map((c) => c.nickname)).toEqual(['Bia', 'Zeca'])
+  })
+
   it('computes memberCount, freeSlots and filledPercentage counting both coordinators and members', async () => {
     const coordinatorSub = buildSubscription('coord-1')
     const memberSub = buildSubscription('member-1')

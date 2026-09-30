@@ -12,6 +12,7 @@ import {
 } from '../../../modules/event-fee-payment/domain/fee-payment-status.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
+import { comparePeopleByNickname } from '../../../shared/compare-people-by-nickname.ts'
 import { resolveNickname } from '../../../shared/resolve-nickname.ts'
 import type {
   EventFeeMemberFilters,
@@ -204,7 +205,12 @@ export class Financial {
   ): Promise<EventFeeMemberList> {
     return this.#withCurrentEvent(async (event) => {
       const rows = await this.#eventFeePaymentRepository.listMemberFeeStatus(event.id)
-      const filtered = filterMemberFees(rows.map(toMemberRow), filters)
+      // Sorted here rather than in SQL because the nickname it orders by does
+      // not exist until `toMemberRow` resolves it, and after filtering rather
+      // than before so the sort never touches rows it is about to discard.
+      const filtered = filterMemberFees(rows.map(toMemberRow), filters).sort(
+        comparePeopleByNickname
+      )
 
       const page = pagination.page ?? DEFAULT_PAGE
       const pageSize = pagination.pageSize ?? DEFAULT_PAGE_SIZE

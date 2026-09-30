@@ -367,6 +367,18 @@ describe('Financial.listCurrentEventMemberFees', () => {
     expect(listMemberFeeStatus).toHaveBeenCalledWith('event-42')
   })
 
+  it('orders members by nickname, not by the order the repository returned them', async () => {
+    const { financial } = makeMemberListFinancial([
+      buildMemberFeeStatusRow({ userId: 'u-1', name: 'Carla Dias', nickname: 'Carla' }),
+      buildMemberFeeStatusRow({ userId: 'u-2', name: 'Liliane Souza', nickname: 'Lili' }),
+      buildMemberFeeStatusRow({ userId: 'u-3', name: 'Ana Lima', nickname: 'Ana' }),
+    ])
+
+    const result = await financial.listCurrentEventMemberFees()
+
+    expect(result.items.map((item) => item.userId)).toEqual(['u-3', 'u-1', 'u-2'])
+  })
+
   it('falls back to the first name when a member has no nickname', async () => {
     const { financial } = makeMemberListFinancial([
       buildMemberFeeStatusRow({ userId: 'u-1', name: 'Maria Silva', nickname: null }),

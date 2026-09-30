@@ -3,6 +3,7 @@ import type { TeamInstanceRepository } from '../../../modules/team-instance/doma
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
 import { formatAreas } from '../../event/core/format-areas.ts'
+import { comparePeopleByNickname } from '../../../shared/compare-people-by-nickname.ts'
 import { resolveNickname } from '../../../shared/resolve-nickname.ts'
 import type { Candidate, CandidateListResult, CandidateRole } from '../domain/board.types.ts'
 
@@ -120,7 +121,7 @@ export async function listTeamCandidates(
         weekAvailability: sub.availability ?? [],
       }
     })
-    .sort((a, b) => a.nickname.localeCompare(b.nickname, 'pt-BR', { sensitivity: 'base' }))
+    .sort(comparePeopleByNickname)
 
   const currentCoordinators =
     await deps.teamMembershipRepository.getCoordinatorUserIds(teamInstanceId)

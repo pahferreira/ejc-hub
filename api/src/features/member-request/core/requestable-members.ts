@@ -1,3 +1,4 @@
+import { comparePeopleByNickname } from '../../../shared/compare-people-by-nickname.ts'
 import { normalizeText } from '../../../shared/normalize-text.ts'
 import type {
   RequestRowStatus,
@@ -92,7 +93,7 @@ export function filterRequestableCandidates(
 }
 
 /**
- * Tier first, then nickname.
+ * Tier first, then the shared people order.
  *
  * Must run **after** filtering and **before** paging. Sorting a page instead of
  * the list is how page 2 ends up showing `Solicitado` rows that page 1 owed.
@@ -111,7 +112,7 @@ export function sortRequestableCandidates(
       return tierGap
     }
 
-    return first.nickname.localeCompare(second.nickname, 'pt-BR', { sensitivity: 'base' })
+    return comparePeopleByNickname(first, second)
   })
 }
 

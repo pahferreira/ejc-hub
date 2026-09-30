@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type {
@@ -181,8 +181,8 @@ class DrizzleEventFeePaymentRepository implements EventFeePaymentRepository {
         // Filters the denormalized column rather than the instance's, so Postgres
         // can use the `(event_id, user_id)` unique index on team_memberships.
         .where(eq(schema.teamMemberships.eventId, eventId))
-        // Tie-broken by id so paging is stable for two people sharing a name.
-        .orderBy(asc(schema.users.name), asc(schema.users.id))
+      // Deliberately unordered: the list is sorted by nickname in `Financial`,
+      // the only layer where the resolved nickname exists.
     )
   }
 }
