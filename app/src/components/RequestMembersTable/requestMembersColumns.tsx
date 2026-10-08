@@ -1,10 +1,10 @@
 import { createColumnHelper } from '@tanstack/react-table'
 import { ExperienceBadge } from '../ExperienceBadge/ExperienceBadge'
-import { Pill } from '../Pill/Pill'
-import { TeamPreferenceAvatars } from '../TeamPreferenceAvatars/TeamPreferenceAvatars'
+import { TruncatedPillList } from '../TruncatedPillList/TruncatedPillList'
 import { UserAvatar } from '../UserAvatar/UserAvatar'
 import { RequestMemberRowAction } from './RequestMemberRowAction'
 import type { ExperienceType } from '../../services/team-building/team-building.types'
+import { TeamAvatar } from '../TeamAvatar/TeamAvatar'
 
 /**
  * Where a person stands relative to the coordinator's own team.
@@ -77,20 +77,20 @@ export function createRequestMembersColumns(options: RequestMembersColumnsOption
     }),
     columnHelper.accessor('areas', {
       header: 'Habilidades',
-      cell: (info) =>
-        info.getValue().length === 0 ? (
-          <span className="text-dark-brown/40">—</span>
-        ) : (
-          <div className="flex flex-wrap gap-1">
-            {info.getValue().map((area) => (
-              <Pill key={area}>{area}</Pill>
-            ))}
-          </div>
-        ),
+      // Capped at four: a candidate who ticked nine skills wrapped the row onto
+      // three lines, which pushed every other column's content out of
+      // alignment. The rest stay one click away rather than being dropped.
+      cell: (info) => <TruncatedPillList items={info.getValue()} itemNoun="habilidades" />,
     }),
     columnHelper.accessor('preferences', {
       header: 'Escolhas de Equipe',
-      cell: (info) => <TeamPreferenceAvatars preferences={info.getValue()} />,
+      cell: (info) => (
+        <div className="flex gap-1">
+          {info.getValue().map((teamPreference) => (
+            <TeamAvatar key={teamPreference.teamInstanceId} name={teamPreference.name} size="sm" />
+          ))}
+        </div>
+      ),
     }),
     columnHelper.accessor('experienceType', {
       header: 'Experiência',

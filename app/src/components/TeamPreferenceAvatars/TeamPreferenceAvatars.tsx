@@ -29,7 +29,7 @@ export function TeamPreferenceAvatars(props: TeamPreferenceAvatarsProps) {
   const fullList = props.preferences.map((preference) => preference.name).join(', ')
 
   return (
-    <div className="flex shrink-0 items-center -space-x-2" title={fullList}>
+    <div className="flex shrink-0 items-center -space-x-1" title={fullList}>
       {visible.map((preference) => (
         <span
           key={preference.teamInstanceId}

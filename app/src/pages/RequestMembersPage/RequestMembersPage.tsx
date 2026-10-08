@@ -6,7 +6,6 @@ import { RequestMemberModal } from '../../components/RequestMemberModal/RequestM
 import { RequestMembersTable } from '../../components/RequestMembersTable/RequestMembersTable'
 import { SearchInput } from '../../components/SearchInput/SearchInput'
 import { StatusCard } from '../../components/StatusCard/StatusCard'
-import { TeamAvatar } from '../../components/TeamAvatar/TeamAvatar'
 import { TeamPreferenceFilter } from '../../components/TeamPreferenceFilter/TeamPreferenceFilter'
 import type { TeamPreferenceScope } from '../../components/TeamPreferenceFilter/TeamPreferenceFilter'
 import { useDebouncedValue } from '../../hooks/useDebouncedValue'
@@ -151,10 +150,6 @@ export function RequestMembersPage() {
         <header className="mb-8">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-3xl font-bold text-gray-900 m-0">Solicitar Membros</h1>
-            <span className="inline-flex items-center gap-2 rounded-full border border-tertiary bg-white px-3 py-1 text-sm font-medium text-dark-brown">
-              <TeamAvatar name={team.name} size="sm" />
-              {team.name}
-            </span>
           </div>
           <p className="mt-2 text-gray-600">
             Inscritos sem equipe designada. Solicite quem combina com as vagas da sua equipe.
