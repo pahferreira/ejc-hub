@@ -2,6 +2,7 @@ export const ROUTE_PATHS = {
   HOME: '/home',
   MY_TEAM: '/my-team',
   MY_TEAM_FEE: '/my-team/members-event-fee',
+  MY_TEAM_REQUEST_MEMBERS: '/my-team/request-members',
   SUBSCRIPTIONS: '/subscriptions',
   SUBSCRIPTIONS_NEW: '/subscriptions/new',
   EVENTS: '/events',

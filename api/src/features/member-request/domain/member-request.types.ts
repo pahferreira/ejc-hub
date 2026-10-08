@@ -49,7 +49,8 @@ export type RequestableCandidateFilters = {
   name?: string
   /** Area labels; a row matching **any** of them is kept. */
   skills?: string[]
-  experience?: ExperienceType
+  /** Experience levels; a row matching **any** of them is kept (plan D15). */
+  experience?: ExperienceType[]
   /** `team` keeps only people who listed the caller's team as a preference. */
   preference?: 'team' | 'all'
 }

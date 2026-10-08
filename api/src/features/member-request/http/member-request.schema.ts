@@ -50,6 +50,25 @@ export const resolveMemberRequestBodySchema = z.object({
 
 const experienceTypeEnum = z.enum(['newbie', 'experienced', 'experienced_outsider'])
 
+/**
+ * A repeated filter arriving as one `a,b` query parameter.
+ *
+ * Every multi-value control above a table in this app is a checkbox group, so
+ * the wire format is shared rather than re-spelled per field. Blank segments
+ * are dropped, which is what a cleared control sending `experience=` means.
+ */
+const commaSeparated = <Schema extends z.ZodTypeAny>(itemSchema: Schema) =>
+  z.preprocess((value) => {
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+    }
+
+    return value
+  }, z.array(itemSchema).optional())
+
 /** Matches the cap every other list route uses, so no route can be a bulk export. */
 export const MAX_REQUEST_PAGE_SIZE = 100
 
@@ -61,23 +80,18 @@ const paginationShape = {
 /**
  * The "Solicitar Membros" table's controls.
  *
- * `skills` is comma-separated because the control is a multi-select; `name` is
- * trimmed to a non-empty string so a cleared search box, which sends `name=`, is
- * dropped rather than matching everything through an empty `includes`.
+ * `skills` and `experience` are both comma-separated: each is a multi-select on
+ * screen (`MultiSelector` and `FilterCheck`, which is a checkbox group), and a
+ * single-valued `experience` would have forced the UI to fake a radio out of a
+ * control every other page in the app uses to tick several boxes — see plan
+ * decision D15. `name` is trimmed to a non-empty string so a cleared search box,
+ * which sends `name=`, is dropped rather than matching everything through an
+ * empty `includes`.
  */
 export const listRequestableCandidatesQuerystringSchema = z.object({
   name: z.string().trim().min(1).optional(),
-  skills: z.preprocess((value) => {
-    if (typeof value === 'string') {
-      return value
-        .split(',')
-        .map((skill) => skill.trim())
-        .filter(Boolean)
-    }
-
-    return value
-  }, z.array(z.string()).optional()),
-  experience: experienceTypeEnum.optional(),
+  skills: commaSeparated(z.string()),
+  experience: commaSeparated(experienceTypeEnum),
   preference: z.enum(['team', 'all']).optional(),
   ...paginationShape,
 })

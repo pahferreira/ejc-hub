@@ -10,6 +10,7 @@ import {
   FiShoppingBag,
   FiUserCheck,
   FiGrid,
+  FiUserPlus,
 } from 'react-icons/fi'
 import {
   EventFeePermissions,
@@ -142,6 +143,13 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         icon: FiDollarSign,
         requiresCoordinator: true,
         featureFlag: FeatureFlag.CoordinatorEventFee,
+      },
+      {
+        label: 'Solicitar Membros',
+        path: ROUTE_PATHS.MY_TEAM_REQUEST_MEMBERS,
+        icon: FiUserPlus,
+        requiresCoordinator: true,
+        featureFlag: FeatureFlag.CoordinatorMemberRequests,
       },
     ],
   },

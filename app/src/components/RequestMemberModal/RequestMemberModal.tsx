@@ -67,7 +67,13 @@ export function RequestMemberModal(props: RequestMemberModalProps) {
           <div className="flex items-center gap-3">
             <UserAvatar name={props.member.name} pictureUrl={props.member.pictureUrl} />
             <div className="flex min-w-0 flex-col">
-              <span className="font-semibold text-dark-brown">{props.member.nickname}</span>
+              <div className="flex gap-2 mb-1">
+                <span className="font-semibold text-dark-brown">{props.member.nickname}</span>
+                <ExperienceBadge
+                  experienceType={props.member.experienceType}
+                  circleKey={props.member.circleKey}
+                />
+              </div>
               <span className="text-xs text-secondary-foreground">{props.member.name}</span>
             </div>
           </div>
@@ -80,10 +86,6 @@ export function RequestMemberModal(props: RequestMemberModalProps) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <ExperienceBadge
-              experienceType={props.member.experienceType}
-              circleKey={props.member.circleKey}
-            />
             {props.member.areas.map((area) => (
               <Pill key={area}>{area}</Pill>
             ))}

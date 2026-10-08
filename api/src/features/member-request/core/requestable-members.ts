@@ -47,9 +47,10 @@ export function toRowStatus(input: {
  * Narrows the eligible people to what the page asked for.
  *
  * Every filter is optional and they compose with AND, which is what four
- * independent controls above a table mean. `skills` is the exception inside
- * itself: several selected skills match a row carrying **any** of them, because
- * a coordinator ticking "Canta" and "Toca violão" is looking for either.
+ * independent controls above a table mean. `skills` and `experience` are the
+ * exception inside themselves: several selected values match a row carrying
+ * **any** of them, because a coordinator ticking "Canta" and "Toca violão", or
+ * "Encontrista" and "Encontreiro", is looking for either.
  *
  * Pure and total. `teamInstanceId` is the caller's own team, needed only by the
  * preference filter — "quem escolheu a minha equipe" is not expressible without
@@ -77,7 +78,7 @@ export function filterRequestableCandidates(
       return false
     }
 
-    if (filters.experience && row.experienceType !== filters.experience) {
+    if (filters.experience?.length && !filters.experience.includes(row.experienceType)) {
       return false
     }
 
