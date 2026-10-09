@@ -23,11 +23,16 @@ export const DEFAULT_PAGE_SIZE = 15
  * this page is a work queue, not an audit log (plan D9 + D13).
  *
  * `disputedMembers` counts distinct *people*, not requests — the one unit
- * mismatch on the screen, which the card's caption spells out rather than hides.
+ * mismatch on the screen, which the card's caption spells out rather than
+ * hides. `disputedRequests` is the other half of that caption
+ * ("2 membros · 5 solicitações"): it must come from here, unfiltered, because
+ * the card describes the event and the table's `total` describes the current
+ * selection.
  */
 export function countQueueStats(rows: MemberRequestQueueRow[]): MemberRequestQueueStats {
   const disputedUserIds = new Set<string>()
   let pending = 0
+  let disputedRequests = 0
   let approved = 0
   let denied = 0
 
@@ -37,6 +42,7 @@ export function countQueueStats(rows: MemberRequestQueueRow[]): MemberRequestQue
 
       if (row.otherPendingRequests.length > 0) {
         disputedUserIds.add(row.user.userId)
+        disputedRequests += 1
       }
 
       continue
@@ -52,7 +58,13 @@ export function countQueueStats(rows: MemberRequestQueueRow[]): MemberRequestQue
     }
   }
 
-  return { pending, disputedMembers: disputedUserIds.size, approved, denied }
+  return {
+    pending,
+    disputedMembers: disputedUserIds.size,
+    disputedRequests,
+    approved,
+    denied,
+  }
 }
 
 /**
