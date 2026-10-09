@@ -175,6 +175,12 @@ export type MemberRequestQueueStats = {
   pending: number
   /** People with more than one `pending` request. */
   disputedMembers: number
+  /**
+   * `pending` requests belonging to those people — the other half of the
+   * disputed card's caption, "2 membros · 5 solicitações". Unfiltered, so the
+   * caption does not change when someone types in the search box.
+   */
+  disputedRequests: number
   approved: number
   /**
    * `denied` only. Superseded requests are `outdated` and excluded, so this
