@@ -6,12 +6,17 @@ type ButtonIconProps = {
   onClick?: () => void
   disabled?: boolean
   ariaLabel: string
-  variant?: 'primary' | 'secondary'
+  variant?: 'primary' | 'secondary' | 'success'
 }
 
 const variantClasses = {
   primary: 'bg-primary text-white',
   secondary: 'bg-secondary text-dark-brown',
+  // The affirmative action in a pair of opposed ones — approve beside deny on
+  // the member-requests queue. Green rather than the brown `primary` so the
+  // two read as a choice at a glance instead of as "the button" and "the
+  // other button".
+  success: 'bg-green text-white',
 }
 
 export function ButtonIcon(props: ButtonIconProps) {

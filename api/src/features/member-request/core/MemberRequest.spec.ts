@@ -568,7 +568,13 @@ describe('MemberRequest.listCurrentEventRequests', () => {
 
     const result = await memberRequest.listCurrentEventRequests({ status: 'denied' })
 
-    expect(result.stats).toEqual({ pending: 2, disputedMembers: 1, approved: 0, denied: 1 })
+    expect(result.stats).toEqual({
+      pending: 2,
+      disputedMembers: 1,
+      disputedRequests: 2,
+      approved: 0,
+      denied: 1,
+    })
     expect(result.total).toBe(1)
     expect(result.items).toHaveLength(1)
   })

@@ -50,7 +50,13 @@ describe('countQueueStats', () => {
       buildRow({ id: 'r5', status: 'denied' }),
     ])
 
-    expect(stats).toEqual({ pending: 2, disputedMembers: 0, approved: 1, denied: 2 })
+    expect(stats).toEqual({
+      pending: 2,
+      disputedMembers: 0,
+      disputedRequests: 0,
+      approved: 1,
+      denied: 2,
+    })
   })
 
   it('counts disputed members, not disputed requests', () => {
@@ -63,7 +69,34 @@ describe('countQueueStats', () => {
     ])
 
     expect(stats.disputedMembers).toBe(1)
+    // The caption's other half: one member, two requests.
+    expect(stats.disputedRequests).toBe(2)
     expect(stats.pending).toBe(2)
+  })
+
+  it('counts members and their requests separately when the two differ', () => {
+    // The case the caption exists for: two disputed members holding five
+    // requests between them (three for one, two for the other). A card reading
+    // "2" over a table of five rows is only honest because the caption says
+    // "2 membros · 5 solicitações".
+    const contested = (id: string, userId: string, siblingIds: string[]) =>
+      buildRow({
+        id,
+        status: 'pending',
+        user: { userId, name: userId, nickname: userId, pictureUrl: null },
+        otherPendingRequests: siblingIds.map(sibling),
+      })
+
+    const stats = countQueueStats([
+      contested('r1', 'u1', ['r2', 'r3']),
+      contested('r2', 'u1', ['r1', 'r3']),
+      contested('r3', 'u1', ['r1', 'r2']),
+      contested('r4', 'u2', ['r5']),
+      contested('r5', 'u2', ['r4']),
+    ])
+
+    expect(stats.disputedMembers).toBe(2)
+    expect(stats.disputedRequests).toBe(5)
   })
 
   it('never counts a superseded request as denied', () => {
@@ -75,13 +108,20 @@ describe('countQueueStats', () => {
       buildRow({ id: 'r3', status: 'cancelled' }),
     ])
 
-    expect(stats).toEqual({ pending: 0, disputedMembers: 0, approved: 1, denied: 0 })
+    expect(stats).toEqual({
+      pending: 0,
+      disputedMembers: 0,
+      disputedRequests: 0,
+      approved: 1,
+      denied: 0,
+    })
   })
 
   it('reports zeroes for an event with no requests', () => {
     expect(countQueueStats([])).toEqual({
       pending: 0,
       disputedMembers: 0,
+      disputedRequests: 0,
       approved: 0,
       denied: 0,
     })

@@ -11,10 +11,12 @@ import {
   FiUserCheck,
   FiGrid,
   FiUserPlus,
+  FiInbox,
 } from 'react-icons/fi'
 import {
   EventFeePermissions,
   EventPermissions,
+  MemberRequestPermissions,
   SubscriptionPermissions,
   TeamInstancePermissions,
   TeamTemplatePermissions,
@@ -91,6 +93,17 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         path: ROUTE_PATHS.TEAMS_TEAM_BUILDING,
         icon: FiGrid,
         permission: TeamInstancePermissions.Read,
+      },
+      {
+        // "Aprovar Solicitações", not the page's own H1 "Solicitações de
+        // Membros": an admin who also coordinates a team sees this beside
+        // "Solicitar Membros", and the two would sit one letter apart. Two
+        // verbs, no confusion (plan D7).
+        label: 'Aprovar Solicitações',
+        path: ROUTE_PATHS.MEMBER_REQUESTS,
+        icon: FiInbox,
+        permission: MemberRequestPermissions.Read,
+        featureFlag: FeatureFlag.AdminMemberRequests,
       },
     ],
   },

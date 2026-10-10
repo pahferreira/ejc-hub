@@ -3,6 +3,7 @@ import { EventSubscriptionsList } from '../../pages/EventSubscriptionsList'
 import {
   EventFeePermissions,
   EventPermissions,
+  MemberRequestPermissions,
   SubscriptionPermissions,
   TeamInstancePermissions,
   TeamTemplatePermissions,
@@ -16,6 +17,7 @@ import { EventFeePage } from '../../pages/EventFeePage'
 import { EventFeeMembersPage } from '../../pages/EventFeeMembersPage'
 import { CoordinatorEventFeePage } from '../../pages/CoordinatorEventFeePage'
 import { RequestMembersPage } from '../../pages/RequestMembersPage'
+import { MemberRequestsQueuePage } from '../../pages/MemberRequestsQueuePage'
 import { Placeholder } from '../../pages/Placeholder/Placeholder'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import { FeatureFlag, type FeatureFlagValue } from '../useFeatureFlag/feature-flags'
@@ -67,6 +69,20 @@ export const routes: Route[] = [
     // "página não encontrada". The page itself holds the check; the API
     // re-derives the membership on every call and answers 403.
     featureFlag: FeatureFlag.CoordinatorMemberRequests,
+  },
+  {
+    path: ROUTE_PATHS.MEMBER_REQUESTS,
+    // The sidebar reads "Aprovar Solicitações" instead — see `sidebarNav`.
+    // Two names on purpose (plan D7): the screens name the page, and the nav
+    // needs a verb that cannot be mistaken for the coordinator's "Solicitar
+    // Membros" one letter away. Precedent: `EventFeePage`'s H1 is "Taxa de
+    // Inscrição" under a sidebar entry reading "Taxa por Equipe".
+    name: 'Aprovar Solicitações',
+    component: MemberRequestsQueuePage,
+    // Unlike the coordinator page, this one is permission-gated: the admin
+    // surface's right to act is in the token, not in a `team_memberships` row.
+    permission: MemberRequestPermissions.Read,
+    featureFlag: FeatureFlag.AdminMemberRequests,
   },
   {
     path: ROUTE_PATHS.SUBSCRIPTIONS,

@@ -14,6 +14,13 @@ export const FeatureFlag = {
    * separate flags (plan Phase F).
    */
   CoordinatorMemberRequests: 'coordinator-member-requests',
+  /**
+   * The admin request queue. Turn this on **before**
+   * `CoordinatorMemberRequests`: coordinators filing requests nobody can
+   * answer makes the feature's first impression a page where nothing happens
+   * (plan H.10).
+   */
+  AdminMemberRequests: 'admin-member-requests',
 } as const
 
 export type FeatureFlagValue = (typeof FeatureFlag)[keyof typeof FeatureFlag]
