@@ -37,7 +37,7 @@ export function MemberRequestRowActions(props: MemberRequestRowActionsProps) {
         onClick={() => props.onDeny(props.row)}
       />
       <ButtonIcon
-        variant="success"
+        variant="primary"
         icon={<FiCheck size={16} />}
         ariaLabel={`Aprovar solicitação de ${memberName}`}
         onClick={() => props.onApprove(props.row)}
