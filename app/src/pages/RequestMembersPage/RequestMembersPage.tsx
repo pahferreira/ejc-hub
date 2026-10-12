@@ -178,7 +178,7 @@ export function RequestMembersPage() {
         </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-3">
-          <div className="min-w-55 flex-1 lg:max-w-sm lg:flex-none">
+          <div className="min-w-55 flex-1">
             <SearchInput
               fullWidth
               placeholder="Pesquisar por nome"
@@ -188,7 +188,7 @@ export function RequestMembersPage() {
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-3">
-            <div className="w-44">
+            <div className="min-w-55">
               <MultiSelector
                 options={skillFilterOptions}
                 selected={skillFilterOptions.filter((option) =>

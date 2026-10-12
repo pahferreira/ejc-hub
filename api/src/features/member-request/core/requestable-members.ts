@@ -1,5 +1,6 @@
 import { comparePeopleByNickname } from '../../../shared/compare-people-by-nickname.ts'
 import { normalizeText } from '../../../shared/normalize-text.ts'
+import type { ExperienceType } from '../../team-building/domain/board.types.ts'
 import type {
   RequestRowStatus,
   RequestableCandidateFilters,
@@ -12,16 +13,37 @@ export const DEFAULT_PAGE = 1
 export const DEFAULT_PAGE_SIZE = 15
 
 /**
- * Where each row sits in the table's order.
+ * Where each row sits in the table's order, before anything about the person.
  *
  * What this team already asked for comes first, so a coordinator sees the state
  * of their own asks before browsing; people they cannot act on sink to the
- * bottom.
+ * bottom. Outranks experience deliberately: the `Solicitado` rows are the ones
+ * the coordinator is waiting on an answer for, and burying them inside the
+ * newbie block is how an ask gets filed twice.
  */
 const ROW_STATUS_TIER: Record<RequestRowStatus, number> = {
   requested: 0,
   requestable: 1,
   assigned: 2,
+}
+
+/**
+ * Where each experience level sits in the table's order.
+ *
+ * Newbies first: they are the people a coordinator is actually deciding about,
+ * and the ones whose circle and areas the row exists to show. The experienced
+ * follow, and outsiders last.
+ *
+ * Explicit positions rather than sorting the value itself, because these are
+ * database enum values and alphabetically they read `experienced` <
+ * `experienced_outsider` < `newbie` — the wrong order, arrived at by accident.
+ * Typed as a `Record<ExperienceType, number>` so a fourth level added to the
+ * enum is a type error here rather than a row quietly sorting as `undefined`.
+ */
+const EXPERIENCE_ORDER: Record<ExperienceType, number> = {
+  newbie: 0,
+  experienced: 1,
+  experienced_outsider: 2,
 }
 
 /**
@@ -94,10 +116,18 @@ export function filterRequestableCandidates(
 }
 
 /**
- * Tier first, then the shared people order.
+ * Status tier, then experience, then the shared people order.
  *
  * Must run **after** filtering and **before** paging. Sorting a page instead of
  * the list is how page 2 ends up showing `Solicitado` rows that page 1 owed.
+ *
+ * Three keys, narrowing from what the coordinator can act on to who the person
+ * is: the tier floats their own open asks, experience then groups the rest,
+ * because the table is read one level at a time — someone filling slots weighs
+ * the newbies as a block, not an alphabetical list with the levels interleaved.
+ * Within a level, `comparePeopleByNickname` gives the nickname → name → id
+ * order every other roster in the app uses, and that trailing id is what keeps
+ * paging stable across requests.
  *
  * Copies before sorting: the caller's array is also what the stats were counted
  * from, and sorting in place would make this function's position in the
@@ -111,6 +141,13 @@ export function sortRequestableCandidates(
 
     if (tierGap !== 0) {
       return tierGap
+    }
+
+    const experienceGap =
+      EXPERIENCE_ORDER[first.experienceType] - EXPERIENCE_ORDER[second.experienceType]
+
+    if (experienceGap !== 0) {
+      return experienceGap
     }
 
     return comparePeopleByNickname(first, second)
