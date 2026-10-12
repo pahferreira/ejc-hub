@@ -5,6 +5,8 @@ import type {
   CreateRequestsResult,
   MemberRequestQueueFilters,
   MemberRequestQueueList,
+  MyTeamRequestFilters,
+  MyTeamRequestList,
   RequestableCandidateFilters,
   RequestableCandidateList,
   RequestPagination,
@@ -161,9 +163,32 @@ async function resolveMemberRequest(
   }
 }
 
+/**
+ * The coordinator's own queue: every request their team ever filed, plus the
+ * three card counts.
+ *
+ * Unpaginated — the plan's `MyTeamRequestList` carries no `page`/`pageSize`.
+ */
+async function getMyTeamRequests(filters: MyTeamRequestFilters = {}) {
+  const params = new URLSearchParams()
+
+  if (filters.name) {
+    params.set('name', filters.name)
+  }
+
+  if (filters.status) {
+    params.set('status', filters.status)
+  }
+
+  const response = await api.get<MyTeamRequestList>('/member-requests/my-team', { params })
+
+  return response.data
+}
+
 export const memberRequestsApi = {
   getRequestableMembers,
   createMemberRequests,
   getMemberRequestQueue,
   resolveMemberRequest,
+  getMyTeamRequests,
 }

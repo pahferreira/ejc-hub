@@ -164,6 +164,13 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         requiresCoordinator: true,
         featureFlag: FeatureFlag.CoordinatorMemberRequests,
       },
+      {
+        label: 'Minhas Solicitações',
+        path: ROUTE_PATHS.MY_TEAM_MY_REQUESTS,
+        icon: FiInbox,
+        requiresCoordinator: true,
+        featureFlag: FeatureFlag.CoordinatorMemberRequests,
+      },
     ],
   },
   {

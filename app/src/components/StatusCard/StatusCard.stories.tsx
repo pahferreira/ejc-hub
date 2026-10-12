@@ -57,3 +57,22 @@ export const Pending: Story = {
     description: '10/100',
   },
 }
+
+export const ClickableInactive: Story = {
+  args: {
+    title: 'Aguardando',
+    value: 3,
+    variant: 'pending',
+    onClick: () => {},
+  },
+}
+
+export const ClickableActive: Story = {
+  args: {
+    title: 'Aguardando',
+    value: 3,
+    variant: 'pending',
+    onClick: () => {},
+    active: true,
+  },
+}

@@ -119,9 +119,22 @@ export const listMemberRequestsQuerystringSchema = z.object({
   ...paginationShape,
 })
 
+/**
+ * The coordinator's own queue's controls.
+ *
+ * `status` takes all five, not just the settable two — the same reasoning as
+ * the admin queue's schema above: with none selected, the list shows every
+ * status, including `cancelled` and `outdated` (plan I.7).
+ */
+export const listMyTeamRequestsQuerystringSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  status: z.enum(MEMBER_REQUEST_STATUSES).optional(),
+})
+
 export type CreateMemberRequestsBody = z.infer<typeof createMemberRequestsBodySchema>
 export type ResolveMemberRequestBody = z.infer<typeof resolveMemberRequestBodySchema>
 export type ListRequestableCandidatesQuerystring = z.infer<
   typeof listRequestableCandidatesQuerystringSchema
 >
 export type ListMemberRequestsQuerystring = z.infer<typeof listMemberRequestsQuerystringSchema>
+export type ListMyTeamRequestsQuerystring = z.infer<typeof listMyTeamRequestsQuerystringSchema>
