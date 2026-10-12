@@ -141,7 +141,29 @@ describe('sortRequestableCandidates', () => {
     expect(sortRequestableCandidates(rows).map((row) => row.userId)).toEqual(['u3', 'u2', 'u1'])
   })
 
-  it('orders within a tier by nickname, accent-insensitively', () => {
+  it('puts newbies first, then the experienced, then outsiders', () => {
+    const rows = [
+      buildRow({ userId: 'u1', experienceType: 'experienced_outsider' }),
+      buildRow({ userId: 'u2', experienceType: 'newbie' }),
+      buildRow({ userId: 'u3', experienceType: 'experienced' }),
+    ]
+
+    expect(sortRequestableCandidates(rows).map((row) => row.userId)).toEqual(['u2', 'u3', 'u1'])
+  })
+
+  it('orders experience by level and not alphabetically by its enum value', () => {
+    // Alphabetically these read experienced < experienced_outsider < newbie,
+    // which is the wrong order; this is the test that fails if the explicit
+    // positions are ever dropped for a localeCompare on experienceType.
+    const rows = [
+      buildRow({ userId: 'u1', experienceType: 'experienced' }),
+      buildRow({ userId: 'u2', experienceType: 'newbie' }),
+    ]
+
+    expect(sortRequestableCandidates(rows).map((row) => row.userId)).toEqual(['u2', 'u1'])
+  })
+
+  it('orders within an experience level by nickname, accent-insensitively', () => {
     const rows = [
       buildRow({ userId: 'u1', nickname: 'Bruno' }),
       buildRow({ userId: 'u2', nickname: 'Ágata' }),
@@ -149,6 +171,49 @@ describe('sortRequestableCandidates', () => {
     ]
 
     expect(sortRequestableCandidates(rows).map((row) => row.userId)).toEqual(['u2', 'u3', 'u1'])
+  })
+
+  it('breaks a shared nickname by the full name', () => {
+    const rows = [
+      buildRow({ userId: 'u1', nickname: 'Ju', name: 'Bruna Lima' }),
+      buildRow({ userId: 'u2', nickname: 'Jú', name: 'Ana Costa' }),
+    ]
+
+    expect(sortRequestableCandidates(rows).map((row) => row.userId)).toEqual(['u2', 'u1'])
+  })
+
+  it('keeps experience above the nickname', () => {
+    const rows = [
+      buildRow({ userId: 'u1', nickname: 'Ana', experienceType: 'experienced' }),
+      buildRow({ userId: 'u2', nickname: 'Zeca', experienceType: 'newbie' }),
+    ]
+
+    expect(sortRequestableCandidates(rows).map((row) => row.userId)).toEqual(['u2', 'u1'])
+  })
+
+  it('floats a requested row above a newbie, because the status outranks experience', () => {
+    // The requested row carries the worst experience position and the later
+    // nickname, so only the tier can put it first.
+    const rows = [
+      buildRow({ userId: 'u1', nickname: 'Ana', experienceType: 'newbie' }),
+      buildRow({
+        userId: 'u2',
+        nickname: 'Zeca',
+        experienceType: 'experienced_outsider',
+        rowStatus: 'requested',
+      }),
+    ]
+
+    expect(sortRequestableCandidates(rows).map((row) => row.userId)).toEqual(['u2', 'u1'])
+  })
+
+  it('orders by experience within a single status tier', () => {
+    const rows = [
+      buildRow({ userId: 'u1', experienceType: 'experienced', rowStatus: 'requested' }),
+      buildRow({ userId: 'u2', experienceType: 'newbie', rowStatus: 'requested' }),
+    ]
+
+    expect(sortRequestableCandidates(rows).map((row) => row.userId)).toEqual(['u2', 'u1'])
   })
 
   it('does not mutate the array it was given', () => {
