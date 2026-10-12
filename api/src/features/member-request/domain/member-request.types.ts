@@ -139,14 +139,47 @@ export type RequestActor = {
 }
 
 /** One row of the coordinator's own queue (endpoint 3). */
-export type MyTeamRequest = {
+export type MyTeamRequestRow = {
   id: string
   status: MemberRequestStatus
   user: RequestPerson
+  /** Who on the team filed it. Always a teammate — see `MyTeamRequestFilters.name`. */
+  requestedBy: RequestActor
   message: string | null
   requestedAt: Date
   resolvedAt: Date | null
   resolutionReason: string | null
+}
+
+export type MyTeamRequestFilters = {
+  /**
+   * Matches the **requested member's** name or nickname only, never the filer's
+   * (plan I.4). On a single team the filer is always a teammate, so searching
+   * the filer would surface nothing the coordinator doesn't already know.
+   */
+  name?: string
+  status?: MemberRequestStatus
+}
+
+/**
+ * The three cards above the coordinator's own list.
+ *
+ * Computed over the **full unfiltered** set, before `name`/`status` narrow
+ * `items` — the house invariant this page shares with the admin queue (plan
+ * I.2). `cancelled` and `outdated` have no card; `MyTeamRequestFilters.status`
+ * can still select them; see plan I.7.
+ */
+export type MyTeamRequestStats = {
+  pending: number
+  approved: number
+  denied: number
+}
+
+export type MyTeamRequestList = {
+  stats: MyTeamRequestStats
+  items: MyTeamRequestRow[]
+  /** `items.length` — this list is unpaginated (plan: out of scope). */
+  total: number
 }
 
 export type QueueRequestTeam = {

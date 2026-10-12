@@ -9,6 +9,7 @@ import { memberRequestApp } from '../application/member-request-app.ts'
 import {
   createMemberRequestsBodySchema,
   listMemberRequestsQuerystringSchema,
+  listMyTeamRequestsQuerystringSchema,
   listRequestableCandidatesQuerystringSchema,
   memberRequestParamsSchema,
   resolveMemberRequestBodySchema,
@@ -128,6 +129,7 @@ export function memberRequestRoutes(server: FastifyServerInstance) {
     server.get(
       '/member-requests/my-team',
       {
+        schema: { querystring: listMyTeamRequestsQuerystringSchema },
         preHandler: authGuard(server),
       },
       async (request, reply) => {
@@ -138,7 +140,8 @@ export function memberRequestRoutes(server: FastifyServerInstance) {
             return reply
           }
 
-          const requests = await memberRequestApp.listMyTeamRequests(authId)
+          const { name, status } = request.query
+          const requests = await memberRequestApp.listMyTeamRequests(authId, { name, status })
 
           return reply.code(HttpStatus.Ok).send(requests)
         } catch (error) {

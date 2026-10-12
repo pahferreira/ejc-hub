@@ -223,6 +223,47 @@ export type ResolveRequestResult = {
   supersededRequestIds: string[]
 }
 
+/** One row of the coordinator's own list. Mirrors the API's `MyTeamRequestRow`. */
+export type MyTeamRequestRow = {
+  id: string
+  status: MemberRequestStatus
+  user: RequestPerson
+  /** Who on the team filed it. Always a teammate — see `MyTeamRequestFilters.name`. */
+  requestedBy: RequestActor
+  message: string | null
+  requestedAt: string
+  resolvedAt: string | null
+  resolutionReason: string | null
+}
+
+export type MyTeamRequestFilters = {
+  /**
+   * Matches the **requested member's** name or nickname only, never the
+   * filer's (plan I.4) — on a single team the filer is always a teammate.
+   */
+  name?: string
+  status?: MemberRequestStatus
+}
+
+/**
+ * The three cards above the coordinator's own list.
+ *
+ * Computed over the full unfiltered set, before `name`/`status` narrow
+ * `items` — the house invariant this page shares with the admin queue (plan
+ * I.2).
+ */
+export type MyTeamRequestStats = {
+  pending: number
+  approved: number
+  denied: number
+}
+
+export type MyTeamRequestList = {
+  stats: MyTeamRequestStats
+  items: MyTeamRequestRow[]
+  total: number
+}
+
 export const memberRequestQueryKeys = {
   /** Root of everything member-requests; invalidated after any write. */
   all: ['member-requests'] as const,
@@ -232,4 +273,6 @@ export const memberRequestQueryKeys = {
   queue: ['member-requests', 'queue'] as const,
   queueList: (filters: MemberRequestQueueFilters, pagination: RequestPagination) =>
     ['member-requests', 'queue', filters, pagination] as const,
+  myTeam: ['member-requests', 'my-team'] as const,
+  myTeamList: (filters: MyTeamRequestFilters) => ['member-requests', 'my-team', filters] as const,
 }

@@ -24,7 +24,9 @@ import type {
   MemberRequestQueueFilters,
   MemberRequestQueueList,
   MemberRequestQueueRow,
-  MyTeamRequest,
+  MyTeamRequestFilters,
+  MyTeamRequestList,
+  MyTeamRequestRow,
   QueueSiblingRequest,
   RequestActor,
   RequestPagination,
@@ -56,6 +58,7 @@ import {
   DEFAULT_PAGE as QUEUE_DEFAULT_PAGE,
   DEFAULT_PAGE_SIZE as QUEUE_DEFAULT_PAGE_SIZE,
 } from './member-request-queue.ts'
+import { countMyTeamStats, filterMyTeamRows } from './member-request-my-team.ts'
 
 const COORDINATOR_TYPE = 'coordinator'
 const CANCELLED_SUBSCRIPTION = 'cancelled'
@@ -379,25 +382,39 @@ export class MemberRequest {
     })
   }
 
-  /** Every request the caller's team ever filed, newest first, all statuses. */
-  async listMyTeamRequests(actorAuthId: string): Promise<{ requests: MyTeamRequest[] }> {
+  /**
+   * Every request the caller's team ever filed, newest first, with the three
+   * card counts and the search/status filter.
+   *
+   * `stats` is computed from the unfiltered set, before `filters` narrows
+   * `items` — the house invariant this page shares with the admin queue (plan
+   * I.2).
+   */
+  async listMyTeamRequests(
+    actorAuthId: string,
+    filters: MyTeamRequestFilters = {}
+  ): Promise<MyTeamRequestList> {
     return this.#withCurrentEvent(async (event) => {
       const actor = await this.#resolveActor(actorAuthId)
       const teamInstanceId = await this.#resolveCoordinatedTeam(actor.id, event.id)
 
       const rows = await this.#memberRequestRepository.listRequestsByTeamInstance(teamInstanceId)
 
-      return {
-        requests: rows.map((row) => ({
-          id: row.id,
-          status: row.status,
-          user: toPerson(row.user),
-          message: row.message,
-          requestedAt: row.requestedAt,
-          resolvedAt: row.resolvedAt,
-          resolutionReason: row.resolutionReason,
-        })),
-      }
+      const items: MyTeamRequestRow[] = rows.map((row) => ({
+        id: row.id,
+        status: row.status,
+        user: toPerson(row.user),
+        requestedBy: toActor(row.requestedBy),
+        message: row.message,
+        requestedAt: row.requestedAt,
+        resolvedAt: row.resolvedAt,
+        resolutionReason: row.resolutionReason,
+      }))
+
+      const stats = countMyTeamStats(items)
+      const filtered = filterMyTeamRows(items, filters)
+
+      return { stats, items: filtered, total: filtered.length }
     })
   }
 

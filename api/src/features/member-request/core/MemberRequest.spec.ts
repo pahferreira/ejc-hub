@@ -451,9 +451,60 @@ describe('MemberRequest.listMyTeamRequests', () => {
       ],
     })
 
-    const { requests } = await memberRequest.listMyTeamRequests(ACTOR_AUTH_ID)
+    const { items } = await memberRequest.listMyTeamRequests(ACTOR_AUTH_ID)
 
-    expect(requests[0].user.nickname).toBe('Alice')
+    expect(items[0].user.nickname).toBe('Alice')
+  })
+
+  it('maps requestedBy onto every row', async () => {
+    const { memberRequest } = makeMemberRequest({
+      teamRequests: [
+        buildRequestRow({
+          id: 'r1',
+          requestedBy: { userId: ACTOR_ID, name: 'João Santos', nickname: null },
+        }),
+      ],
+    })
+
+    const { items } = await memberRequest.listMyTeamRequests(ACTOR_AUTH_ID)
+
+    expect(items[0].requestedBy).toEqual({ name: 'João Santos', nickname: 'João' })
+  })
+
+  it('counts the cards from the whole team, before any filter is applied', async () => {
+    // I.2: searching a name must not change the card counts.
+    const { memberRequest } = makeMemberRequest({
+      teamRequests: [
+        buildRequestRow({
+          id: 'r1',
+          status: 'pending',
+          user: { userId: 'u1', name: 'Júlia Ramos', nickname: 'Ju', pictureUrl: null },
+        }),
+        buildRequestRow({ id: 'r2', status: 'pending' }),
+        buildRequestRow({ id: 'r3', status: 'approved' }),
+        buildRequestRow({ id: 'r4', status: 'denied' }),
+      ],
+    })
+
+    const result = await memberRequest.listMyTeamRequests(ACTOR_AUTH_ID, { name: 'Julia' })
+
+    expect(result.stats).toEqual({ pending: 2, approved: 1, denied: 1 })
+    expect(result.total).toBe(1)
+    expect(result.items.map((item) => item.id)).toEqual(['r1'])
+  })
+
+  it('shows all five statuses, including cancelled and outdated, with no status filter', async () => {
+    // I.7: with no card selected, nothing is permanently invisible.
+    const { memberRequest } = makeMemberRequest({
+      teamRequests: [
+        buildRequestRow({ id: 'r1', status: 'cancelled' }),
+        buildRequestRow({ id: 'r2', status: 'outdated' }),
+      ],
+    })
+
+    const result = await memberRequest.listMyTeamRequests(ACTOR_AUTH_ID)
+
+    expect(result.items.map((item) => item.id).sort()).toEqual(['r1', 'r2'])
   })
 
   it('answers 403 for a non-coordinator', async () => {
