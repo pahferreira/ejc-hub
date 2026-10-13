@@ -28,6 +28,7 @@ import type {
   SubscriptionWithDetails,
 } from '../subscriptions/subscriptions.types'
 import type { TeamMembershipType } from '../teams/teams.types'
+import type { ExperienceTypeValue } from '../../../../common/skills'
 
 export type { SubscriptionStatus, SubscriptionWithDetails }
 
@@ -97,6 +98,10 @@ export type SubscriptionListFilters = {
   status?: SubscriptionStatus[]
   teamKeys?: string[]
   name?: string
+  /** Snake_case wire values from the shared skill vocabulary, not labels. */
+  skills?: string[]
+  /** `experienceType` only — the coordinator-experience flag is not filterable. */
+  experience?: ExperienceTypeValue[]
 }
 
 export type SubscriptionListPagination = {

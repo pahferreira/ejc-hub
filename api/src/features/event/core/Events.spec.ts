@@ -946,3 +946,167 @@ describe('Events.getCurrentEventSubscriptionStatus', () => {
     expect(result.myMembershipType).toBe('member')
   })
 })
+
+describe('Events.listCurrentEventSubscriptions', () => {
+  const TEAM_A_ID = 'instance-a'
+  const TEAM_B_ID = 'instance-b'
+
+  const noSkills = {
+    hasActingSkills: false,
+    hasCommunicationSkills: false,
+    hasCookingSkills: false,
+    hasDancingSkills: false,
+    hasManualSkills: false,
+    hasMusicSkills: false,
+    hasSingingSkills: false,
+    hasGuitarSkills: false,
+    hasPercussionSkills: false,
+    hasMidiaSkills: false,
+  }
+
+  function buildSubscription(
+    id: string,
+    overrides: Record<string, unknown> = {},
+    userOverrides: Record<string, unknown> = {}
+  ) {
+    return {
+      id,
+      userId: `user-${id}`,
+      status: 'received',
+      createdAt: new Date('2026-01-01'),
+      availability: ['saturday'],
+      details: null,
+      teams: [],
+      ...overrides,
+      user: {
+        name: `User ${id}`,
+        nickname: null,
+        email: `${id}@example.com`,
+        phone: null,
+        instagram: null,
+        pictureUrl: null,
+        experienceType: 'experienced',
+        circle: null,
+        hasCoordinatorExperience: false,
+        ...noSkills,
+        ...userOverrides,
+      },
+    }
+  }
+
+  function makeEvents(subscriptions: ReturnType<typeof buildSubscription>[]) {
+    const eventRepository = {
+      findCurrentEvent: vi.fn().mockResolvedValue({ id: EVENT_ID }),
+    } as unknown as EventRepository
+
+    const teamInstanceRepository = {
+      listTeamInstances: vi.fn().mockResolvedValue([
+        { id: TEAM_A_ID, name: 'Liturgia', templateKey: 'liturgia' },
+        { id: TEAM_B_ID, name: 'Cozinha', templateKey: 'cozinha' },
+      ]),
+    } as unknown as TeamInstanceRepository
+
+    const subscriptionRepository = {
+      listSubscriptionsByEventId: vi.fn().mockResolvedValue(subscriptions),
+    } as unknown as SubscriptionRepository
+
+    const events = new Events(
+      teamInstanceRepository,
+      subscriptionRepository,
+      {} as SubscriptionOptionRepository,
+      {} as UserRepository,
+      eventRepository,
+      {} as TeamMembershipRepository,
+      {} as CircleRepository,
+      {} as EventFeePaymentRepository
+    )
+
+    return { events }
+  }
+
+  const singer = buildSubscription(
+    's1',
+    { teams: [TEAM_A_ID], status: 'completed' },
+    { name: 'Júlia Ramos', experienceType: 'newbie', hasSingingSkills: true }
+  )
+  const guitarist = buildSubscription(
+    's2',
+    { teams: [TEAM_B_ID] },
+    { name: 'Bruno Carvalho', hasGuitarSkills: true }
+  )
+  const unskilled = buildSubscription('s3', {}, { name: 'Ana Souza' })
+
+  it('narrows the page by the selected skills', async () => {
+    const { events } = makeEvents([singer, guitarist, unskilled])
+
+    const result = await events.listCurrentEventSubscriptions({ skills: ['has_guitar_skills'] })
+
+    expect(result.items.map((item) => item.id)).toEqual(['s2'])
+  })
+
+  it('narrows the page by the selected experience types', async () => {
+    const { events } = makeEvents([singer, guitarist, unskilled])
+
+    const result = await events.listCurrentEventSubscriptions({ experience: ['newbie'] })
+
+    expect(result.items.map((item) => item.id)).toEqual(['s1'])
+  })
+
+  it('reports the filtered count as the total, not the event total', async () => {
+    const { events } = makeEvents([singer, guitarist, unskilled])
+
+    const result = await events.listCurrentEventSubscriptions({ skills: ['has_singing_skills'] })
+
+    expect(result.total).toBe(1)
+  })
+
+  it('filters before paginating, so a narrow filter fills the first page', async () => {
+    // The two matches sit at either end of the list: slicing first and filtering
+    // after would return only the one that happened to land on page 1.
+    const filler = Array.from({ length: 8 }, (_, index) => buildSubscription(`filler-${index}`))
+    const { events } = makeEvents([singer, ...filler, guitarist])
+
+    const result = await events.listCurrentEventSubscriptions(
+      { skills: ['has_singing_skills', 'has_guitar_skills'] },
+      { page: 1, pageSize: 5 }
+    )
+
+    expect(result.items.map((item) => item.id)).toEqual(['s1', 's2'])
+    expect(result.total).toBe(2)
+  })
+
+  it('matches any of several selected teams', async () => {
+    // Selecting two teams used to send a repeated query parameter the schema
+    // dropped, which showed every team instead of the two asked for.
+    const { events } = makeEvents([singer, guitarist, unskilled])
+
+    const result = await events.listCurrentEventSubscriptions({
+      teamKeys: ['liturgia', 'cozinha'],
+    })
+
+    expect(result.items.map((item) => item.id)).toEqual(['s1', 's2'])
+  })
+
+  it('composes skills and experience with the existing name, team and status filters', async () => {
+    const { events } = makeEvents([singer, guitarist, unskilled])
+
+    const result = await events.listCurrentEventSubscriptions({
+      name: 'júlia',
+      teamKeys: ['liturgia'],
+      status: ['completed'],
+      skills: ['has_singing_skills'],
+      experience: ['newbie'],
+    })
+
+    expect(result.items.map((item) => item.id)).toEqual(['s1'])
+  })
+
+  it('returns the whole first page when no filter is given', async () => {
+    const { events } = makeEvents([singer, guitarist, unskilled])
+
+    const result = await events.listCurrentEventSubscriptions()
+
+    expect(result.total).toBe(3)
+    expect(result.items).toHaveLength(3)
+  })
+})

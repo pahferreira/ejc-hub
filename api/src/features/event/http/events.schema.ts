@@ -1,7 +1,9 @@
 import { z } from 'zod/v4'
 import { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
+import { commaSeparated } from '../../../shared/comma-separated.ts'
+import { EXPERIENCE_TYPES } from '../../../../../common/skills/skill.constants.ts'
 
-const experienceTypeEnum = z.enum(['newbie', 'experienced', 'experienced_outsider'])
+const experienceTypeEnum = z.enum(EXPERIENCE_TYPES)
 const genderEnum = z.enum(['male', 'female'])
 
 export const eventIdParamSchema = z.object({
@@ -56,11 +58,7 @@ export const listCurrentTeamsQuerystringSchema = z.object({
 })
 
 export const teamKeysQuerystringSchema = z.object({
-  teamKeys: z.preprocess((value) => {
-    if (typeof value === 'string') {
-      return value.split(',')
-    }
-  }, z.array(z.string()).optional()),
+  teamKeys: commaSeparated(z.string()),
 })
 
 export const MAX_PAGE_SIZE = 100
@@ -85,12 +83,7 @@ export const subscriptionStatusEnum = z.enum([
 ])
 
 export const statusQuerystringSchema = z.object({
-  status: z.preprocess((value) => {
-    if (typeof value === 'string') {
-      return [value]
-    }
-    return value
-  }, z.array(subscriptionStatusEnum).optional()),
+  status: commaSeparated(subscriptionStatusEnum),
 })
 
 export const currentSubscriptionsPaginationQuerystringSchema = z.object({
@@ -98,10 +91,25 @@ export const currentSubscriptionsPaginationQuerystringSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).optional(),
 })
 
+/**
+ * The "Lista de Inscrições" table's controls.
+ *
+ * `skills` carries the snake_case wire values from the shared skill vocabulary,
+ * not the Portuguese labels, so renaming a label on screen cannot change what
+ * this endpoint accepts. `experience` is `experienceType` only — the separate
+ * `hasCoordinatorExperience` boolean is deliberately not filterable here.
+ *
+ * `name` must be a non-empty string once trimmed, so a blank search term can
+ * never match everything through an empty `includes`. The table omits the
+ * parameter altogether when the box is empty, so that bound is never hit from
+ * the UI.
+ */
 export const listCurrentSubscriptionsQuerystringSchema = z.object({
   name: z.string().trim().min(1).optional(),
   ...teamKeysQuerystringSchema.shape,
   ...statusQuerystringSchema.shape,
+  skills: commaSeparated(z.string()),
+  experience: commaSeparated(experienceTypeEnum),
   ...currentSubscriptionsPaginationQuerystringSchema.shape,
 })
 

@@ -10,6 +10,7 @@ import { SubscriptionSummaryBox } from '../../components/SubscriptionSummaryBox/
 import { SearchInput } from '../../components/SearchInput/SearchInput'
 import { MultiSelector } from '../../components/MultiSelector/MultiSelector'
 import type { Option } from '../../components/MultiSelector/MultiSelector'
+import { FilterCheck } from '../../components/FilterCheck/FilterCheck'
 import { Table } from '../../components/Table'
 import { Button } from '../../components/Button/Button'
 import { Pagination } from '../../components/Pagination/Pagination'
@@ -28,11 +29,15 @@ import type {
   SubscriptionListFilters,
 } from '../../services/events/events.types'
 import { subscriptionStatusOptions } from '../../services/events/subscriptionStatusDisplay'
+import { experienceFilterOptions, skillValueFilterOptions } from '../TeamBuildingPage/experience'
+import type { ExperienceTypeValue } from '../../../../common/skills'
 
 export function EventSubscriptionsList() {
   const [searchValue, setSearchValue] = useState('')
   const [selectedTeamKeys, setSelectedTeamKeys] = useState<string[]>([])
   const [selectedStatuses, setSelectedStatuses] = useState<SubscriptionStatus[]>([])
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([])
+  const [selectedExperience, setSelectedExperience] = useState<ExperienceTypeValue[]>([])
 
   const debouncedSearch = useDebouncedValue(searchValue, 300)
   const { page, pageSize, nextPage, prevPage, resetPage } = usePagination()
@@ -41,11 +46,22 @@ export function EventSubscriptionsList() {
     ...(debouncedSearch ? { name: debouncedSearch } : {}),
     ...(selectedTeamKeys.length > 0 ? { teamKeys: selectedTeamKeys } : {}),
     ...(selectedStatuses.length > 0 ? { status: selectedStatuses } : {}),
+    ...(selectedSkills.length > 0 ? { skills: selectedSkills } : {}),
+    ...(selectedExperience.length > 0 ? { experience: selectedExperience } : {}),
   }
+
+  const hasActiveFilters = Object.keys(filters).length > 0
 
   useEffect(() => {
     resetPage()
-  }, [debouncedSearch, selectedTeamKeys, selectedStatuses, resetPage])
+  }, [
+    debouncedSearch,
+    selectedTeamKeys,
+    selectedStatuses,
+    selectedSkills,
+    selectedExperience,
+    resetPage,
+  ])
 
   const { subscriptions, total, stats, totalCount, isLoading, error } = useSubscriptions({
     filters,
@@ -73,12 +89,24 @@ export function EventSubscriptionsList() {
     selectedStatuses.includes(o.value as SubscriptionStatus)
   )
 
+  const selectedSkillOptions: Option[] = skillValueFilterOptions.filter((o) =>
+    selectedSkills.includes(o.value)
+  )
+
   function handleTeamOptionsChange(options: Option[]) {
     setSelectedTeamKeys(options.map((o) => o.value))
   }
 
   function handleStatusOptionsChange(options: Option[]) {
     setSelectedStatuses(options.map((o) => o.value as SubscriptionStatus))
+  }
+
+  function handleSkillOptionsChange(options: Option[]) {
+    setSelectedSkills(options.map((o) => o.value))
+  }
+
+  function handleExperienceChange(values: string[]) {
+    setSelectedExperience(values as ExperienceTypeValue[])
   }
 
   function toggleStatusFilter(status: SubscriptionStatus) {
@@ -173,28 +201,47 @@ export function EventSubscriptionsList() {
         </div>
 
         <DashboardSection>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1">
+          <div className="mb-6 flex flex-wrap items-center gap-3">
+            <div className="min-w-55 flex-1">
               <SearchInput
+                fullWidth
                 placeholder="Pesquisar por nome"
                 value={searchValue}
                 onChange={setSearchValue}
               />
             </div>
-            <div className="sm:w-64">
-              <MultiSelector
-                options={teamOptions}
-                selected={selectedTeamOptions}
-                onChange={handleTeamOptionsChange}
-                placeholder="Todas as equipes"
-              />
-            </div>
-            <div className="sm:w-64">
-              <MultiSelector
-                options={subscriptionStatusOptions}
-                selected={selectedStatusOptions}
-                onChange={handleStatusOptionsChange}
-                placeholder="Todos os status"
+
+            <div className="ml-auto flex flex-wrap items-center gap-3">
+              <div className="min-w-55">
+                <MultiSelector
+                  options={teamOptions}
+                  selected={selectedTeamOptions}
+                  onChange={handleTeamOptionsChange}
+                  placeholder="Todas as equipes"
+                />
+              </div>
+              <div className="min-w-55">
+                <MultiSelector
+                  options={subscriptionStatusOptions}
+                  selected={selectedStatusOptions}
+                  onChange={handleStatusOptionsChange}
+                  placeholder="Todos os status"
+                />
+              </div>
+              <div className="min-w-55">
+                <MultiSelector
+                  options={skillValueFilterOptions}
+                  selected={selectedSkillOptions}
+                  onChange={handleSkillOptionsChange}
+                  placeholder="Todas as habilidades"
+                />
+              </div>
+              <FilterCheck
+                label="Exp."
+                options={experienceFilterOptions}
+                value={selectedExperience}
+                onChange={handleExperienceChange}
+                ariaLabel="Filtrar por experiência"
               />
             </div>
           </div>
@@ -227,7 +274,9 @@ export function EventSubscriptionsList() {
                 <Table.Row>
                   <Table.Cell colSpan={6}>
                     <div className="text-center py-8 text-gray-500">
-                      Nenhuma inscrição feita até o momento.
+                      {hasActiveFilters
+                        ? 'Nenhuma inscrição encontrada com os filtros atuais.'
+                        : 'Nenhuma inscrição feita até o momento.'}
                     </div>
                   </Table.Cell>
                 </Table.Row>
