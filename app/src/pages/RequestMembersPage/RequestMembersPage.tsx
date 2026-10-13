@@ -17,6 +17,7 @@ import { experienceFilterOptions, skillFilterOptions } from '../TeamBuildingPage
 import { toastPromise } from '../../utils/toast/toast'
 import type { RequestableCandidateFilters } from '../../services/member-requests/member-requests.types'
 import type { ExperienceType } from '../../services/team-building/team-building.types'
+import { usePostHog } from '@posthog/react'
 
 const REQUEST_MEMBERS_PAGE_SIZE = 15
 
@@ -44,6 +45,7 @@ export function RequestMembersPage() {
   // so a refetch that places the person elsewhere while the modal is open is
   // reflected instead of submitting against a stale row.
   const [requestedUserId, setRequestedUserId] = useState<string | null>(null)
+  const postHog = usePostHog()
 
   const debouncedSearch = useDebouncedValue(search, 300)
   const { page, pageSize, nextPage, prevPage, resetPage } = usePagination(REQUEST_MEMBERS_PAGE_SIZE)
@@ -96,6 +98,7 @@ export function RequestMembersPage() {
 
     toastPromise(createRequestMutation.mutateAsync({ userId, message }), {
       message: 'Solicitação enviada com sucesso!',
+      callback: () => postHog.capture('action-member-requested'),
     })
 
     // Closed synchronously, not on the mutation's own success: the mutation's
