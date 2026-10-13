@@ -34,6 +34,7 @@ import type { SubscriptionStatus } from '../../../modules/subscription/domain/su
 import { getTeamSummaryBucket } from './team-summary.ts'
 import { getTeamStatus, type TeamStatus } from './team-status.ts'
 import { mapSubscriptionToPerson } from './subscription-to-person.ts'
+import { filterSubscriptions } from './filter-subscriptions.ts'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_SIZE = 10
@@ -434,23 +435,20 @@ export class Events {
   ) {
     const subscriptions = await this.#subscriptionRepository.listSubscriptionsByEventId(eventId)
     const teams = await this.#listTeamInstances(eventId, query?.teamKeys)
-    let filteredSubscriptions = subscriptions
 
-    if (query?.name) {
-      filteredSubscriptions = this.#filterSubscriptionsByUserName(query.name, filteredSubscriptions)
-    }
+    const filteredSubscriptions = filterSubscriptions(subscriptions, {
+      name: query?.name,
+      // `teams` is already narrowed to the requested keys by the query above.
+      teamIds: query?.teamKeys?.length ? teams.map((team) => team.id) : undefined,
+    })
 
-    if (query?.teamKeys && query.teamKeys.length > 0) {
-      filteredSubscriptions = this.#filterSubscriptionsByTeams(teams, filteredSubscriptions)
-    }
-
-    filteredSubscriptions = this.#applyPagination(
+    const paginatedSubscriptions = this.#applyPagination(
       filteredSubscriptions,
       pagination?.page,
       pagination?.size
     )
 
-    return this.#formatSubscriptions(teams, filteredSubscriptions)
+    return this.#formatSubscriptions(teams, paginatedSubscriptions)
   }
 
   async listCurrentEventSubscriptions(
@@ -458,6 +456,8 @@ export class Events {
       teamKeys?: string[]
       name?: string
       status?: SubscriptionStatus[]
+      skills?: string[]
+      experience?: ExperienceType[]
     },
     pagination?: { page?: number; pageSize?: number }
   ) {
@@ -472,26 +472,17 @@ export class Events {
     )
     const allTeams = await this.#listTeamInstances(currentEvent.id)
 
-    let filteredSubscriptions = subscriptions
-
-    if (filters?.name) {
-      filteredSubscriptions = this.#filterSubscriptionsByUserName(
-        filters.name,
-        filteredSubscriptions
-      )
-    }
-
-    if (filters?.teamKeys && filters.teamKeys.length > 0) {
-      const allowedTeams = allTeams.filter((team) => filters.teamKeys!.includes(team.templateKey))
-      filteredSubscriptions = this.#filterSubscriptionsByTeams(allowedTeams, filteredSubscriptions)
-    }
-
-    if (filters?.status && filters.status.length > 0) {
-      filteredSubscriptions = this.#filterSubscriptionsByStatus(
-        filters.status,
-        filteredSubscriptions
-      )
-    }
+    const filteredSubscriptions = filterSubscriptions(subscriptions, {
+      name: filters?.name,
+      teamIds: filters?.teamKeys?.length
+        ? allTeams
+            .filter((team) => filters.teamKeys!.includes(team.templateKey))
+            .map((team) => team.id)
+        : undefined,
+      status: filters?.status,
+      skills: filters?.skills,
+      experience: filters?.experience,
+    })
 
     const total = filteredSubscriptions.length
     const page = pagination?.page ?? DEFAULT_PAGE
@@ -721,30 +712,6 @@ export class Events {
     }
 
     return circle.id
-  }
-
-  #filterSubscriptionsByStatus(
-    statuses: SubscriptionStatus[],
-    subscriptions: SubscriptionWithDetails[]
-  ) {
-    return subscriptions.filter((subscription) => statuses.includes(subscription.status))
-  }
-
-  #filterSubscriptionsByUserName(userName: string, subscriptions: SubscriptionWithDetails[]) {
-    return subscriptions.filter((subscription) =>
-      subscription.user.name.toLowerCase().includes(userName.toLowerCase())
-    )
-  }
-
-  #filterSubscriptionsByTeams(
-    teamInstancesWithKey: { id: string; templateKey: string }[],
-    subscriptions: SubscriptionWithDetails[]
-  ) {
-    const allowedTeamIds = teamInstancesWithKey.map((team) => team.id)
-
-    return subscriptions.filter((subscription) =>
-      subscription.teams.some((team) => allowedTeamIds.includes(team))
-    )
   }
 
   #applyPagination(

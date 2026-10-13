@@ -1,9 +1,11 @@
 import { z } from 'zod/v4'
 import { MEMBER_REQUEST_MESSAGE_MAX } from '../../../../../common/member-requests/member-request.constants.ts'
+import { EXPERIENCE_TYPES } from '../../../../../common/skills/skill.constants.ts'
 import {
   MEMBER_REQUEST_STATUSES,
   SETTABLE_REQUEST_STATUSES,
 } from '../../../modules/member-request/domain/member-request-status.ts'
+import { commaSeparated } from '../../../shared/comma-separated.ts'
 
 /**
  * The one cap, shared with the modals' `0/400` counters through `common/`.
@@ -48,26 +50,7 @@ export const resolveMemberRequestBodySchema = z.object({
   resolutionReason: reasonSchema.optional(),
 })
 
-const experienceTypeEnum = z.enum(['newbie', 'experienced', 'experienced_outsider'])
-
-/**
- * A repeated filter arriving as one `a,b` query parameter.
- *
- * Every multi-value control above a table in this app is a checkbox group, so
- * the wire format is shared rather than re-spelled per field. Blank segments
- * are dropped, which is what a cleared control sending `experience=` means.
- */
-const commaSeparated = <Schema extends z.ZodTypeAny>(itemSchema: Schema) =>
-  z.preprocess((value) => {
-    if (typeof value === 'string') {
-      return value
-        .split(',')
-        .map((entry) => entry.trim())
-        .filter(Boolean)
-    }
-
-    return value
-  }, z.array(itemSchema).optional())
+const experienceTypeEnum = z.enum(EXPERIENCE_TYPES)
 
 /** Matches the cap every other list route uses, so no route can be a bulk export. */
 export const MAX_REQUEST_PAGE_SIZE = 100

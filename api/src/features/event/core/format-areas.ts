@@ -1,32 +1,24 @@
-export type SkillFlags = {
-  hasActingSkills: boolean
-  hasCommunicationSkills: boolean
-  hasCookingSkills: boolean
-  hasDancingSkills: boolean
-  hasManualSkills: boolean
-  hasMusicSkills: boolean
-  hasSingingSkills: boolean
-  hasGuitarSkills: boolean
-  hasPercussionSkills: boolean
-  hasMidiaSkills: boolean
-}
+import { SKILL_LABEL_BY_KEY, type SkillKey } from '../../../../../common/skills/skill.constants.ts'
+
+export type SkillFlags = Record<SkillKey, boolean>
 
 // Read-side inverse of Events#formatSkillsObject: turns the user's skill
-// booleans into the inline area labels shown on a board card. Labels must
-// match the subscription form options in app profileOptions.ts.
-const SKILL_LABELS: { key: keyof SkillFlags; label: string }[] = [
-  { key: 'hasMusicSkills', label: 'Toca algum outro instrumento' },
-  { key: 'hasGuitarSkills', label: 'Toca violão' },
-  { key: 'hasPercussionSkills', label: 'Toca percussão' },
-  { key: 'hasSingingSkills', label: 'Canta' },
-  { key: 'hasActingSkills', label: 'Atuação' },
-  { key: 'hasDancingSkills', label: 'Dança' },
-  { key: 'hasCookingSkills', label: 'Habilidades Culinárias' },
-  { key: 'hasManualSkills', label: 'Papelaria e Confecção Manual' },
-  { key: 'hasCommunicationSkills', label: 'Comunicação' },
-  { key: 'hasMidiaSkills', label: 'Edição de Vídeo e Mídias' },
+// booleans into the inline area labels shown on a board card. The labels come
+// from the shared vocabulary, so they cannot drift from the subscription form;
+// only the order below belongs to this screen.
+const SKILL_DISPLAY_ORDER: SkillKey[] = [
+  'hasMusicSkills',
+  'hasGuitarSkills',
+  'hasPercussionSkills',
+  'hasSingingSkills',
+  'hasActingSkills',
+  'hasDancingSkills',
+  'hasCookingSkills',
+  'hasManualSkills',
+  'hasCommunicationSkills',
+  'hasMidiaSkills',
 ]
 
 export function formatAreas(skills: SkillFlags): string[] {
-  return SKILL_LABELS.filter(({ key }) => skills[key]).map(({ label }) => label)
+  return SKILL_DISPLAY_ORDER.filter((key) => skills[key]).map((key) => SKILL_LABEL_BY_KEY[key])
 }

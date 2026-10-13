@@ -30,7 +30,16 @@ async function createEventSubscription(payload: CreateEventSubscriptionPayload) 
   }
 }
 
-async function getCurrentEventSubscriptionsList(
+/**
+ * The subscriptions list's query string.
+ *
+ * Every multi-value filter goes out as one comma-joined parameter. Repeating
+ * the parameter instead is what made `teamKeys` silently match every team
+ * whenever two or more were selected, so new filters follow this shape rather
+ * than appending. An empty selection omits its parameter entirely, which keeps
+ * it out of the React Query key too.
+ */
+export function toSubscriptionListParams(
   filters: SubscriptionListFilters = {},
   pagination: SubscriptionListPagination = {}
 ) {
@@ -40,16 +49,20 @@ async function getCurrentEventSubscriptionsList(
     params.set('name', filters.name)
   }
 
-  if (filters.teamKeys) {
-    for (const key of filters.teamKeys) {
-      params.append('teamKeys', key)
-    }
+  if (filters.teamKeys?.length) {
+    params.set('teamKeys', filters.teamKeys.join(','))
   }
 
-  if (filters.status) {
-    for (const s of filters.status) {
-      params.append('status', s)
-    }
+  if (filters.status?.length) {
+    params.set('status', filters.status.join(','))
+  }
+
+  if (filters.skills?.length) {
+    params.set('skills', filters.skills.join(','))
+  }
+
+  if (filters.experience?.length) {
+    params.set('experience', filters.experience.join(','))
   }
 
   if (pagination.page !== undefined) {
@@ -60,8 +73,15 @@ async function getCurrentEventSubscriptionsList(
     params.set('pageSize', String(pagination.pageSize))
   }
 
+  return params
+}
+
+async function getCurrentEventSubscriptionsList(
+  filters: SubscriptionListFilters = {},
+  pagination: SubscriptionListPagination = {}
+) {
   const response = await api.get<SubscriptionListResponse>('/events/current/subscriptions', {
-    params,
+    params: toSubscriptionListParams(filters, pagination),
   })
 
   return response.data
