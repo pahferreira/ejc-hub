@@ -1,5 +1,6 @@
 .claude/agent-memory/
-.claude/agents
+.claude/agents/
+.claude/worktrees/
 # design-sync
 .design-sync/sb-reference/
 .design-sync/learnings/
