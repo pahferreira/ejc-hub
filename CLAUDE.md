@@ -60,12 +60,12 @@ EJC Hub - A event management application for managing events, teams, subscriptio
 
 ### Issue tracker
 
-Issues live in the Ponto EJC "Tasks Tracker" Notion database, via the Notion MCP tools. See `docs/agents/issue-tracker.md`.
+GitHub Issues on `pahferreira/ejc-hub`, each linked to the "EJC Hub" GitHub Project (#7). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-The five canonical roles, unchanged, held in a `Triage` multi-select property. See `docs/agents/triage-labels.md`.
+The five canonical roles as plain GitHub labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context, kept in Notion under Projects › Ponto EJC: the "Glossary" page (instead of `CONTEXT.md`) and the "ADRs" database (instead of `docs/adr/`). See `docs/agents/domain.md`.

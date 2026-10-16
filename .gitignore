@@ -1,5 +1,5 @@
-.claude
-docs
+.claude/agent-memory/
+.claude/agents
 # design-sync
 .design-sync/sb-reference/
 .design-sync/learnings/
