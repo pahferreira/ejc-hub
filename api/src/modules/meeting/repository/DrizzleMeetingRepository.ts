@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm'
+import { desc, eq, sql } from 'drizzle-orm'
 import { db, type DbExecutor } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type {
@@ -49,7 +49,9 @@ class DrizzleMeetingRepository implements MeetingRepository {
         heldOn: input.heldOn,
         title: input.title ?? null,
         description: input.description ?? null,
-        updatedAt: new Date(),
+        // The database's clock, not Node's: `created_at` was stamped by the
+        // column default, and "editada" compares the two.
+        updatedAt: sql`now()`,
       })
       .where(eq(schema.meetings.id, id))
       .returning()

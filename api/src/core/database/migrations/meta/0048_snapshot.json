@@ -1,5 +1,5 @@
 {
-  "id": "2fe9ae9d-944f-4e4f-ac6a-9343b553d716",
+  "id": "cb2c0340-e657-4534-abb8-42a9c99ca3b3",
   "prevId": "caa56049-50b4-400b-8e48-f2542d468a88",
   "version": "7",
   "dialect": "postgresql",
@@ -357,23 +357,7 @@
           "notNull": false
         }
       },
-      "indexes": {
-        "meeting_attendances_user_id_idx": {
-          "name": "meeting_attendances_user_id_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "meeting_attendances_meeting_id_meetings_id_fk": {
           "name": "meeting_attendances_meeting_id_meetings_id_fk",
@@ -417,7 +401,7 @@
       "checkConstraints": {
         "meeting_attendances_justification_reason_check": {
           "name": "meeting_attendances_justification_reason_check",
-          "value": "(\"meeting_attendances\".\"status\" = 'justified' AND coalesce(btrim(\"meeting_attendances\".\"justification_reason\"), '') <> '') OR (\"meeting_attendances\".\"status\" <> 'justified' AND \"meeting_attendances\".\"justification_reason\" IS NULL)"
+          "value": "(\"meeting_attendances\".\"status\" = 'justified' AND coalesce(\"meeting_attendances\".\"justification_reason\" ~ '[^[:space:]]', false)) OR (\"meeting_attendances\".\"status\" <> 'justified' AND \"meeting_attendances\".\"justification_reason\" IS NULL)"
         }
       },
       "isRLSEnabled": false

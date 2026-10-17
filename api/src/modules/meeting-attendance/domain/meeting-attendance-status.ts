@@ -12,6 +12,6 @@ export type MeetingAttendanceStatus = (typeof MEETING_ATTENDANCE_STATUSES)[numbe
 export const MeetingAttendanceStatus = {
   Present: 'present',
   Absent: 'absent',
-  // Left out of the rate's denominator, so it always carries a reason.
+  // Left out of the rate's denominator, so the row always carries a reason.
   Justified: 'justified',
 } as const satisfies Record<string, MeetingAttendanceStatus>

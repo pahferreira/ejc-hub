@@ -63,16 +63,24 @@ export function toPooledAttendanceRate(statuses: MeetingAttendanceStatus[]): Att
     return { present, eligible, justified, percentage: null, band: 'no-meetings' }
   }
 
-  // Floored, not rounded: every band boundary is a whole number, so a floored
-  // percentage always agrees with its band. Rounding would show 74.6% as "75%"
-  // in the risky tone.
-  const percentage = Math.floor((present / eligible) * 100)
+  const exact = (present / eligible) * 100
 
-  return { present, eligible, justified, percentage, band: toBand(percentage, eligible) }
+  // The band reads the exact ratio, so 49.9% is still needs-replacement. The
+  // percentage is rounded for display only, which means 74.5–74.9% shows as
+  // "75%" in the risky tone.
+  return {
+    present,
+    eligible,
+    justified,
+    percentage: Math.round(exact),
+    band: toBand(exact, eligible),
+  }
 }
 
 // One or two meetings say too little to judge a newcomer by.
 const MIN_ELIGIBLE_FOR_BAND = 3
+const GOOD_FROM_PERCENTAGE = 75
+const RISKY_FROM_PERCENTAGE = 50
 
 // Lower bounds are inclusive: exactly 75 is good, exactly 50 is risky.
 function toBand(percentage: number, eligible: number): AttendanceBand {
@@ -80,11 +88,11 @@ function toBand(percentage: number, eligible: number): AttendanceBand {
     return 'insufficient-data'
   }
 
-  if (percentage >= 75) {
+  if (percentage >= GOOD_FROM_PERCENTAGE) {
     return 'good'
   }
 
-  if (percentage >= 50) {
+  if (percentage >= RISKY_FROM_PERCENTAGE) {
     return 'risky'
   }
 

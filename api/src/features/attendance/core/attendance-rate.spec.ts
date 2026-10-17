@@ -15,14 +15,30 @@ function records(...statuses: MemberAttendanceRecord['status'][]): MemberAttenda
   }))
 }
 
+function statuses(present: number, absent: number, justified: number) {
+  return [
+    ...Array<'present'>(present).fill('present'),
+    ...Array<'absent'>(absent).fill('absent'),
+    ...Array<'justified'>(justified).fill('justified'),
+  ]
+}
+
 describe('toMemberAttendanceRate', () => {
   it('reports no meetings with a null percentage when nothing was held since joining', () => {
-    expect(toMemberAttendanceRate(new Date('2026-10-01T12:00:00Z'), [])).toEqual({
+    expect(toMemberAttendanceRate(JOINED_AT, [])).toEqual({
       present: 0,
       eligible: 0,
       justified: 0,
       percentage: null,
       band: 'no-meetings',
+    })
+  })
+
+  it('rates 74.x% as risky even when it rounds to 75', () => {
+    // 149/200 = 74.5%.
+    expect(toMemberAttendanceRate(JOINED_AT, records(...statuses(149, 51, 0)))).toMatchObject({
+      percentage: 75,
+      band: 'risky',
     })
   })
 
@@ -39,15 +55,12 @@ describe('toMemberAttendanceRate', () => {
   })
 
   it('rates just under 50% as needs-replacement', () => {
-    const statuses = [
-      ...Array<'present'>(99).fill('present'),
-      ...Array<'absent'>(101).fill('absent'),
-    ]
-
-    // 99/200 = 49.5%.
-    expect(toMemberAttendanceRate(JOINED_AT, records(...statuses))).toMatchObject({
+    // 99/200 = 49.5%, which rounds to 50 but stays below the risky bound.
+    expect(toMemberAttendanceRate(JOINED_AT, records(...statuses(99, 101, 0)))).toEqual({
       present: 99,
       eligible: 200,
+      justified: 0,
+      percentage: 50,
       band: 'needs-replacement',
     })
   })
@@ -143,21 +156,13 @@ describe('toMemberAttendanceRate', () => {
 })
 
 describe('toPooledAttendanceRate', () => {
-  function statuses(present: number, absent: number, justified: number) {
-    return [
-      ...Array<'present'>(present).fill('present'),
-      ...Array<'absent'>(absent).fill('absent'),
-      ...Array<'justified'>(justified).fill('justified'),
-    ]
-  }
-
   it('rates one meeting as present over its rows minus the justified ones', () => {
     // 13 rows, 10 present, 2 justified -> 10/11.
     expect(toPooledAttendanceRate(statuses(10, 1, 2))).toEqual({
       present: 10,
       eligible: 11,
       justified: 2,
-      percentage: 90,
+      percentage: 91,
       band: 'good',
     })
   })
@@ -168,7 +173,7 @@ describe('toPooledAttendanceRate', () => {
       present: 82,
       eligible: 111,
       justified: 4,
-      percentage: 73,
+      percentage: 74,
       band: 'risky',
     })
   })

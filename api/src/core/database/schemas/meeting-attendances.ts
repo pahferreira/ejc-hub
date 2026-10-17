@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, uuid, text, unique, index, check } from 'drizzle-orm/pg-core'
+import { pgTable, pgEnum, uuid, text, unique, check } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 import { users } from './users.ts'
 import { meetings } from './meetings.ts'
@@ -6,7 +6,6 @@ import { meetings } from './meetings.ts'
 export const meetingAttendanceStatus = pgEnum('meeting_attendance_status', [
   'present',
   'absent',
-  // Left out of the rate's denominator, which is why it must carry a reason.
   'justified',
 ])
 
@@ -29,14 +28,12 @@ export const meetingAttendances = pgTable(
     // One explicit row per roster member per meeting.
     unique('meeting_attendances_meeting_id_user_id_unique').on(table.meetingId, table.userId),
     // A reason exactly when justified: never a justified absence without one (a
-    // blank one included), and never a stale reason left on a row flipped back
-    // to present or absent. The coalesce matters: btrim(NULL) <> '' is NULL,
-    // and a CHECK passes on NULL.
+    // whitespace-only one included), and never a stale reason left on a row
+    // flipped back to present or absent. The coalesce matters: a regex match on
+    // NULL is NULL, and a CHECK passes on NULL.
     check(
       'meeting_attendances_justification_reason_check',
-      sql`(${table.status} = 'justified' AND coalesce(btrim(${table.justificationReason}), '') <> '') OR (${table.status} <> 'justified' AND ${table.justificationReason} IS NULL)`
+      sql`(${table.status} = 'justified' AND coalesce(${table.justificationReason} ~ '[^[:space:]]', false)) OR (${table.status} <> 'justified' AND ${table.justificationReason} IS NULL)`
     ),
-    // The member read model reads one person's rows across every meeting.
-    index('meeting_attendances_user_id_idx').on(table.userId),
   ]
 )
