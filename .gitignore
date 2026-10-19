@@ -12,3 +12,4 @@ app/.ds-entry.mjs
 app/.ds-entry/
 app/dist-ds/
 app/index.d.ts
+node_modules/
