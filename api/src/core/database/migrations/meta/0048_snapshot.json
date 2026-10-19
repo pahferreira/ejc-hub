@@ -1,5 +1,5 @@
 {
-  "id": "cb2c0340-e657-4534-abb8-42a9c99ca3b3",
+  "id": "810c5ed0-3d7a-4d53-8024-94e44ec5db67",
   "prevId": "caa56049-50b4-400b-8e48-f2542d468a88",
   "version": "7",
   "dialect": "postgresql",
@@ -423,12 +423,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "event_id": {
-          "name": "event_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
         "held_on": {
           "name": "held_on",
           "type": "date",
@@ -492,6 +486,19 @@
         }
       },
       "foreignKeys": {
+        "meetings_team_instance_id_team_instances_id_fk": {
+          "name": "meetings_team_instance_id_team_instances_id_fk",
+          "tableFrom": "meetings",
+          "tableTo": "team_instances",
+          "columnsFrom": [
+            "team_instance_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
         "meetings_created_by_users_id_fk": {
           "name": "meetings_created_by_users_id_fk",
           "tableFrom": "meetings",
@@ -501,21 +508,6 @@
           ],
           "columnsTo": [
             "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "meetings_team_instance_event_fk": {
-          "name": "meetings_team_instance_event_fk",
-          "tableFrom": "meetings",
-          "tableTo": "team_instances",
-          "columnsFrom": [
-            "team_instance_id",
-            "event_id"
-          ],
-          "columnsTo": [
-            "id",
-            "event_id"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"

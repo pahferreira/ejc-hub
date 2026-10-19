@@ -3,7 +3,6 @@ import type { MeetingModel } from '../../../core/database/schemas/index.ts'
 
 export type InsertMeetingInput = {
   teamInstanceId: string
-  eventId: string
   /** `YYYY-MM-DD`. */
   heldOn: string
   title?: string | null

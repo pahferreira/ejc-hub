@@ -12,7 +12,6 @@ CREATE TABLE "meeting_attendances" (
 CREATE TABLE "meetings" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"team_instance_id" uuid NOT NULL,
-	"event_id" uuid NOT NULL,
 	"held_on" date NOT NULL,
 	"title" text,
 	"description" text,
@@ -23,6 +22,6 @@ CREATE TABLE "meetings" (
 --> statement-breakpoint
 ALTER TABLE "meeting_attendances" ADD CONSTRAINT "meeting_attendances_meeting_id_meetings_id_fk" FOREIGN KEY ("meeting_id") REFERENCES "public"."meetings"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "meeting_attendances" ADD CONSTRAINT "meeting_attendances_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "meetings" ADD CONSTRAINT "meetings_team_instance_id_team_instances_id_fk" FOREIGN KEY ("team_instance_id") REFERENCES "public"."team_instances"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "meetings" ADD CONSTRAINT "meetings_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "meetings" ADD CONSTRAINT "meetings_team_instance_event_fk" FOREIGN KEY ("team_instance_id","event_id") REFERENCES "public"."team_instances"("id","event_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "meetings_team_instance_id_held_on_idx" ON "meetings" USING btree ("team_instance_id","held_on");

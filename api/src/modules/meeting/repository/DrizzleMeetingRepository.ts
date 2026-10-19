@@ -13,7 +13,6 @@ class DrizzleMeetingRepository implements MeetingRepository {
       .insert(schema.meetings)
       .values({
         teamInstanceId: input.teamInstanceId,
-        eventId: input.eventId,
         heldOn: input.heldOn,
         title: input.title ?? null,
         description: input.description ?? null,
