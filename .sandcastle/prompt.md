@@ -21,7 +21,7 @@ Work on issues in this order:
 1. **Resolved Blocked By** — The issue has it dependencies resolved if the following command returns `true`. `gh issue view <issue-number> --json blockedBy --jq '[.blockedBy.nodes[] | select(.state == "OPEN")] | length == 0'`
 2. **In Review Blocked By** — The issue has it dependencies in progress with a pull request open checking through the command `gh issue view <issue-number> --json blockedBy --jq '.blockedBy.nodes[] | select(.state == "OPEN") | {number, title, hasPR: (.pullRequest != null)}'`
 
-Pick the highest-priority open issue following the priority order.
+Pick the highest-priority open issue that is not blocked by another open issue.
 
 ## Workflow
 
