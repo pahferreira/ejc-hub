@@ -47,6 +47,13 @@ export const MemberRequestPermissions = {
   Delete: "member-requests:delete",
 } as const;
 
+export const AttendancePermissions = {
+  Create: "attendance:create",
+  Read: "attendance:read",
+  Update: "attendance:update",
+  Delete: "attendance:delete",
+} as const;
+
 export const UserPermissions = {
   List: "users:list",
   Update: "users:update",
@@ -61,4 +68,5 @@ export type Permission =
   | (typeof TeamTemplatePermissions)[keyof typeof TeamTemplatePermissions]
   | (typeof EventFeePermissions)[keyof typeof EventFeePermissions]
   | (typeof MemberRequestPermissions)[keyof typeof MemberRequestPermissions]
+  | (typeof AttendancePermissions)[keyof typeof AttendancePermissions]
   | (typeof UserPermissions)[keyof typeof UserPermissions];

@@ -8,6 +8,8 @@ import { teamMemberships } from './team-memberships.ts'
 import { teamTemplates } from './team-templates.ts'
 import { memberRequests } from './member-requests.ts'
 import { eventFeePayments } from './event-fee-payments.ts'
+import { meetings } from './meetings.ts'
+import { meetingAttendances } from './meeting-attendances.ts'
 import type { InferSelectModel, InferInsertModel } from 'drizzle-orm'
 
 export const schema = {
@@ -20,6 +22,8 @@ export const schema = {
   teamMemberships,
   teamTemplates,
   memberRequests,
+  meetings,
+  meetingAttendances,
   users,
 }
 
@@ -52,3 +56,9 @@ export type EventFeePaymentInput = InferInsertModel<typeof eventFeePayments>
 
 export type MemberRequestModel = InferSelectModel<typeof memberRequests>
 export type MemberRequestInput = InferInsertModel<typeof memberRequests>
+
+export type MeetingModel = InferSelectModel<typeof meetings>
+export type MeetingInput = InferInsertModel<typeof meetings>
+
+export type MeetingAttendanceModel = InferSelectModel<typeof meetingAttendances>
+export type MeetingAttendanceInput = InferInsertModel<typeof meetingAttendances>
