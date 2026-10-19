@@ -21,6 +21,12 @@ export const FeatureFlag = {
    * (plan H.10).
    */
   AdminMemberRequests: 'admin-member-requests',
+  /**
+   * The coordinator Reuniões page (`/my-team/meetings`). Its own flag so the
+   * coordinator read can roll out before the member view (`attendance-visibility`,
+   * issue #281) and before any writes.
+   */
+  CoordinatorAttendance: 'coordinator-attendance',
 } as const
 
 export type FeatureFlagValue = (typeof FeatureFlag)[keyof typeof FeatureFlag]

@@ -1,3 +1,5 @@
+import type { MeetingAttendanceStatus } from '../../../modules/meeting-attendance/domain/meeting-attendance-status.ts'
+
 export type AttendanceBand =
   | 'good'
   | 'risky'
@@ -14,4 +16,58 @@ export type AttendanceRate = {
   /** Whole percentage; null when `eligible` is 0. */
   percentage: number | null
   band: AttendanceBand
+}
+
+/** A person as any attendance surface renders them: avatar, nickname, full name. */
+export type AttendancePerson = {
+  userId: string
+  name: string
+  /** Resolved via `resolveNickname`, so always a word to show. */
+  nickname: string
+  pictureUrl: string | null
+}
+
+/** One roster member with their rate and the day they joined the team. */
+export type AttendanceRosterMember = AttendancePerson & {
+  type: 'member' | 'coordinator'
+  /** The membership's `created_at`. The page shows `entrou em DD/MM` when it is after the first meeting. */
+  joinedAt: Date
+  rate: AttendanceRate
+}
+
+/** One attendance row on a meeting: who, their status and any justification. */
+export type MeetingAttendanceEntry = AttendancePerson & {
+  status: MeetingAttendanceStatus
+  justificationReason: string | null
+}
+
+/** One meeting with its own pooled rate, its rows and whether it was edited. */
+export type AttendanceMeeting = {
+  id: string
+  /** `YYYY-MM-DD`. */
+  heldOn: string
+  title: string | null
+  description: string | null
+  /** `updated_at > created_at`: the "editada" marker everyone sees. */
+  edited: boolean
+  rate: AttendanceRate
+  attendances: MeetingAttendanceEntry[]
+}
+
+/** How many roster members fall in each band. */
+export type AttendanceBandCounts = Record<AttendanceBand, number>
+
+/** Everything the coordinator Reuniões page reads in one call. */
+export type CoordinatorAttendanceReadModel = {
+  teamInstanceId: string
+  /** Pooled across every row of every meeting — never the mean of the members' percentages. */
+  teamAverage: AttendanceRate
+  meetingCount: number
+  /** Every attendance row across every meeting: the `de N` the Justificadas chip divides by. */
+  totalRows: number
+  justifiedTotal: number
+  bandCounts: AttendanceBandCounts
+  roster: AttendanceRosterMember[]
+  /** Most recently held first, matching the repository's order. */
+  meetings: AttendanceMeeting[]
 }

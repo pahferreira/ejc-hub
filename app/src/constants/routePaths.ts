@@ -4,6 +4,7 @@ export const ROUTE_PATHS = {
   MY_TEAM_FEE: '/my-team/members-event-fee',
   MY_TEAM_REQUEST_MEMBERS: '/my-team/request-members',
   MY_TEAM_MY_REQUESTS: '/my-team/my-requests',
+  MY_TEAM_MEETINGS: '/my-team/meetings',
   MEMBER_REQUESTS: '/member-requests',
   SUBSCRIPTIONS: '/subscriptions',
   SUBSCRIPTIONS_NEW: '/subscriptions/new',

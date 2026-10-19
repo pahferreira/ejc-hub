@@ -171,6 +171,13 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         requiresCoordinator: true,
         featureFlag: FeatureFlag.CoordinatorMemberRequests,
       },
+      {
+        label: 'Reuniões',
+        path: ROUTE_PATHS.MY_TEAM_MEETINGS,
+        icon: FiCalendar,
+        requiresCoordinator: true,
+        featureFlag: FeatureFlag.CoordinatorAttendance,
+      },
     ],
   },
   {
