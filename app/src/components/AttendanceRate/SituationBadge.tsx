@@ -2,7 +2,7 @@ import { Badge } from '../Badge/Badge'
 import type { AttendanceBand } from '../../services/attendance/attendance.types'
 import { bandToBadge } from './attendanceRate'
 
-export type SituacaoBadgeProps = {
+export type SituationBadgeProps = {
   band: AttendanceBand
 }
 
@@ -11,7 +11,7 @@ export type SituacaoBadgeProps = {
  * states (`insufficient-data`, `no-meetings`), matching the Membros table's
  * Situação column.
  */
-export function SituacaoBadge(props: SituacaoBadgeProps) {
+export function SituationBadge(props: SituationBadgeProps) {
   const badge = bandToBadge(props.band)
 
   if (!badge) {

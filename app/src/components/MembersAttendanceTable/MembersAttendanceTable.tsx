@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Table } from '../Table'
 import { UserAvatar } from '../UserAvatar/UserAvatar'
 import { AttendanceRateBar } from '../AttendanceRate/AttendanceRateBar'
-import { SituacaoBadge } from '../AttendanceRate/SituacaoBadge'
+import { SituationBadge } from '../AttendanceRate/SituationBadge'
 import { formatJoinDay, joinedAfterFirstMeeting } from '../../utils/attendanceDate/attendanceDate'
 import {
   sortRosterMembers,
@@ -76,7 +76,7 @@ export function MembersAttendanceTable(props: MembersAttendanceTableProps) {
             <li key={member.userId} className="flex flex-col gap-2 px-4 py-4">
               <div className="flex items-center justify-between gap-3">
                 <MemberIdentity member={member} firstMeetingHeldOn={props.firstMeetingHeldOn} />
-                <SituacaoBadge band={member.rate.band} />
+                <SituationBadge band={member.rate.band} />
               </div>
               <AttendanceRateBar rate={member.rate} label={`Presença de ${member.nickname}`} />
             </li>
@@ -121,7 +121,7 @@ export function MembersAttendanceTable(props: MembersAttendanceTableProps) {
                     />
                   </Table.Cell>
                   <Table.Cell>
-                    <SituacaoBadge band={member.rate.band} />
+                    <SituationBadge band={member.rate.band} />
                   </Table.Cell>
                 </Table.Row>
               ))
