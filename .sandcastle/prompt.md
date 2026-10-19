@@ -21,7 +21,7 @@ Work on issues in this order:
 1. **Resolved Blocked By** — The issue has it dependencies resolved if the following command returns `true`. `gh issue view <issue-number> --json blockedBy --jq '[.blockedBy.nodes[] | select(.state == "OPEN")] | length == 0'`
 2. **In Review Blocked By** — The issue has it dependencies in progress with a pull request open checking through the command `gh issue view <issue-number> --json blockedBy --jq '.blockedBy.nodes[] | select(.state == "OPEN") | {number, title, hasPR: (.pullRequest != null)}'`
 
-Pick the highest-priority open issue that is not blocked by another open issue.
+Pick the highest-priority open issue following the priority order.
 
 ## Workflow
 
@@ -29,14 +29,15 @@ Pick the highest-priority open issue that is not blocked by another open issue.
 2. **Plan** — decide what to change and why. Keep the change as small as possible.
 3. **Execute** — use RGR (Red → Green → Repeat → Refactor): write a failing test first, then write the implementation to pass it.
 4. **Verify** — run `npm run typecheck` and `npm run test` before committing. Fix any failures before proceeding.
-5. **Commit** — make a single git commit following convential commits pattern. The message MUST:
-   - Include the task completed and any PRD reference
-   - List key decisions made
-   - List files changed
-   - Note any blockers for the next iteration
+5. **Commit** — make a single git commit. The message MUST:
+   - Start with `RALPH:` prefix
+   - Include task completed + PRD reference
+   - Key decisions made
+   - Files changed
+   - Blockers or notes for next iteration
 6. **Open PR** - Open the PR using the skill /pahferreira-skills:pr.
-7. **Finish** — Update the issue to "In review" status `gh issue comment <ID> "Completed by Sandcastle"` explaining what was done.
-8. **Update Project** - Search for the issue in gh project 7 and update the status of the issue's item id to "In review".
+7. **Update Project** - Search for the issue in `gh project view 7` and update the status of the issue's item id to "In review".
+8. **Finish** — Add a comment to the issue by `gh issue comment <ID> "Completed by Sandcastle"` explaining what was done.
 
 ## Rules
 
@@ -46,6 +47,6 @@ Pick the highest-priority open issue that is not blocked by another open issue.
 
 # Done
 
-When all actionable issues are complete (or you are blocked on all remaining ones), or the open-issues block at the top of this prompt is empty, output the completion signal:
+When the first issue is complete, or the open-issues block at the top of this prompt is empty, output the Pull request link and the completion signal:
 
 <promise>COMPLETE</promise>
