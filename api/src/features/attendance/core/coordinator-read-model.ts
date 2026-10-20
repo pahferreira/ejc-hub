@@ -100,9 +100,7 @@ export function buildCoordinatorReadModel(input: {
       status: row.status,
     }))
     const rate = toMemberAttendanceRate(member.joinedAt, records)
-    if (bandCounts[rate.band]) {
-      bandCounts[rate.band] += 1
-    }
+    bandCounts[rate.band] += 1
 
     return {
       userId: member.userId,
