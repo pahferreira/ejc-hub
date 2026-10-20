@@ -32,11 +32,19 @@ const createEventBodySchema = z.object({
   startsAt: z.string().optional(),
   endsAt: z.string().optional(),
   location: z.string().optional(),
+  song: z.string().optional(),
+  theme: z.string().optional(),
+  biblePassage: z.string().optional(),
 })
 
 const updateEventBodySchema = createEventBodySchema
   .partial()
   .extend({
+    // Nullable so that null clears the value; omitting the key leaves it unchanged.
+    location: z.string().nullable().optional(),
+    song: z.string().nullable().optional(),
+    theme: z.string().nullable().optional(),
+    biblePassage: z.string().nullable().optional(),
     // Integer cents, matching events.fee_amount_cents. Update-only rather than
     // part of createEventBodySchema: the fee is decided — and raised — as the
     // event approaches, so a new event starts at the column default of 0.
@@ -45,9 +53,18 @@ const updateEventBodySchema = createEventBodySchema
   })
   .refine((data) => {
     // Compared against undefined rather than truthiness so that 0 counts as
-    // present and can clear a previously set fee.
-    return data.name || data.description || data.feeAmountCents !== undefined
-  }, 'At least one of the following attributes needs to be present: name, description, feeAmountCents')
+    // present and can clear a previously set fee. The same goes for null on
+    // the clearable text fields.
+    return (
+      data.name ||
+      data.description ||
+      data.feeAmountCents !== undefined ||
+      data.location !== undefined ||
+      data.song !== undefined ||
+      data.theme !== undefined ||
+      data.biblePassage !== undefined
+    )
+  }, 'At least one of the following attributes needs to be present: name, description, feeAmountCents, location, song, theme, biblePassage')
 
 const subscriptionModeBodySchema = z.object({
   mode: z.enum(EVENT_SUBSCRIPTION_MODES),

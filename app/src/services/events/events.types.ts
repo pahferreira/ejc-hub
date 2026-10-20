@@ -41,6 +41,9 @@ export type CurrentEvent = {
   startsAt: string | null
   endsAt: string | null
   location: string | null
+  song: string | null
+  theme: string | null
+  biblePassage: string | null
   isCurrent: boolean
   subscriptionMode: EventSubscriptionMode
   feeAmountCents: number

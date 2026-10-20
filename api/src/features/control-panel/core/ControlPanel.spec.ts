@@ -173,6 +173,76 @@ describe('ControlPanel.updateEvent', () => {
     )
   })
 
+  it('passes the banner details and location through to the repository', async () => {
+    await controlPanel.updateEvent(EVENT_ID, {
+      location: 'Casa de Retiro',
+      song: 'Eu Sou de Cristo',
+      theme: 'Permanecei em mim',
+      biblePassage: 'Jo 15,5',
+    })
+
+    expect(eventRepository.updateEvent).toHaveBeenCalledWith(
+      EVENT_ID,
+      expect.objectContaining({
+        location: 'Casa de Retiro',
+        song: 'Eu Sou de Cristo',
+        theme: 'Permanecei em mim',
+        biblePassage: 'Jo 15,5',
+      })
+    )
+  })
+
+  it('passes null through so the banner details and location can be cleared', async () => {
+    await controlPanel.updateEvent(EVENT_ID, {
+      location: null,
+      song: null,
+      theme: null,
+      biblePassage: null,
+    })
+
+    expect(eventRepository.updateEvent).toHaveBeenCalledWith(
+      EVENT_ID,
+      expect.objectContaining({
+        location: null,
+        song: null,
+        theme: null,
+        biblePassage: null,
+      })
+    )
+  })
+
+  it('turns empty and whitespace-only text into null', async () => {
+    await controlPanel.updateEvent(EVENT_ID, { theme: '', song: '   ', location: ' \t ' })
+
+    expect(eventRepository.updateEvent).toHaveBeenCalledWith(
+      EVENT_ID,
+      expect.objectContaining({ theme: null, song: null, location: null })
+    )
+  })
+
+  it('trims surrounding whitespace from text values', async () => {
+    await controlPanel.updateEvent(EVENT_ID, { theme: '  Permanecei em mim  ' })
+
+    expect(eventRepository.updateEvent).toHaveBeenCalledWith(
+      EVENT_ID,
+      expect.objectContaining({ theme: 'Permanecei em mim' })
+    )
+  })
+
+  it('leaves the banner details and location undefined when they are not part of the update', async () => {
+    await controlPanel.updateEvent(EVENT_ID, { name: 'XVI EJC' })
+
+    expect(eventRepository.updateEvent).toHaveBeenCalledWith(
+      EVENT_ID,
+      expect.objectContaining({
+        location: undefined,
+        song: undefined,
+        theme: undefined,
+        biblePassage: undefined,
+      })
+    )
+  })
+
   it('throws when the event does not exist', async () => {
     eventRepository.findEvent = vi.fn().mockResolvedValue(undefined)
 
@@ -181,5 +251,55 @@ describe('ControlPanel.updateEvent', () => {
     )
 
     expect(eventRepository.updateEvent).not.toHaveBeenCalled()
+  })
+})
+
+describe('ControlPanel.createEvent', () => {
+  let eventRepository: EventRepository
+  let controlPanel: ControlPanel
+
+  beforeEach(() => {
+    eventRepository = {
+      insertEvent: vi.fn().mockResolvedValue({ id: 'event-1' }),
+    } as unknown as EventRepository
+
+    controlPanel = new ControlPanel(
+      { listTeamTemplates: vi.fn().mockResolvedValue([]) } as unknown as TeamTemplateRepository,
+      eventRepository,
+      {} as TeamInstanceRepository,
+      {} as CircleRepository,
+      {} as CallCampaignService
+    )
+  })
+
+  it('passes the banner details through to the repository', async () => {
+    await controlPanel.createEvent({
+      name: 'XVI EJC',
+      description: 'Renascer em Cristo',
+      song: ' Eu Sou de Cristo ',
+      theme: 'Permanecei em mim',
+      biblePassage: 'Jo 15,5',
+    })
+
+    expect(eventRepository.insertEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        song: 'Eu Sou de Cristo',
+        theme: 'Permanecei em mim',
+        biblePassage: 'Jo 15,5',
+      })
+    )
+  })
+
+  it('turns blank banner details into null', async () => {
+    await controlPanel.createEvent({
+      name: 'XVI EJC',
+      description: 'Renascer em Cristo',
+      song: '',
+      theme: '   ',
+    })
+
+    expect(eventRepository.insertEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ song: null, theme: null, biblePassage: undefined })
+    )
   })
 })

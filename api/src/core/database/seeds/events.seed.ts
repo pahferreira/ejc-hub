@@ -27,6 +27,9 @@ export async function seedEvents() {
         .values({
           name: TEST_EVENT_NAME,
           description: 'Evento criado automaticamente pelo seed para testes.',
+          theme: 'Permanecei em mim',
+          song: 'Eu Sou de Cristo',
+          biblePassage: 'Jo 15,5',
           isCurrent: !currentEvent,
         })
         .returning({ id: schema.events.id })

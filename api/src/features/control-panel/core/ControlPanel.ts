@@ -6,6 +6,14 @@ import type { TeamInstanceRepository } from '../../../modules/team-instance/doma
 import type { TeamTemplateRepository } from '../../../modules/team-template/domain/TeamTemplateRepository.ts'
 import type { CallCampaignService } from '../services/call-campaign/CallCampaignService.ts'
 
+// Trims text and turns blank input into null. undefined stays undefined (leave
+// untouched) and null stays null (clear).
+const normalizeOptionalText = (value: string | null | undefined) => {
+  if (value === undefined || value === null) return value
+  const trimmed = value.trim()
+  return trimmed === '' ? null : trimmed
+}
+
 export class ControlPanel {
   #teamTemplateRepository: TeamTemplateRepository
   #eventRepository: EventRepository
@@ -114,13 +122,19 @@ export class ControlPanel {
     startsAt?: string
     endsAt?: string
     location?: string
+    song?: string
+    theme?: string
+    biblePassage?: string
   }) {
     const createdEvent = await this.#eventRepository.insertEvent({
       name: input.name,
       description: input.description,
       startsAt: input.startsAt ? new Date(input.startsAt) : undefined,
       endsAt: input.endsAt ? new Date(input.endsAt) : undefined,
-      location: input.location,
+      location: normalizeOptionalText(input.location),
+      song: normalizeOptionalText(input.song),
+      theme: normalizeOptionalText(input.theme),
+      biblePassage: normalizeOptionalText(input.biblePassage),
     })
     await this.#createEventTeams(createdEvent.id)
 
@@ -149,7 +163,10 @@ export class ControlPanel {
       description?: string
       startsAt?: string
       endsAt?: string
-      location?: string
+      location?: string | null
+      song?: string | null
+      theme?: string | null
+      biblePassage?: string | null
       feeAmountCents?: number
     }
   ) {
@@ -163,7 +180,11 @@ export class ControlPanel {
       description: input.description,
       startsAt: input.startsAt ? new Date(input.startsAt) : undefined,
       endsAt: input.endsAt ? new Date(input.endsAt) : undefined,
-      location: input.location,
+      // Blank text becomes null (clears the column); undefined leaves it untouched.
+      location: normalizeOptionalText(input.location),
+      song: normalizeOptionalText(input.song),
+      theme: normalizeOptionalText(input.theme),
+      biblePassage: normalizeOptionalText(input.biblePassage),
       // Passed through as-is: drizzle's .set() skips undefined keys, so an
       // absent fee leaves the column untouched while an explicit 0 clears it.
       feeAmountCents: input.feeAmountCents,

@@ -59,6 +59,9 @@ export function Home() {
               startsAt={event.startsAt}
               endsAt={event.endsAt}
               location={event.location}
+              song={event.song}
+              theme={event.theme}
+              biblePassage={event.biblePassage}
               feeAmountCents={event.feeAmountCents}
               feeCurrency={event.feeCurrency}
             />
