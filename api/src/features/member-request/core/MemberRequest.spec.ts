@@ -67,7 +67,14 @@ function buildRequestRow(
     status: 'pending',
     eventId: EVENT_ID,
     teamInstanceId: TEAM_A,
-    user: { userId: 'user-1', name: 'Maria Silva', nickname: 'Mari', pictureUrl: null },
+    user: {
+      userId: 'user-1',
+      name: 'Maria Silva',
+      nickname: 'Mari',
+      pictureUrl: null,
+      experienceType: 'experienced',
+      circleKey: null,
+    },
     requestedBy: { userId: ACTOR_ID, name: 'João Santos', nickname: null },
     message: null,
     requestedAt: new Date('2026-01-01'),
@@ -345,7 +352,14 @@ describe('MemberRequest.listRequestableCandidates', () => {
       teamRequests: [
         buildRequestRow({
           id: 'req-1',
-          user: { userId: 'u1', name: 'Ana Souza', nickname: 'Ana', pictureUrl: null },
+          user: {
+            userId: 'u1',
+            name: 'Ana Souza',
+            nickname: 'Ana',
+            pictureUrl: null,
+            experienceType: 'experienced',
+            circleKey: null,
+          },
         }),
       ],
     })
@@ -386,7 +400,14 @@ describe('MemberRequest.listRequestableCandidates', () => {
         buildRequestRow({
           id: 'r2',
           status: 'pending',
-          user: { userId: 'u2', name: 'Bruno', nickname: 'Bru', pictureUrl: null },
+          user: {
+            userId: 'u2',
+            name: 'Bruno',
+            nickname: 'Bru',
+            pictureUrl: null,
+            experienceType: 'experienced',
+            circleKey: null,
+          },
         }),
         buildRequestRow({ id: 'r3', status: 'approved' }),
       ],
@@ -446,7 +467,14 @@ describe('MemberRequest.listMyTeamRequests', () => {
       teamRequests: [
         buildRequestRow({
           id: 'r1',
-          user: { userId: 'u1', name: 'Alice Ribeiro', nickname: null, pictureUrl: null },
+          user: {
+            userId: 'u1',
+            name: 'Alice Ribeiro',
+            nickname: null,
+            pictureUrl: null,
+            experienceType: 'experienced',
+            circleKey: null,
+          },
         }),
       ],
     })
@@ -478,7 +506,14 @@ describe('MemberRequest.listMyTeamRequests', () => {
         buildRequestRow({
           id: 'r1',
           status: 'pending',
-          user: { userId: 'u1', name: 'Júlia Ramos', nickname: 'Ju', pictureUrl: null },
+          user: {
+            userId: 'u1',
+            name: 'Júlia Ramos',
+            nickname: 'Ju',
+            pictureUrl: null,
+            experienceType: 'experienced',
+            circleKey: null,
+          },
         }),
         buildRequestRow({ id: 'r2', status: 'pending' }),
         buildRequestRow({ id: 'r3', status: 'approved' }),
@@ -567,7 +602,14 @@ describe('MemberRequest.listCurrentEventRequests', () => {
       id: 'r3',
       teamInstanceId: TEAM_A,
       status: 'denied',
-      user: { userId: 'u9', name: 'Outro', nickname: 'Outro', pictureUrl: null },
+      user: {
+        userId: 'u9',
+        name: 'Outro',
+        nickname: 'Outro',
+        pictureUrl: null,
+        experienceType: 'experienced',
+        circleKey: null,
+      },
       resolvedBy: { userId: 'admin-1', name: 'Admin Pessoa', nickname: null },
       resolutionReason: 'Sem vaga',
     }),
@@ -586,6 +628,32 @@ describe('MemberRequest.listCurrentEventRequests', () => {
         requestedBy: { name: 'João Santos', nickname: 'João' },
       },
     ])
+  })
+
+  it("carries the reason and the requested member's experience through each row", async () => {
+    const { memberRequest } = makeMemberRequest({
+      eventRequests: [
+        buildRequestRow({
+          id: 'r1',
+          message: 'Precisamos de reforço',
+          user: {
+            userId: 'u1',
+            name: 'Ana Souza',
+            nickname: 'Ana',
+            pictureUrl: null,
+            experienceType: 'newbie',
+            circleKey: 'blue',
+          },
+        }),
+      ],
+    })
+
+    const result = await memberRequest.listCurrentEventRequests()
+
+    expect(result.items[0]).toMatchObject({
+      message: 'Precisamos de reforço',
+      user: { experienceType: 'newbie', circleKey: 'blue' },
+    })
   })
 
   it("carries each team's free slots for the vagas line", async () => {

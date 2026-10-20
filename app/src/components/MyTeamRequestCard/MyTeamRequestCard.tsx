@@ -1,5 +1,6 @@
 import { Badge } from '../Badge/Badge'
 import { Card } from '../Card/Card'
+import { RequestReason } from '../RequestReason/RequestReason'
 import { UserAvatar } from '../UserAvatar/UserAvatar'
 import { memberRequestStatusDisplay } from '../../services/member-requests/memberRequestStatusDisplay'
 import { formatShortDate } from '../../utils/formatShortDate/formatShortDate'
@@ -71,14 +72,7 @@ export function MyTeamRequestCard(props: MyTeamRequestCardProps) {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-lg border border-tertiary px-4 py-3 w-full">
-            <span className="text-xs font-semibold tracking-wide text-dark-brown uppercase">
-              Motivo da Solicitação
-            </span>
-            {props.row.message && (
-              <p className="m-0 mt-1 text-sm text-text-primary italic">{props.row.message}</p>
-            )}
-          </div>
+          <RequestReason text={props.row.message} />
           <div className="rounded-lg border border-secondary bg-sidebar-background px-4 py-3 w-full">
             <span className="text-xs font-semibold tracking-wide text-dark-brown uppercase">
               Resposta dos Jotas

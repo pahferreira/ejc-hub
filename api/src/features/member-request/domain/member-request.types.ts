@@ -130,6 +130,9 @@ export type RequestPerson = {
   name: string
   nickname: string
   pictureUrl: string | null
+  experienceType: ExperienceType
+  /** Key of the person's circle (newbies only); null when unset. */
+  circleKey: string | null
 }
 
 /** A named person with no id: who asked, who answered. */

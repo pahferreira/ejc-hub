@@ -6,7 +6,14 @@ import type { MemberRequestQueueRow } from '../../services/member-requests/membe
 const request: MemberRequestQueueRow = {
   id: 'r-1',
   status: 'pending',
-  user: { userId: 'u-1', name: 'Beatriz Nunes', nickname: 'Bia', pictureUrl: null },
+  user: {
+    userId: 'u-1',
+    name: 'Beatriz Nunes',
+    nickname: 'Bia',
+    pictureUrl: null,
+    experienceType: 'newbie',
+    circleKey: 'blue',
+  },
   team: { id: 't-1', name: 'Liturgia', freeSlots: 7 },
   requestedBy: { name: 'João Santos', nickname: 'Joca' },
   message: 'Precisamos de alguém com experiência em canto.',
@@ -119,4 +126,37 @@ export const OneSlotLeft: Story = {
 
 export const Approving: Story = {
   args: { isSaving: true },
+}
+
+/** A long reason shows in full — no clamp, so the admin reads all of it. */
+export const LongMessage: Story = {
+  args: {
+    request: {
+      ...request,
+      message:
+        'Precisamos de reforço na equipe para o encontro. A pessoa indicada tem experiência com canto e violão, já participou de outras edições e conhece a dinâmica da liturgia. Além disso, vários membros atuais estarão ausentes no fim de semana do evento por motivos de trabalho e viagem, o que deixa a equipe com menos gente do que o necessário para as atividades. Pedimos com urgência a alocação desta pessoa para que consigamos cobrir todos os horários previstos na programação.',
+    },
+  },
+}
+
+/** Line breaks the coordinator typed are kept. */
+export const MultilineMessage: Story = {
+  args: {
+    request: {
+      ...request,
+      message: 'Precisamos de alguém com experiência em canto.\nTambém toca violão.\n\nObrigado!',
+    },
+  },
+}
+
+/** No reason on file: the fallback copy shows. */
+export const NoMessage: Story = {
+  args: {
+    request: { ...request, message: null },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement.ownerDocument.body)
+
+    expect(await canvas.findByText('Nenhum motivo informado.')).toBeVisible()
+  },
 }

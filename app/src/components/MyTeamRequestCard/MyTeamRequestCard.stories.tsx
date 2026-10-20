@@ -8,7 +8,14 @@ function buildRow(
 ): MyTeamRequestRow {
   return {
     status: 'pending',
-    user: { userId: 'u-1', name: 'Maria Silva', nickname: 'Mari', pictureUrl: null },
+    user: {
+      userId: 'u-1',
+      name: 'Maria Silva',
+      nickname: 'Mari',
+      pictureUrl: null,
+      experienceType: 'experienced',
+      circleKey: null,
+    },
     requestedBy: { name: 'João Santos', nickname: 'João' },
     message: null,
     requestedAt: '2026-09-20T12:00:00.000Z',
@@ -99,5 +106,28 @@ export const DoesNotRenderResolvedBy: Story = {
     const canvas = within(canvasElement)
 
     expect(canvas.queryByText(/Admin/)).toBeNull()
+  },
+}
+
+/** A long, multiline reason keeps its line breaks and wraps inside the panel. */
+export const LongMultilineMessage: Story = {
+  args: {
+    row: buildRow({
+      id: 'r-5',
+      message:
+        'Precisamos de reforço na equipe para o encontro. A pessoa indicada tem experiência com canto e violão, já participou de outras edições e conhece a dinâmica da liturgia. Além disso, vários membros atuais estarão ausentes no fim de semana do evento por motivos de trabalho e viagem, o que deixa a equipe com menos gente do que o necessário para as atividades. Pedimos com urgência a alocação desta pessoa para que consigamos cobrir todos os horários previstos na programação.\n\nObrigado!',
+    }),
+  },
+}
+
+/** No reason on file: the panel shows the fallback instead of staying empty. */
+export const NoMessage: Story = {
+  args: {
+    row: buildRow({ id: 'r-6', message: null }),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    expect(canvas.getByText('Nenhum motivo informado.')).toBeInTheDocument()
   },
 }

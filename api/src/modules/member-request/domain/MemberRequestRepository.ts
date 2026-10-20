@@ -1,5 +1,9 @@
 import type { DbExecutor } from '../../../core/database/client.ts'
+import type { experienceType } from '../../../core/database/schemas/users.ts'
 import type { MemberRequestStatus } from './member-request-status.ts'
+
+// Derived from the DB enum: modules do not import from features.
+type ExperienceType = (typeof experienceType.enumValues)[number]
 
 export type InsertMemberRequestInput = {
   userId: string
@@ -17,6 +21,9 @@ export type MemberRequestPerson = {
   /** Raw column value; may be null, in which case the caller falls back. */
   nickname: string | null
   pictureUrl: string | null
+  experienceType: ExperienceType
+  /** Key of the person's circle (newbies only); null when unset. */
+  circleKey: string | null
 }
 
 /**

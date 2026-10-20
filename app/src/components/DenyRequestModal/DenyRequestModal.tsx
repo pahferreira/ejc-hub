@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { Button } from '../Button/Button'
+import { ExperienceBadge } from '../ExperienceBadge/ExperienceBadge'
 import { Modal } from '../Modal/Modal'
+import { RequestReason } from '../RequestReason/RequestReason'
 import { TeamAvatar } from '../TeamAvatar/TeamAvatar'
 import { TextArea } from '../TextArea/TextArea'
 import { UserAvatar } from '../UserAvatar/UserAvatar'
@@ -65,10 +67,18 @@ export function DenyRequestModal(props: DenyRequestModalProps) {
           <div className="flex items-center gap-3">
             <UserAvatar name={props.request.user.name} pictureUrl={props.request.user.pictureUrl} />
             <div className="flex min-w-0 flex-col">
-              <span className="font-semibold text-dark-brown">{props.request.user.nickname}</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold text-dark-brown">{props.request.user.nickname}</span>
+                <ExperienceBadge
+                  experienceType={props.request.user.experienceType}
+                  circleKey={props.request.user.circleKey}
+                />
+              </div>
               <span className="text-xs text-secondary-foreground">{props.request.user.name}</span>
             </div>
           </div>
+
+          <RequestReason text={props.request.message} />
 
           <div className="flex flex-col gap-2 rounded-lg border border-red-300 bg-red-50 px-4 py-3">
             <span className="text-xs font-semibold tracking-wide text-red-600 uppercase">
