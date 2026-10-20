@@ -29,6 +29,10 @@ export function rowStatus(form: MeetingForm, userId: string): MeetingAttendanceS
   return form.statuses[userId] ?? 'absent'
 }
 
+export function rowReason(form: MeetingForm, userId: string): string {
+  return form.reasons[userId] ?? ''
+}
+
 // Writes one row's status and drops its reason unless the row stays justified,
 // so a stale justification never survives a tick.
 function withStatus(
@@ -126,6 +130,18 @@ export function tallyAttendance(
   return tally
 }
 
+function heldOnError(heldOn: string, today: string): string | undefined {
+  if (!heldOn) {
+    return 'Informe a data da reunião.'
+  }
+
+  if (heldOn > today) {
+    return 'A data da reunião não pode ser no futuro.'
+  }
+
+  return undefined
+}
+
 export type MeetingFormValidation = {
   isValid: boolean
   heldOn?: string
@@ -150,19 +166,12 @@ export function validateMeetingForm(
   for (const member of roster) {
     const isJustified = rowStatus(form, member.userId) === 'justified'
 
-    if (isJustified && !(form.reasons[member.userId] ?? '').trim()) {
+    if (isJustified && !rowReason(form, member.userId).trim()) {
       reasons[member.userId] = 'Informe a justificativa.'
     }
   }
 
-  let heldOn: string | undefined
-
-  if (!form.heldOn) {
-    heldOn = 'Informe a data da reunião.'
-  } else if (form.heldOn > today) {
-    heldOn = 'A data da reunião não pode ser no futuro.'
-  }
-
+  const heldOn = heldOnError(form.heldOn, today)
   const isValid = heldOn === undefined && Object.keys(reasons).length === 0
 
   return heldOn === undefined ? { isValid, reasons } : { isValid, heldOn, reasons }
@@ -185,7 +194,7 @@ export function toRegisterMeetingBody(
     if (status === 'present') {
       presentUserIds.push(member.userId)
     } else if (status === 'justified') {
-      justified.push({ userId: member.userId, reason: (form.reasons[member.userId] ?? '').trim() })
+      justified.push({ userId: member.userId, reason: rowReason(form, member.userId).trim() })
     }
   }
 

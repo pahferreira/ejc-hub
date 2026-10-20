@@ -139,7 +139,7 @@ export function MyTeamMeetingsPage() {
         </section>
       </div>
 
-      <RegisterMeetingDrawer {...registerDrawer} teamName={teamName.toUpperCase()} />
+      <RegisterMeetingDrawer {...registerDrawer} teamName={teamName} />
     </div>
   )
 }

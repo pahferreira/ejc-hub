@@ -6,6 +6,7 @@ import type { MeetingRepository } from '../../../modules/meeting/domain/MeetingR
 import type { MeetingAttendanceRepository } from '../../../modules/meeting-attendance/domain/MeetingAttendanceRepository.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
+import { MeetingAttendanceStatus } from '../../../modules/meeting-attendance/domain/meeting-attendance-status.ts'
 import type { InsertMeetingAttendanceInput } from '../../../modules/meeting-attendance/domain/MeetingAttendanceRepository.ts'
 import type {
   CoordinatorAttendanceReadModel,
@@ -190,30 +191,17 @@ export class Attendance {
 
         const rows: InsertMeetingAttendanceInput[] = roster.map((member) => {
           const reason = reasonByUser.get(member.userId)
-
-          if (presentIds.has(member.userId)) {
-            return {
-              meetingId: meeting.id,
-              userId: member.userId,
-              status: 'present',
-              justificationReason: null,
-            }
-          }
-
-          if (reason !== undefined) {
-            return {
-              meetingId: meeting.id,
-              userId: member.userId,
-              status: 'justified',
-              justificationReason: reason,
-            }
-          }
+          const status = presentIds.has(member.userId)
+            ? MeetingAttendanceStatus.Present
+            : reason !== undefined
+              ? MeetingAttendanceStatus.Justified
+              : MeetingAttendanceStatus.Absent
 
           return {
             meetingId: meeting.id,
             userId: member.userId,
-            status: 'absent',
-            justificationReason: null,
+            status,
+            justificationReason: status === MeetingAttendanceStatus.Justified ? reason : null,
           }
         })
 

@@ -12,6 +12,7 @@ import {
   initialMeetingForm,
   justify,
   markAll,
+  rowReason,
   rowStatus,
   setPresent,
   setReason,
@@ -92,7 +93,7 @@ export function useRegisterMeetingForm(roster: AttendanceRosterMember[]) {
     setTitle: (title: string) => setForm((current) => ({ ...current, title })),
     setDescription: (description: string) => setForm((current) => ({ ...current, description })),
     statusOf: (userId: string) => rowStatus(form, userId),
-    reasonOf: (userId: string) => form.reasons[userId] ?? '',
+    reasonOf: (userId: string) => rowReason(form, userId),
     setPresent: (userId: string, present: boolean) =>
       setForm((current) => setPresent(current, userId, present)),
     justify: (userId: string) => setForm((current) => justify(current, userId)),

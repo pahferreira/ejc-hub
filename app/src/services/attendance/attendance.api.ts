@@ -1,6 +1,5 @@
 import { isAxiosError } from 'axios'
 import { api } from '../api'
-import type { ApiError } from '../general/error'
 import type {
   CoordinatorAttendanceReadModel,
   RegisterMeetingBody,
@@ -18,9 +17,14 @@ async function getMyTeamAttendance() {
   return response.data
 }
 
+const REGISTER_MEETING_ERROR = 'Erro ao registrar reunião'
+
 /**
- * Registers a meeting on the caller's own team. The drawer validates first, so
- * a 422 here is a stale form; its API message is surfaced as is.
+ * Registers a meeting on the caller's own team.
+ *
+ * The drawer checks every rule first, so a 422 here means the form is stale
+ * (the roster changed, or the client clock disagrees). The API's English
+ * message isn't for the coordinator; a pt-BR hint to reload is.
  */
 async function registerMeeting(body: RegisterMeetingBody) {
   try {
@@ -28,10 +32,10 @@ async function registerMeeting(body: RegisterMeetingBody) {
 
     return response.data.result
   } catch (error: unknown) {
-    if (isAxiosError(error) && error.response) {
-      throw new Error((error as ApiError).response.data?.message ?? 'Erro ao registrar reunião')
+    if (isAxiosError(error) && error.response?.status === 422) {
+      throw new Error(`${REGISTER_MEETING_ERROR}. Atualize a página e tente novamente.`)
     }
-    throw new Error('Erro ao registrar reunião')
+    throw new Error(REGISTER_MEETING_ERROR)
   }
 }
 
