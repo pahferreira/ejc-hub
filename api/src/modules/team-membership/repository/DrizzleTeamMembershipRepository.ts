@@ -6,6 +6,7 @@ import type {
   TeamCoordinator,
   TeamCoordinatorSummary,
   TeamMembershipRepository,
+  TeamRosterMember,
 } from '../domain/TeamMembershipRepository.ts'
 
 const COORDINATOR_TYPE = 'coordinator' as const
@@ -130,6 +131,24 @@ class DrizzleTeamMembershipRepository implements TeamMembershipRepository {
       .orderBy(asc(schema.teamMemberships.createdAt))
 
     return rows.map((row) => row.userId)
+  }
+
+  async listRosterByTeamInstance(teamInstanceId: string): Promise<TeamRosterMember[]> {
+    const rows = await db
+      .select({
+        userId: schema.users.id,
+        name: schema.users.name,
+        nickname: schema.users.nickname,
+        pictureUrl: schema.users.pictureUrl,
+        type: schema.teamMemberships.type,
+        joinedAt: schema.teamMemberships.createdAt,
+      })
+      .from(schema.teamMemberships)
+      .innerJoin(schema.users, eq(schema.teamMemberships.userId, schema.users.id))
+      .where(eq(schema.teamMemberships.teamInstanceId, teamInstanceId))
+      .orderBy(asc(schema.users.name), asc(schema.users.id))
+
+    return rows
   }
 
   async setCoordinators(

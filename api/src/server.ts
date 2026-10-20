@@ -15,6 +15,7 @@ import { subscriptionRoutes } from './features/subscription/http/subscription.ro
 import { teamBuildingRoutes } from './features/team-building/http/team-building.routes.ts'
 import { financialRoutes } from './features/financial/http/financial.routes.ts'
 import { memberRequestRoutes } from './features/member-request/http/member-request.routes.ts'
+import { attendanceRoutes } from './features/attendance/http/attendance.routes.ts'
 
 const server = fastify({
   logger: true,
@@ -46,6 +47,7 @@ server.register(subscriptionRoutes(server))
 server.register(teamBuildingRoutes(server))
 server.register(financialRoutes(server))
 server.register(memberRequestRoutes(server))
+server.register(attendanceRoutes(server))
 
 async function startServer() {
   try {

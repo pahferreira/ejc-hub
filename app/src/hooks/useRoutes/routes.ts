@@ -18,6 +18,7 @@ import { EventFeeMembersPage } from '../../pages/EventFeeMembersPage'
 import { CoordinatorEventFeePage } from '../../pages/CoordinatorEventFeePage'
 import { RequestMembersPage } from '../../pages/RequestMembersPage'
 import { MyTeamRequestsPage } from '../../pages/MyTeamRequestsPage'
+import { MyTeamMeetingsPage } from '../../pages/MyTeamMeetingsPage'
 import { MemberRequestsQueuePage } from '../../pages/MemberRequestsQueuePage'
 import { Placeholder } from '../../pages/Placeholder/Placeholder'
 import { ROUTE_PATHS } from '../../constants/routePaths'
@@ -82,6 +83,18 @@ export const routes: Route[] = [
     // bookmark with "página não encontrada". The page holds the check; the
     // API re-derives the membership on every call and answers 403.
     featureFlag: FeatureFlag.CoordinatorMemberRequests,
+  },
+  {
+    path: ROUTE_PATHS.MY_TEAM_MEETINGS,
+    name: 'Reuniões',
+    component: MyTeamMeetingsPage,
+    // Same precedent as `MY_TEAM_REQUEST_MEMBERS`, comment included: no
+    // `permission` and no membership filter — the route table cannot know
+    // whether the caller coordinates a team without waiting on a request, and
+    // filtering while it's in flight would answer a coordinator's own bookmark
+    // with "página não encontrada". The page holds the check; the API
+    // re-derives the membership on every call and answers 403.
+    featureFlag: FeatureFlag.CoordinatorAttendance,
   },
   {
     path: ROUTE_PATHS.MEMBER_REQUESTS,

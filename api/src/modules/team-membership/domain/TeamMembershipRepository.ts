@@ -23,6 +23,16 @@ export type EventMembership = {
   type: 'member' | 'coordinator'
 }
 
+export type TeamRosterMember = {
+  userId: string
+  name: string
+  nickname: string | null
+  pictureUrl: string | null
+  type: 'member' | 'coordinator'
+  /** The membership's `created_at`: the join date the attendance rate pro-rates against. */
+  joinedAt: Date
+}
+
 export type MembershipContact = {
   userId: string
   name: string
@@ -63,6 +73,13 @@ export interface TeamMembershipRepository {
   ) => Promise<EventMembership | undefined>
   /** The user ids of a team's coordinators (a flat, unordered peer set). */
   getCoordinatorUserIds: (teamInstanceId: string) => Promise<string[]>
+  /**
+   * Every current member and coordinator of one team, with their join date.
+   *
+   * The join date is each membership's `created_at`, which the attendance rate
+   * pro-rates against. Ordered by name for a stable roster.
+   */
+  listRosterByTeamInstance: (teamInstanceId: string) => Promise<TeamRosterMember[]>
   setCoordinators: (
     teamInstanceId: string,
     eventId: string,
