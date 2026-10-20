@@ -42,6 +42,10 @@ For Authentication and Authorization details read the ./docs/auth.md file.
 
 For database schema details read the ./docs/database-schema.md file.
 
+### Lists of people
+
+- Every endpoint that returns people (a roster, candidates, members, payers) sorts them with `comparePeopleByNickname` from `src/shared/compare-people-by-nickname.ts`, after resolving the nickname with `resolveNickname`. The rule is to sort by what the row shows first; the file explains why and names the one exception.
+
 ## Testing
 
 - API: Unit tests for use cases

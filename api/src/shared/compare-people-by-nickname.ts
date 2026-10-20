@@ -18,10 +18,11 @@
  * between two people who share both. Without that last step, paging is not
  * stable: the same person can appear on two pages or on none.
  *
- * Lives in `shared` rather than in a feature because five lists need it — the
- * team rosters, the team-building board's three columns, the fee member list,
- * the coordinator candidates and the requestable members — and a second copy is
- * how two screens start disagreeing about the order of the same people.
+ * Lives in `shared` rather than in a feature because every list of people
+ * needs it — the team rosters, the team-building board, the fee member list,
+ * the coordinator and requestable candidates, the attendance roster — and a
+ * second copy is how two screens start disagreeing about the order of the same
+ * people.
  */
 export type SortablePerson = {
   userId: string

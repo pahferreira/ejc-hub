@@ -23,7 +23,7 @@ function member(
 }
 
 describe('sortRosterMembers', () => {
-  it('orders by presença ascending, the page default, with no-meetings last', () => {
+  it('orders by presença ascending with no-meetings last', () => {
     const members = [
       member('a', 'Ana', 80),
       member('b', 'Bruno', 25),
@@ -60,6 +60,24 @@ describe('sortRosterMembers', () => {
       'ana',
       'Ângela',
       'Bruno',
+    ])
+  })
+
+  it('breaks a pessoa tie on the full name, then the id, like /my-team', () => {
+    const sameNickname = (userId: string, name: string) => ({
+      ...member(userId, name, 50),
+      nickname: 'Ju',
+    })
+    const members = [
+      sameNickname('z', 'Juliana Alves'),
+      sameNickname('b', 'Bruno Lima'),
+      sameNickname('a', 'Juliana Alves'),
+    ]
+
+    expect(sortRosterMembers(members, 'pessoa', 'asc').map((m) => m.userId)).toEqual([
+      'b',
+      'a',
+      'z',
     ])
   })
 

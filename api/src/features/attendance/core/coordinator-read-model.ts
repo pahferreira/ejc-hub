@@ -1,4 +1,5 @@
 import { resolveNickname } from '../../../shared/resolve-nickname.ts'
+import { comparePeopleByNickname } from '../../../shared/compare-people-by-nickname.ts'
 import type { MeetingAttendanceStatus } from '../../../modules/meeting-attendance/domain/meeting-attendance-status.ts'
 import { toMemberAttendanceRate, toPooledAttendanceRate } from './attendance-rate.ts'
 import type {
@@ -94,24 +95,28 @@ export function buildCoordinatorReadModel(input: {
     'no-meetings': 0,
   }
 
-  const rosterMembers: AttendanceRosterMember[] = roster.map((member) => {
-    const records = (rowsByUser.get(member.userId) ?? []).map((row) => ({
-      heldOn: row.heldOn,
-      status: row.status,
-    }))
-    const rate = toMemberAttendanceRate(member.joinedAt, records)
-    bandCounts[rate.band] += 1
+  // Sorted the way /my-team lists people: by the resolved nickname the row
+  // shows first, not the full name the repository orders by.
+  const rosterMembers: AttendanceRosterMember[] = roster
+    .map((member) => {
+      const records = (rowsByUser.get(member.userId) ?? []).map((row) => ({
+        heldOn: row.heldOn,
+        status: row.status,
+      }))
+      const rate = toMemberAttendanceRate(member.joinedAt, records)
+      bandCounts[rate.band] += 1
 
-    return {
-      userId: member.userId,
-      name: member.name,
-      nickname: resolveNickname(member.name, member.nickname),
-      pictureUrl: member.pictureUrl,
-      type: member.type,
-      joinedAt: member.joinedAt,
-      rate,
-    }
-  })
+      return {
+        userId: member.userId,
+        name: member.name,
+        nickname: resolveNickname(member.name, member.nickname),
+        pictureUrl: member.pictureUrl,
+        type: member.type,
+        joinedAt: member.joinedAt,
+        rate,
+      }
+    })
+    .sort(comparePeopleByNickname)
 
   const attendanceMeetings: AttendanceMeeting[] = meetings.map((meeting) => {
     const meetingRows = rowsByMeeting.get(meeting.id) ?? []

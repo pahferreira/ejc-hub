@@ -330,6 +330,25 @@ describe('Attendance.getMyTeamReadModel read model', () => {
   })
 })
 
+describe('Attendance.getMyTeamReadModel roster order', () => {
+  it('lists the roster by nickname like /my-team, then full name, then id', async () => {
+    // The repository returns people by full name; the rows show the nickname first.
+    const { attendance } = makeAttendance({
+      roster: [
+        buildRoster({ userId: 'u3', name: 'Ana Souza', nickname: 'Zeca' }),
+        buildRoster({ userId: 'u2', name: 'Bruno Lima', nickname: 'Ju' }),
+        buildRoster({ userId: 'u1', name: 'Carla Dias', nickname: null }),
+        buildRoster({ userId: 'u4', name: 'Juliana Alves', nickname: 'Jú' }),
+      ],
+    })
+
+    const model = await attendance.getMyTeamReadModel(ACTOR_AUTH_ID)
+
+    // Carla falls back to her first name; "Ju" and "Jú" tie and break on the full name.
+    expect(model.roster.map((member) => member.nickname)).toEqual(['Carla', 'Ju', 'Jú', 'Zeca'])
+  })
+})
+
 describe('Attendance.getMyTeamReadModel empty state', () => {
   it('reports no meetings and no-meetings bands when nothing has been registered', async () => {
     const { attendance } = makeAttendance({

@@ -35,6 +35,10 @@ The Vite React app that supports EJC Hub - A event management application for ma
   - If the form has more than 2 sections, split each session in it own component and file.
     - When that happens, create a React Context with the Provider at the Form Parent Component, the children components must interact with the form via custom hook.
 
+### Lists of people
+
+- Render people in the order the API sends them. A client-side sort (e.g. a sortable Pessoa column) matches the API's `comparePeopleByNickname`: nickname, then full name, then user id, `pt-BR` and accent-insensitive. `MembersAttendanceTable/membersAttendanceSort.ts` is the reference.
+
 ## Testing
 
 - Vitest for component and hook tests.
