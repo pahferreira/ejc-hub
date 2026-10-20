@@ -68,6 +68,26 @@ export type CoordinatorAttendanceReadModel = {
   meetings: AttendanceMeeting[]
 }
 
+/**
+ * The `POST /attendance/meetings` body. No team: the API derives it from the
+ * caller. Anyone on the roster not listed here is stored as absent.
+ */
+export type RegisterMeetingBody = {
+  /** `YYYY-MM-DD`. */
+  heldOn: string
+  title?: string
+  description?: string
+  presentUserIds: string[]
+  justified: Array<{ userId: string; reason: string }>
+}
+
+/** What `POST /attendance/meetings` answers with: the counts the PostHog event reports. */
+export type RegisterMeetingResult = {
+  meetingId: string
+  attendeeCount: number
+  justifiedCount: number
+}
+
 export const attendanceQueryKeys = {
   all: ['attendance'] as const,
   myTeam: ['attendance', 'my-team'] as const,

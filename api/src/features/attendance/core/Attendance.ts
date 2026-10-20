@@ -1,14 +1,51 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
+import { runInTransaction } from '../../../core/database/client.ts'
 import type { EventModel } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { MeetingRepository } from '../../../modules/meeting/domain/MeetingRepository.ts'
 import type { MeetingAttendanceRepository } from '../../../modules/meeting-attendance/domain/MeetingAttendanceRepository.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
-import type { CoordinatorAttendanceReadModel } from '../domain/attendance.types.ts'
+import type { InsertMeetingAttendanceInput } from '../../../modules/meeting-attendance/domain/MeetingAttendanceRepository.ts'
+import type {
+  CoordinatorAttendanceReadModel,
+  RegisterMeetingInput,
+  RegisterMeetingResult,
+} from '../domain/attendance.types.ts'
 import { buildCoordinatorReadModel } from './coordinator-read-model.ts'
+import { toSaoPauloDay } from './attendance-rate.ts'
 
 const COORDINATOR_TYPE = 'coordinator'
+
+/**
+ * Every rule a registration must pass, checked before anything is written.
+ *
+ * The drawer mirrors these, so a rejection here means a stale form or a
+ * hand-built request rather than a typo to explain.
+ */
+function assertRegistrable(input: RegisterMeetingInput, rosterIds: Set<string>, today: string) {
+  // `YYYY-MM-DD` strings compare as days. "Today" is the org's São Paulo day.
+  if (input.heldOn > today) {
+    throw new AppError('A meeting cannot be held in the future')
+  }
+
+  const listedIds = [...input.presentUserIds, ...input.justified.map((entry) => entry.userId)]
+
+  // One status per row: a person listed twice, in either list or across both,
+  // would have two answers for one meeting.
+  if (new Set(listedIds).size !== listedIds.length) {
+    throw new AppError('A person can be listed only once, as present or as justified')
+  }
+
+  if (listedIds.some((userId) => !rosterIds.has(userId))) {
+    throw new AppError('Every listed person must be on the team roster')
+  }
+
+  // The check constraint would refuse it too, but as a 500 mid-transaction.
+  if (input.justified.some((entry) => entry.reason.trim() === '')) {
+    throw new AppError('A justified absence needs a reason')
+  }
+}
 
 /**
  * The single entry point for attendance reads and writes.
@@ -106,6 +143,87 @@ export class Attendance {
         roster,
         meetings,
         attendanceRows,
+      })
+    })
+  }
+
+  /**
+   * Registers a meeting on the caller's own team.
+   *
+   * Writes the meeting plus **one row per current roster member** in one
+   * transaction: the ticked are `present`, the justified carry their reason,
+   * and everyone else is `absent` — absence is never implied by a missing row
+   * (ADR 5). Two meetings on the same day are allowed.
+   */
+  async registerMeeting(
+    actorAuthId: string,
+    input: RegisterMeetingInput
+  ): Promise<RegisterMeetingResult> {
+    return this.#withCurrentEvent(async (event) => {
+      const actor = await this.#resolveActor(actorAuthId)
+      const teamInstanceId = await this.#resolveCoordinatedTeam(actor.id, event.id)
+      const roster = await this.#teamMembershipRepository.listRosterByTeamInstance(teamInstanceId)
+
+      // Every read and every throw is above the transaction; it holds writes only.
+      assertRegistrable(
+        input,
+        new Set(roster.map((member) => member.userId)),
+        toSaoPauloDay(new Date())
+      )
+
+      const presentIds = new Set(input.presentUserIds)
+      const reasonByUser = new Map(
+        input.justified.map((entry) => [entry.userId, entry.reason.trim()])
+      )
+
+      return runInTransaction(async (tx) => {
+        const meeting = await this.#meetingRepository.insertMeeting(
+          {
+            teamInstanceId,
+            heldOn: input.heldOn,
+            title: input.title?.trim() || null,
+            description: input.description?.trim() || null,
+            createdBy: actor.id,
+          },
+          tx
+        )
+
+        const rows: InsertMeetingAttendanceInput[] = roster.map((member) => {
+          const reason = reasonByUser.get(member.userId)
+
+          if (presentIds.has(member.userId)) {
+            return {
+              meetingId: meeting.id,
+              userId: member.userId,
+              status: 'present',
+              justificationReason: null,
+            }
+          }
+
+          if (reason !== undefined) {
+            return {
+              meetingId: meeting.id,
+              userId: member.userId,
+              status: 'justified',
+              justificationReason: reason,
+            }
+          }
+
+          return {
+            meetingId: meeting.id,
+            userId: member.userId,
+            status: 'absent',
+            justificationReason: null,
+          }
+        })
+
+        await this.#meetingAttendanceRepository.insertAttendances(rows, tx)
+
+        return {
+          meetingId: meeting.id,
+          attendeeCount: presentIds.size,
+          justifiedCount: reasonByUser.size,
+        }
       })
     })
   }

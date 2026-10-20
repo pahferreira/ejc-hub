@@ -12,6 +12,8 @@ type InputProps = {
   onChange?: (value: string) => void
   error?: string
   type?: InputType
+  /** Upper bound for `date` and `number` inputs. */
+  max?: string
 }
 
 export function Input(props: InputProps) {
@@ -33,6 +35,7 @@ export function Input(props: InputProps) {
         value={props.value}
         onChange={(event) => props.onChange?.(event.target.value)}
         type={props.type}
+        max={props.max}
       />
       {props.error && <p className="text-sm text-red">{props.error}</p>}
     </div>

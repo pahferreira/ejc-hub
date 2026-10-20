@@ -58,6 +58,11 @@ export function toSaoPauloDay(iso: string): string {
   return SAO_PAULO_DAY.format(new Date(iso))
 }
 
+/** Today as a São Paulo calendar day, `YYYY-MM-DD`: the latest a meeting can be held on. */
+export function todayInSaoPaulo(): string {
+  return SAO_PAULO_DAY.format(new Date())
+}
+
 /** `DD/MM` of the São Paulo join day, for the roster's `entrou em DD/MM`. */
 export function formatJoinDay(iso: string): string {
   const [, month, day] = toSaoPauloDay(iso).split('-')

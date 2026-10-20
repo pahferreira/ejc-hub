@@ -71,3 +71,30 @@ export type CoordinatorAttendanceReadModel = {
   /** Most recently held first, matching the repository's order. */
   meetings: AttendanceMeeting[]
 }
+
+/** One justified absence: who, and why they could not come. */
+export type JustifiedAbsenceInput = {
+  userId: string
+  reason: string
+}
+
+/**
+ * Registering a meeting. No team: it is the caller's coordinated team.
+ *
+ * Only the ticked and the justified are sent; every other roster member is
+ * stored as `absent` (ADR 5).
+ */
+export type RegisterMeetingInput = {
+  /** `YYYY-MM-DD`, never after today in São Paulo. */
+  heldOn: string
+  title?: string
+  description?: string
+  presentUserIds: string[]
+  justified: JustifiedAbsenceInput[]
+}
+
+export type RegisterMeetingResult = {
+  meetingId: string
+  attendeeCount: number
+  justifiedCount: number
+}

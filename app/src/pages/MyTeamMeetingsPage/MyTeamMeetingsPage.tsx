@@ -1,6 +1,8 @@
 import { Button } from '../../components/Button/Button'
 import { MeetingList } from '../../components/MeetingList/MeetingList'
 import { MembersAttendanceTable } from '../../components/MembersAttendanceTable/MembersAttendanceTable'
+import { RegisterMeetingDrawer } from '../../components/RegisterMeetingDrawer/RegisterMeetingDrawer'
+import { useRegisterMeetingForm } from '../../components/RegisterMeetingDrawer/useRegisterMeetingForm'
 import { useCurrentEventSubscriptionStatusQuery } from '../../services/events/useCurrentEventSubscriptionStatusQuery'
 import { useMyTeamAttendanceQuery } from '../../services/attendance/useMyTeamAttendanceQuery'
 import { formatRatePrimary } from '../../components/AttendanceRate/attendanceRate'
@@ -42,14 +44,15 @@ function AttendanceStats(props: { model: CoordinatorAttendanceReadModel }) {
  * are the same, verbatim: the error branch stays above the not-a-coordinator one
  * so a dropped request is never read as a verdict, and the query is gated on
  * `isCoordinator` so the endpoint's 403 does not race into the generic error
- * branch. Registering, editing and deleting meetings are out of scope here
- * (issues #279, #280); this ticket is the read model and the page.
+ * branch. Editing and deleting meetings come with #280.
  */
 export function MyTeamMeetingsPage() {
   const subscriptionStatus = useCurrentEventSubscriptionStatusQuery()
   const isCoordinator = subscriptionStatus.data?.myMembershipType === 'coordinator'
 
   const attendanceQuery = useMyTeamAttendanceQuery({ enabled: isCoordinator })
+  // Above the early returns, so it reads an empty roster until the model lands.
+  const registerDrawer = useRegisterMeetingForm(attendanceQuery.data?.roster ?? [])
 
   if (subscriptionStatus.isLoading || attendanceQuery.isLoading) {
     return (
@@ -114,8 +117,7 @@ export function MyTeamMeetingsPage() {
                 Registre cada reunião depois que ela acontecer. Clique numa reunião para editar.
               </p>
             </div>
-            {/* Rendered here; wired by #279. */}
-            <Button>Registrar reunião</Button>
+            <Button onClick={registerDrawer.open}>Registrar reunião</Button>
           </div>
 
           {hasMeetings ? (
@@ -136,6 +138,8 @@ export function MyTeamMeetingsPage() {
           <MembersAttendanceTable members={model.roster} firstMeetingHeldOn={firstMeetingHeldOn} />
         </section>
       </div>
+
+      <RegisterMeetingDrawer {...registerDrawer} teamName={teamName.toUpperCase()} />
     </div>
   )
 }
