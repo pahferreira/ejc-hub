@@ -2,7 +2,6 @@ import { resolveNickname } from '../../../shared/resolve-nickname.ts'
 import type { MeetingAttendanceStatus } from '../../../modules/meeting-attendance/domain/meeting-attendance-status.ts'
 import { toMemberAttendanceRate, toPooledAttendanceRate } from './attendance-rate.ts'
 import type {
-  AttendanceBand,
   AttendanceBandCounts,
   AttendanceMeeting,
   AttendanceRosterMember,
@@ -40,14 +39,6 @@ export type AttendanceRowInput = {
   pictureUrl: string | null
   status: MeetingAttendanceStatus
   justificationReason: string | null
-}
-
-const EMPTY_BAND_COUNTS: AttendanceBandCounts = {
-  good: 0,
-  risky: 0,
-  'needs-replacement': 0,
-  'insufficient-data': 0,
-  'no-meetings': 0,
 }
 
 function toEntry(row: AttendanceRowInput): MeetingAttendanceEntry {
@@ -95,7 +86,13 @@ export function buildCoordinatorReadModel(input: {
     rowsByMeeting.set(row.meetingId, meetingRows)
   }
 
-  const bandCounts: AttendanceBandCounts = { ...EMPTY_BAND_COUNTS }
+  const bandCounts: AttendanceBandCounts = {
+    good: 0,
+    risky: 0,
+    'needs-replacement': 0,
+    'insufficient-data': 0,
+    'no-meetings': 0,
+  }
 
   const rosterMembers: AttendanceRosterMember[] = roster.map((member) => {
     const records = (rowsByUser.get(member.userId) ?? []).map((row) => ({
@@ -103,7 +100,9 @@ export function buildCoordinatorReadModel(input: {
       status: row.status,
     }))
     const rate = toMemberAttendanceRate(member.joinedAt, records)
-    bandCounts[rate.band] += 1
+    if (bandCounts[rate.band]) {
+      bandCounts[rate.band] += 1
+    }
 
     return {
       userId: member.userId,
