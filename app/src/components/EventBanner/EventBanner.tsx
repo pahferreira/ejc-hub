@@ -80,7 +80,7 @@ export function EventBanner(props: EventBannerProps) {
           <p className="m-0 text-white/80">{props.description}</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-x-12 lg:gap-y-6 2xl:grid-cols-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-x-12 lg:gap-y-6 3xl:grid-cols-6">
           {props.theme && <EventBannerInfoItem icon={FiStar} label="Tema" value={props.theme} />}
           {props.biblePassage && (
             <EventBannerInfoItem
