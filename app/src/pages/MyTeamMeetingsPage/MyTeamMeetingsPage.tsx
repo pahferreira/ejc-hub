@@ -1,3 +1,4 @@
+import { FiAlertTriangle, FiCalendar, FiFileText } from 'react-icons/fi'
 import { Button } from '../../components/Button/Button'
 import { MeetingList } from '../../components/MeetingList/MeetingList'
 import { MembersAttendanceTable } from '../../components/MembersAttendanceTable/MembersAttendanceTable'
@@ -5,34 +6,71 @@ import { RegisterMeetingDrawer } from '../../components/RegisterMeetingDrawer/Re
 import { useRegisterMeetingForm } from '../../components/RegisterMeetingDrawer/useRegisterMeetingForm'
 import { useCurrentEventSubscriptionStatusQuery } from '../../services/events/useCurrentEventSubscriptionStatusQuery'
 import { useMyTeamAttendanceQuery } from '../../services/attendance/useMyTeamAttendanceQuery'
-import { formatRatePrimary } from '../../components/AttendanceRate/attendanceRate'
+import { StatusCard } from '../../components/StatusCard/StatusCard'
+import { formatRateFraction } from '../../components/AttendanceRate/attendanceRate'
 import type { CoordinatorAttendanceReadModel } from '../../services/attendance/attendance.types'
 
-function StatPill(props: { label: string; value: string }) {
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-tertiary bg-white px-3 py-1.5 text-sm">
-      <span className="font-medium text-dark-brown/70">{props.label}</span>
-      <span className="font-semibold text-dark-brown">{props.value}</span>
-    </span>
-  )
+// The Média card's value and line. The value slot is large, so it holds the
+// percentage alone and the fraction moves to the description.
+function teamAverageCard(model: CoordinatorAttendanceReadModel) {
+  const rate = model.teamAverage
+
+  if (rate.band === 'no-meetings') {
+    return { value: '—', description: 'Nenhuma reunião registrada' }
+  }
+
+  const fraction = formatRateFraction(rate)
+  const description =
+    rate.band === 'insufficient-data' ? `${fraction} · poucos dados` : `${fraction} presenças`
+
+  return { value: `${rate.percentage}%`, description }
 }
 
-function justifiedValue(model: CoordinatorAttendanceReadModel): string {
+function justifiedDescription(model: CoordinatorAttendanceReadModel): string {
   const percentage =
     model.totalRows > 0 ? Math.round((model.justifiedTotal / model.totalRows) * 100) : 0
-  return `${model.justifiedTotal} de ${model.totalRows} · ${percentage}%`
+  return `de ${model.totalRows} · ${percentage}%`
 }
 
 function AttendanceStats(props: { model: CoordinatorAttendanceReadModel }) {
   const { model } = props
+  const average = teamAverageCard(model)
 
   return (
-    <div className="mb-8 flex flex-wrap gap-2">
-      <StatPill label="Média" value={formatRatePrimary(model.teamAverage)} />
-      <StatPill label="Reuniões" value={String(model.meetingCount)} />
-      <StatPill label="Justificadas" value={justifiedValue(model)} />
-      <StatPill label="Em risco" value={String(model.bandCounts.risky)} />
-      <StatPill label="Precisa substituir" value={String(model.bandCounts['needs-replacement'])} />
+    <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <StatusCard
+        title="Média"
+        value={average.value}
+        variant="info"
+        description={average.description}
+      />
+      <StatusCard
+        title="Reuniões"
+        value={model.meetingCount}
+        variant="neutral"
+        icon={<FiCalendar size="24px" />}
+        description="registradas"
+      />
+      <StatusCard
+        title="Justificadas"
+        value={model.justifiedTotal}
+        variant="pending"
+        icon={<FiFileText size="24px" />}
+        description={justifiedDescription(model)}
+      />
+      <StatusCard
+        title="Em risco"
+        value={model.bandCounts.risky}
+        variant="pending"
+        icon={<FiAlertTriangle size="24px" />}
+        description="50–74% de presença"
+      />
+      <StatusCard
+        title="Precisa substituir"
+        value={model.bandCounts['needs-replacement']}
+        variant="error"
+        description="abaixo de 50%"
+      />
     </div>
   )
 }
