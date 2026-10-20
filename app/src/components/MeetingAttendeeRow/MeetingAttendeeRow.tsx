@@ -4,6 +4,7 @@ import { Checkbox } from '../Checkbox/Checkbox'
 import { Input } from '../Input/Input'
 import { UserAvatar } from '../UserAvatar/UserAvatar'
 import type { MeetingAttendanceStatus } from '../../services/attendance/attendance.types'
+import { Button } from '../Button/Button'
 
 type MeetingAttendeeRowProps = {
   userId: string
@@ -53,19 +54,15 @@ export function MeetingAttendeeRow(props: MeetingAttendeeRowProps) {
         {props.status === 'absent' && (
           <div className="flex items-center gap-3 text-xs">
             <span className="text-dark-brown/60">Ausente</span>
-            <button
-              type="button"
-              onClick={props.onJustify}
-              className="font-semibold text-primary underline hover:cursor-pointer"
-            >
+            <Button variant="secondary" size="small" onClick={props.onJustify}>
               Justificar
-            </button>
+            </Button>
           </div>
         )}
 
         {isJustified && (
           <div className="flex items-center gap-1">
-            <Badge variant="warning">Justificada</Badge>
+            <Badge variant="info">Justificada</Badge>
             <button
               type="button"
               onClick={props.onClearJustification}

@@ -37,4 +37,21 @@ export const Destructive = {
   },
 } satisfies StoryObj<typeof Button>
 
+export const Small = {
+  args: {
+    children: 'Marcar todos',
+    disabled: false,
+    size: 'small',
+  },
+} satisfies StoryObj<typeof Button>
+
+export const SmallSecondary = {
+  args: {
+    children: 'Justificar',
+    disabled: false,
+    variant: 'secondary',
+    size: 'small',
+  },
+} satisfies StoryObj<typeof Button>
+
 export default meta

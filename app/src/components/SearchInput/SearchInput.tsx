@@ -18,7 +18,7 @@ export function SearchInput(props: SearchInputProps) {
   }
 
   return (
-    <div className={clsx('relative w-full', !props.fullWidth && 'max-w-md')}>
+    <div className={clsx('relative', !props.fullWidth ? 'max-w-md' : 'w-full')}>
       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
         <FiSearch className="h-4 w-4 text-dark-brown" />
       </div>

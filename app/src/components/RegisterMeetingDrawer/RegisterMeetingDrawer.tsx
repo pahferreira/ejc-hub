@@ -22,7 +22,7 @@ function RosterGroup(props: {
 
   return (
     <div className="flex flex-col gap-1">
-      <h3 className="m-0 px-3 text-xs font-semibold uppercase tracking-wider text-dark-brown/60">
+      <h3 className="m-0 text-sm font-semibold uppercase tracking-wider text-dark-brown">
         {props.title} · {props.members.length}
       </h3>
       {props.members.map((member) => (
@@ -110,21 +110,16 @@ export function RegisterMeetingDrawer(props: RegisterMeetingDrawerProps) {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="grid md:flex w-full items-center gap-3">
             <SearchInput
               placeholder="Buscar por nome ou apelido..."
               value={props.search}
               onChange={props.setSearch}
               fullWidth
             />
-            <button
-              type="button"
-              onClick={props.toggleAll}
-              disabled={!hasVisibleRows}
-              className="shrink-0 text-sm font-semibold text-primary underline hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-            >
+            <Button variant="secondary" onClick={props.toggleAll} disabled={!hasVisibleRows}>
               {props.allVisiblePresent ? 'Desmarcar todos' : 'Marcar todos'}
-            </button>
+            </Button>
           </div>
 
           <RosterGroup title="Coordenadores" members={props.groups.coordinators} drawer={props} />
