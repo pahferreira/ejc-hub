@@ -8,7 +8,14 @@ function buildRow(
 ): MemberRequestQueueRow {
   return {
     status: 'pending',
-    user: { userId: 'u-1', name: 'Maria Silva', nickname: 'Mari', pictureUrl: null },
+    user: {
+      userId: 'u-1',
+      name: 'Maria Silva',
+      nickname: 'Mari',
+      pictureUrl: null,
+      experienceType: 'experienced',
+      circleKey: null,
+    },
     team: { id: 't-1', name: 'Liturgia', freeSlots: 7 },
     requestedBy: { name: 'João Santos', nickname: 'Joca' },
     message: 'Precisamos de alguém com experiência em canto.',
@@ -29,7 +36,14 @@ function buildRow(
 const mixedRows: MemberRequestQueueRow[] = [
   buildRow({
     id: 'r-1',
-    user: { userId: 'u-1', name: 'Beatriz Nunes', nickname: 'Bia', pictureUrl: null },
+    user: {
+      userId: 'u-1',
+      name: 'Beatriz Nunes',
+      nickname: 'Bia',
+      pictureUrl: null,
+      experienceType: 'newbie',
+      circleKey: 'green',
+    },
     team: { id: 't-1', name: 'Liturgia', freeSlots: 7 },
   }),
   // Contested: two other teams want the same person. Approving this one closes
@@ -37,7 +51,14 @@ const mixedRows: MemberRequestQueueRow[] = [
   // `+ 2 equipes` pill.
   buildRow({
     id: 'r-2',
-    user: { userId: 'u-2', name: 'Carlos Lima', nickname: 'Cacá', pictureUrl: null },
+    user: {
+      userId: 'u-2',
+      name: 'Carlos Lima',
+      nickname: 'Cacá',
+      pictureUrl: null,
+      experienceType: 'experienced',
+      circleKey: null,
+    },
     team: { id: 't-2', name: 'Acolhida', freeSlots: 1 },
     requestedBy: { name: 'Ana Souza' },
     otherPendingRequests: [
@@ -48,7 +69,14 @@ const mixedRows: MemberRequestQueueRow[] = [
   buildRow({
     id: 'r-3',
     status: 'approved',
-    user: { userId: 'u-3', name: 'Daniela Rocha', nickname: 'Dani', pictureUrl: null },
+    user: {
+      userId: 'u-3',
+      name: 'Daniela Rocha',
+      nickname: 'Dani',
+      pictureUrl: null,
+      experienceType: 'experienced_outsider',
+      circleKey: null,
+    },
     team: { id: 't-3', name: 'Música', freeSlots: 0 },
     resolvedAt: '2026-09-21T12:00:00.000Z',
     resolvedBy: { name: 'Admin Geral' },
@@ -56,7 +84,14 @@ const mixedRows: MemberRequestQueueRow[] = [
   buildRow({
     id: 'r-4',
     status: 'denied',
-    user: { userId: 'u-4', name: 'Eduardo Pinto', nickname: 'Du', pictureUrl: null },
+    user: {
+      userId: 'u-4',
+      name: 'Eduardo Pinto',
+      nickname: 'Du',
+      pictureUrl: null,
+      experienceType: 'experienced',
+      circleKey: null,
+    },
     resolvedAt: '2026-09-21T12:00:00.000Z',
     resolvedBy: { name: 'Admin Geral' },
     resolutionReason: 'A equipe já está completa.',
@@ -66,7 +101,14 @@ const mixedRows: MemberRequestQueueRow[] = [
   buildRow({
     id: 'r-5',
     status: 'outdated',
-    user: { userId: 'u-5', name: 'Fernanda Melo', nickname: 'Fê', pictureUrl: null },
+    user: {
+      userId: 'u-5',
+      name: 'Fernanda Melo',
+      nickname: 'Fê',
+      pictureUrl: null,
+      experienceType: 'experienced',
+      circleKey: null,
+    },
     team: { id: 't-4', name: 'Cozinha', freeSlots: 3 },
     resolvedAt: '2026-09-21T12:00:00.000Z',
     resolutionReason: 'Alocado em outra equipe',

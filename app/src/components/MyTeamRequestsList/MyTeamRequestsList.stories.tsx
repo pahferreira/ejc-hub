@@ -8,7 +8,14 @@ function buildRow(
 ): MyTeamRequestRow {
   return {
     status: 'pending',
-    user: { userId: 'u-1', name: 'Maria Silva', nickname: 'Mari', pictureUrl: null },
+    user: {
+      userId: 'u-1',
+      name: 'Maria Silva',
+      nickname: 'Mari',
+      pictureUrl: null,
+      experienceType: 'experienced',
+      circleKey: null,
+    },
     requestedBy: { name: 'João Santos', nickname: 'João' },
     message: null,
     requestedAt: '2026-09-20T12:00:00.000Z',
@@ -23,13 +30,27 @@ const rows: MyTeamRequestRow[] = [
   buildRow({
     id: 'r-2',
     status: 'approved',
-    user: { userId: 'u-2', name: 'Bruno Carvalho', nickname: 'Bru', pictureUrl: null },
+    user: {
+      userId: 'u-2',
+      name: 'Bruno Carvalho',
+      nickname: 'Bru',
+      pictureUrl: null,
+      experienceType: 'experienced',
+      circleKey: null,
+    },
     resolvedAt: '2026-09-21T12:00:00.000Z',
   }),
   buildRow({
     id: 'r-3',
     status: 'denied',
-    user: { userId: 'u-3', name: 'Carla Dias', nickname: 'Carla', pictureUrl: null },
+    user: {
+      userId: 'u-3',
+      name: 'Carla Dias',
+      nickname: 'Carla',
+      pictureUrl: null,
+      experienceType: 'experienced',
+      circleKey: null,
+    },
     resolvedAt: '2026-09-21T12:00:00.000Z',
     resolutionReason: 'A equipe já está completa.',
   }),

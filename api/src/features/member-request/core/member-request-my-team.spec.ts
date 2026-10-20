@@ -7,7 +7,14 @@ function buildRow(
 ): MyTeamRequestRow {
   return {
     status: 'pending',
-    user: { userId: 'user-1', name: 'Maria Silva', nickname: 'Mari', pictureUrl: null },
+    user: {
+      userId: 'user-1',
+      name: 'Maria Silva',
+      nickname: 'Mari',
+      pictureUrl: null,
+      experienceType: 'experienced',
+      circleKey: null,
+    },
     requestedBy: { name: 'João Santos', nickname: 'João' },
     message: null,
     requestedAt: new Date('2026-01-01'),
@@ -49,13 +56,27 @@ describe('filterMyTeamRows', () => {
     buildRow({
       id: 'r1',
       status: 'pending',
-      user: { userId: 'u1', name: 'Júlia Ramos', nickname: 'Ju', pictureUrl: null },
+      user: {
+        userId: 'u1',
+        name: 'Júlia Ramos',
+        nickname: 'Ju',
+        pictureUrl: null,
+        experienceType: 'experienced',
+        circleKey: null,
+      },
       requestedBy: { name: 'Ana Souza', nickname: 'Ana' },
     }),
     buildRow({
       id: 'r2',
       status: 'approved',
-      user: { userId: 'u2', name: 'Bruno Carvalho', nickname: 'Bru', pictureUrl: null },
+      user: {
+        userId: 'u2',
+        name: 'Bruno Carvalho',
+        nickname: 'Bru',
+        pictureUrl: null,
+        experienceType: 'experienced',
+        circleKey: null,
+      },
     }),
     buildRow({ id: 'r3', status: 'cancelled' }),
     buildRow({ id: 'r4', status: 'outdated' }),

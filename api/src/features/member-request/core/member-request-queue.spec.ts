@@ -15,7 +15,14 @@ function buildRow(
 ): MemberRequestQueueRow {
   return {
     status: 'pending',
-    user: { userId: 'user-1', name: 'Maria Silva', nickname: 'Mari', pictureUrl: null },
+    user: {
+      userId: 'user-1',
+      name: 'Maria Silva',
+      nickname: 'Mari',
+      pictureUrl: null,
+      experienceType: 'experienced',
+      circleKey: null,
+    },
     team: { id: TEAM_A, name: 'Liturgia', freeSlots: 7 },
     requestedBy: { name: 'João Santos', nickname: 'João' },
     message: null,
@@ -43,7 +50,14 @@ describe('countQueueStats', () => {
       buildRow({
         id: 'r2',
         status: 'pending',
-        user: { userId: 'u2', name: 'B', nickname: 'B', pictureUrl: null },
+        user: {
+          userId: 'u2',
+          name: 'B',
+          nickname: 'B',
+          pictureUrl: null,
+          experienceType: 'experienced',
+          circleKey: null,
+        },
       }),
       buildRow({ id: 'r3', status: 'approved' }),
       buildRow({ id: 'r4', status: 'denied' }),
@@ -83,7 +97,14 @@ describe('countQueueStats', () => {
       buildRow({
         id,
         status: 'pending',
-        user: { userId, name: userId, nickname: userId, pictureUrl: null },
+        user: {
+          userId,
+          name: userId,
+          nickname: userId,
+          pictureUrl: null,
+          experienceType: 'experienced',
+          circleKey: null,
+        },
         otherPendingRequests: siblingIds.map(sibling),
       })
 
@@ -141,7 +162,14 @@ describe('filterQueueRows', () => {
     buildRow({
       id: 'r3',
       status: 'approved',
-      user: { userId: 'u3', name: 'Júlia Ramos', nickname: 'Ju', pictureUrl: null },
+      user: {
+        userId: 'u3',
+        name: 'Júlia Ramos',
+        nickname: 'Ju',
+        pictureUrl: null,
+        experienceType: 'experienced',
+        circleKey: null,
+      },
     }),
   ]
 

@@ -78,6 +78,8 @@ function toPerson(person: MemberRequestRow['user']): RequestPerson {
     name: person.name,
     nickname: resolveNickname(person.name, person.nickname),
     pictureUrl: person.pictureUrl,
+    experienceType: person.experienceType,
+    circleKey: person.circleKey,
   }
 }
 

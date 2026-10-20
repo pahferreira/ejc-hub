@@ -5,6 +5,7 @@ import { schema } from '../../../core/database/schemas/index.ts'
 import type {
   InsertMemberRequestInput,
   MemberRequestEventFilters,
+  MemberRequestPerson,
   MemberRequestRepository,
   MemberRequestRow,
   OutdateOpenRequestsInput,
@@ -32,6 +33,8 @@ const requestColumns = {
   userName: schema.users.name,
   userNickname: schema.users.nickname,
   userPictureUrl: schema.users.pictureUrl,
+  userExperienceType: schema.users.experienceType,
+  userCircleKey: schema.circles.key,
   requestedById: requester.id,
   requestedByName: requester.name,
   requestedByNickname: requester.nickname,
@@ -53,6 +56,8 @@ function toRequestRow(row: {
   userName: string
   userNickname: string | null
   userPictureUrl: string | null
+  userExperienceType: MemberRequestPerson['experienceType']
+  userCircleKey: string | null
   requestedById: string | null
   requestedByName: string | null
   requestedByNickname: string | null
@@ -74,6 +79,8 @@ function toRequestRow(row: {
       name: row.userName,
       nickname: row.userNickname,
       pictureUrl: row.userPictureUrl,
+      experienceType: row.userExperienceType,
+      circleKey: row.userCircleKey,
     },
     requestedBy: {
       // `requested_by` is NOT NULL with a FK, so the inner join always matches;
@@ -106,6 +113,8 @@ class DrizzleMemberRequestRepository implements MemberRequestRepository {
         .select(requestColumns)
         .from(schema.memberRequests)
         .innerJoin(schema.users, eq(schema.memberRequests.userId, schema.users.id))
+        // Left: only newbies have a circle.
+        .leftJoin(schema.circles, eq(schema.circles.id, schema.users.circleId))
         .innerJoin(requester, eq(schema.memberRequests.requestedBy, requester.id))
         // Left, not inner: an unanswered or system-closed request has no resolver.
         .leftJoin(resolver, eq(schema.memberRequests.resolvedBy, resolver.id))
