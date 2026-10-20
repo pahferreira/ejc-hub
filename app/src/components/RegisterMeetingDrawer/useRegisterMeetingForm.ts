@@ -23,7 +23,7 @@ import {
 } from './registerMeetingForm'
 
 /** The one attendance event PostHog receives. */
-const MEETING_REGISTERED_EVENT = 'meeting registered'
+const MEETING_REGISTERED_EVENT = 'action-meeting-registered'
 
 /**
  * The Registrar reunião drawer: open state, the form, search and the save.
