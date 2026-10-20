@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, within } from 'storybook/test'
+import { expect, within, fn } from 'storybook/test'
 import { MeetingList } from './MeetingList'
 import type { AttendanceMeeting } from '../../services/attendance/attendance.types'
 
@@ -48,6 +48,7 @@ type Story = StoryObj<typeof meta>
 export const Coordinator: Story = {
   args: {
     meetings,
+    onSelectMeeting: fn(),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
