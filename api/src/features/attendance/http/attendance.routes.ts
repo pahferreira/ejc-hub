@@ -5,6 +5,7 @@ import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
 import { extractUserInformationFromToken } from '../../../shared/extract-user-info-from-token.ts'
 import { attendanceApp } from '../application/attendance-app.ts'
+import { registerMeetingBodySchema } from './attendance.schema.ts'
 
 /**
  * The caller's Auth0 subject, or a 401 already sent.
@@ -48,6 +49,29 @@ export function attendanceRoutes(server: FastifyServerInstance) {
           const readModel = await attendanceApp.getMyTeamReadModel(authId)
 
           return reply.code(HttpStatus.Ok).send(readModel)
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.post(
+      '/attendance/meetings',
+      {
+        schema: { body: registerMeetingBodySchema },
+        preHandler: authGuard(server),
+      },
+      async (request, reply) => {
+        try {
+          const authId = actorAuthIdOrUnauthorized(request, reply)
+
+          if (!authId) {
+            return reply
+          }
+
+          const result = await attendanceApp.registerMeeting(authId, request.body)
+
+          return reply.code(HttpStatus.Created).send({ result })
         } catch (error) {
           fastifyErrorHandler(reply, error)
         }

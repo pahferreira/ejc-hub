@@ -3,10 +3,13 @@ import type { AttendanceRosterMember } from '../../services/attendance/attendanc
 export type MemberSortKey = 'pessoa' | 'presenca'
 export type MemberSortDirection = 'asc' | 'desc'
 
+// The API's `comparePeopleByNickname`, so the table lists people as /my-team does:
+// nickname, then full name, then id for a stable order.
 function byPessoaAsc(a: AttendanceRosterMember, b: AttendanceRosterMember): number {
   return (
     a.nickname.localeCompare(b.nickname, 'pt-BR', { sensitivity: 'base' }) ||
-    a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
+    a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' }) ||
+    a.userId.localeCompare(b.userId)
   )
 }
 
@@ -41,10 +44,10 @@ function compare(
 }
 
 /**
- * Orders the Membros table. `pessoa` sorts by nickname then full name,
- * accent-insensitively; `presenca` sorts by percentage with the no-meetings
- * rows pinned last. The page defaults to `presenca` ascending, so the people
- * most at risk sit at the top.
+ * Orders the Membros table. `pessoa` sorts by nickname, then full name, then
+ * id, accent-insensitively; `presenca` sorts by percentage with the
+ * no-meetings rows pinned last. The page defaults to `pessoa` ascending, the
+ * order /my-team lists the same people in.
  */
 export function sortRosterMembers(
   members: AttendanceRosterMember[],

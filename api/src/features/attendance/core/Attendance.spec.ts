@@ -1,4 +1,11 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
+// runInTransaction is mocked to run the callback with a throwaway tx handle so
+// the core logic can be unit-tested without a database.
+vi.mock('../../../core/database/client.ts', () => ({
+  runInTransaction: (fn: (tx: unknown) => Promise<unknown>) => fn({}),
+}))
+
 import { Attendance } from './Attendance.ts'
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
@@ -106,12 +113,24 @@ function makeAttendance(scenario: Scenario = {}) {
     listRosterByTeamInstance,
   } as unknown as TeamMembershipRepository
 
+  const insertMeeting = vi
+    .fn()
+    .mockImplementation((input: { heldOn: string }) =>
+      Promise.resolve(buildMeeting({ id: 'new-meeting', heldOn: input.heldOn }))
+    )
   const meetingRepository = {
     listMeetingsByTeamInstance: vi.fn().mockResolvedValue(scenario.meetings ?? []),
+    insertMeeting,
   } as unknown as MeetingRepository
 
+  const insertAttendances = vi
+    .fn()
+    .mockImplementation((inputs: unknown[]) =>
+      Promise.resolve(inputs.map((_, index) => `row-${index}`))
+    )
   const meetingAttendanceRepository = {
     listAttendancesByTeamInstance: vi.fn().mockResolvedValue(scenario.attendanceRows ?? []),
+    insertAttendances,
   } as unknown as MeetingAttendanceRepository
 
   return {
@@ -123,6 +142,8 @@ function makeAttendance(scenario: Scenario = {}) {
       meetingAttendanceRepository
     ),
     listRosterByTeamInstance,
+    insertMeeting,
+    insertAttendances,
   }
 }
 
@@ -309,6 +330,25 @@ describe('Attendance.getMyTeamReadModel read model', () => {
   })
 })
 
+describe('Attendance.getMyTeamReadModel roster order', () => {
+  it('lists the roster by nickname like /my-team, then full name, then id', async () => {
+    // The repository returns people by full name; the rows show the nickname first.
+    const { attendance } = makeAttendance({
+      roster: [
+        buildRoster({ userId: 'u3', name: 'Ana Souza', nickname: 'Zeca' }),
+        buildRoster({ userId: 'u2', name: 'Bruno Lima', nickname: 'Ju' }),
+        buildRoster({ userId: 'u1', name: 'Carla Dias', nickname: null }),
+        buildRoster({ userId: 'u4', name: 'Juliana Alves', nickname: 'Jú' }),
+      ],
+    })
+
+    const model = await attendance.getMyTeamReadModel(ACTOR_AUTH_ID)
+
+    // Carla falls back to her first name; "Ju" and "Jú" tie and break on the full name.
+    expect(model.roster.map((member) => member.nickname)).toEqual(['Carla', 'Ju', 'Jú', 'Zeca'])
+  })
+})
+
 describe('Attendance.getMyTeamReadModel empty state', () => {
   it('reports no meetings and no-meetings bands when nothing has been registered', async () => {
     const { attendance } = makeAttendance({
@@ -327,5 +367,222 @@ describe('Attendance.getMyTeamReadModel empty state', () => {
     expect(model.totalRows).toBe(0)
     expect(model.teamAverage).toMatchObject({ percentage: null, band: 'no-meetings' })
     expect(model.bandCounts['no-meetings']).toBe(2)
+  })
+})
+
+describe('Attendance.registerMeeting', () => {
+  // Noon UTC is 09:00 in São Paulo, so "today" is the same day in both zones.
+  const NOW = new Date('2026-10-20T12:00:00Z')
+
+  const roster: TeamRosterMember[] = [
+    buildRoster({ userId: 'coord', name: 'Ana Coord', type: 'coordinator' }),
+    buildRoster({ userId: 'came', name: 'Bruno Veio' }),
+    buildRoster({ userId: 'excused', name: 'Caio Justificou' }),
+    buildRoster({ userId: 'missed', name: 'Duda Faltou' }),
+  ]
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('creates the meeting on the caller team with one row per roster member, unticked as absent', async () => {
+    const { attendance, insertMeeting, insertAttendances } = makeAttendance({ roster })
+
+    const result = await attendance.registerMeeting(ACTOR_AUTH_ID, {
+      heldOn: '2026-10-18',
+      title: 'Ensaio geral',
+      presentUserIds: ['coord', 'came'],
+      justified: [{ userId: 'excused', reason: 'Trabalho' }],
+    })
+
+    expect(insertMeeting).toHaveBeenCalledWith(
+      {
+        teamInstanceId: TEAM_A,
+        heldOn: '2026-10-18',
+        title: 'Ensaio geral',
+        description: null,
+        createdBy: ACTOR_ID,
+      },
+      expect.anything()
+    )
+    expect(insertAttendances).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        { meetingId: 'new-meeting', userId: 'coord', status: 'present', justificationReason: null },
+        { meetingId: 'new-meeting', userId: 'came', status: 'present', justificationReason: null },
+        {
+          meetingId: 'new-meeting',
+          userId: 'excused',
+          status: 'justified',
+          justificationReason: 'Trabalho',
+        },
+        { meetingId: 'new-meeting', userId: 'missed', status: 'absent', justificationReason: null },
+      ]),
+      expect.anything()
+    )
+    expect(insertAttendances.mock.calls[0][0]).toHaveLength(roster.length)
+    expect(result).toEqual({ meetingId: 'new-meeting', attendeeCount: 2, justifiedCount: 1 })
+  })
+  async function rejection(promise: Promise<unknown>) {
+    const error = await promise.catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(AppError)
+    return error as AppError
+  }
+
+  it('rejects a date after today in São Paulo and writes nothing', async () => {
+    const { attendance, insertMeeting, insertAttendances } = makeAttendance({ roster })
+
+    await rejection(
+      attendance.registerMeeting(ACTOR_AUTH_ID, {
+        heldOn: '2026-10-21',
+        presentUserIds: [],
+        justified: [],
+      })
+    )
+
+    expect(insertMeeting).not.toHaveBeenCalled()
+    expect(insertAttendances).not.toHaveBeenCalled()
+  })
+
+  it('reads today as the São Paulo day, not the UTC one', async () => {
+    // 01:00 UTC on the 21st is still 22:00 on the 20th in São Paulo.
+    vi.setSystemTime(new Date('2026-10-21T01:00:00Z'))
+    const { attendance } = makeAttendance({ roster })
+
+    await rejection(
+      attendance.registerMeeting(ACTOR_AUTH_ID, {
+        heldOn: '2026-10-21',
+        presentUserIds: [],
+        justified: [],
+      })
+    )
+    await expect(
+      attendance.registerMeeting(ACTOR_AUTH_ID, {
+        heldOn: '2026-10-20',
+        presentUserIds: [],
+        justified: [],
+      })
+    ).resolves.toMatchObject({ meetingId: 'new-meeting' })
+  })
+  it('rejects someone ticked present and justified at once', async () => {
+    const { attendance, insertMeeting } = makeAttendance({ roster })
+
+    await rejection(
+      attendance.registerMeeting(ACTOR_AUTH_ID, {
+        heldOn: '2026-10-18',
+        presentUserIds: ['came'],
+        justified: [{ userId: 'came', reason: 'Trabalho' }],
+      })
+    )
+
+    expect(insertMeeting).not.toHaveBeenCalled()
+  })
+
+  it('rejects the same person justified twice', async () => {
+    const { attendance } = makeAttendance({ roster })
+
+    await rejection(
+      attendance.registerMeeting(ACTOR_AUTH_ID, {
+        heldOn: '2026-10-18',
+        presentUserIds: [],
+        justified: [
+          { userId: 'excused', reason: 'Trabalho' },
+          { userId: 'excused', reason: 'Viagem' },
+        ],
+      })
+    )
+  })
+
+  it('rejects a present id that is not on the team roster', async () => {
+    const { attendance, insertMeeting } = makeAttendance({ roster })
+
+    await rejection(
+      attendance.registerMeeting(ACTOR_AUTH_ID, {
+        heldOn: '2026-10-18',
+        presentUserIds: ['stranger'],
+        justified: [],
+      })
+    )
+
+    expect(insertMeeting).not.toHaveBeenCalled()
+  })
+
+  it('rejects a justified id that is not on the team roster', async () => {
+    const { attendance } = makeAttendance({ roster })
+
+    await rejection(
+      attendance.registerMeeting(ACTOR_AUTH_ID, {
+        heldOn: '2026-10-18',
+        presentUserIds: [],
+        justified: [{ userId: 'stranger', reason: 'Trabalho' }],
+      })
+    )
+  })
+  it.each(['', '   '])('rejects a justified absence whose reason is %j', async (reason) => {
+    const { attendance, insertMeeting } = makeAttendance({ roster })
+
+    await rejection(
+      attendance.registerMeeting(ACTOR_AUTH_ID, {
+        heldOn: '2026-10-18',
+        presentUserIds: [],
+        justified: [{ userId: 'excused', reason }],
+      })
+    )
+
+    expect(insertMeeting).not.toHaveBeenCalled()
+  })
+
+  it('rejects a caller who is only a member, not a coordinator', async () => {
+    const { attendance, insertMeeting } = makeAttendance({
+      roster,
+      actorMembership: { id: 'm-2', teamInstanceId: TEAM_A, type: 'member' },
+    })
+
+    const error = await rejection(
+      attendance.registerMeeting(ACTOR_AUTH_ID, {
+        heldOn: '2026-10-18',
+        presentUserIds: [],
+        justified: [],
+      })
+    )
+
+    expect(error.getAppErrorCode()).toBe(AppErrorCode.Forbidden)
+    expect(insertMeeting).not.toHaveBeenCalled()
+  })
+
+  it('allows a second meeting on a day that already has one', async () => {
+    const { attendance, insertMeeting } = makeAttendance({
+      roster,
+      meetings: [buildMeeting({ id: 'earlier', heldOn: '2026-10-18' })],
+    })
+
+    await attendance.registerMeeting(ACTOR_AUTH_ID, {
+      heldOn: '2026-10-18',
+      presentUserIds: ['came'],
+      justified: [],
+    })
+
+    expect(insertMeeting).toHaveBeenCalledOnce()
+  })
+
+  it('stores a blank title and description as null and trims the reason', async () => {
+    const { attendance, insertMeeting, insertAttendances } = makeAttendance({ roster })
+
+    await attendance.registerMeeting(ACTOR_AUTH_ID, {
+      heldOn: '2026-10-18',
+      title: '  ',
+      description: '',
+      presentUserIds: [],
+      justified: [{ userId: 'excused', reason: '  Trabalho ' }],
+    })
+
+    expect(insertMeeting.mock.calls[0][0]).toMatchObject({ title: null, description: null })
+    expect(insertAttendances.mock.calls[0][0]).toContainEqual(
+      expect.objectContaining({ userId: 'excused', justificationReason: 'Trabalho' })
+    )
   })
 })

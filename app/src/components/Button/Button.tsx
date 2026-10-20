@@ -7,16 +7,18 @@ type ButtonProps = {
   onClick?: () => void
   variant?: 'primary' | 'secondary' | 'destructive'
   ariaLabel?: string
+  size?: 'regular' | 'small'
 }
 
 const foregroundVariant = {
   primary: 'bg-primary text-white',
-  secondary: 'bg-secondary text-dark-brown',
+  secondary: 'bg-secondary/60 text-dark-brown',
   destructive: 'bg-red text-white',
 }
 
 export function Button(props: ButtonProps) {
   const variant = props.variant || 'primary'
+  const size = props.size || 'regular'
 
   return (
     <button
@@ -25,7 +27,8 @@ export function Button(props: ButtonProps) {
       aria-label={props.ariaLabel}
       className={clsx(
         foregroundVariant[variant],
-        'px-3 py-1.5 text-sm font-medium gap-2 border-2 border-dark-brown rounded-lg button-shadow hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50'
+        'min-w-fit button-shadow gap-2 border-2 border-dark-brown rounded-lg hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50',
+        size === 'small' ? 'px-1.5 py-0.5 text-xs' : 'px-3 py-1.5 text-sm'
       )}
     >
       {props.children}

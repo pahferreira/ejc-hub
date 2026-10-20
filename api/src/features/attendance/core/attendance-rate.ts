@@ -10,12 +10,17 @@ export type MemberAttendanceRecord = {
 // The org runs in Brazil, so "the day someone joined" is a São Paulo calendar
 // day. Reading it in UTC would push an evening join to the next day and drop a
 // meeting held that same evening.
-const JOIN_DAY_FORMAT = new Intl.DateTimeFormat('en-CA', {
+const SAO_PAULO_DAY_FORMAT = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Sao_Paulo',
   year: 'numeric',
   month: '2-digit',
   day: '2-digit',
 })
+
+/** The São Paulo calendar day of an instant, as `YYYY-MM-DD` (`en-CA`), so days compare as strings. */
+export function toSaoPauloDay(instant: Date): string {
+  return SAO_PAULO_DAY_FORMAT.format(instant)
+}
 
 /**
  * Whether a meeting falls before a member joined the team, and so does not count
@@ -25,7 +30,7 @@ const JOIN_DAY_FORMAT = new Intl.DateTimeFormat('en-CA', {
  */
 export function isHeldBeforeJoin(heldOn: string, joinedAt: Date): boolean {
   // `en-CA` formats as YYYY-MM-DD, so the two compare as strings.
-  return heldOn < JOIN_DAY_FORMAT.format(joinedAt)
+  return heldOn < toSaoPauloDay(joinedAt)
 }
 
 /**
