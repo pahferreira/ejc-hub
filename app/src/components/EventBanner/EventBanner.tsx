@@ -1,5 +1,6 @@
-import { FiCalendar, FiDollarSign, FiMapPin } from 'react-icons/fi'
+import { FiBookOpen, FiCalendar, FiDollarSign, FiMapPin, FiMusic, FiStar } from 'react-icons/fi'
 import { formatCurrency } from '../../utils/formatCurrency/formatCurrency'
+import { EventBannerInfoItem } from '../EventBannerInfoItem/EventBannerInfoItem'
 
 export type EventBannerProps = {
   name: string
@@ -7,6 +8,9 @@ export type EventBannerProps = {
   startsAt: string | null
   endsAt: string | null
   location: string | null
+  song: string | null
+  theme: string | null
+  biblePassage: string | null
   /** Subscription fee in cents. 0 means no fee is set and hides the Taxa block. */
   feeAmountCents: number
   feeCurrency: string
@@ -76,40 +80,21 @@ export function EventBanner(props: EventBannerProps) {
           <p className="m-0 text-white/80">{props.description}</p>
         </div>
 
-        <div className="flex flex-col gap-6 sm:flex-row sm:gap-12">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
-              <FiCalendar size={18} aria-hidden />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xs text-white/70">Data</span>
-              <span className="text-sm font-semibold">{dateLabel}</span>
-            </div>
-          </div>
-
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:flex lg:flex-wrap lg:gap-x-12 lg:gap-y-6">
+          {props.theme && <EventBannerInfoItem icon={FiStar} label="Tema" value={props.theme} />}
+          {props.biblePassage && (
+            <EventBannerInfoItem
+              icon={FiBookOpen}
+              label="Passagem Bíblica"
+              value={props.biblePassage}
+            />
+          )}
+          {props.song && <EventBannerInfoItem icon={FiMusic} label="Música" value={props.song} />}
+          <EventBannerInfoItem icon={FiCalendar} label="Data" value={dateLabel} />
           {props.location && (
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
-                <FiMapPin size={18} aria-hidden />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-white/70">Local</span>
-                <span className="text-sm font-semibold">{props.location}</span>
-              </div>
-            </div>
+            <EventBannerInfoItem icon={FiMapPin} label="Local" value={props.location} />
           )}
-
-          {feeLabel && (
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
-                <FiDollarSign size={18} aria-hidden />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs text-white/70">Taxa</span>
-                <span className="text-sm font-semibold">{feeLabel}</span>
-              </div>
-            </div>
-          )}
+          {feeLabel && <EventBannerInfoItem icon={FiDollarSign} label="Taxa" value={feeLabel} />}
         </div>
       </div>
     </section>

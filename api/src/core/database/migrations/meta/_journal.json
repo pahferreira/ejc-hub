@@ -344,6 +344,13 @@
       "when": 1792422505466,
       "tag": "0048_attendance",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1792506225574,
+      "tag": "0049_event_banner_details",
+      "breakpoints": true
     }
   ]
 }

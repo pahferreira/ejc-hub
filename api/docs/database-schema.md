@@ -44,6 +44,9 @@
 | description | text | |
 | starts_at, ends_at | timestamp | Nullable |
 | location | text | Nullable |
+| song | text | Nullable |
+| theme | text | Nullable |
+| bible_passage | text | Nullable |
 | is_current | boolean | Marks the active event, default `false` |
 | subscription_mode | enum | `open`, `waiting_list`, `closed` — default `open` |
 | fee_amount_cents | integer | Subscription fee in cents, default `0` (= no fee tracked) |
