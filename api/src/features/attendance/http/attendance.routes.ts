@@ -59,6 +59,31 @@ export function attendanceRoutes(server: FastifyServerInstance) {
       }
     )
 
+    // Authentication only, as above. Any member of a team in the current event
+    // may read their own record; `Attendance` answers 403 for anyone without a
+    // membership and returns only the caller's own rows.
+    server.get(
+      '/attendance/me',
+      {
+        preHandler: authGuard(server),
+      },
+      async (request, reply) => {
+        try {
+          const authId = actorAuthIdOrUnauthorized(request, reply)
+
+          if (!authId) {
+            return reply
+          }
+
+          const readModel = await attendanceApp.getMyReadModel(authId)
+
+          return reply.code(HttpStatus.Ok).send(readModel)
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
     server.post(
       '/attendance/meetings',
       {

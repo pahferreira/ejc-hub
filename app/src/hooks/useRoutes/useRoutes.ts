@@ -21,6 +21,13 @@ export function useRoutes() {
         return false
       }
 
+      if (
+        route.anyFeatureFlag &&
+        !route.anyFeatureFlag.some((flag) => isFeatureEnabled(flag, false))
+      ) {
+        return false
+      }
+
       return true
     }),
   }

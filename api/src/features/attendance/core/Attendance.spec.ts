@@ -827,3 +827,175 @@ describe('Attendance.deleteMeeting', () => {
     expect(deleteMeeting).not.toHaveBeenCalled()
   })
 })
+
+describe('Attendance.getMyReadModel authorization', () => {
+  it('rejects a caller with no membership in the current event', async () => {
+    const { attendance } = makeAttendance({ actorMembership: undefined })
+
+    const error = await attendance.getMyReadModel(ACTOR_AUTH_ID).catch((e: AppError) => e)
+
+    expect(error).toBeInstanceOf(AppError)
+    expect((error as AppError).getAppErrorCode()).toBe(AppErrorCode.Forbidden)
+  })
+})
+
+describe('Attendance.getMyReadModel own record', () => {
+  const MEMBER = { id: 'm-9', teamInstanceId: TEAM_A, type: 'member' as const }
+
+  const roster: TeamRosterMember[] = [
+    buildRoster({ userId: ACTOR_ID, name: 'Eu Mesma' }),
+    buildRoster({ userId: 'peer', name: 'Pedro Colega' }),
+  ]
+
+  const meetings = [
+    buildMeeting({ id: 'm3', heldOn: '2026-10-04', title: 'Ensaio' }),
+    buildMeeting({ id: 'm2', heldOn: '2026-10-03' }),
+    buildMeeting({ id: 'm1', heldOn: '2026-10-02' }),
+  ]
+
+  const attendanceRows: MeetingAttendanceRow[] = [
+    buildRow('m1', '2026-10-02', ACTOR_ID, 'present'),
+    buildRow('m1', '2026-10-02', 'peer', 'absent'),
+    buildRow('m2', '2026-10-03', ACTOR_ID, 'justified', 'Plantão'),
+    buildRow('m2', '2026-10-03', 'peer', 'absent'),
+    buildRow('m3', '2026-10-04', ACTOR_ID, 'absent'),
+    buildRow('m3', '2026-10-04', 'peer', 'present'),
+  ]
+
+  it("returns the caller's own rate, not the team's", async () => {
+    const { attendance } = makeAttendance({
+      actorMembership: MEMBER,
+      roster,
+      meetings,
+      attendanceRows,
+    })
+
+    const model = await attendance.getMyReadModel(ACTOR_AUTH_ID)
+
+    // Own rows: present, justified, absent -> 1 / (3 - 1) = 50%. The team's
+    // pooled rate over all six rows would be 2/5 = 40%.
+    expect(model.rate).toEqual({
+      present: 1,
+      eligible: 2,
+      justified: 1,
+      percentage: 50,
+      band: 'insufficient-data',
+    })
+    expect(model.joinedAt).toEqual(JOINED_EARLY)
+  })
+
+  it("gives each meeting the caller's own status beside the team's aggregate, with no one else's row", async () => {
+    const { attendance } = makeAttendance({
+      actorMembership: MEMBER,
+      roster,
+      meetings,
+      attendanceRows,
+    })
+
+    const model = await attendance.getMyReadModel(ACTOR_AUTH_ID)
+
+    expect(model.meetings).toEqual([
+      expect.objectContaining({
+        id: 'm3',
+        title: 'Ensaio',
+        status: 'absent',
+        justificationReason: null,
+        beforeJoin: false,
+      }),
+      expect.objectContaining({ id: 'm2', status: 'justified', justificationReason: 'Plantão' }),
+      expect.objectContaining({ id: 'm1', status: 'present' }),
+    ])
+    expect(model.meetings[0].teamRate).toMatchObject({ present: 1, eligible: 2, percentage: 50 })
+    expect(JSON.stringify(model)).not.toContain('peer')
+    expect(JSON.stringify(model)).not.toContain('Pedro')
+  })
+
+  it('serves a coordinator their own record too', async () => {
+    const { attendance } = makeAttendance({ roster, meetings, attendanceRows })
+
+    const model = await attendance.getMyReadModel(ACTOR_AUTH_ID)
+
+    expect(model.rate).toMatchObject({ present: 1, eligible: 2 })
+  })
+})
+
+describe('Attendance.getMyReadModel beforeJoin', () => {
+  const MEMBER = { id: 'm-9', teamInstanceId: TEAM_A, type: 'member' as const }
+  // 21:00 in São Paulo on the 4th, though already the 5th in UTC.
+  const JOINED_EVENING = new Date('2026-10-05T00:00:00Z')
+
+  const roster: TeamRosterMember[] = [
+    buildRoster({ userId: ACTOR_ID, name: 'Eu Nova', joinedAt: JOINED_EVENING }),
+    buildRoster({ userId: 'peer', name: 'Pedro Colega' }),
+  ]
+
+  const meetings = [
+    buildMeeting({ id: 'after-no-row', heldOn: '2026-10-06' }),
+    buildMeeting({ id: 'join-day', heldOn: '2026-10-04' }),
+    buildMeeting({ id: 'backdated', heldOn: '2026-10-03' }),
+    buildMeeting({ id: 'before', heldOn: '2026-10-02' }),
+  ]
+
+  const attendanceRows: MeetingAttendanceRow[] = [
+    buildRow('before', '2026-10-02', 'peer', 'present'),
+    // Registered after the caller joined, for a date before it: they got a row.
+    buildRow('backdated', '2026-10-03', ACTOR_ID, 'absent'),
+    buildRow('backdated', '2026-10-03', 'peer', 'present'),
+    buildRow('join-day', '2026-10-04', ACTOR_ID, 'present'),
+    buildRow('join-day', '2026-10-04', 'peer', 'present'),
+    // Registered before the caller was on the roster, so it holds no row for them.
+    buildRow('after-no-row', '2026-10-06', 'peer', 'absent'),
+  ]
+
+  async function readModel() {
+    const { attendance } = makeAttendance({
+      actorMembership: MEMBER,
+      roster,
+      meetings,
+      attendanceRows,
+    })
+    const model = await attendance.getMyReadModel(ACTOR_AUTH_ID)
+    return { model, byId: new Map(model.meetings.map((meeting) => [meeting.id, meeting])) }
+  }
+
+  it('flags meetings held before the São Paulo join day, with no status', async () => {
+    const { byId } = await readModel()
+
+    expect(byId.get('before')).toMatchObject({ beforeJoin: true, status: null })
+    expect(byId.get('backdated')).toMatchObject({ beforeJoin: true, status: null })
+  })
+
+  it('counts a meeting held on the join day itself', async () => {
+    const { byId } = await readModel()
+
+    expect(byId.get('join-day')).toMatchObject({ beforeJoin: false, status: 'present' })
+  })
+
+  it('flags a meeting that holds no row for the caller', async () => {
+    const { byId } = await readModel()
+
+    expect(byId.get('after-no-row')).toMatchObject({ beforeJoin: true, status: null })
+  })
+
+  it('leaves flagged meetings out of the own rate but keeps their team rate', async () => {
+    const { model, byId } = await readModel()
+
+    // Only the join-day meeting counts: the backdated absence does not.
+    expect(model.rate).toMatchObject({ present: 1, eligible: 1, justified: 0, percentage: 100 })
+    expect(byId.get('before')?.teamRate).toMatchObject({ present: 1, eligible: 1 })
+  })
+
+  it('reads no-meetings when nothing has happened since joining', async () => {
+    const { attendance } = makeAttendance({
+      actorMembership: MEMBER,
+      roster,
+      meetings: [buildMeeting({ id: 'before', heldOn: '2026-10-02' })],
+      attendanceRows: [buildRow('before', '2026-10-02', 'peer', 'present')],
+    })
+
+    const model = await attendance.getMyReadModel(ACTOR_AUTH_ID)
+
+    expect(model.rate).toMatchObject({ percentage: null, band: 'no-meetings' })
+    expect(model.meetings).toHaveLength(1)
+  })
+})

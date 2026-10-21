@@ -2,6 +2,7 @@ import { isAxiosError } from 'axios'
 import { api } from '../api'
 import type {
   CoordinatorAttendanceReadModel,
+  MemberAttendanceReadModel,
   RegisterMeetingBody,
   RegisterMeetingResult,
   UpdateMeetingBody,
@@ -16,6 +17,15 @@ import type {
  */
 async function getMyTeamAttendance() {
   const response = await api.get<CoordinatorAttendanceReadModel>('/attendance/my-team')
+  return response.data
+}
+
+/**
+ * The caller's own attendance record on their team. The API answers 403 for
+ * anyone without a membership in the current event.
+ */
+async function getMyAttendance() {
+  const response = await api.get<MemberAttendanceReadModel>('/attendance/me')
   return response.data
 }
 
@@ -74,6 +84,7 @@ async function deleteMeeting(meetingId: string) {
 
 export const attendanceApi = {
   getMyTeamAttendance,
+  getMyAttendance,
   registerMeeting,
   updateMeeting,
   deleteMeeting,

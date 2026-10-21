@@ -93,6 +93,14 @@ export function Sidebar(props: SidebarProps) {
         if (item.featureFlag && !isFeatureEnabled(item.featureFlag, false)) {
           return false
         }
+        if (item.featureFlagByMembership) {
+          const flag = isCoordinator
+            ? item.featureFlagByMembership.coordinator
+            : item.featureFlagByMembership.member
+          if (!isFeatureEnabled(flag, false)) {
+            return false
+          }
+        }
         return true
       }),
     }))

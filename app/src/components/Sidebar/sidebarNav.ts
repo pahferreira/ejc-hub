@@ -48,6 +48,11 @@ export type SidebarNavItem = {
    */
   featureFlag?: FeatureFlagValue
   /**
+   * Like `featureFlag`, but the flag depends on the caller's membership type:
+   * one page whose coordinator and member views roll out separately.
+   */
+  featureFlagByMembership?: { coordinator: FeatureFlagValue; member: FeatureFlagValue }
+  /**
    * Highlights only on an exact path match. Needed when another nav item sits
    * below this one's path (`/financial/event-fee` vs `/financial/event-fee/members`),
    * since `NavLink` otherwise treats the ancestor as active too and both light up.
@@ -175,8 +180,12 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         label: 'Reuniões',
         path: ROUTE_PATHS.MY_TEAM_MEETINGS,
         icon: FiCalendar,
-        requiresCoordinator: true,
-        featureFlag: FeatureFlag.CoordinatorAttendance,
+        // Everyone on a team: coordinators get the board, members their own history.
+        requiresTeamMembership: true,
+        featureFlagByMembership: {
+          coordinator: FeatureFlag.CoordinatorAttendance,
+          member: FeatureFlag.AttendanceVisibility,
+        },
       },
     ],
   },
