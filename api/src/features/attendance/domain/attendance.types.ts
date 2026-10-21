@@ -81,8 +81,6 @@ export type MemberAttendanceMeeting = {
   /** `YYYY-MM-DD`. */
   heldOn: string
   title: string | null
-  /** `updated_at > created_at`: the "editada" marker everyone sees. */
-  edited: boolean
   /** The team's pooled rate on this meeting: an aggregate, no names. */
   teamRate: AttendanceRate
   /**

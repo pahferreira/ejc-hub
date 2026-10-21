@@ -49,19 +49,18 @@ export function buildMemberReadModel(input: {
     // A row dated before the join day is skipped by the rate, so it is too.
     const ownRow = ownRowByMeeting.get(meeting.id)
     const beforeJoin = !ownRow || isHeldBeforeJoin(meeting.heldOn, joinedAt)
-    const counted = beforeJoin ? undefined : ownRow
+    const countedOwnRow = beforeJoin ? undefined : ownRow
 
     return {
       id: meeting.id,
       heldOn: meeting.heldOn,
       title: meeting.title,
-      edited: meeting.updatedAt.getTime() > meeting.createdAt.getTime(),
       teamRate: toPooledAttendanceRate(
         (rowsByMeeting.get(meeting.id) ?? []).map((row) => row.status)
       ),
       beforeJoin,
-      status: counted?.status ?? null,
-      justificationReason: counted?.justificationReason ?? null,
+      status: countedOwnRow?.status ?? null,
+      justificationReason: countedOwnRow?.justificationReason ?? null,
     }
   })
 

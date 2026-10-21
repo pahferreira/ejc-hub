@@ -74,7 +74,6 @@ export type MemberAttendanceMeeting = {
   /** `YYYY-MM-DD`. */
   heldOn: string
   title: string | null
-  edited: boolean
   /** The team's pooled rate on this meeting: an aggregate, no names. */
   teamRate: AttendanceRate
   /** Held or registered before the caller joined: greyed out, does not count. */

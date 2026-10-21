@@ -215,16 +215,16 @@ export class Attendance {
       ])
 
       // The roster carries the join date; the membership lookup does not.
-      const self = roster.find((member) => member.userId === actor.id)
+      const callerOnRoster = roster.find((member) => member.userId === actor.id)
 
-      if (!self) {
+      if (!callerOnRoster) {
         throw new AppError('Caller is not on their team roster')
       }
 
       return buildMemberReadModel({
         teamInstanceId,
         userId: actor.id,
-        joinedAt: self.joinedAt,
+        joinedAt: callerOnRoster.joinedAt,
         meetings,
         attendanceRows,
       })

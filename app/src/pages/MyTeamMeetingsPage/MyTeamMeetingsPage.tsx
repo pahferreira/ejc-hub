@@ -183,12 +183,16 @@ export function MyTeamMeetingsPage() {
   // After the error branch: a dropped status request leaves the membership
   // undefined, which read as a verdict would tell a team member the page is
   // not for them when all that happened was a failed fetch.
+  // The route opens on either flag, so someone on a team may land here while
+  // their own view is still off: say so rather than deny they are on a team.
   if (!showsCoordinatorView && !showsMemberView) {
     return (
       <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
         <div className="max-w-8xl mx-auto rounded-xl border border-tertiary bg-white px-6 py-12 text-center shadow-md">
           <p className="m-0 text-sm text-gray-600">
-            Esta página é exclusiva para membros de uma equipe.
+            {hasTeam
+              ? 'As reuniões da equipe ainda não estão disponíveis para você.'
+              : 'Esta página é exclusiva para membros de uma equipe.'}
           </p>
         </div>
       </div>
