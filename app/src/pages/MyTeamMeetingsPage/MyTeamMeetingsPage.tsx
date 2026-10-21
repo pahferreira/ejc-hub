@@ -2,8 +2,8 @@ import { FiAlertTriangle, FiCalendar, FiFileText } from 'react-icons/fi'
 import { Button } from '../../components/Button/Button'
 import { MeetingList } from '../../components/MeetingList/MeetingList'
 import { MembersAttendanceTable } from '../../components/MembersAttendanceTable/MembersAttendanceTable'
-import { RegisterMeetingDrawer } from '../../components/RegisterMeetingDrawer/RegisterMeetingDrawer'
-import { useRegisterMeetingForm } from '../../components/RegisterMeetingDrawer/useRegisterMeetingForm'
+import { MeetingDrawer } from '../../components/MeetingDrawer/MeetingDrawer'
+import { useMeetingForm } from '../../components/MeetingDrawer/useMeetingForm'
 import { useCurrentEventSubscriptionStatusQuery } from '../../services/events/useCurrentEventSubscriptionStatusQuery'
 import { useMyTeamAttendanceQuery } from '../../services/attendance/useMyTeamAttendanceQuery'
 import { StatusCard } from '../../components/StatusCard/StatusCard'
@@ -82,7 +82,7 @@ function AttendanceStats(props: { model: CoordinatorAttendanceReadModel }) {
  * are the same, verbatim: the error branch stays above the not-a-coordinator one
  * so a dropped request is never read as a verdict, and the query is gated on
  * `isCoordinator` so the endpoint's 403 does not race into the generic error
- * branch. Editing and deleting meetings come with #280.
+ * branch. Clicking a meeting opens the same drawer in edit mode, with delete.
  */
 export function MyTeamMeetingsPage() {
   const subscriptionStatus = useCurrentEventSubscriptionStatusQuery()
@@ -90,7 +90,7 @@ export function MyTeamMeetingsPage() {
 
   const attendanceQuery = useMyTeamAttendanceQuery({ enabled: isCoordinator })
   // Above the early returns, so it reads an empty roster until the model lands.
-  const registerDrawer = useRegisterMeetingForm(attendanceQuery.data?.roster ?? [])
+  const meetingDrawer = useMeetingForm(attendanceQuery.data?.roster ?? [])
 
   if (subscriptionStatus.isLoading || attendanceQuery.isLoading) {
     return (
@@ -155,11 +155,11 @@ export function MyTeamMeetingsPage() {
                 Registre cada reunião depois que ela acontecer. Clique numa reunião para editar.
               </p>
             </div>
-            <Button onClick={registerDrawer.open}>Registrar reunião</Button>
+            <Button onClick={meetingDrawer.openNew}>Registrar reunião</Button>
           </div>
 
           {hasMeetings ? (
-            <MeetingList meetings={model.meetings} />
+            <MeetingList meetings={model.meetings} onSelectMeeting={meetingDrawer.openEdit} />
           ) : (
             <div className="rounded-xl border border-dashed border-tertiary bg-white px-6 py-12 text-center">
               <p className="m-0 text-sm text-gray-600">
@@ -177,7 +177,7 @@ export function MyTeamMeetingsPage() {
         </section>
       </div>
 
-      <RegisterMeetingDrawer {...registerDrawer} teamName={teamName} />
+      <MeetingDrawer {...meetingDrawer} teamName={teamName} />
     </div>
   )
 }

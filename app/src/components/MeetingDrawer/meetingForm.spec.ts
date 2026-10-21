@@ -6,14 +6,20 @@ import {
   initialMeetingForm,
   justify,
   markAll,
+  meetingFormFromMeeting,
+  meetingRoster,
   rowStatus,
   setPresent,
   setReason,
   tallyAttendance,
-  toRegisterMeetingBody,
+  toMeetingBody,
   validateMeetingForm,
-} from './registerMeetingForm'
-import type { AttendanceRosterMember } from '../../services/attendance/attendance.types'
+} from './meetingForm'
+import type {
+  AttendanceMeeting,
+  AttendanceRosterMember,
+  MeetingAttendanceEntry,
+} from '../../services/attendance/attendance.types'
 
 const TODAY = '2026-10-20'
 
@@ -165,13 +171,13 @@ describe('validateMeetingForm', () => {
   })
 })
 
-describe('toRegisterMeetingBody', () => {
+describe('toMeetingBody', () => {
   it('sends the ticked and the justified, trimmed, and leaves the rest to be absent', () => {
     let form = { ...initialMeetingForm(TODAY), heldOn: '2026-10-18', title: ' Ensaio geral ' }
     form = setPresent(form, 'ana', true)
     form = setReason(justify(form, 'bia'), 'bia', ' Trabalho ')
 
-    expect(toRegisterMeetingBody(form, ROSTER)).toEqual({
+    expect(toMeetingBody(form, ROSTER)).toEqual({
       heldOn: '2026-10-18',
       title: 'Ensaio geral',
       description: undefined,
@@ -184,9 +190,69 @@ describe('toRegisterMeetingBody', () => {
     let form = setPresent(initialMeetingForm(TODAY), 'ghost', true)
     form = setReason(justify(form, 'stranger'), 'stranger', 'Trabalho')
 
-    const body = toRegisterMeetingBody(form, ROSTER)
+    const body = toMeetingBody(form, ROSTER)
 
     expect(body.presentUserIds).toEqual([])
     expect(body.justified).toEqual([])
+  })
+})
+
+describe('editing a meeting', () => {
+  function entry(
+    userId: string,
+    name: string,
+    status: MeetingAttendanceEntry['status'],
+    justificationReason: string | null = null
+  ): MeetingAttendanceEntry {
+    return { userId, name, nickname: name, pictureUrl: null, status, justificationReason }
+  }
+
+  // 'ghost' has left the team since; 'caio' joined after and has no row.
+  const MEETING: AttendanceMeeting = {
+    id: 'm1',
+    heldOn: '2026-10-18',
+    title: 'Ensaio geral',
+    description: null,
+    edited: false,
+    rate: { present: 1, eligible: 2, justified: 1, percentage: 50, band: 'needs-replacement' },
+    attendances: [
+      entry('ana', 'Aninha', 'present'),
+      entry('joao', 'Jota', 'absent'),
+      entry('ghost', 'Fantasma', 'justified', 'Viagem'),
+    ],
+  }
+
+  it("pre-fills the date, text, statuses and reasons from the meeting's rows", () => {
+    const form = meetingFormFromMeeting(MEETING)
+
+    expect(form).toMatchObject({ heldOn: '2026-10-18', title: 'Ensaio geral', description: '' })
+    expect(rowStatus(form, 'ana')).toBe('present')
+    expect(rowStatus(form, 'joao')).toBe('absent')
+    expect(rowStatus(form, 'ghost')).toBe('justified')
+    expect(form.reasons.ghost).toBe('Viagem')
+  })
+
+  it("takes the roster from the meeting's rows: removed members stay, later joiners don't appear", () => {
+    const roster = meetingRoster(MEETING, ROSTER)
+
+    expect(roster.map((person) => person.userId)).toEqual(['ana', 'joao', 'ghost'])
+    expect(groupRoster(roster)).toMatchObject({
+      coordinators: [expect.objectContaining({ userId: 'ana' })],
+      members: [expect.objectContaining({ userId: 'joao' })],
+      removed: [expect.objectContaining({ userId: 'ghost' })],
+    })
+  })
+
+  it("sends every row's status from the meeting roster, the removed member included", () => {
+    const roster = meetingRoster(MEETING, ROSTER)
+    const form = setPresent(meetingFormFromMeeting(MEETING), 'joao', true)
+
+    expect(toMeetingBody(form, roster)).toEqual({
+      heldOn: '2026-10-18',
+      title: 'Ensaio geral',
+      description: undefined,
+      presentUserIds: ['ana', 'joao'],
+      justified: [{ userId: 'ghost', reason: 'Viagem' }],
+    })
   })
 })

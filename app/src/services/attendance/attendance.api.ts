@@ -4,6 +4,8 @@ import type {
   CoordinatorAttendanceReadModel,
   RegisterMeetingBody,
   RegisterMeetingResult,
+  UpdateMeetingBody,
+  UpdateMeetingResult,
 } from './attendance.types'
 
 /**
@@ -39,7 +41,40 @@ async function registerMeeting(body: RegisterMeetingBody) {
   }
 }
 
+const UPDATE_MEETING_ERROR = 'Erro ao salvar reunião'
+
+/**
+ * Edits a meeting on the caller's own team. A 422 means the form is stale, as
+ * on register; a 403 means the meeting is gone or no longer the caller's.
+ */
+async function updateMeeting(params: { meetingId: string; body: UpdateMeetingBody }) {
+  try {
+    const response = await api.put<{ result: UpdateMeetingResult }>(
+      `/attendance/meetings/${params.meetingId}`,
+      params.body
+    )
+
+    return response.data.result
+  } catch (error: unknown) {
+    if (isAxiosError(error) && [403, 422].includes(error.response?.status ?? 0)) {
+      throw new Error(`${UPDATE_MEETING_ERROR}. Atualize a página e tente novamente.`)
+    }
+    throw new Error(UPDATE_MEETING_ERROR)
+  }
+}
+
+/** Hard-deletes a meeting on the caller's own team, rows and all. */
+async function deleteMeeting(meetingId: string) {
+  try {
+    await api.delete(`/attendance/meetings/${meetingId}`)
+  } catch {
+    throw new Error('Erro ao excluir reunião')
+  }
+}
+
 export const attendanceApi = {
   getMyTeamAttendance,
   registerMeeting,
+  updateMeeting,
+  deleteMeeting,
 }

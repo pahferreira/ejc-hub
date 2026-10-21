@@ -86,6 +86,10 @@ type Scenario = {
   roster?: TeamRosterMember[]
   meetings?: ReturnType<typeof buildMeeting>[]
   attendanceRows?: MeetingAttendanceRow[]
+  /** What `getMeeting` answers; defaults to the first of `meetings`. */
+  meeting?: ReturnType<typeof buildMeeting>
+  /** What `listAttendancesByMeeting` answers. */
+  meetingRows?: MeetingAttendanceRow[]
 }
 
 function makeAttendance(scenario: Scenario = {}) {
@@ -118,9 +122,22 @@ function makeAttendance(scenario: Scenario = {}) {
     .mockImplementation((input: { heldOn: string }) =>
       Promise.resolve(buildMeeting({ id: 'new-meeting', heldOn: input.heldOn }))
     )
+  const updateMeeting = vi
+    .fn()
+    .mockImplementation((id: string, input: { heldOn: string }) =>
+      Promise.resolve(buildMeeting({ id, heldOn: input.heldOn }))
+    )
+  const deleteMeeting = vi
+    .fn()
+    .mockImplementation((id: string) => Promise.resolve(buildMeeting({ id, heldOn: '2026-10-18' })))
   const meetingRepository = {
     listMeetingsByTeamInstance: vi.fn().mockResolvedValue(scenario.meetings ?? []),
+    getMeeting: vi
+      .fn()
+      .mockResolvedValue('meeting' in scenario ? scenario.meeting : scenario.meetings?.[0]),
     insertMeeting,
+    updateMeeting,
+    deleteMeeting,
   } as unknown as MeetingRepository
 
   const insertAttendances = vi
@@ -128,9 +145,16 @@ function makeAttendance(scenario: Scenario = {}) {
     .mockImplementation((inputs: unknown[]) =>
       Promise.resolve(inputs.map((_, index) => `row-${index}`))
     )
+  const updateAttendanceStatuses = vi
+    .fn()
+    .mockImplementation((_meetingId: string, updates: { userId: string }[]) =>
+      Promise.resolve(updates.map((update) => update.userId))
+    )
   const meetingAttendanceRepository = {
     listAttendancesByTeamInstance: vi.fn().mockResolvedValue(scenario.attendanceRows ?? []),
+    listAttendancesByMeeting: vi.fn().mockResolvedValue(scenario.meetingRows ?? []),
     insertAttendances,
+    updateAttendanceStatuses,
   } as unknown as MeetingAttendanceRepository
 
   return {
@@ -144,7 +168,16 @@ function makeAttendance(scenario: Scenario = {}) {
     listRosterByTeamInstance,
     insertMeeting,
     insertAttendances,
+    updateMeeting,
+    deleteMeeting,
+    updateAttendanceStatuses,
   }
+}
+
+async function rejection(promise: Promise<unknown>) {
+  const error = await promise.catch((e: unknown) => e)
+  expect(error).toBeInstanceOf(AppError)
+  return error as AppError
 }
 
 describe('Attendance.getMyTeamReadModel authorization', () => {
@@ -427,11 +460,6 @@ describe('Attendance.registerMeeting', () => {
     expect(insertAttendances.mock.calls[0][0]).toHaveLength(roster.length)
     expect(result).toEqual({ meetingId: 'new-meeting', attendeeCount: 2, justifiedCount: 1 })
   })
-  async function rejection(promise: Promise<unknown>) {
-    const error = await promise.catch((e: unknown) => e)
-    expect(error).toBeInstanceOf(AppError)
-    return error as AppError
-  }
 
   it('rejects a date after today in São Paulo and writes nothing', async () => {
     const { attendance, insertMeeting, insertAttendances } = makeAttendance({ roster })
@@ -584,5 +612,218 @@ describe('Attendance.registerMeeting', () => {
     expect(insertAttendances.mock.calls[0][0]).toContainEqual(
       expect.objectContaining({ userId: 'excused', justificationReason: 'Trabalho' })
     )
+  })
+})
+
+describe('Attendance.updateMeeting', () => {
+  const NOW = new Date('2026-10-20T12:00:00Z')
+  const MEETING = buildMeeting({ id: 'm1', heldOn: '2026-10-18', title: 'Ensaio' })
+
+  // 'ghost' left the team after this meeting; 'late' joined after it and has no row.
+  const roster: TeamRosterMember[] = [
+    buildRoster({ userId: 'coord', name: 'Ana Coord', type: 'coordinator' }),
+    buildRoster({ userId: 'came', name: 'Bruno Veio' }),
+    buildRoster({ userId: 'late', name: 'Lia Chegou Depois' }),
+  ]
+  const meetingRows: MeetingAttendanceRow[] = [
+    buildRow('m1', '2026-10-18', 'coord', 'present'),
+    buildRow('m1', '2026-10-18', 'came', 'absent'),
+    buildRow('m1', '2026-10-18', 'ghost', 'justified', 'Viagem'),
+  ]
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it("rewrites every existing row's status, the unlisted as absent, and adds no one", async () => {
+    const { attendance, updateAttendanceStatuses, insertAttendances } = makeAttendance({
+      roster,
+      meeting: MEETING,
+      meetingRows,
+    })
+
+    const result = await attendance.updateMeeting(ACTOR_AUTH_ID, 'm1', {
+      heldOn: '2026-10-18',
+      presentUserIds: ['came', 'ghost'],
+      justified: [],
+    })
+
+    expect(updateAttendanceStatuses).toHaveBeenCalledWith(
+      'm1',
+      [
+        { userId: 'coord', status: 'absent', justificationReason: null },
+        { userId: 'came', status: 'present', justificationReason: null },
+        { userId: 'ghost', status: 'present', justificationReason: null },
+      ],
+      expect.anything()
+    )
+    expect(insertAttendances).not.toHaveBeenCalled()
+    expect(result).toEqual({ meetingId: 'm1', attendeeCount: 2, justifiedCount: 0 })
+  })
+
+  it('stamps the meeting with its new date and text, which marks it editada', async () => {
+    const { attendance, updateMeeting } = makeAttendance({ roster, meeting: MEETING, meetingRows })
+
+    await attendance.updateMeeting(ACTOR_AUTH_ID, 'm1', {
+      heldOn: '2026-10-17',
+      title: '  ',
+      description: ' Revisão ',
+      presentUserIds: [],
+      justified: [],
+    })
+
+    expect(updateMeeting).toHaveBeenCalledWith(
+      'm1',
+      { heldOn: '2026-10-17', title: null, description: 'Revisão' },
+      expect.anything()
+    )
+  })
+
+  it('rejects listing someone who joined after the meeting and has no row', async () => {
+    const { attendance, updateMeeting, updateAttendanceStatuses } = makeAttendance({
+      roster,
+      meeting: MEETING,
+      meetingRows,
+    })
+
+    await rejection(
+      attendance.updateMeeting(ACTOR_AUTH_ID, 'm1', {
+        heldOn: '2026-10-18',
+        presentUserIds: ['late'],
+        justified: [],
+      })
+    )
+
+    expect(updateMeeting).not.toHaveBeenCalled()
+    expect(updateAttendanceStatuses).not.toHaveBeenCalled()
+  })
+
+  it.each(['', '   '])('rejects a justified absence whose reason is %j', async (reason) => {
+    const { attendance, updateMeeting } = makeAttendance({ roster, meeting: MEETING, meetingRows })
+
+    await rejection(
+      attendance.updateMeeting(ACTOR_AUTH_ID, 'm1', {
+        heldOn: '2026-10-18',
+        presentUserIds: [],
+        justified: [{ userId: 'ghost', reason }],
+      })
+    )
+
+    expect(updateMeeting).not.toHaveBeenCalled()
+  })
+
+  it('keeps and trims the reason of a justified row', async () => {
+    const { attendance, updateAttendanceStatuses } = makeAttendance({
+      roster,
+      meeting: MEETING,
+      meetingRows,
+    })
+
+    await attendance.updateMeeting(ACTOR_AUTH_ID, 'm1', {
+      heldOn: '2026-10-18',
+      presentUserIds: [],
+      justified: [{ userId: 'came', reason: ' Doente ' }],
+    })
+
+    expect(updateAttendanceStatuses.mock.calls[0][1]).toContainEqual({
+      userId: 'came',
+      status: 'justified',
+      justificationReason: 'Doente',
+    })
+  })
+
+  it('rejects a date after today in São Paulo', async () => {
+    const { attendance, updateMeeting } = makeAttendance({ roster, meeting: MEETING, meetingRows })
+
+    await rejection(
+      attendance.updateMeeting(ACTOR_AUTH_ID, 'm1', {
+        heldOn: '2026-10-21',
+        presentUserIds: [],
+        justified: [],
+      })
+    )
+
+    expect(updateMeeting).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['belongs to another team', { ...MEETING, teamInstanceId: 'team-b' }],
+    ['does not exist', undefined],
+  ])('answers the same forbidden when the meeting %s', async (_label, meeting) => {
+    const { attendance, updateMeeting } = makeAttendance({ roster, meeting, meetingRows })
+
+    const error = await rejection(
+      attendance.updateMeeting(ACTOR_AUTH_ID, 'm1', {
+        heldOn: '2026-10-18',
+        presentUserIds: [],
+        justified: [],
+      })
+    )
+
+    expect(error.getAppErrorCode()).toBe(AppErrorCode.Forbidden)
+    expect(error.getMessage()).toBe('Cannot change a meeting that does not belong to your team')
+    expect(updateMeeting).not.toHaveBeenCalled()
+  })
+
+  it('rejects a caller who is only a member, not a coordinator', async () => {
+    const { attendance, updateMeeting } = makeAttendance({
+      roster,
+      meeting: MEETING,
+      meetingRows,
+      actorMembership: { id: 'm-2', teamInstanceId: TEAM_A, type: 'member' },
+    })
+
+    const error = await rejection(
+      attendance.updateMeeting(ACTOR_AUTH_ID, 'm1', {
+        heldOn: '2026-10-18',
+        presentUserIds: [],
+        justified: [],
+      })
+    )
+
+    expect(error.getAppErrorCode()).toBe(AppErrorCode.Forbidden)
+    expect(updateMeeting).not.toHaveBeenCalled()
+  })
+})
+
+describe('Attendance.deleteMeeting', () => {
+  const MEETING = buildMeeting({ id: 'm1', heldOn: '2026-10-18' })
+
+  it("hard-deletes a meeting on the caller's own team", async () => {
+    const { attendance, deleteMeeting } = makeAttendance({ meeting: MEETING })
+
+    await expect(attendance.deleteMeeting(ACTOR_AUTH_ID, 'm1')).resolves.toEqual({
+      meetingId: 'm1',
+    })
+    expect(deleteMeeting).toHaveBeenCalledWith('m1')
+  })
+
+  it.each([
+    ['belongs to another team', { ...MEETING, teamInstanceId: 'team-b' }],
+    ['does not exist', undefined],
+  ])('answers forbidden and deletes nothing when the meeting %s', async (_label, meeting) => {
+    const { attendance, deleteMeeting } = makeAttendance({ meeting })
+
+    const error = await rejection(attendance.deleteMeeting(ACTOR_AUTH_ID, 'm1'))
+
+    expect(error.getAppErrorCode()).toBe(AppErrorCode.Forbidden)
+    expect(deleteMeeting).not.toHaveBeenCalled()
+  })
+
+  it('rejects a caller who is only a member, not a coordinator', async () => {
+    const { attendance, deleteMeeting } = makeAttendance({
+      meeting: MEETING,
+      actorMembership: { id: 'm-2', teamInstanceId: TEAM_A, type: 'member' },
+    })
+
+    const error = await rejection(attendance.deleteMeeting(ACTOR_AUTH_ID, 'm1'))
+
+    expect(error.getAppErrorCode()).toBe(AppErrorCode.Forbidden)
+    expect(deleteMeeting).not.toHaveBeenCalled()
   })
 })

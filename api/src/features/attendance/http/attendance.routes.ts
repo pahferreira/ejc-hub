@@ -5,7 +5,11 @@ import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
 import { extractUserInformationFromToken } from '../../../shared/extract-user-info-from-token.ts'
 import { attendanceApp } from '../application/attendance-app.ts'
-import { registerMeetingBodySchema } from './attendance.schema.ts'
+import {
+  meetingParamsSchema,
+  registerMeetingBodySchema,
+  updateMeetingBodySchema,
+} from './attendance.schema.ts'
 
 /**
  * The caller's Auth0 subject, or a 401 already sent.
@@ -72,6 +76,58 @@ export function attendanceRoutes(server: FastifyServerInstance) {
           const result = await attendanceApp.registerMeeting(authId, request.body)
 
           return reply.code(HttpStatus.Created).send({ result })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    // Another team's meeting and a missing one answer the same 403, so the ids
+    // of other teams' meetings can't be probed from here.
+    server.put(
+      '/attendance/meetings/:meetingId',
+      {
+        schema: { params: meetingParamsSchema, body: updateMeetingBodySchema },
+        preHandler: authGuard(server),
+      },
+      async (request, reply) => {
+        try {
+          const authId = actorAuthIdOrUnauthorized(request, reply)
+
+          if (!authId) {
+            return reply
+          }
+
+          const result = await attendanceApp.updateMeeting(
+            authId,
+            request.params.meetingId,
+            request.body
+          )
+
+          return reply.code(HttpStatus.Ok).send({ result })
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    server.delete(
+      '/attendance/meetings/:meetingId',
+      {
+        schema: { params: meetingParamsSchema },
+        preHandler: authGuard(server),
+      },
+      async (request, reply) => {
+        try {
+          const authId = actorAuthIdOrUnauthorized(request, reply)
+
+          if (!authId) {
+            return reply
+          }
+
+          const result = await attendanceApp.deleteMeeting(authId, request.params.meetingId)
+
+          return reply.code(HttpStatus.Ok).send({ result })
         } catch (error) {
           fastifyErrorHandler(reply, error)
         }
