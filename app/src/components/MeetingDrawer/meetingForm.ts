@@ -1,11 +1,20 @@
 import type {
+  AttendanceMeeting,
+  AttendancePerson,
   AttendanceRosterMember,
   MeetingAttendanceStatus,
   RegisterMeetingBody,
 } from '../../services/attendance/attendance.types'
+import type { TeamMembershipType } from '../../services/teams/teams.types'
 
 /**
- * The Registrar reunião drawer's form.
+ * One row the drawer lists. `removed` is someone with a row on the meeting being
+ * edited who has since left the team: their history stays correctable.
+ */
+export type MeetingRosterPerson = AttendancePerson & { type: TeamMembershipType | 'removed' }
+
+/**
+ * The meeting drawer's form, for registering and editing alike.
  *
  * One status per row is structural: `statuses` holds a single value per person,
  * and anyone missing from it is `absent`. Present and justified can't overlap
@@ -23,6 +32,49 @@ export type MeetingForm = {
 
 export function initialMeetingForm(today: string): MeetingForm {
   return { heldOn: today, title: '', description: '', statuses: {}, reasons: {} }
+}
+
+/** An existing meeting's date, text, statuses and reasons, ready to edit. */
+export function meetingFormFromMeeting(meeting: AttendanceMeeting): MeetingForm {
+  const statuses: MeetingForm['statuses'] = {}
+  const reasons: MeetingForm['reasons'] = {}
+
+  for (const entry of meeting.attendances) {
+    statuses[entry.userId] = entry.status
+
+    if (entry.status === 'justified') {
+      reasons[entry.userId] = entry.justificationReason ?? ''
+    }
+  }
+
+  return {
+    heldOn: meeting.heldOn,
+    title: meeting.title ?? '',
+    description: meeting.description ?? '',
+    statuses,
+    reasons,
+  }
+}
+
+/**
+ * Who the edit drawer lists: the meeting's own rows, in the order the API sent
+ * them, never the current roster. Someone who joined later has no row and
+ * isn't listed (the API would refuse them); someone removed since is, with the
+ * type `removed`. The current roster only supplies each person's type.
+ */
+export function meetingRoster(
+  meeting: AttendanceMeeting,
+  roster: AttendanceRosterMember[]
+): MeetingRosterPerson[] {
+  const typeByUser = new Map(roster.map((member) => [member.userId, member.type]))
+
+  return meeting.attendances.map((entry) => ({
+    userId: entry.userId,
+    name: entry.name,
+    nickname: entry.nickname,
+    pictureUrl: entry.pictureUrl,
+    type: typeByUser.get(entry.userId) ?? 'removed',
+  }))
 }
 
 export function rowStatus(form: MeetingForm, userId: string): MeetingAttendanceStatus {
@@ -90,10 +142,7 @@ function normalizeForSearch(value: string): string {
     .toLowerCase()
 }
 
-export function filterRoster(
-  roster: AttendanceRosterMember[],
-  search: string
-): AttendanceRosterMember[] {
+export function filterRoster(roster: MeetingRosterPerson[], search: string): MeetingRosterPerson[] {
   const query = normalizeForSearch(search.trim())
 
   if (!query) {
@@ -107,20 +156,18 @@ export function filterRoster(
   )
 }
 
-export function groupRoster(roster: AttendanceRosterMember[]) {
+export function groupRoster(roster: MeetingRosterPerson[]) {
   return {
     coordinators: roster.filter((member) => member.type === 'coordinator'),
-    members: roster.filter((member) => member.type !== 'coordinator'),
+    members: roster.filter((member) => member.type === 'member'),
+    removed: roster.filter((member) => member.type === 'removed'),
   }
 }
 
 export type AttendanceTally = Record<MeetingAttendanceStatus, number>
 
 /** The footer's `N presentes · N ausentes · N justificadas`, over the whole roster. */
-export function tallyAttendance(
-  form: MeetingForm,
-  roster: AttendanceRosterMember[]
-): AttendanceTally {
+export function tallyAttendance(form: MeetingForm, roster: MeetingRosterPerson[]): AttendanceTally {
   const tally: AttendanceTally = { present: 0, absent: 0, justified: 0 }
 
   for (const member of roster) {
@@ -152,13 +199,13 @@ export type MeetingFormValidation = {
 /**
  * The same rules the API enforces, so the drawer can stop a save before it
  * leaves. Overlap and non-roster ids need no check here: the form can't
- * express the one, and `toRegisterMeetingBody` never sends the other.
+ * express the one, and `toMeetingBody` never sends the other.
  *
  * `today` is the São Paulo day, `YYYY-MM-DD`; days compare as strings.
  */
 export function validateMeetingForm(
   form: MeetingForm,
-  roster: AttendanceRosterMember[],
+  roster: MeetingRosterPerson[],
   today: string
 ): MeetingFormValidation {
   const reasons: Record<string, string> = {}
@@ -178,12 +225,12 @@ export function validateMeetingForm(
 }
 
 /**
- * The `POST /attendance/meetings` body. Only roster members are read, so a
- * status left on someone who has since left the team is never sent.
+ * The `POST /attendance/meetings` (or `PUT …/:id`) body. Only the drawer's
+ * roster is read, so a status left on someone outside it is never sent.
  */
-export function toRegisterMeetingBody(
+export function toMeetingBody(
   form: MeetingForm,
-  roster: AttendanceRosterMember[]
+  roster: MeetingRosterPerson[]
 ): RegisterMeetingBody {
   const presentUserIds: string[] = []
   const justified: RegisterMeetingBody['justified'] = []

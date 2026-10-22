@@ -81,12 +81,20 @@ export type RegisterMeetingBody = {
   justified: Array<{ userId: string; reason: string }>
 }
 
+/**
+ * The `PUT /attendance/meetings/:id` body: the same shape. Only the meeting's
+ * existing rows can be listed; the API never adds a row on edit.
+ */
+export type UpdateMeetingBody = RegisterMeetingBody
+
 /** What `POST /attendance/meetings` answers with: the counts the PostHog event reports. */
 export type RegisterMeetingResult = {
   meetingId: string
   attendeeCount: number
   justifiedCount: number
 }
+
+export type UpdateMeetingResult = RegisterMeetingResult
 
 export const attendanceQueryKeys = {
   all: ['attendance'] as const,

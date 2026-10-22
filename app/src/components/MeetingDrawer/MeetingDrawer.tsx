@@ -3,18 +3,20 @@ import { Button } from '../Button/Button'
 import { Input } from '../Input/Input'
 import { TextArea } from '../TextArea/TextArea'
 import { SearchInput } from '../SearchInput/SearchInput'
+import { FiTrash2 } from 'react-icons/fi'
 import { MeetingAttendeeRow } from '../MeetingAttendeeRow/MeetingAttendeeRow'
-import type { AttendanceRosterMember } from '../../services/attendance/attendance.types'
-import type { useRegisterMeetingForm } from './useRegisterMeetingForm'
+import { DeleteMeetingModal } from '../DeleteMeetingModal/DeleteMeetingModal'
+import type { MeetingRosterPerson } from './meetingForm'
+import type { useMeetingForm } from './useMeetingForm'
 
-type RegisterMeetingDrawerProps = ReturnType<typeof useRegisterMeetingForm> & {
+type MeetingDrawerProps = ReturnType<typeof useMeetingForm> & {
   teamName: string
 }
 
 function RosterGroup(props: {
   title: string
-  members: AttendanceRosterMember[]
-  drawer: RegisterMeetingDrawerProps
+  members: MeetingRosterPerson[]
+  drawer: MeetingDrawerProps
 }) {
   if (props.members.length === 0) {
     return null
@@ -46,9 +48,15 @@ function RosterGroup(props: {
   )
 }
 
-export function RegisterMeetingDrawer(props: RegisterMeetingDrawerProps) {
+/**
+ * The meeting drawer: "Registrar reunião" for a new meeting, "Editar reunião"
+ * for an existing one. Edit mode lists the meeting's own rows, so removed
+ * members show under their own heading, and adds the delete action.
+ */
+export function MeetingDrawer(props: MeetingDrawerProps) {
   const { present, absent, justified } = props.tally
-  const hasVisibleRows = props.groups.coordinators.length + props.groups.members.length > 0
+  const hasVisibleRows =
+    props.groups.coordinators.length + props.groups.members.length + props.groups.removed.length > 0
 
   const footer = (
     <div className="flex w-full flex-col gap-3">
@@ -61,10 +69,22 @@ export function RegisterMeetingDrawer(props: RegisterMeetingDrawerProps) {
         <Button variant="secondary" onClick={props.close}>
           Cancelar
         </Button>
-        <Button onClick={props.save} disabled={props.isSaving}>
-          Salvar reunião
+        <Button onClick={props.save} disabled={props.isSaving || props.isDeleting}>
+          {props.isEditing ? 'Salvar alterações' : 'Salvar reunião'}
         </Button>
       </div>
+      {props.isEditing && (
+        <Button
+          variant="destructive"
+          onClick={props.requestDelete}
+          disabled={props.isSaving || props.isDeleting}
+        >
+          <span className="inline-flex items-center justify-center gap-2">
+            <FiTrash2 aria-hidden />
+            Excluir reunião
+          </span>
+        </Button>
+      )}
     </div>
   )
 
@@ -72,8 +92,12 @@ export function RegisterMeetingDrawer(props: RegisterMeetingDrawerProps) {
     <Drawer
       open={props.isOpen}
       onClose={props.close}
-      title={`REGISTRAR REUNIÃO — ${props.teamName}`}
-      subtitle="Marque quem esteve presente. Quem não for marcado fica como ausente."
+      title={`${props.isEditing ? 'EDITAR REUNIÃO' : 'REGISTRAR REUNIÃO'} — ${props.teamName}`}
+      subtitle={
+        props.isEditing
+          ? 'Corrija quem esteve presente. A lista é a de quem estava na equipe nesta reunião.'
+          : 'Marque quem esteve presente. Quem não for marcado fica como ausente.'
+      }
       footer={footer}
     >
       <div className="flex flex-col gap-5">
@@ -124,6 +148,11 @@ export function RegisterMeetingDrawer(props: RegisterMeetingDrawerProps) {
 
           <RosterGroup title="Coordenadores" members={props.groups.coordinators} drawer={props} />
           <RosterGroup title="Membros" members={props.groups.members} drawer={props} />
+          <RosterGroup
+            title="Não estão mais na equipe"
+            members={props.groups.removed}
+            drawer={props}
+          />
 
           {!hasVisibleRows && (
             <p className="py-6 text-center text-sm text-dark-brown/50">
@@ -132,6 +161,16 @@ export function RegisterMeetingDrawer(props: RegisterMeetingDrawerProps) {
           )}
         </div>
       </div>
+
+      {/* Inside the drawer's dialog, so headless UI nests the two and closing the
+          confirmation leaves the drawer open. */}
+      <DeleteMeetingModal
+        open={props.isConfirmingDelete}
+        meetingLabel={props.meetingLabel}
+        onClose={props.cancelDelete}
+        onConfirm={props.confirmDelete}
+        isDeleting={props.isDeleting}
+      />
     </Drawer>
   )
 }

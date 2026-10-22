@@ -12,6 +12,7 @@
   --blue: #030764;
   --green: #155221;
   --red: #6d0303;
+  --destructive: #b64444;
   --orange: #d97706;
   --background: 30 20% 97%; /* Off-white with light brown touch */
   --dashboard-background: #ffffff;
@@ -40,6 +41,7 @@
   --color-blue: var(--blue);
   --color-green: var(--green);
   --color-red: var(--red);
+  --color-destructive: var(--destructive);
   --color-orange: var(--orange);
   --color-dark-brown: var(--dark-brown);
   --color-primary: var(--primary);

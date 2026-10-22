@@ -13,7 +13,7 @@ type ButtonProps = {
 const foregroundVariant = {
   primary: 'bg-primary text-white',
   secondary: 'bg-secondary/60 text-dark-brown',
-  destructive: 'bg-red text-white',
+  destructive: 'bg-destructive text-white',
 }
 
 export function Button(props: ButtonProps) {

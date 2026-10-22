@@ -93,8 +93,21 @@ export type RegisterMeetingInput = {
   justified: JustifiedAbsenceInput[]
 }
 
-export type RegisterMeetingResult = {
+/**
+ * Editing a meeting: the same body as registering. The listed ids must already
+ * have a row on the meeting; anyone else with a row becomes `absent`.
+ */
+export type UpdateMeetingInput = RegisterMeetingInput
+
+/** What a register or an edit answers with: the counts the PostHog event reports. */
+export type MeetingWriteResult = {
   meetingId: string
   attendeeCount: number
   justifiedCount: number
+}
+
+export type RegisterMeetingResult = MeetingWriteResult
+
+export type DeleteMeetingResult = {
+  meetingId: string
 }

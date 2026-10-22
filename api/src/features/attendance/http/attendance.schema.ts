@@ -14,3 +14,13 @@ export const registerMeetingBodySchema = z.object({
   presentUserIds: z.array(z.uuid()),
   justified: z.array(z.object({ userId: z.uuid(), reason: z.string() })),
 })
+
+export const meetingParamsSchema = z.object({
+  meetingId: z.uuid(),
+})
+
+/**
+ * Editing a meeting: the same body as registering. Which ids may be listed —
+ * the meeting's existing rows only — needs the rows, so `Attendance` owns it.
+ */
+export const updateMeetingBodySchema = registerMeetingBodySchema
