@@ -45,10 +45,9 @@ export function Home() {
     : null
   // Gated on the assigned-team card actually showing: `/attendance/me` 403s for
   // anyone not on a team. A failed or pending read just leaves the line out.
-  const myAttendanceQuery = useMyAttendanceQuery({
-    enabled:
-      view?.kind === 'assignedTeam' && isFeatureEnabled(FeatureFlag.AttendanceVisibility, false),
-  })
+  const showsAttendanceLine =
+    view?.kind === 'assignedTeam' && isFeatureEnabled(FeatureFlag.AttendanceVisibility, false)
+  const myAttendanceQuery = useMyAttendanceQuery({ enabled: showsAttendanceLine })
   const attendanceRate = myAttendanceQuery.data?.rate
 
   return (
