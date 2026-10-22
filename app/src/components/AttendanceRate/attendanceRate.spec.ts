@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   bandToBadge,
   bandToMeterTone,
+  bandToTextClass,
   formatJustified,
   formatRateFraction,
   formatRatePrimary,
@@ -24,6 +25,20 @@ describe('bandToMeterTone', () => {
 
   it.each(cases)('maps %s to the %s tone', (band, tone) => {
     expect(bandToMeterTone(band)).toBe(tone)
+  })
+})
+
+describe('bandToTextClass', () => {
+  const cases: Array<[AttendanceBand, string]> = [
+    ['good', 'text-green'],
+    ['risky', 'text-orange'],
+    ['needs-replacement', 'text-red'],
+    ['insufficient-data', 'text-dark-brown'],
+    ['no-meetings', 'text-dark-brown'],
+  ]
+
+  it.each(cases)('colours a %s rate with %s', (band, className) => {
+    expect(bandToTextClass(band)).toBe(className)
   })
 })
 

@@ -3,11 +3,7 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import { FiChevronDown } from 'react-icons/fi'
 import { Badge } from '../Badge/Badge'
-import {
-  bandToTextClass,
-  formatJustified,
-  formatRatePrimary,
-} from '../AttendanceRate/attendanceRate'
+import { RateSummary } from '../AttendanceRate/RateSummary'
 import {
   formatMeetingDateBlock,
   formatMeetingWeekday,
@@ -21,21 +17,6 @@ import { Button } from '../Button/Button'
 
 export type MemberAttendanceHistoryProps = {
   model: MemberAttendanceReadModel
-}
-
-function OwnRateSummary(props: { model: MemberAttendanceReadModel }) {
-  const { rate } = props.model
-  const justified = formatJustified(rate.justified)
-
-  return (
-    <p className="m-0 text-sm text-dark-brown/70">
-      Sua presença:{' '}
-      <span className={clsx('font-semibold', bandToTextClass(rate.band))}>
-        {formatRatePrimary(rate)}
-      </span>
-      {justified && ` · ${justified}`}
-    </p>
-  )
 }
 
 function MemberMeetingRow(props: { meeting: MemberAttendanceMeeting }) {
@@ -128,7 +109,7 @@ export function MemberAttendanceHistory(props: MemberAttendanceHistoryProps) {
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="m-0 text-xl font-semibold text-dark-brown">Histórico de presença</h2>
         {/* With no meetings the empty state already says it; the summary would repeat it. */}
-        {hasMeetings && <OwnRateSummary model={model} />}
+        {hasMeetings && <RateSummary label="Sua presença" rate={model.rate} />}
       </div>
 
       {hasMeetings ? (
