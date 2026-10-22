@@ -34,6 +34,11 @@ type Route = {
    * it's filtered against the feature-flag state.
    */
   featureFlag?: FeatureFlagValue
+  /**
+   * Accessible when any of these flags is enabled. For a page whose views roll
+   * out on separate flags; the page picks the view and checks its own flag.
+   */
+  anyFeatureFlag?: FeatureFlagValue[]
 }
 
 export const routes: Route[] = [
@@ -93,8 +98,9 @@ export const routes: Route[] = [
     // whether the caller coordinates a team without waiting on a request, and
     // filtering while it's in flight would answer a coordinator's own bookmark
     // with "página não encontrada". The page holds the check; the API
-    // re-derives the membership on every call and answers 403.
-    featureFlag: FeatureFlag.CoordinatorAttendance,
+    // re-derives the membership on every call and answers 403. Either view's
+    // flag opens the route; the page checks the one for the caller's view.
+    anyFeatureFlag: [FeatureFlag.CoordinatorAttendance, FeatureFlag.AttendanceVisibility],
   },
   {
     path: ROUTE_PATHS.MEMBER_REQUESTS,

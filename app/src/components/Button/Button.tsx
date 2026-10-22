@@ -5,7 +5,7 @@ type ButtonProps = {
   children: ReactNode
   disabled?: boolean
   onClick?: () => void
-  variant?: 'primary' | 'secondary' | 'destructive'
+  variant?: 'primary' | 'secondary' | 'destructive' | 'text'
   ariaLabel?: string
   size?: 'regular' | 'small'
 }
@@ -14,6 +14,7 @@ const foregroundVariant = {
   primary: 'bg-primary text-white',
   secondary: 'bg-secondary/60 text-dark-brown',
   destructive: 'bg-destructive text-white',
+  text: 'bg-transparent text-primary font-bold hover:bg-secondary/20 transition duration-300',
 }
 
 export function Button(props: ButtonProps) {
@@ -27,8 +28,9 @@ export function Button(props: ButtonProps) {
       aria-label={props.ariaLabel}
       className={clsx(
         foregroundVariant[variant],
-        'min-w-fit button-shadow gap-2 border-2 border-dark-brown rounded-lg hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50',
-        size === 'small' ? 'px-1.5 py-0.5 text-xs' : 'px-3 py-1.5 text-sm'
+        'flex items-center min-w-fit gap-2 border-2 border-dark-brown rounded-lg hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50',
+        size === 'small' ? 'px-1.5 py-0.5 text-xs' : 'px-3 py-1.5 text-sm',
+        variant === 'text' ? '!border-none' : 'button-shadow'
       )}
     >
       {props.children}

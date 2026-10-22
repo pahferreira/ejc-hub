@@ -56,7 +56,7 @@ export const Coordinator: Story = {
     // The untitled meeting falls back to the plain "Reunião" label.
     await expect(canvas.getByText('Reunião')).toBeInTheDocument()
     // The edited meeting carries the pill.
-    await expect(canvas.getByText('editada')).toBeInTheDocument()
+    await expect(canvas.getByText('Editada')).toBeInTheDocument()
     // Clickable rows in coordinator mode.
     await expect(canvas.getAllByRole('button').length).toBe(meetings.length)
   },

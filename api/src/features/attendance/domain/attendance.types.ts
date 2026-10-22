@@ -72,6 +72,39 @@ export type CoordinatorAttendanceReadModel = {
   meetings: AttendanceMeeting[]
 }
 
+/**
+ * One team meeting as the member Reuniões page shows it: the caller's own
+ * status and the team's pooled rate, never anyone else's row.
+ */
+export type MemberAttendanceMeeting = {
+  id: string
+  /** `YYYY-MM-DD`. */
+  heldOn: string
+  title: string | null
+  /** The team's pooled rate on this meeting: an aggregate, no names. */
+  teamRate: AttendanceRate
+  /**
+   * The meeting does not count for the caller: it was held before they joined,
+   * or it was registered before they joined and so holds no row for them.
+   */
+  beforeJoin: boolean
+  /** The caller's own status, or null when the meeting does not count for them. */
+  status: MeetingAttendanceStatus | null
+  /** Only when `status` is `justified`. */
+  justificationReason: string | null
+}
+
+/** Everything the member Reuniões page reads in one call: their own record only. */
+export type MemberAttendanceReadModel = {
+  teamInstanceId: string
+  /** The membership's `created_at`. */
+  joinedAt: Date
+  /** The caller's own rate, pro-rated from their join date. */
+  rate: AttendanceRate
+  /** Most recently held first, matching the repository's order. */
+  meetings: MemberAttendanceMeeting[]
+}
+
 /** One justified absence: who, and why they could not come. */
 export type JustifiedAbsenceInput = {
   userId: string

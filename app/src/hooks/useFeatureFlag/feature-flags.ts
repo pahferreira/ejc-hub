@@ -27,6 +27,12 @@ export const FeatureFlag = {
    * issue #281) and before any writes.
    */
   CoordinatorAttendance: 'coordinator-attendance',
+  /**
+   * The member view of Reuniões (their own Histórico de presença) on the same
+   * route. Turn it on once coordinators have registered a few meetings, or every
+   * member opens the page to "Sem reuniões desde a entrada".
+   */
+  AttendanceVisibility: 'attendance-visibility',
 } as const
 
 export type FeatureFlagValue = (typeof FeatureFlag)[keyof typeof FeatureFlag]

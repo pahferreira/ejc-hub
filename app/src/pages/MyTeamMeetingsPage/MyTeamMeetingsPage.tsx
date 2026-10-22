@@ -6,6 +6,10 @@ import { MeetingDrawer } from '../../components/MeetingDrawer/MeetingDrawer'
 import { useMeetingForm } from '../../components/MeetingDrawer/useMeetingForm'
 import { useCurrentEventSubscriptionStatusQuery } from '../../services/events/useCurrentEventSubscriptionStatusQuery'
 import { useMyTeamAttendanceQuery } from '../../services/attendance/useMyTeamAttendanceQuery'
+import { useMyAttendanceQuery } from '../../services/attendance/useMyAttendanceQuery'
+import { useFeatureFlag } from '../../hooks/useFeatureFlag/useFeatureFlag'
+import { FeatureFlag } from '../../hooks/useFeatureFlag/feature-flags'
+import { MemberAttendanceHistory } from '../../components/MemberAttendanceHistory/MemberAttendanceHistory'
 import { StatusCard } from '../../components/StatusCard/StatusCard'
 import { formatRateFraction } from '../../components/AttendanceRate/attendanceRate'
 import type { CoordinatorAttendanceReadModel } from '../../services/attendance/attendance.types'
@@ -76,23 +80,91 @@ function AttendanceStats(props: { model: CoordinatorAttendanceReadModel }) {
 }
 
 /**
- * "Reuniões": a coordinator's read of their team's attendance.
+ * The coordinator board: stat chips, the meeting list with **Registrar
+ * reunião**, and the Membros table. Clicking a meeting opens the same drawer in
+ * edit mode, with delete.
+ */
+function CoordinatorMeetingsView(props: {
+  model: CoordinatorAttendanceReadModel
+  teamName: string
+}) {
+  const { model } = props
+  const meetingDrawer = useMeetingForm(model.roster)
+
+  const hasMeetings = model.meetings.length > 0
+  const firstMeetingHeldOn = hasMeetings
+    ? model.meetings[model.meetings.length - 1].heldOn
+    : undefined
+
+  return (
+    <>
+      <AttendanceStats model={model} />
+
+      <section className="mb-10">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="m-0 text-xl font-semibold text-dark-brown">
+              Reuniões · {model.meetingCount}
+            </h2>
+            <p className="mt-1 m-0 text-sm text-gray-600">
+              Registre cada reunião depois que ela acontecer. Clique numa reunião para editar.
+            </p>
+          </div>
+          <Button onClick={meetingDrawer.openNew}>Registrar reunião</Button>
+        </div>
+
+        {hasMeetings ? (
+          <MeetingList meetings={model.meetings} onSelectMeeting={meetingDrawer.openEdit} />
+        ) : (
+          <div className="rounded-xl border border-dashed border-tertiary bg-white px-6 py-12 text-center">
+            <p className="m-0 text-sm text-gray-600">
+              Nenhuma reunião registrada ainda. Registre a primeira depois que ela acontecer.
+            </p>
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-4 m-0 text-xl font-semibold text-dark-brown">
+          Membros · {model.roster.length}
+        </h2>
+        <MembersAttendanceTable members={model.roster} firstMeetingHeldOn={firstMeetingHeldOn} />
+      </section>
+
+      <MeetingDrawer {...meetingDrawer} teamName={props.teamName} />
+    </>
+  )
+}
+
+/**
+ * "Reuniões": one route, two views of the caller's own team.
  *
- * Structurally `RequestMembersPage` — the coordinator check and its branch order
- * are the same, verbatim: the error branch stays above the not-a-coordinator one
- * so a dropped request is never read as a verdict, and the query is gated on
- * `isCoordinator` so the endpoint's 403 does not race into the generic error
- * branch. Clicking a meeting opens the same drawer in edit mode, with delete.
+ * Coordinators get the board (behind `coordinator-attendance`); everyone else
+ * on a team gets their own Histórico de presença (behind `attendance-visibility`).
+ * Structurally `RequestMembersPage`: the error branch stays above the "not for
+ * you" one so a dropped request is never read as a verdict, and each query is
+ * gated on its view so an endpoint's 403 does not race into the generic error
+ * branch.
  */
 export function MyTeamMeetingsPage() {
   const subscriptionStatus = useCurrentEventSubscriptionStatusQuery()
+  const { isFeatureEnabled } = useFeatureFlag()
+  const hasTeam = Boolean(subscriptionStatus.data?.assignedTeam)
   const isCoordinator = subscriptionStatus.data?.myMembershipType === 'coordinator'
 
-  const attendanceQuery = useMyTeamAttendanceQuery({ enabled: isCoordinator })
-  // Above the early returns, so it reads an empty roster until the model lands.
-  const meetingDrawer = useMeetingForm(attendanceQuery.data?.roster ?? [])
+  const showsCoordinatorView =
+    isCoordinator && isFeatureEnabled(FeatureFlag.CoordinatorAttendance, false)
+  const showsMemberView =
+    hasTeam && !isCoordinator && isFeatureEnabled(FeatureFlag.AttendanceVisibility, false)
 
-  if (subscriptionStatus.isLoading || attendanceQuery.isLoading) {
+  const teamAttendanceQuery = useMyTeamAttendanceQuery({ enabled: showsCoordinatorView })
+  const myAttendanceQuery = useMyAttendanceQuery({ enabled: showsMemberView })
+
+  if (
+    subscriptionStatus.isLoading ||
+    teamAttendanceQuery.isLoading ||
+    myAttendanceQuery.isLoading
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-600">Carregando reuniões...</div>
@@ -100,7 +172,7 @@ export function MyTeamMeetingsPage() {
     )
   }
 
-  if (subscriptionStatus.error || attendanceQuery.error) {
+  if (subscriptionStatus.error || teamAttendanceQuery.error || myAttendanceQuery.error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-red-600">Não foi possível carregar as reuniões da equipe.</div>
@@ -108,32 +180,28 @@ export function MyTeamMeetingsPage() {
     )
   }
 
-  // After the error branch: a dropped status request leaves `myMembershipType`
-  // undefined, which read as a verdict would tell a coordinator the page is not
-  // for them when all that happened was a failed fetch.
-  if (!isCoordinator) {
+  // After the error branch: a dropped status request leaves the membership
+  // undefined, which read as a verdict would tell a team member the page is
+  // not for them when all that happened was a failed fetch.
+  // The route opens on either flag, so someone on a team may land here while
+  // their own view is still off: say so rather than deny they are on a team.
+  if (!showsCoordinatorView && !showsMemberView) {
     return (
       <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
         <div className="max-w-8xl mx-auto rounded-xl border border-tertiary bg-white px-6 py-12 text-center shadow-md">
           <p className="m-0 text-sm text-gray-600">
-            Esta página é exclusiva para coordenadores de equipe.
+            {hasTeam
+              ? 'As reuniões da equipe ainda não estão disponíveis para você.'
+              : 'Esta página é exclusiva para membros de uma equipe.'}
           </p>
         </div>
       </div>
     )
   }
 
-  const model = attendanceQuery.data
-
-  if (!model) {
-    return null
-  }
-
   const teamName = subscriptionStatus.data?.assignedTeam?.name ?? 'Minha equipe'
-  const hasMeetings = model.meetings.length > 0
-  const firstMeetingHeldOn = hasMeetings
-    ? model.meetings[model.meetings.length - 1].heldOn
-    : undefined
+  const teamModel = teamAttendanceQuery.data
+  const myModel = myAttendanceQuery.data
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
@@ -143,41 +211,11 @@ export function MyTeamMeetingsPage() {
           <p className="mt-2 text-gray-600">{teamName} · presença nas reuniões da equipe</p>
         </header>
 
-        <AttendanceStats model={model} />
-
-        <section className="mb-10">
-          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="m-0 text-xl font-semibold text-dark-brown">
-                Reuniões · {model.meetingCount}
-              </h2>
-              <p className="mt-1 m-0 text-sm text-gray-600">
-                Registre cada reunião depois que ela acontecer. Clique numa reunião para editar.
-              </p>
-            </div>
-            <Button onClick={meetingDrawer.openNew}>Registrar reunião</Button>
-          </div>
-
-          {hasMeetings ? (
-            <MeetingList meetings={model.meetings} onSelectMeeting={meetingDrawer.openEdit} />
-          ) : (
-            <div className="rounded-xl border border-dashed border-tertiary bg-white px-6 py-12 text-center">
-              <p className="m-0 text-sm text-gray-600">
-                Nenhuma reunião registrada ainda. Registre a primeira depois que ela acontecer.
-              </p>
-            </div>
-          )}
-        </section>
-
-        <section>
-          <h2 className="mb-4 m-0 text-xl font-semibold text-dark-brown">
-            Membros · {model.roster.length}
-          </h2>
-          <MembersAttendanceTable members={model.roster} firstMeetingHeldOn={firstMeetingHeldOn} />
-        </section>
+        {showsCoordinatorView && teamModel && (
+          <CoordinatorMeetingsView model={teamModel} teamName={teamName} />
+        )}
+        {showsMemberView && myModel && <MemberAttendanceHistory model={myModel} />}
       </div>
-
-      <MeetingDrawer {...meetingDrawer} teamName={teamName} />
     </div>
   )
 }

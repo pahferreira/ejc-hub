@@ -68,6 +68,32 @@ export type CoordinatorAttendanceReadModel = {
   meetings: AttendanceMeeting[]
 }
 
+/** One team meeting on the member view: the caller's own status beside the team's rate. */
+export type MemberAttendanceMeeting = {
+  id: string
+  /** `YYYY-MM-DD`. */
+  heldOn: string
+  title: string | null
+  /** The team's pooled rate on this meeting: an aggregate, no names. */
+  teamRate: AttendanceRate
+  /** Held or registered before the caller joined: greyed out, does not count. */
+  beforeJoin: boolean
+  /** Null when `beforeJoin`. */
+  status: MeetingAttendanceStatus | null
+  justificationReason: string | null
+}
+
+/** The member Reuniões page from `GET /attendance/me`: the caller's own record only. */
+export type MemberAttendanceReadModel = {
+  teamInstanceId: string
+  /** ISO timestamp of the membership's creation. */
+  joinedAt: string
+  /** The caller's own rate, pro-rated from their join date. */
+  rate: AttendanceRate
+  /** Most recently held first. */
+  meetings: MemberAttendanceMeeting[]
+}
+
 /**
  * The `POST /attendance/meetings` body. No team: the API derives it from the
  * caller. Anyone on the roster not listed here is stored as absent.
@@ -99,4 +125,5 @@ export type UpdateMeetingResult = RegisterMeetingResult
 export const attendanceQueryKeys = {
   all: ['attendance'] as const,
   myTeam: ['attendance', 'my-team'] as const,
+  me: ['attendance', 'me'] as const,
 }

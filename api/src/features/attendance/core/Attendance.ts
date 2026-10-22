@@ -12,11 +12,13 @@ import type {
   CoordinatorAttendanceReadModel,
   DeleteMeetingResult,
   MeetingWriteResult,
+  MemberAttendanceReadModel,
   RegisterMeetingInput,
   RegisterMeetingResult,
   UpdateMeetingInput,
 } from '../domain/attendance.types.ts'
 import { buildCoordinatorReadModel } from './coordinator-read-model.ts'
+import { buildMemberReadModel } from './member-read-model.ts'
 import { toSaoPauloDay } from './attendance-rate.ts'
 
 const COORDINATOR_TYPE = 'coordinator'
@@ -173,6 +175,60 @@ export class Attendance {
     }
 
     return membership.teamInstanceId
+  }
+
+  /**
+   * The caller's own team membership, or a 403. Any member qualifies, coordinators
+   * included.
+   */
+  async #resolveOwnMembership(actorUserId: string, eventId: string) {
+    const membership = await this.#teamMembershipRepository.findMembershipByUserAndEvent(
+      actorUserId,
+      eventId
+    )
+
+    if (!membership) {
+      throw new AppError('Only a team member can read their own attendance', AppErrorCode.Forbidden)
+    }
+
+    return membership
+  }
+
+  /**
+   * The member Reuniões read model: the caller's own rate and, for every team
+   * meeting, their own status beside the team's pooled rate.
+   *
+   * Every row of the team is read, but only the caller's own leave this method;
+   * other people reach the response as per-meeting aggregates only.
+   */
+  async getMyReadModel(actorAuthId: string): Promise<MemberAttendanceReadModel> {
+    return this.#withCurrentEvent(async (event) => {
+      const actor = await this.#resolveActor(actorAuthId)
+      const membership = await this.#resolveOwnMembership(actor.id, event.id)
+
+      const teamInstanceId = membership.teamInstanceId
+
+      const [roster, meetings, attendanceRows] = await Promise.all([
+        this.#teamMembershipRepository.listRosterByTeamInstance(teamInstanceId),
+        this.#meetingRepository.listMeetingsByTeamInstance(teamInstanceId),
+        this.#meetingAttendanceRepository.listAttendancesByTeamInstance(teamInstanceId),
+      ])
+
+      // The roster carries the join date; the membership lookup does not.
+      const callerOnRoster = roster.find((member) => member.userId === actor.id)
+
+      if (!callerOnRoster) {
+        throw new AppError('Caller is not on their team roster')
+      }
+
+      return buildMemberReadModel({
+        teamInstanceId,
+        userId: actor.id,
+        joinedAt: callerOnRoster.joinedAt,
+        meetings,
+        attendanceRows,
+      })
+    })
   }
 
   /**
