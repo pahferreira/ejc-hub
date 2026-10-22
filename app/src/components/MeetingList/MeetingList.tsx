@@ -36,9 +36,9 @@ function MeetingRowContent(props: { meeting: AttendanceMeeting; sublineParts: st
           <span className={clsx('truncate text-dark-brown', meeting.title && 'font-bold')}>
             {meeting.title || 'Reunião'}
           </span>
-          {meeting.edited && <Badge variant="info">editada</Badge>}
+          {meeting.edited && <Badge variant="info">Editada</Badge>}
         </div>
-        <p className="mt-0.5 m-0 truncate text-xs text-dark-brown/60">
+        <p className="mt-0.5 m-0 truncate text-xs text-dark-brown/60 capitalize">
           {props.sublineParts.join(' · ')}
         </p>
       </div>

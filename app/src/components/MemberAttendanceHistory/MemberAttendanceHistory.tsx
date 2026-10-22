@@ -1,3 +1,4 @@
+import { Transition } from '@headlessui/react'
 import clsx from 'clsx'
 import { useState } from 'react'
 import { FiChevronDown } from 'react-icons/fi'
@@ -17,6 +18,7 @@ import type {
   MemberAttendanceMeeting,
   MemberAttendanceReadModel,
 } from '../../services/attendance/attendance.types'
+import { Button } from '../Button/Button'
 
 export type MemberAttendanceHistoryProps = {
   model: MemberAttendanceReadModel
@@ -72,24 +74,24 @@ function MemberMeetingRow(props: { meeting: MemberAttendanceMeeting }) {
             </span>
             {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
           </div>
-          <p className="mt-0.5 m-0 truncate text-xs text-dark-brown/60">
+          <p className="capitalize mt-0.5 m-0 truncate text-xs text-dark-brown/60">
             {meeting.beforeJoin
               ? 'antes da sua entrada · não conta'
               : formatMeetingWeekday(meeting.heldOn)}
           </p>
           {reason && (
-            <button
-              type="button"
+            <Button
+              size="small"
+              variant="text"
               onClick={() => setIsReasonOpen((open) => !open)}
               aria-expanded={isReasonOpen}
-              className="mt-1 inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-xs font-medium text-blue"
             >
               Ver justificativa
               <FiChevronDown
                 aria-hidden
                 className={clsx('transition-transform', isReasonOpen && 'rotate-180')}
               />
-            </button>
+            </Button>
           )}
         </div>
 
@@ -103,10 +105,17 @@ function MemberMeetingRow(props: { meeting: MemberAttendanceMeeting }) {
         </div>
       </div>
 
-      {reason && isReasonOpen && (
-        <p className="mt-3 mb-0 rounded-lg bg-blue/10 px-3 py-2 text-sm text-dark-brown">
-          {reason}
-        </p>
+      {/* Animating grid rows 0fr -> 1fr grows the row smoothly; height: auto can't transition. */}
+      {reason && (
+        <Transition show={isReasonOpen}>
+          <div className="grid grid-rows-[1fr] transition-all duration-200 ease-out data-closed:grid-rows-[0fr] data-closed:opacity-0 motion-reduce:transition-none">
+            <div className="overflow-hidden">
+              <p className="mt-3 mb-0 rounded-lg bg-blue/10 px-3 py-2 text-sm text-dark-brown">
+                {reason}
+              </p>
+            </div>
+          </div>
+        </Transition>
       )}
     </li>
   )
