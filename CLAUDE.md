@@ -69,3 +69,7 @@ The five canonical roles as plain GitHub labels (`needs-triage`, `needs-info`, `
 ### Domain docs
 
 Single-context, kept in Notion under Projects › Ponto EJC: the "Glossary" page (instead of `CONTEXT.md`) and the "ADRs" database (instead of `docs/adr/`). See `docs/agents/domain.md`.
+
+## QA plans
+
+QA plans land in the Notion **QA Plans** database under Projects › Ponto EJC (https://app.notion.com/p/2c39f0704cad4ca0963c9f80ab00f794, data source `collection://fa61dc83-e775-4f16-94a1-46d53c06cff1`). Write them with the `qa-plan` skill.
