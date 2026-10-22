@@ -25,8 +25,9 @@ export function DeleteMeetingModal(props: DeleteMeetingModalProps) {
           Excluir <strong className="font-semibold">{props.meetingLabel}</strong>?
         </p>
         <p className="m-0 text-xs text-secondary-foreground">
-          A reunião e as presenças registradas nela serão removidas da taxa de presença de todos os
-          membros e da média da equipe. Esta ação não pode ser desfeita.
+          A <i>reunião</i> e as <i>presenças registradas</i> nela serão <strong>removidas</strong>{' '}
+          da assiduidade de <i>todos os membros</i> e da <i>média da equipe</i>.{' '}
+          <strong>Esta ação não pode ser desfeita.</strong>
         </p>
 
         <div className="flex justify-end gap-3">

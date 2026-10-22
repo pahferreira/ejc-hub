@@ -28,7 +28,7 @@ export function Input(props: InputProps) {
         className={clsx(
           'w-full rounded-lg border bg-white px-3 py-2 text-black focus:outline-none',
           props.error
-            ? 'border-red placeholder:text-red/80 focus:shadow-[1px_1px_1px_1px_var(--red)]'
+            ? 'border-destructive placeholder:text-destructive/80 focus:shadow-[1px_1px_1px_1px_var(--destructive)]'
             : 'border-primary focus:border-dark-brown focus:shadow-[1px_1px_1px_1px_var(--dark-brown)] placeholder:text-black/50'
         )}
         placeholder={props.placeholder}
@@ -37,7 +37,7 @@ export function Input(props: InputProps) {
         type={props.type}
         max={props.max}
       />
-      {props.error && <p className="text-sm text-red">{props.error}</p>}
+      {props.error && <p className="text-sm text-destructive">{props.error}</p>}
     </div>
   )
 }

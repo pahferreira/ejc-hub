@@ -16,7 +16,7 @@ function teamAverageCard(model: CoordinatorAttendanceReadModel) {
   const rate = model.teamAverage
 
   if (rate.band === 'no-meetings') {
-    return { value: '—', description: 'Nenhuma reunião registrada' }
+    return { value: '-', description: 'Nenhuma reunião registrada' }
   }
 
   const fraction = formatRateFraction(rate)
