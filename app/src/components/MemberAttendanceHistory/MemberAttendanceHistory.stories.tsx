@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { MemberAttendanceHistory } from './MemberAttendanceHistory'
 import type { MemberAttendanceReadModel } from '../../services/attendance/attendance.types'
 
@@ -75,7 +75,8 @@ export const Default: Story = {
     await userEvent.click(toggle)
     await expect(canvas.getByText('Plantão no hospital')).toBeInTheDocument()
     await userEvent.click(toggle)
-    await expect(canvas.queryByText('Plantão no hospital')).not.toBeInTheDocument()
+    // The Transition keeps the reason mounted until its leave animation ends.
+    await waitFor(() => expect(canvas.queryByText('Plantão no hospital')).not.toBeInTheDocument())
   },
 }
 
