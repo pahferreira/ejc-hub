@@ -4,6 +4,7 @@ import { SectionHeader } from '../SectionHeader/SectionHeader'
 import { PersonCardEmptySlot } from '../PersonCardEmptySlot/PersonCardEmptySlot'
 import { TeamPersonCard } from '../TeamPersonCard/TeamPersonCard'
 import type { TeamDetail, TeamPerson } from '../../services/teams/teams.types'
+import type { AttendanceRate } from '../../services/attendance/attendance.types'
 
 export type TeamDetailContentProps = {
   team: TeamDetail
@@ -13,6 +14,11 @@ export type TeamDetailContentProps = {
   membersAction?: ReactNode
   /** When provided, member cards render a remove affordance. Omitted → read-only. */
   onRemoveMember?: (member: TeamPerson) => void
+  /**
+   * Attendance rates keyed by user id. A card whose person has no entry shows no
+   * Presença block, so the caller decides who sees whose rate. Omitted → none.
+   */
+  attendanceRates?: Record<string, AttendanceRate>
 }
 
 /**
@@ -46,7 +52,12 @@ export function TeamDetailContent(props: TeamDetailContentProps) {
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             {team.coordinators.map((coordinator) => (
-              <TeamPersonCard key={coordinator.userId} person={coordinator} role="Coordenador" />
+              <TeamPersonCard
+                key={coordinator.userId}
+                person={coordinator}
+                role="Coordenador"
+                attendanceRate={props.attendanceRates?.[coordinator.userId]}
+              />
             ))}
             {props.coordinatorsAction &&
               Array.from({ length: emptyCoordinatorSlots }).map((_, index) => (
@@ -66,6 +77,7 @@ export function TeamDetailContent(props: TeamDetailContentProps) {
               <TeamPersonCard
                 key={member.userId}
                 person={member}
+                attendanceRate={props.attendanceRates?.[member.userId]}
                 onRemove={props.onRemoveMember ? () => props.onRemoveMember?.(member) : undefined}
               />
             ))}

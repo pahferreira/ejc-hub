@@ -35,6 +35,12 @@ export type PersonCardProps = {
    * would only invite someone to start showing it again.
    */
   feeStatusChip?: ReactNode
+  /**
+   * The person's Presença block (a `PersonAttendanceBlock`), shown below its own
+   * divider. A slot for the same reason as `feeStatusChip`. Omitted renders
+   * nothing, so each page decides who sees whose attendance.
+   */
+  attendance?: ReactNode
   /** Shows a top-right delete button when provided. */
   onRemove?: () => void
   /** Accessible label for the delete button. Defaults to "Remover". */
@@ -109,6 +115,13 @@ export function PersonCard(props: PersonCardProps) {
                   once the API can answer it, as the fee chip already does. */}
               <ComingSoonChip label="Camisa · em breve" />
             </div>
+          </>
+        )}
+
+        {props.attendance && (
+          <>
+            <hr className="m-0 border-t border-tertiary" />
+            {props.attendance}
           </>
         )}
       </div>
