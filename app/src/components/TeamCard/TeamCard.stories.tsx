@@ -55,6 +55,71 @@ export const AssignedNoCoordinators: Story = {
   },
 }
 
+const liturgia = {
+  id: 'team-1',
+  name: 'Liturgia',
+  description: 'Prepara e conduz momentos de oração e celebrações.',
+  coordinators: [{ id: 'u1', name: 'Maria Silva', phone: '(11) 98765-4321' }],
+}
+
+export const AssignedAttendanceGood: Story = {
+  args: {
+    variant: 'assigned',
+    team: liturgia,
+    attendanceRate: { present: 7, eligible: 9, justified: 2, percentage: 78, band: 'good' },
+  },
+}
+
+export const AssignedAttendanceRisky: Story = {
+  args: {
+    variant: 'assigned',
+    team: liturgia,
+    attendanceRate: { present: 6, eligible: 10, justified: 0, percentage: 60, band: 'risky' },
+  },
+}
+
+export const AssignedAttendanceNeedsReplacement: Story = {
+  args: {
+    variant: 'assigned',
+    team: liturgia,
+    attendanceRate: {
+      present: 2,
+      eligible: 8,
+      justified: 1,
+      percentage: 25,
+      band: 'needs-replacement',
+    },
+  },
+}
+
+export const AssignedAttendanceInsufficientData: Story = {
+  args: {
+    variant: 'assigned',
+    team: liturgia,
+    attendanceRate: {
+      present: 1,
+      eligible: 1,
+      justified: 0,
+      percentage: 100,
+      band: 'insufficient-data',
+    },
+  },
+}
+
+export const AssignedAttendanceNoMeetings: Story = {
+  args: {
+    variant: 'assigned',
+    team: liturgia,
+    attendanceRate: {
+      present: 0,
+      eligible: 0,
+      justified: 0,
+      percentage: null,
+      band: 'no-meetings',
+    },
+  },
+}
+
 export const Pending: Story = {
   args: {
     variant: 'pending',

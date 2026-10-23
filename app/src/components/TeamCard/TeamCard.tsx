@@ -4,6 +4,8 @@ import { CoordinatorRow } from '../CoordinatorRow/CoordinatorRow'
 import { Pill } from '../Pill/Pill'
 import clsx from 'clsx'
 import { Link } from 'react-router'
+import { RateSummary } from '../AttendanceRate/RateSummary'
+import type { AttendanceRate } from '../../services/attendance/attendance.types'
 
 type TeamCoordinator = {
   id: string
@@ -24,6 +26,8 @@ type AssignedVariantProps = {
     description: string | null
     coordinators: TeamCoordinator[]
   }
+  /** The viewer's own rate on this team. Omitted hides the Presença line. */
+  attendanceRate?: AttendanceRate
   onViewProfile?: () => void
 }
 
@@ -86,6 +90,9 @@ function AssignedBody(props: AssignedVariantProps) {
         <div className="flex flex-col">
           <span className="text-xs text-black font-normal">Equipe Atribuída</span>
           <span className="font-serif text-xl text-dark-brown font-medium">{props.team.name}</span>
+          {props.attendanceRate && (
+            <RateSummary label="Presença" rate={props.attendanceRate} className="mt-1" />
+          )}
         </div>
       </div>
 

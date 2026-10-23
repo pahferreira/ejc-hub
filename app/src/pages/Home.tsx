@@ -15,6 +15,8 @@ import type {
   TeamPreference,
 } from '../services/events/events.types'
 import { useCurrentUserQuery } from '../services/users/useCurrentUserQuery'
+import { useMyAttendanceQuery } from '../services/attendance/useMyAttendanceQuery'
+import type { AttendanceRate } from '../services/attendance/attendance.types'
 import { getHomeView, type HomeView } from './getHomeView'
 
 export function Home() {
@@ -35,6 +37,19 @@ export function Home() {
   const preferences = subscriptionStatusQuery.data?.preferences ?? []
   const eventFeeStatus = subscriptionStatusQuery.data?.eventFeeStatus ?? null
 
+  const view = event
+    ? getHomeView(subscriptionStatus, assignedTeam, {
+        subscriptionMode: event.subscriptionMode,
+        myTeamEnabled,
+      })
+    : null
+  // Gated on the assigned-team card actually showing: `/attendance/me` 403s for
+  // anyone not on a team. A failed or pending read just leaves the line out.
+  const showsAttendanceLine =
+    view?.kind === 'assignedTeam' && isFeatureEnabled(FeatureFlag.AttendanceVisibility, false)
+  const myAttendanceQuery = useMyAttendanceQuery({ enabled: showsAttendanceLine })
+  const attendanceRate = myAttendanceQuery.data?.rate
+
   return (
     <div className="min-h-screen bg-background px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-8xl">
@@ -49,7 +64,7 @@ export function Home() {
 
         {isLoading ? (
           <LoadingSkeleton />
-        ) : isError || !event ? (
+        ) : isError || !event || !view ? (
           <ErrorState />
         ) : (
           <div className="flex flex-col gap-6">
@@ -67,14 +82,12 @@ export function Home() {
             />
 
             <HomeBody
-              view={getHomeView(subscriptionStatus, assignedTeam, {
-                subscriptionMode: event.subscriptionMode,
-                myTeamEnabled,
-              })}
+              view={view}
               eventName={event.name}
               subscriptionStatus={subscriptionStatus}
               eventFeeStatus={eventFeeStatus}
               preferences={preferences}
+              attendanceRate={attendanceRate}
               onSubscribe={() => navigate(ROUTE_PATHS.SUBSCRIPTIONS_NEW)}
             />
           </div>
@@ -90,6 +103,7 @@ type HomeBodyProps = {
   subscriptionStatus: SubscriptionStatus | null
   eventFeeStatus: MyEventFeeStatus | null
   preferences: TeamPreference[]
+  attendanceRate?: AttendanceRate
   onSubscribe: () => void
 }
 
@@ -125,7 +139,9 @@ function HomeBody(props: HomeBodyProps) {
         paymentStatus={props.eventFeeStatus ?? undefined}
         shirtStatus="coming_soon"
       />
-      {props.view.kind === 'assignedTeam' && <TeamCard variant="assigned" team={props.view.team} />}
+      {props.view.kind === 'assignedTeam' && (
+        <TeamCard variant="assigned" team={props.view.team} attendanceRate={props.attendanceRate} />
+      )}
       {props.view.kind === 'pendingTeam' && (
         <TeamCard variant="pending" preferences={props.preferences} />
       )}
