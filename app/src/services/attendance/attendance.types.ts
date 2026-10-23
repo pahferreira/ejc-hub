@@ -126,4 +126,5 @@ export const attendanceQueryKeys = {
   all: ['attendance'] as const,
   myTeam: ['attendance', 'my-team'] as const,
   me: ['attendance', 'me'] as const,
+  team: (teamInstanceId: string) => ['attendance', 'team', teamInstanceId] as const,
 }

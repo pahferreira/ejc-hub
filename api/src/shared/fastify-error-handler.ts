@@ -14,6 +14,13 @@ export function fastifyErrorHandler(reply: FastifyReply, error: unknown) {
       })
     }
 
+    if (error.getAppErrorCode() === AppErrorCode.NotFound) {
+      return reply.code(HttpStatus.NotFound).send({
+        message: error.getMessage(),
+        code: error.getAppErrorCode(),
+      })
+    }
+
     return reply.code(HttpStatus.UnprocessableEntity).send({
       message: error.getMessage(),
       code: error.getAppErrorCode(),

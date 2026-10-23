@@ -29,6 +29,17 @@ async function getMyAttendance() {
   return response.data
 }
 
+/**
+ * Any team's read model, for admin Team Detail. The same shape as the
+ * coordinator one; the API answers 403 without `attendance:read`.
+ */
+async function getTeamAttendance(teamInstanceId: string) {
+  const response = await api.get<CoordinatorAttendanceReadModel>(
+    `/teams/${teamInstanceId}/attendance`
+  )
+  return response.data
+}
+
 const REGISTER_MEETING_ERROR = 'Erro ao registrar reunião'
 
 /**
@@ -85,6 +96,7 @@ async function deleteMeeting(meetingId: string) {
 export const attendanceApi = {
   getMyTeamAttendance,
   getMyAttendance,
+  getTeamAttendance,
   registerMeeting,
   updateMeeting,
   deleteMeeting,

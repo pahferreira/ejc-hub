@@ -3,6 +3,7 @@ import { eventRepository } from '../../../modules/event/repository/DrizzleEventR
 import { userRepository } from '../../../modules/user/repository/DrizzleUserRepository.ts'
 import { teamMembershipRepository } from '../../../modules/team-membership/repository/DrizzleTeamMembershipRepository.ts'
 import { meetingRepository } from '../../../modules/meeting/repository/DrizzleMeetingRepository.ts'
+import { teamInstanceRepository } from '../../../modules/team-instance/repository/DrizzleTeamInstanceRepository.ts'
 import { meetingAttendanceRepository } from '../../../modules/meeting-attendance/repository/DrizzleMeetingAttendanceRepository.ts'
 
 export const attendanceApp = new Attendance(
@@ -10,5 +11,6 @@ export const attendanceApp = new Attendance(
   userRepository,
   teamMembershipRepository,
   meetingRepository,
-  meetingAttendanceRepository
+  meetingAttendanceRepository,
+  teamInstanceRepository
 )

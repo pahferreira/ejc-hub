@@ -12,6 +12,7 @@ import type { EventRepository } from '../../../modules/event/domain/EventReposit
 import type { MeetingRepository } from '../../../modules/meeting/domain/MeetingRepository.ts'
 import type { MeetingAttendanceRepository } from '../../../modules/meeting-attendance/domain/MeetingAttendanceRepository.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
+import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
 import type { TeamRosterMember } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { MeetingAttendanceRow } from '../../../modules/meeting-attendance/domain/MeetingAttendanceRepository.ts'
@@ -90,6 +91,8 @@ type Scenario = {
   meeting?: ReturnType<typeof buildMeeting>
   /** What `listAttendancesByMeeting` answers. */
   meetingRows?: MeetingAttendanceRow[]
+  /** What `selectTeamInstance` answers; defaults to team A in the current event. */
+  teamInstance?: { id: string; eventId: string; name: string; templateKey: string }
 }
 
 function makeAttendance(scenario: Scenario = {}) {
@@ -157,13 +160,24 @@ function makeAttendance(scenario: Scenario = {}) {
     updateAttendanceStatuses,
   } as unknown as MeetingAttendanceRepository
 
+  const teamInstanceRepository = {
+    selectTeamInstance: vi
+      .fn()
+      .mockResolvedValue(
+        'teamInstance' in scenario
+          ? scenario.teamInstance
+          : { id: TEAM_A, eventId: EVENT_ID, name: 'Equipe A', templateKey: 'team-a' }
+      ),
+  } as unknown as TeamInstanceRepository
+
   return {
     attendance: new Attendance(
       eventRepository,
       userRepository,
       teamMembershipRepository,
       meetingRepository,
-      meetingAttendanceRepository
+      meetingAttendanceRepository,
+      teamInstanceRepository
     ),
     listRosterByTeamInstance,
     insertMeeting,
@@ -997,5 +1011,105 @@ describe('Attendance.getMyReadModel beforeJoin', () => {
 
     expect(model.rate).toMatchObject({ percentage: null, band: 'no-meetings' })
     expect(model.meetings).toHaveLength(1)
+  })
+})
+
+describe('Attendance.getTeamReadModel', () => {
+  it('reads the requested team for an admin who is on no team at all', async () => {
+    const { attendance, listRosterByTeamInstance } = makeAttendance({
+      actorMembership: undefined,
+      roster: [buildRoster({ userId: 'a', name: 'Ana' })],
+    })
+
+    const model = await attendance.getTeamReadModel(TEAM_A)
+
+    expect(listRosterByTeamInstance).toHaveBeenCalledWith(TEAM_A)
+    expect(model.teamInstanceId).toBe(TEAM_A)
+    expect(model.roster.map((member) => member.userId)).toEqual(['a'])
+  })
+
+  it('answers not found for a team that does not exist', async () => {
+    const { attendance } = makeAttendance({ teamInstance: undefined })
+
+    const error = await rejection(attendance.getTeamReadModel('no-such-team'))
+
+    expect(error.getAppErrorCode()).toBe(AppErrorCode.NotFound)
+  })
+
+  it('answers not found for a team from a past event, whose attendance is out of scope', async () => {
+    const { attendance } = makeAttendance({
+      teamInstance: { id: 'old-team', eventId: 'event-0', name: 'Equipe A', templateKey: 'team-a' },
+    })
+
+    const error = await rejection(attendance.getTeamReadModel('old-team'))
+
+    expect(error.getAppErrorCode()).toBe(AppErrorCode.NotFound)
+  })
+
+  it('throws when there is no current event', async () => {
+    const { attendance } = makeAttendance({ currentEvent: undefined })
+
+    await expect(attendance.getTeamReadModel(TEAM_A)).rejects.toBeInstanceOf(AppError)
+  })
+
+  it('carries the justified stat, the pooled Média, a rate per roster member and the editada flag', async () => {
+    const { attendance } = makeAttendance({
+      actorMembership: undefined,
+      roster: [
+        buildRoster({ userId: 'ana', name: 'Ana', type: 'coordinator' }),
+        buildRoster({ userId: 'bia', name: 'Bia' }),
+      ],
+      meetings: [
+        buildMeeting({ id: 'm3', heldOn: '2026-10-04' }),
+        buildMeeting({
+          id: 'm2',
+          heldOn: '2026-10-03',
+          createdAt: new Date('2026-10-03T10:00:00Z'),
+          updatedAt: new Date('2026-10-06T10:00:00Z'),
+        }),
+        buildMeeting({ id: 'm1', heldOn: '2026-10-02' }),
+      ],
+      attendanceRows: [
+        buildRow('m1', '2026-10-02', 'ana', 'present'),
+        buildRow('m1', '2026-10-02', 'bia', 'present'),
+        buildRow('m2', '2026-10-03', 'ana', 'present'),
+        buildRow('m2', '2026-10-03', 'bia', 'justified', 'doente'),
+        buildRow('m3', '2026-10-04', 'ana', 'present'),
+        buildRow('m3', '2026-10-04', 'bia', 'absent'),
+      ],
+    })
+
+    const model = await attendance.getTeamReadModel(TEAM_A)
+    const rateById = new Map(model.roster.map((member) => [member.userId, member.rate]))
+    const editedById = new Map(model.meetings.map((meeting) => [meeting.id, meeting.edited]))
+
+    // 1 justified of 6 rows; 4 present over the 5 non-justified rows -> 80%.
+    expect(model.justifiedTotal).toBe(1)
+    expect(model.totalRows).toBe(6)
+    expect(model.teamAverage).toMatchObject({ present: 4, eligible: 5, percentage: 80 })
+    expect(rateById.get('ana')).toMatchObject({ present: 3, eligible: 3, percentage: 100 })
+    expect(rateById.get('bia')).toMatchObject({ present: 1, eligible: 2, justified: 1 })
+    expect(editedById).toEqual(
+      new Map([
+        ['m3', false],
+        ['m2', true],
+        ['m1', false],
+      ])
+    )
+  })
+
+  it('reports the no-meetings state for a team that has registered none', async () => {
+    const { attendance } = makeAttendance({
+      roster: [buildRoster({ userId: 'ana', name: 'Ana' })],
+      meetings: [],
+      attendanceRows: [],
+    })
+
+    const model = await attendance.getTeamReadModel(TEAM_A)
+
+    expect(model.meetingCount).toBe(0)
+    expect(model.meetings).toEqual([])
+    expect(model.teamAverage).toMatchObject({ percentage: null, band: 'no-meetings' })
+    expect(model.roster[0]?.rate).toMatchObject({ band: 'no-meetings' })
   })
 })

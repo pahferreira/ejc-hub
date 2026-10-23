@@ -5,6 +5,7 @@ import type { EventRepository } from '../../../modules/event/domain/EventReposit
 import type { MeetingRepository } from '../../../modules/meeting/domain/MeetingRepository.ts'
 import type { MeetingAttendanceRepository } from '../../../modules/meeting-attendance/domain/MeetingAttendanceRepository.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
+import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
 import { MeetingAttendanceStatus } from '../../../modules/meeting-attendance/domain/meeting-attendance-status.ts'
 import type { InsertMeetingAttendanceInput } from '../../../modules/meeting-attendance/domain/MeetingAttendanceRepository.ts'
@@ -116,19 +117,22 @@ export class Attendance {
   #teamMembershipRepository: TeamMembershipRepository
   #meetingRepository: MeetingRepository
   #meetingAttendanceRepository: MeetingAttendanceRepository
+  #teamInstanceRepository: TeamInstanceRepository
 
   constructor(
     eventRepo: EventRepository,
     userRepo: UserRepository,
     teamMembershipRepo: TeamMembershipRepository,
     meetingRepo: MeetingRepository,
-    meetingAttendanceRepo: MeetingAttendanceRepository
+    meetingAttendanceRepo: MeetingAttendanceRepository,
+    teamInstanceRepo: TeamInstanceRepository
   ) {
     this.#eventRepository = eventRepo
     this.#userRepository = userRepo
     this.#teamMembershipRepository = teamMembershipRepo
     this.#meetingRepository = meetingRepo
     this.#meetingAttendanceRepository = meetingAttendanceRepo
+    this.#teamInstanceRepository = teamInstanceRepo
   }
 
   // Resolves the current event once per call and hands it to `fn`.
@@ -254,6 +258,31 @@ export class Attendance {
         meetings,
         attendanceRows,
       })
+    })
+  }
+
+  /**
+   * The admin Team Detail read model: the coordinator read model for any team.
+   *
+   * Takes the team explicitly, but only one of the current event. Who may call
+   * it is the route's `attendance:read` guard, not a membership.
+   */
+  async getTeamReadModel(teamInstanceId: string): Promise<CoordinatorAttendanceReadModel> {
+    return this.#withCurrentEvent(async (event) => {
+      const team = await this.#teamInstanceRepository.selectTeamInstance(teamInstanceId)
+
+      // Past events are out of scope, so their teams read as missing.
+      if (!team || team.eventId !== event.id) {
+        throw new AppError('Team not found', AppErrorCode.NotFound)
+      }
+
+      const [roster, meetings, attendanceRows] = await Promise.all([
+        this.#teamMembershipRepository.listRosterByTeamInstance(teamInstanceId),
+        this.#meetingRepository.listMeetingsByTeamInstance(teamInstanceId),
+        this.#meetingAttendanceRepository.listAttendancesByTeamInstance(teamInstanceId),
+      ])
+
+      return buildCoordinatorReadModel({ teamInstanceId, roster, meetings, attendanceRows })
     })
   }
 
