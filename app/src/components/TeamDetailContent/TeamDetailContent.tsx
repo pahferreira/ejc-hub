@@ -72,7 +72,7 @@ export function TeamDetailContent(props: TeamDetailContentProps) {
         {team.members.length === 0 ? (
           <div className="text-gray-500">Nenhum membro atribuído a esta equipe.</div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {team.members.map((member) => (
               <TeamPersonCard
                 key={member.userId}

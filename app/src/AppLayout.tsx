@@ -43,7 +43,7 @@ export function AppLayout() {
         (`overflow-auto`), and a `sticky` child would be pinned to that box
         instead of the viewport.
       */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col w-[100vw]">
         <MobileSidebarTrigger isOpen={isMobileMenuOpen} onOpen={() => setIsMobileMenuOpen(true)} />
         <main className="flex-1 overflow-auto bg-dashboard-background">
           <Toaster />

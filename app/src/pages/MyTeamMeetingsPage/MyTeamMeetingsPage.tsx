@@ -41,7 +41,7 @@ function AttendanceStats(props: { model: CoordinatorAttendanceReadModel }) {
   const average = teamAverageCard(model)
 
   return (
-    <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
+    <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4 lg:grid-cols-5">
       <StatusCard
         title="Média"
         value={average.value}
