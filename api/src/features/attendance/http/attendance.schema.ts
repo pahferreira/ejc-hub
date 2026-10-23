@@ -15,6 +15,10 @@ export const registerMeetingBodySchema = z.object({
   justified: z.array(z.object({ userId: z.uuid(), reason: z.string() })),
 })
 
+export const teamAttendanceParamsSchema = z.object({
+  teamId: z.uuid(),
+})
+
 export const meetingParamsSchema = z.object({
   meetingId: z.uuid(),
 })

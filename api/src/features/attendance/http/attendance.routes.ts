@@ -4,10 +4,12 @@ import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
 import { extractUserInformationFromToken } from '../../../shared/extract-user-info-from-token.ts'
+import { AttendancePermissions } from '../../../../../common/permissions/permissions.types.ts'
 import { attendanceApp } from '../application/attendance-app.ts'
 import {
   meetingParamsSchema,
   registerMeetingBodySchema,
+  teamAttendanceParamsSchema,
   updateMeetingBodySchema,
 } from './attendance.schema.ts'
 
@@ -76,6 +78,27 @@ export function attendanceRoutes(server: FastifyServerInstance) {
           }
 
           const readModel = await attendanceApp.getMyReadModel(authId)
+
+          return reply.code(HttpStatus.Ok).send(readModel)
+        } catch (error) {
+          fastifyErrorHandler(reply, error)
+        }
+      }
+    )
+
+    // Admin Team Detail. Its own endpoint rather than part of `GET /teams/:teamId`,
+    // so `team-instances:read` alone never exposes attendance. The param is
+    // named like the other `/teams/:teamId` routes, but it is the team instance
+    // id; a team outside the current event answers 404.
+    server.get(
+      '/teams/:teamId/attendance',
+      {
+        schema: { params: teamAttendanceParamsSchema },
+        preHandler: authGuard(server, { permissions: [AttendancePermissions.Read] }),
+      },
+      async (request, reply) => {
+        try {
+          const readModel = await attendanceApp.getTeamReadModel(request.params.teamId)
 
           return reply.code(HttpStatus.Ok).send(readModel)
         } catch (error) {

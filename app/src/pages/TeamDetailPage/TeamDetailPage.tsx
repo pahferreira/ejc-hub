@@ -9,6 +9,13 @@ import { AddMembersDrawer } from '../../components/AddMembersDrawer/AddMembersDr
 import { useTeamDetailQuery } from '../../services/teams/useTeamDetailQuery'
 import { useRemoveTeamMemberMutation } from '../../services/teams/useRemoveTeamMemberMutation'
 import { ROUTE_PATHS } from '../../constants/routePaths'
+import { TeamAttendanceSection } from '../../components/TeamAttendanceSection/TeamAttendanceSection'
+import { useTeamAttendanceQuery } from '../../services/attendance/useTeamAttendanceQuery'
+import { useAuthentication } from '../../hooks/useAuthentication'
+import { useFeatureFlag } from '../../hooks/useFeatureFlag/useFeatureFlag'
+import { FeatureFlag } from '../../hooks/useFeatureFlag/feature-flags'
+import { AttendancePermissions, hasPermission } from '../../../../common/permissions'
+import { myTeamCardAttendanceRates } from '../MyTeamPage/myTeamCardAttendanceRates'
 
 export function TeamDetailPage() {
   const navigate = useNavigate()
@@ -17,6 +24,17 @@ export function TeamDetailPage() {
   const drawer = useAssignCoordinatorDrawer()
   const addMembersDrawer = useAddMembersDrawer()
   const removeMemberMutation = useRemoveTeamMemberMutation()
+  const { permissions } = useAuthentication()
+  const { isFeatureEnabled } = useFeatureFlag()
+
+  // Attendance is its own read behind its own permission, never part of the
+  // team payload: an admin with only `team-instances:read` sees none of it.
+  const showsAttendance =
+    hasPermission(permissions, AttendancePermissions.Read) &&
+    isFeatureEnabled(FeatureFlag.AttendanceVisibility, false)
+  const attendanceQuery = useTeamAttendanceQuery(teamQuery.data?.id, {
+    enabled: showsAttendance,
+  })
 
   if (teamQuery.isLoading) {
     return (
@@ -35,6 +53,7 @@ export function TeamDetailPage() {
   }
 
   const team = teamQuery.data
+  const attendanceModel = showsAttendance ? attendanceQuery.data : undefined
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
@@ -76,7 +95,13 @@ export function TeamDetailPage() {
               teamKey: team.templateKey,
             })
           }
+          attendanceRates={myTeamCardAttendanceRates({ teamModel: attendanceModel })}
         />
+
+        {attendanceModel && <TeamAttendanceSection model={attendanceModel} />}
+        {showsAttendance && attendanceQuery.error && (
+          <div className="text-red-600">Não foi possível carregar as reuniões da equipe.</div>
+        )}
       </div>
 
       <AssignCoordinatorDrawer {...drawer} />

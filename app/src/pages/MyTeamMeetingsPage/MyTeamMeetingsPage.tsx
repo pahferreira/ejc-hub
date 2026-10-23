@@ -11,34 +11,13 @@ import { useFeatureFlag } from '../../hooks/useFeatureFlag/useFeatureFlag'
 import { FeatureFlag } from '../../hooks/useFeatureFlag/feature-flags'
 import { MemberAttendanceHistory } from '../../components/MemberAttendanceHistory/MemberAttendanceHistory'
 import { StatusCard } from '../../components/StatusCard/StatusCard'
-import { formatRateFraction } from '../../components/AttendanceRate/attendanceRate'
+import { justifiedStat, teamAverageStat } from '../../components/AttendanceRate/attendanceStats'
 import type { CoordinatorAttendanceReadModel } from '../../services/attendance/attendance.types'
-
-// The Média card's value and line. The value slot is large, so it holds the
-// percentage alone and the fraction moves to the description.
-function teamAverageCard(model: CoordinatorAttendanceReadModel) {
-  const rate = model.teamAverage
-
-  if (rate.band === 'no-meetings') {
-    return { value: '-', description: 'Nenhuma reunião registrada' }
-  }
-
-  const fraction = formatRateFraction(rate)
-  const description =
-    rate.band === 'insufficient-data' ? `${fraction} · poucos dados` : `${fraction} presenças`
-
-  return { value: `${rate.percentage}%`, description }
-}
-
-function justifiedDescription(model: CoordinatorAttendanceReadModel): string {
-  const percentage =
-    model.totalRows > 0 ? Math.round((model.justifiedTotal / model.totalRows) * 100) : 0
-  return `de ${model.totalRows} · ${percentage}%`
-}
 
 function AttendanceStats(props: { model: CoordinatorAttendanceReadModel }) {
   const { model } = props
-  const average = teamAverageCard(model)
+  const average = teamAverageStat(model.teamAverage)
+  const justified = justifiedStat(model)
 
   return (
     <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4 lg:grid-cols-5">
@@ -57,10 +36,10 @@ function AttendanceStats(props: { model: CoordinatorAttendanceReadModel }) {
       />
       <StatusCard
         title="Justificadas"
-        value={model.justifiedTotal}
+        value={justified.value}
         variant="pending"
         icon={<FiFileText size="24px" />}
-        description={justifiedDescription(model)}
+        description={justified.description}
       />
       <StatusCard
         title="Em risco"

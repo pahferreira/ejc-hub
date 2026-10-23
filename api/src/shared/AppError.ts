@@ -6,6 +6,9 @@ export const AppErrorCode = {
   // touch. Distinct from the token-level checks in `fastifyRequirePermission`,
   // which cannot see the data an authorization decision depends on.
   Forbidden: 'forbidden',
+  // The record the request names does not exist, or not where the caller is
+  // looking for it.
+  NotFound: 'not_found',
   // The person already holds a team membership in the event, so placing them
   // again is impossible. Raised from a unique violation rather than a
   // read-then-write check, because a concurrent approval can slip between the

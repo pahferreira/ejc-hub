@@ -156,7 +156,7 @@ Validated variables:
 | `AppError`                     | Custom error class for business logic exceptions                                                    |
 | `fastify-auth-guard`           | Pre-handler that enforces authentication via `server.requireAuth()` with optional permission checks |
 | `fastify-require-permission`   | Pre-handler that verifies JWT permissions (supports `all` or `any` mode)                            |
-| `fastify-error-handler`        | Maps `AppError` to 422 responses; unhandled errors to 500                                           |
+| `fastify-error-handler`        | Maps `AppError` to 403 (`Forbidden`), 404 (`NotFound`) or 422; unhandled errors to 500              |
 | `extract-user-info-from-token` | Decodes Auth0 JWT to extract `authId`, `email`, `name`, `picture`, and `permissions`                |
 | `http-statuses`                | Constants for HTTP status codes (200, 201, 401, 403, 404, 422, 500)                                 |
 | `fastify.types`                | Typed `FastifyServerInstance` with `ZodTypeProvider`                                                |
