@@ -20,6 +20,18 @@ export function bandToMeterTone(band: AttendanceBand): MeterTone {
   }
 }
 
+const toneTextClasses: Record<MeterTone, string> = {
+  default: 'text-dark-brown',
+  success: 'text-green',
+  warning: 'text-orange',
+  error: 'text-red',
+}
+
+/** The text colour a rate's fraction line takes: the band's tone, like its Meter. */
+export function bandToTextClass(band: AttendanceBand): string {
+  return toneTextClasses[bandToMeterTone(band)]
+}
+
 export type BandBadge = { label: string; variant: BadgeVariant }
 
 const BAND_BADGES: Partial<Record<AttendanceBand, BandBadge>> = {

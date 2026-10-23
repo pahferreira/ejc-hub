@@ -3,6 +3,7 @@ import { fn } from 'storybook/test'
 import { PersonCard } from './PersonCard'
 import { MemberFeeStatusPill } from '../TeamMembersFeeCard/MemberFeeStatusPill'
 import { ExperienceBadge } from '../ExperienceBadge/ExperienceBadge'
+import { PersonAttendanceBlock } from '../PersonAttendanceBlock/PersonAttendanceBlock'
 
 const meta = {
   title: 'UI/PersonCard',
@@ -47,6 +48,23 @@ export const Member: Story = {
     feeStatusChip: <MemberFeeStatusPill status="pending" />,
     onRemove: fn(),
     removeAriaLabel: 'Remover Bruno Carvalho da equipe',
+  },
+}
+
+export const WithAttendance: Story = {
+  args: {
+    name: 'Julia Martins',
+    nickname: 'Ju',
+    phone: '(41) 90427-7888',
+    weekAvailability: ['monday', 'wednesday', 'friday'],
+    showStatusChips: true,
+    feeStatusChip: <MemberFeeStatusPill status="paid" />,
+    attendance: (
+      <PersonAttendanceBlock
+        rate={{ present: 7, eligible: 8, justified: 2, percentage: 88, band: 'good' }}
+        label="Presença de Ju"
+      />
+    ),
   },
 }
 

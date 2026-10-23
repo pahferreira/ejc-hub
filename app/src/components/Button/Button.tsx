@@ -28,7 +28,7 @@ export function Button(props: ButtonProps) {
       aria-label={props.ariaLabel}
       className={clsx(
         foregroundVariant[variant],
-        'flex items-center min-w-fit gap-2 border-2 border-dark-brown rounded-lg hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50',
+        'flex items-center justify-center min-w-fit gap-2 border-2 border-dark-brown rounded-lg hover:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50',
         size === 'small' ? 'px-1.5 py-0.5 text-xs' : 'px-3 py-1.5 text-sm',
         variant === 'text' ? '!border-none' : 'button-shadow'
       )}

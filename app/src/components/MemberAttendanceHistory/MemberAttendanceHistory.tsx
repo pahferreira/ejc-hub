@@ -3,9 +3,8 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import { FiChevronDown } from 'react-icons/fi'
 import { Badge } from '../Badge/Badge'
-import type { MeterTone } from '../Meter/Meter'
 import {
-  bandToMeterTone,
+  bandToTextClass,
   formatJustified,
   formatRatePrimary,
 } from '../AttendanceRate/attendanceRate'
@@ -24,14 +23,6 @@ export type MemberAttendanceHistoryProps = {
   model: MemberAttendanceReadModel
 }
 
-// The Sua presença fraction takes the band's tone, like the Meter elsewhere.
-const toneTextClasses: Record<MeterTone, string> = {
-  default: 'text-dark-brown',
-  success: 'text-green',
-  warning: 'text-orange',
-  error: 'text-red',
-}
-
 function OwnRateSummary(props: { model: MemberAttendanceReadModel }) {
   const { rate } = props.model
   const justified = formatJustified(rate.justified)
@@ -39,7 +30,7 @@ function OwnRateSummary(props: { model: MemberAttendanceReadModel }) {
   return (
     <p className="m-0 text-sm text-dark-brown/70">
       Sua presença:{' '}
-      <span className={clsx('font-semibold', toneTextClasses[bandToMeterTone(rate.band)])}>
+      <span className={clsx('font-semibold', bandToTextClass(rate.band))}>
         {formatRatePrimary(rate)}
       </span>
       {justified && ` · ${justified}`}
