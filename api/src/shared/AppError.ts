@@ -14,6 +14,9 @@ export const AppErrorCode = {
   // read-then-write check, because a concurrent approval can slip between the
   // two. The app maps this code to its own pt-BR message.
   MemberAlreadyAssigned: 'member_already_assigned',
+  // Something the code did not anticipate went wrong. The response carries
+  // only this code and a generic message; the details go to the server log.
+  InternalError: 'internal_error',
 } as const
 
 type AppErrorCode = (typeof AppErrorCode)[keyof typeof AppErrorCode]
