@@ -1,18 +1,36 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { DrizzleQueryError } from 'drizzle-orm/errors'
-import { PostHogObservability, type ErrorTrackingClient } from './PostHogObservability.ts'
+import { PostHog } from 'posthog-node'
+import { PostHogObservability } from './PostHogObservability.ts'
 
-const CONFIG = { apiKey: 'phc_test', host: 'https://us.i.posthog.com' }
+// posthog-node is the boundary this adapter exists to wrap, so the test
+// replaces it with a fake client that records calls instead of sending them.
+const client = vi.hoisted(() => ({
+  captureException: vi.fn<(error: unknown, ...rest: unknown[]) => void>(),
+  shutdown: vi.fn(async () => {}),
+}))
 
-const buildFakeClient = () => ({
-  captureException: vi.fn<ErrorTrackingClient['captureException']>(),
-  shutdown: vi.fn<ErrorTrackingClient['shutdown']>(async () => {}),
-})
+vi.mock('posthog-node', () => ({
+  PostHog: vi.fn(() => client),
+}))
+
+const CONFIG = { apiKey: 'phc_test', host: 'https://eu.i.posthog.com' }
+
+const PostHogMock = vi.mocked(PostHog)
 
 describe('PostHogObservability', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('creates the PostHog client with the configured key and host', () => {
+    new PostHogObservability(CONFIG)
+
+    expect(PostHogMock).toHaveBeenCalledWith('phc_test', { host: 'https://eu.i.posthog.com' })
+  })
+
   it('captures an error on the person, linked to the session, user and request', () => {
-    const client = buildFakeClient()
-    const observability = new PostHogObservability(CONFIG, client)
+    const observability = new PostHogObservability(CONFIG)
     const error = new Error('boom')
 
     observability.captureError(error, {
@@ -30,8 +48,7 @@ describe('PostHogObservability', () => {
   })
 
   it('leaves the optional IDs out of the event when they are not known', () => {
-    const client = buildFakeClient()
-    const observability = new PostHogObservability(CONFIG, client)
+    const observability = new PostHogObservability(CONFIG)
     const error = new Error('boom')
 
     observability.captureError(error, { requestId: 'req-1' })
@@ -42,8 +59,7 @@ describe('PostHogObservability', () => {
   })
 
   it('scrubs a failed query before it is sent', () => {
-    const client = buildFakeClient()
-    const observability = new PostHogObservability(CONFIG, client)
+    const observability = new PostHogObservability(CONFIG)
 
     observability.captureError(
       new DrizzleQueryError('select 1 where "email" = $1', ['maria@example.com']),
@@ -55,8 +71,7 @@ describe('PostHogObservability', () => {
   })
 
   it('flushes buffered events on shutdown', async () => {
-    const client = buildFakeClient()
-    const observability = new PostHogObservability(CONFIG, client)
+    const observability = new PostHogObservability(CONFIG)
 
     await observability.shutdown()
 

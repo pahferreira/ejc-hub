@@ -9,16 +9,11 @@ export type PostHogObservabilityConfig = {
   host: string
 }
 
-export type ErrorTrackingClient = Pick<PostHog, 'captureException' | 'shutdown'>
-
 export class PostHogObservability implements Observability {
-  #client: ErrorTrackingClient
+  #client: PostHog
 
-  constructor(
-    config: PostHogObservabilityConfig,
-    client: ErrorTrackingClient = new PostHog(config.apiKey, { host: config.host })
-  ) {
-    this.#client = client
+  constructor(config: PostHogObservabilityConfig) {
+    this.#client = new PostHog(config.apiKey, { host: config.host })
   }
 
   captureError(error: unknown, { distinctId, userId, sessionId, requestId }: ErrorContext) {
