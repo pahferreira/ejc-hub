@@ -71,12 +71,16 @@ startServer().catch(() => {
 
 // `docker stop` sends SIGTERM. Closing the server runs the `onClose` hooks,
 // which flush buffered observability events before the process exits.
+async function closeServer() {
+  try {
+    await server.close()
+    process.exit(0)
+  } catch (err) {
+    server.log.error(err)
+    process.exit(1)
+  }
+}
+
 process.once('SIGTERM', () => {
-  server
-    .close()
-    .then(() => process.exit(0))
-    .catch((err: unknown) => {
-      server.log.error(err)
-      process.exit(1)
-    })
+  void closeServer()
 })

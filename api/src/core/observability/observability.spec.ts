@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
+import { DrizzleQueryError } from 'drizzle-orm/errors'
 import { createObservability, type ErrorTrackingClient } from './observability.ts'
 
 const buildFakeClient = () => {
@@ -77,5 +78,66 @@ describe('createObservability', () => {
     await observability.shutdown()
 
     expect(client.shutdown).toHaveBeenCalledTimes(1)
+  })
+
+  describe('when a database query fails', () => {
+    const buildQueryError = () => {
+      const pgError = Object.assign(
+        new Error('invalid input syntax for type uuid: "maria@example.com"'),
+        { code: '22P02' }
+      )
+
+      return new DrizzleQueryError(
+        'select "id" from "users" where "email" = $1 and "phone" = $2',
+        ['maria@example.com', '+5511999999999'],
+        pgError
+      )
+    }
+
+    const captureQueryError = () => {
+      const { client, createClient } = buildFakeClient()
+      const observability = createObservability(
+        { apiKey: 'phc_test', host: 'https://us.i.posthog.com' },
+        createClient
+      )
+
+      observability.captureError(buildQueryError(), { requestId: 'req-1' })
+
+      const [captured] = client.captureException.mock.calls[0]
+      return captured as Error & { cause?: Error & { code?: string } }
+    }
+
+    it('sends the SQL with its placeholders, so the failing query can still be found', () => {
+      const captured = captureQueryError()
+
+      expect(captured.message).toBe(
+        'Failed query: select "id" from "users" where "email" = $1 and "phone" = $2'
+      )
+    })
+
+    it('never sends the bound parameter values, in the message, stack or cause', () => {
+      const captured = captureQueryError()
+
+      const everything = [
+        captured.message,
+        captured.stack,
+        captured.cause?.message,
+        captured.cause?.stack,
+      ].join('\n')
+      expect(everything).not.toContain('maria@example.com')
+      expect(everything).not.toContain('+5511999999999')
+    })
+
+    it('keeps the Postgres error code of the cause', () => {
+      const captured = captureQueryError()
+
+      expect(captured.cause?.code).toBe('22P02')
+    })
+
+    it('keeps the stack frames that point at the failing code', () => {
+      const captured = captureQueryError()
+
+      expect(captured.stack).toMatch(/\n\s+at /)
+    })
   })
 })

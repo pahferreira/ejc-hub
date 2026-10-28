@@ -1,4 +1,5 @@
 import { PostHog } from 'posthog-node'
+import { DrizzleQueryError } from 'drizzle-orm/errors'
 
 // The only file that imports `posthog-node`. Everything else talks to the
 // `Observability` interface, so tests can pass a fake and the vendor can change
@@ -34,6 +35,40 @@ type ObservabilityConfig = {
 const createPostHogClient = (apiKey: string, host: string): ErrorTrackingClient =>
   new PostHog(apiKey, { host })
 
+// The stack's frames, under a new first line. A V8 stack starts with
+// `${name}: ${message}`, so the original message would otherwise ride along.
+const withHeader = (header: string, stack: string | undefined) => {
+  const frames = (stack ?? '').split('\n').filter((line) => /^\s+at /.test(line))
+
+  return [header, ...frames].join('\n')
+}
+
+/**
+ * Drizzle wraps every failed query in a `DrizzleQueryError` whose message ends
+ * with the bound parameter values (emails, names, phones), and whose `cause`,
+ * the Postgres error, can quote them too. Keep the SQL, which only holds
+ * placeholders, the stack frames and the Postgres error code.
+ */
+function scrubbed(error: unknown): unknown {
+  if (!(error instanceof DrizzleQueryError)) {
+    return error
+  }
+
+  const safe = new Error(`Failed query: ${error.query}`)
+  safe.name = 'DrizzleQueryError'
+  safe.stack = withHeader(`${safe.name}: ${safe.message}`, error.stack)
+
+  if (error.cause instanceof Error) {
+    const rawCode = (error.cause as { code?: unknown }).code
+    const code = typeof rawCode === 'string' ? rawCode : 'unknown'
+    const cause = Object.assign(new Error(`Database error ${code}`), { code })
+    cause.stack = withHeader(`Error: ${cause.message}`, error.cause.stack)
+    safe.cause = cause
+  }
+
+  return safe
+}
+
 const noopObservability: Observability = {
   captureError: () => {},
   shutdown: async () => {},
@@ -52,7 +87,7 @@ export function createObservability(
 
   return {
     captureError: (error, { distinctId, userId, sessionId, requestId }) => {
-      client.captureException(error, distinctId, {
+      client.captureException(scrubbed(error), distinctId, {
         ...(sessionId && { $session_id: sessionId }),
         ...(userId && { user_id: userId }),
         request_id: requestId,

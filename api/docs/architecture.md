@@ -151,6 +151,8 @@ Validated variables:
 - `DATABASE_URL` — PostgreSQL connection string
 - `AUTH_DOMAIN` — Auth0 tenant domain
 - `AUTH_AUDIENCE` — Auth0 API audience identifier
+- `POSTHOG_API_KEY` — Optional PostHog project key; error capture is a no-op without it
+- `POSTHOG_HOST` — Optional PostHog host (default: `https://us.i.posthog.com`)
 
 ## Shared Utilities
 
@@ -159,7 +161,8 @@ Validated variables:
 | `AppError`                     | Custom error class for business logic exceptions                                                    |
 | `fastify-auth-guard`           | Pre-handler that enforces authentication via `server.requireAuth()` with optional permission checks |
 | `fastify-require-permission`   | Pre-handler that verifies JWT permissions (supports `all` or `any` mode)                            |
-| `fastify-error-handler`        | Maps `AppError` to 403 (`Forbidden`), 404 (`NotFound`) or 422; unhandled errors to 500              |
+| `fastify-error-handler`        | Maps `AppError` to 403 (`Forbidden`), 404 (`NotFound`) or 422; unhandled errors to 500 and captured |
+| `fastify-observability`        | Decorates `server.observability`, adds the 5xx `setErrorHandler` safety net, flushes on close       |
 | `extract-user-info-from-token` | Decodes Auth0 JWT to extract `authId`, `email`, `name`, `picture`, and `permissions`                |
 | `http-statuses`                | Constants for HTTP status codes (200, 201, 401, 403, 404, 422, 500)                                 |
 | `fastify.types`                | Typed `FastifyServerInstance` with `ZodTypeProvider`                                                |
