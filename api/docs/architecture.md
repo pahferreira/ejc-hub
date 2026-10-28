@@ -22,8 +22,10 @@ api/src/
 │   │       ├── team-templates.ts
 │   │       ├── users.ts
 │   │       └── index.ts
-│   └── envs/
-│       └── env.ts                 # Environment variables (PORT, DATABASE_URL, AUTH_*)
+│   ├── envs/
+│   │   └── env.ts                 # Environment variables (PORT, DATABASE_URL, AUTH_*, POSTHOG_*)
+│   └── observability/
+│       └── observability.ts       # Error capture; the only importer of posthog-node (no-op without a key)
 │
 ├── modules/                       # Single-table data access (repository interfaces + Drizzle impls)
 │   ├── event/
@@ -78,7 +80,8 @@ api/src/
 │   ├── AppError.ts                # Custom business logic error class
 │   ├── extract-user-info-from-token.ts  # JWT token decoder
 │   ├── fastify-auth-guard.ts      # Authentication middleware
-│   ├── fastify-error-handler.ts   # Global error handler
+│   ├── fastify-error-handler.ts   # Shared route error handler (captures non-AppErrors)
+│   ├── fastify-observability.ts   # Decorates `observability`, 5xx safety net, flush on close
 │   ├── fastify-require-permission.ts    # Authorization middleware
 │   ├── fastify.types.ts           # Typed Fastify instance
 │   └── http-statuses.ts           # HTTP status code constants

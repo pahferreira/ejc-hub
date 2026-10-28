@@ -86,7 +86,7 @@ export function memberRequestRoutes(server: FastifyServerInstance) {
             memberRequestApp.createRequests(authId, request.body.userIds, request.body.message)
           )
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -121,7 +121,7 @@ export function memberRequestRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send(candidates)
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -145,7 +145,7 @@ export function memberRequestRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send(requests)
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -163,7 +163,7 @@ export function memberRequestRoutes(server: FastifyServerInstance) {
             memberRequestApp.cancelRequest(authId, request.params.requestId)
           )
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -186,7 +186,7 @@ export function memberRequestRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send(requests)
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -211,7 +211,7 @@ export function memberRequestRoutes(server: FastifyServerInstance) {
             )
           )
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )

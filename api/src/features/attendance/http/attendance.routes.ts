@@ -56,7 +56,7 @@ export function attendanceRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send(readModel)
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -81,7 +81,7 @@ export function attendanceRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send(readModel)
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -102,7 +102,7 @@ export function attendanceRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send(readModel)
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -125,7 +125,7 @@ export function attendanceRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Created).send({ result })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -154,7 +154,7 @@ export function attendanceRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ result })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -177,7 +177,7 @@ export function attendanceRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ result })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )

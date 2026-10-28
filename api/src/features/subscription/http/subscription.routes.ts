@@ -17,13 +17,13 @@ export function subscriptionRoutes(server: FastifyServerInstance) {
       {
         preHandler: authGuard(server, { permissions: [SubscriptionPermissions.Read] }),
       },
-      async (_, reply) => {
+      async (request, reply) => {
         try {
           const subscriptions = await subscriptionApp.listSubscriptions()
 
           return reply.code(HttpStatus.Ok).send({ subscriptions })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -41,7 +41,7 @@ export function subscriptionRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ subscription })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -58,7 +58,7 @@ export function subscriptionRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ subscription })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -75,7 +75,7 @@ export function subscriptionRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ subscription })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -92,7 +92,7 @@ export function subscriptionRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ subscription })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )

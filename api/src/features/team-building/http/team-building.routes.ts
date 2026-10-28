@@ -22,13 +22,13 @@ export function teamBuildingRoutes(server: FastifyServerInstance) {
       {
         preHandler: authGuard(server, { permissions: [TeamInstancePermissions.Read] }),
       },
-      async (_, reply) => {
+      async (request, reply) => {
         try {
           const board = await teamBuildingApp.getCurrentEventBoard()
 
           return reply.code(HttpStatus.Ok).send({ board })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -45,7 +45,7 @@ export function teamBuildingRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ board })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -64,7 +64,7 @@ export function teamBuildingRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send(result)
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -83,7 +83,7 @@ export function teamBuildingRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({})
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -102,7 +102,7 @@ export function teamBuildingRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({})
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )

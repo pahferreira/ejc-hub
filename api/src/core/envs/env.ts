@@ -15,4 +15,7 @@ export const env = {
   DATABASE_URL: process.env.DATABASE_URL,
   AUTH_DOMAIN: process.env.AUTH_TENANT_DOMAIN,
   AUTH_AUDIENCE: process.env.AUTH_AUDIENCE,
+  // Optional: without a key, error capture is a no-op.
+  POSTHOG_API_KEY: process.env.POSTHOG_API_KEY || undefined,
+  POSTHOG_HOST: process.env.POSTHOG_HOST || 'https://us.i.posthog.com',
 }

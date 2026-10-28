@@ -39,7 +39,7 @@ export function eventsRoutes(server: FastifyServerInstance) {
             return reply.code(HttpStatus.Ok).send({ subscription })
           }
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -59,7 +59,7 @@ export function eventsRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ teams })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -82,7 +82,7 @@ export function eventsRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ subscriptions })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -92,13 +92,13 @@ export function eventsRoutes(server: FastifyServerInstance) {
       {
         preHandler: authGuard(server),
       },
-      async (_, reply) => {
+      async (request, reply) => {
         try {
           const currentEvent = await eventsApp.getCurrentEvent()
 
           return reply.code(HttpStatus.Ok).send({ currentEvent })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -119,7 +119,7 @@ export function eventsRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send(result)
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -129,13 +129,13 @@ export function eventsRoutes(server: FastifyServerInstance) {
       {
         preHandler: authGuard(server, { permissions: [SubscriptionPermissions.Read] }),
       },
-      async (_, reply) => {
+      async (request, reply) => {
         try {
           const stats = await eventsApp.getCurrentEventSubscriptionStats()
 
           return reply.code(HttpStatus.Ok).send(stats)
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -153,7 +153,7 @@ export function eventsRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ teams })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -163,13 +163,13 @@ export function eventsRoutes(server: FastifyServerInstance) {
       {
         preHandler: authGuard(server, { permissions: [TeamInstancePermissions.Read] }),
       },
-      async (_, reply) => {
+      async (request, reply) => {
         try {
           const result = await eventsApp.getCurrentEventTeamsOverview()
 
           return reply.code(HttpStatus.Ok).send(result)
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -187,7 +187,7 @@ export function eventsRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ team })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -208,7 +208,7 @@ export function eventsRoutes(server: FastifyServerInstance) {
             return reply.code(HttpStatus.Ok).send({ subscription })
           }
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -228,7 +228,7 @@ export function eventsRoutes(server: FastifyServerInstance) {
             return reply.code(HttpStatus.Ok).send(result)
           }
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -248,7 +248,7 @@ export function eventsRoutes(server: FastifyServerInstance) {
             return reply.code(HttpStatus.Ok).send({ team })
           }
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )

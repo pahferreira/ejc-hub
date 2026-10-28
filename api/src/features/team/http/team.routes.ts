@@ -45,7 +45,7 @@ export function teamRoutes(server: FastifyServerInstance) {
             teams,
           })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -64,7 +64,7 @@ export function teamRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ team })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -80,7 +80,7 @@ export function teamRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ teamOptions })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -100,7 +100,7 @@ export function teamRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ teamMembership })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -119,7 +119,7 @@ export function teamRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ deletedMembership })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
