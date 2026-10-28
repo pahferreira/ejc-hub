@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import type { ErrorContext } from '../core/observability/observability.ts'
+import type { ErrorContext } from '../core/observability/domain/Observability.ts'
 import { AppError, AppErrorCode } from './AppError.ts'
 import { HttpStatus } from './http-statuses.ts'
 

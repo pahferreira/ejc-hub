@@ -4,7 +4,7 @@ import { Writable } from 'node:stream'
 import { fastifyErrorHandler } from './fastify-error-handler.ts'
 import { registerObservability } from './fastify-observability.ts'
 import { AppError, AppErrorCode } from './AppError.ts'
-import type { Observability } from '../core/observability/observability.ts'
+import type { Observability } from '../core/observability/domain/Observability.ts'
 
 type LogLine = { level: number; msg: string; err?: { message: string } }
 

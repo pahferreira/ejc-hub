@@ -1,5 +1,5 @@
 import type { FastifyError, FastifyInstance } from 'fastify'
-import type { Observability } from '../core/observability/observability.ts'
+import type { Observability } from '../core/observability/domain/Observability.ts'
 import { fastifyErrorHandler } from './fastify-error-handler.ts'
 import { HttpStatus } from './http-statuses.ts'
 

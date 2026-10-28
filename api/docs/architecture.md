@@ -25,7 +25,11 @@ api/src/
 │   ├── envs/
 │   │   └── env.ts                 # Environment variables (PORT, DATABASE_URL, AUTH_*, POSTHOG_*)
 │   └── observability/
-│       └── observability.ts       # Error capture; the only importer of posthog-node (no-op without a key)
+│       ├── domain/Observability.ts            # `Observability` interface + `ErrorContext`
+│       ├── adapters/PostHogObservability.ts   # PostHog adapter; the only importer of posthog-node
+│       ├── adapters/NoopObservability.ts      # Used when no PostHog key is set
+│       ├── scrub-error.ts                     # Drops data-policy values (query params) from errors
+│       └── observability.ts                   # `createObservability`: picks the adapter from env
 │
 ├── modules/                       # Single-table data access (repository interfaces + Drizzle impls)
 │   ├── event/
