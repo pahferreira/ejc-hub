@@ -13,6 +13,7 @@ import type {
 } from '../domain/schedule.types.ts'
 
 const DAY_DATE_UNIQUE = 'schedule_days_event_id_date_unique'
+const DAY_DATE_TAKEN = 'The event already has a day on this date'
 
 /**
  * The event's name and its São Paulo start and end dates.
@@ -21,7 +22,7 @@ const DAY_DATE_UNIQUE = 'schedule_days_event_id_date_unique'
  * an event ending at 23:00 on a Sunday is already Monday in UTC. Reading them in
  * São Paulo is what keeps that Sunday the last day.
  */
-function scheduleEvent(event: EventModel): ScheduleEvent {
+function toScheduleEvent(event: EventModel): ScheduleEvent {
   return {
     name: event.name,
     startDate: event.startsAt ? toEventDate(event.startsAt) : null,
@@ -61,7 +62,7 @@ export class Schedule {
       const days = await this.#scheduleDayRepository.listDaysByEvent(event.id)
 
       return {
-        event: scheduleEvent(event),
+        event: toScheduleEvent(event),
         days: days.map((day) => ({
           id: day.id,
           date: day.date,
@@ -80,7 +81,7 @@ export class Schedule {
    */
   async createDay(input: CreateScheduleDayInput): Promise<CreateScheduleDayResult> {
     return this.#withCurrentEvent(async (event) => {
-      const { startDate, endDate } = scheduleEvent(event)
+      const { startDate, endDate } = toScheduleEvent(event)
 
       if (!startDate || !endDate) {
         throw new AppError('The current event has no dates set', AppErrorCode.Validation)
@@ -94,7 +95,7 @@ export class Schedule {
       const existing = await this.#scheduleDayRepository.findDayByDate(event.id, input.date)
 
       if (existing) {
-        throw new AppError('The event already has a day on this date', AppErrorCode.Conflict)
+        throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
       }
 
       try {
@@ -106,7 +107,7 @@ export class Schedule {
         return { dayId: day.id, date: day.date }
       } catch (error) {
         if (isUniqueViolation(error, DAY_DATE_UNIQUE)) {
-          throw new AppError('The event already has a day on this date', AppErrorCode.Conflict)
+          throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
         }
         throw error
       }
