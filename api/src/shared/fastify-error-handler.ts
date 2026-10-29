@@ -22,41 +22,25 @@ function errorContextFrom(request: FastifyRequest): ErrorContext {
   }
 }
 
+/**
+ * The status an `AppError` answers with, by code. Any code not listed is a
+ * broken business rule and answers 422. An authorization failure is a 403, not
+ * a 422: the request is well-formed, the caller simply may not perform it.
+ */
+const appErrorStatus: Partial<Record<string, number>> = {
+  [AppErrorCode.Forbidden]: HttpStatus.Forbidden,
+  [AppErrorCode.NotFound]: HttpStatus.NotFound,
+  [AppErrorCode.Validation]: HttpStatus.BadRequest,
+  [AppErrorCode.Conflict]: HttpStatus.Conflict,
+}
+
 export function fastifyErrorHandler(request: FastifyRequest, reply: FastifyReply, error: unknown) {
   if (error instanceof AppError) {
-    // An authorization failure is a 403, not a 422: the request is well-formed,
-    // the caller simply may not perform it.
-    if (error.getAppErrorCode() === AppErrorCode.Forbidden) {
-      return reply.code(HttpStatus.Forbidden).send({
-        message: error.getMessage(),
-        code: error.getAppErrorCode(),
-      })
-    }
+    const code = error.getAppErrorCode()
 
-    if (error.getAppErrorCode() === AppErrorCode.NotFound) {
-      return reply.code(HttpStatus.NotFound).send({
-        message: error.getMessage(),
-        code: error.getAppErrorCode(),
-      })
-    }
-
-    if (error.getAppErrorCode() === AppErrorCode.Validation) {
-      return reply.code(HttpStatus.BadRequest).send({
-        message: error.getMessage(),
-        code: error.getAppErrorCode(),
-      })
-    }
-
-    if (error.getAppErrorCode() === AppErrorCode.Conflict) {
-      return reply.code(HttpStatus.Conflict).send({
-        message: error.getMessage(),
-        code: error.getAppErrorCode(),
-      })
-    }
-
-    return reply.code(HttpStatus.UnprocessableEntity).send({
+    return reply.code(appErrorStatus[code] ?? HttpStatus.UnprocessableEntity).send({
       message: error.getMessage(),
-      code: error.getAppErrorCode(),
+      code,
     })
   }
 

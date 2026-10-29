@@ -7,14 +7,9 @@ export type InsertScheduleDayInput = {
   date: string
 }
 
-/** A day with how many activities it holds, for the planning tabs. */
-export type ScheduleDayWithActivityCount = ScheduleDayModel & {
-  activityCount: number
-}
-
 export interface ScheduleDayRepository {
-  /** Every day of one event, earliest date first, each with its activity count. */
-  listDaysByEvent: (eventId: string) => Promise<ScheduleDayWithActivityCount[]>
+  /** Every day of one event, earliest date first, each with how many activities it holds. */
+  listDaysByEvent: (eventId: string) => Promise<Array<ScheduleDayModel & { activityCount: number }>>
 
   /** The event's day on that date, or `undefined` when it has none. */
   findDayByDate: (eventId: string, date: string) => Promise<ScheduleDayModel | undefined>

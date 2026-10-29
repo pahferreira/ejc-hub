@@ -88,7 +88,8 @@ api/src/
 │   ├── fastify-observability.ts   # Decorates `observability`, 5xx safety net, flush on close
 │   ├── fastify-require-permission.ts    # Authorization middleware
 │   ├── fastify.types.ts           # Typed Fastify instance
-│   └── http-statuses.ts           # HTTP status code constants
+│   ├── http-statuses.ts           # HTTP status code constants
+│   └── testing/route-test-server.ts  # Fastify + fake Auth0 for route specs with `inject`
 │
 └── server.ts                      # Entry point: Fastify init, plugin registration, route binding
 ```
@@ -160,16 +161,16 @@ Validated variables:
 
 ## Shared Utilities
 
-| Utility                        | Purpose                                                                                             |
-| ------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `AppError`                     | Custom error class for business logic exceptions                                                    |
-| `fastify-auth-guard`           | Pre-handler that enforces authentication via `server.requireAuth()` with optional permission checks |
-| `fastify-require-permission`   | Pre-handler that verifies JWT permissions (supports `all` or `any` mode)                            |
-| `fastify-error-handler`        | Maps `AppError` to 403 (`Forbidden`), 404 (`NotFound`) or 422; unhandled errors to 500 and captured |
-| `fastify-observability`        | Decorates `server.observability`, adds the 5xx `setErrorHandler` safety net, flushes on close       |
-| `extract-user-info-from-token` | Decodes Auth0 JWT to extract `authId`, `email`, `name`, `picture`, and `permissions`                |
-| `http-statuses`                | Constants for HTTP status codes (200, 201, 401, 403, 404, 422, 500)                                 |
-| `fastify.types`                | Typed `FastifyServerInstance` with `ZodTypeProvider`                                                |
+| Utility                        | Purpose                                                                                                                                   |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `AppError`                     | Custom error class for business logic exceptions                                                                                          |
+| `fastify-auth-guard`           | Pre-handler that enforces authentication via `server.requireAuth()` with optional permission checks                                       |
+| `fastify-require-permission`   | Pre-handler that verifies JWT permissions (supports `all` or `any` mode)                                                                  |
+| `fastify-error-handler`        | Maps `AppError` to 400 (`Validation`), 403 (`Forbidden`), 404 (`NotFound`), 409 (`Conflict`) or 422; unhandled errors to 500 and captured |
+| `fastify-observability`        | Decorates `server.observability`, adds the 5xx `setErrorHandler` safety net, flushes on close                                             |
+| `extract-user-info-from-token` | Decodes Auth0 JWT to extract `authId`, `email`, `name`, `picture`, and `permissions`                                                      |
+| `http-statuses`                | Constants for HTTP status codes (200, 201, 400, 401, 403, 404, 409, 422, 500)                                                             |
+| `fastify.types`                | Typed `FastifyServerInstance` with `ZodTypeProvider`                                                                                      |
 
 ## Design Patterns
 
