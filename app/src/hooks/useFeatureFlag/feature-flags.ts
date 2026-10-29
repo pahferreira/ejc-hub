@@ -33,6 +33,11 @@ export const FeatureFlag = {
    * member opens the page to "Sem reuniões desde a entrada".
    */
   AttendanceVisibility: 'attendance-visibility',
+  /**
+   * The Cronograma pages (`/schedule/planning` and `/schedule`). Off until
+   * Phase 1 (Schedule Planning) is usable end to end.
+   */
+  Schedule: 'schedule',
 } as const
 
 export type FeatureFlagValue = (typeof FeatureFlag)[keyof typeof FeatureFlag]
