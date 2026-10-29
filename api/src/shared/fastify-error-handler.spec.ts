@@ -188,6 +188,29 @@ describe('fastifyErrorHandler', () => {
     expect(response.json()).toEqual({ message: 'Meeting not found', code: AppErrorCode.NotFound })
   })
 
+  it('answers a validation AppError with a 400 and its message', async () => {
+    const built = buildServer(new AppError('Date is outside the event', AppErrorCode.Validation))
+    server = built.server
+
+    const response = await server.inject({ method: 'POST', url: '/boom' })
+
+    expect(response.statusCode).toBe(400)
+    expect(response.json()).toEqual({
+      message: 'Date is outside the event',
+      code: AppErrorCode.Validation,
+    })
+  })
+
+  it('answers a conflict AppError with a 409 and its message', async () => {
+    const built = buildServer(new AppError('Day already planned', AppErrorCode.Conflict))
+    server = built.server
+
+    const response = await server.inject({ method: 'POST', url: '/boom' })
+
+    expect(response.statusCode).toBe(409)
+    expect(response.json()).toEqual({ message: 'Day already planned', code: AppErrorCode.Conflict })
+  })
+
   it('answers any other AppError with a 422 and its message', async () => {
     const built = buildServer(
       new AppError('Subscriptions are closed', AppErrorCode.SubscriptionsClosed)
