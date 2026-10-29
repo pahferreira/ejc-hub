@@ -7,6 +7,10 @@ describe('toEventInstant', () => {
   it('turns a day and HH:mm into the São Paulo instant (UTC-3)', () => {
     expect(toEventInstant('2026-11-14', '08:30').toISOString()).toBe('2026-11-14T11:30:00.000Z')
   })
+
+  it('throws on a time that is not HH:mm instead of returning an Invalid Date', () => {
+    expect(() => toEventInstant('2026-11-14', 'noon')).toThrow(RangeError)
+  })
 })
 
 describe('toEventInstant round-trip', () => {
