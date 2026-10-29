@@ -57,13 +57,13 @@ export function financialRoutes(server: FastifyServerInstance) {
       {
         preHandler: authGuard(server, { permissions: [EventFeePermissions.Read] }),
       },
-      async (_, reply) => {
+      async (request, reply) => {
         try {
           const overview = await financialApp.getCurrentEventMembersOverview()
 
           return reply.code(HttpStatus.Ok).send({ overview })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -73,13 +73,13 @@ export function financialRoutes(server: FastifyServerInstance) {
       {
         preHandler: authGuard(server, { permissions: [EventFeePermissions.Read] }),
       },
-      async (_, reply) => {
+      async (request, reply) => {
         try {
           const overview = await financialApp.getCurrentEventTeamsOverview()
 
           return reply.code(HttpStatus.Ok).send({ overview })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -102,7 +102,7 @@ export function financialRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send(members)
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -122,7 +122,7 @@ export function financialRoutes(server: FastifyServerInstance) {
             financialApp.confirmTeamFeesAsCoordinator(authId, [request.body.userId])
           )
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -139,7 +139,7 @@ export function financialRoutes(server: FastifyServerInstance) {
             financialApp.confirmTeamFeesAsCoordinator(authId, request.body.userIds)
           )
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -162,7 +162,7 @@ export function financialRoutes(server: FastifyServerInstance) {
             financialApp.setFeeStatusAsAdmin(authId, [request.params.userId], request.body.status)
           )
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -182,7 +182,7 @@ export function financialRoutes(server: FastifyServerInstance) {
             financialApp.setFeeStatusAsAdmin(authId, request.body.userIds, request.body.status)
           )
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )

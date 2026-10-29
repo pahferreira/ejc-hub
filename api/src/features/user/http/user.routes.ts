@@ -61,7 +61,7 @@ export function userRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ users })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -80,7 +80,7 @@ export function userRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ user })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )

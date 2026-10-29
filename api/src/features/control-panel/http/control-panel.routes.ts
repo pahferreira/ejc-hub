@@ -86,13 +86,13 @@ export const patchTeamTemplateBodySchema = postTeamTemplateBodySchema
 
 export function controlPanelRoutes(server: FastifyServerInstance) {
   return () => {
-    server.get('/circles', { preHandler: authGuard(server) }, async (_, reply) => {
+    server.get('/circles', { preHandler: authGuard(server) }, async (request, reply) => {
       try {
         const circles = await controlPanelApp.listCircles()
 
         return reply.code(HttpStatus.Ok).send({ circles })
       } catch (error) {
-        fastifyErrorHandler(reply, error)
+        fastifyErrorHandler(request, reply, error)
       }
     })
 
@@ -110,7 +110,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
             teamTemplates,
           })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -129,7 +129,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ teamTemplate })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -151,7 +151,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
             .header('location', `/control-panel/team-templates/${result.id}`)
             .send({ result })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -176,7 +176,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ result })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -197,7 +197,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
             .code(HttpStatus.Ok)
             .send({ message: 'Team template deleted successfully', teamTemplate })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -208,7 +208,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
       {
         preHandler: authGuard(server, { permissions: [EventPermissions.Read] }),
       },
-      async (_, reply) => {
+      async (request, reply) => {
         try {
           const events = await controlPanelApp.listEvents()
 
@@ -216,7 +216,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
             events,
           })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -237,7 +237,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send(event)
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -255,7 +255,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).header('location', `/events/${event.id}`).send({ event })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -274,7 +274,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ event })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -293,7 +293,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ message: `${event.name} deleted successfuly.` })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -314,7 +314,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
             event,
           })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -334,7 +334,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
 
           return reply.code(HttpStatus.Ok).send({ event })
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )
@@ -342,7 +342,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
     server.get(
       '/control-panel/call-campaign/pdf',
       { preHandler: authGuard(server, { permissions: [SubscriptionPermissions.Read] }) },
-      async (_, reply) => {
+      async (request, reply) => {
         try {
           const { buffer, filename } = await controlPanelApp.generateCallCampaignPdf()
           return reply
@@ -351,7 +351,7 @@ export function controlPanelRoutes(server: FastifyServerInstance) {
             .header('Content-Disposition', `attachment; filename="${filename}"`)
             .send(buffer)
         } catch (error) {
-          fastifyErrorHandler(reply, error)
+          fastifyErrorHandler(request, reply, error)
         }
       }
     )

@@ -1,5 +1,7 @@
 import fastify from 'fastify'
 import { env } from './core/envs/env.ts'
+import { createObservability } from './core/observability/observability.ts'
+import { registerObservability } from './shared/fastify-observability.ts'
 import Auth0 from '@auth0/auth0-fastify-api'
 import cors from '@fastify/cors'
 import {
@@ -24,6 +26,11 @@ const server = fastify({
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 server.setSerializerCompiler(serializerCompiler)
 server.setValidatorCompiler(validatorCompiler)
+
+registerObservability(
+  server,
+  createObservability({ apiKey: env.POSTHOG_API_KEY, host: env.POSTHOG_HOST })
+)
 
 server.register(cors, {
   methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
@@ -60,4 +67,20 @@ async function startServer() {
 
 startServer().catch(() => {
   process.exit(1)
+})
+
+// `docker stop` sends SIGTERM. Closing the server runs the `onClose` hooks,
+// which flush buffered observability events before the process exits.
+async function closeServer() {
+  try {
+    await server.close()
+    process.exit(0)
+  } catch (err) {
+    server.log.error(err)
+    process.exit(1)
+  }
+}
+
+process.once('SIGTERM', () => {
+  void closeServer()
 })
