@@ -1,4 +1,4 @@
-import { eventZoneParts } from './eventZoneParts'
+import { eventZoneParts } from './eventZoneParts.ts'
 
 /** The São Paulo date (`YYYY-MM-DD`) of an instant. */
 export const toEventDate = (instant: Date): string => {

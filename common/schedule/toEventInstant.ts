@@ -1,4 +1,4 @@
-import { eventZoneParts } from './eventZoneParts'
+import { eventZoneParts } from './eventZoneParts.ts'
 
 const MINUTE_MS = 60_000
 

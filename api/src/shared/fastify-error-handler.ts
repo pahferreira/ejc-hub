@@ -40,6 +40,20 @@ export function fastifyErrorHandler(request: FastifyRequest, reply: FastifyReply
       })
     }
 
+    if (error.getAppErrorCode() === AppErrorCode.Validation) {
+      return reply.code(HttpStatus.BadRequest).send({
+        message: error.getMessage(),
+        code: error.getAppErrorCode(),
+      })
+    }
+
+    if (error.getAppErrorCode() === AppErrorCode.Conflict) {
+      return reply.code(HttpStatus.Conflict).send({
+        message: error.getMessage(),
+        code: error.getAppErrorCode(),
+      })
+    }
+
     return reply.code(HttpStatus.UnprocessableEntity).send({
       message: error.getMessage(),
       code: error.getAppErrorCode(),

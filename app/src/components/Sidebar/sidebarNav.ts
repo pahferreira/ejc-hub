@@ -12,11 +12,13 @@ import {
   FiGrid,
   FiUserPlus,
   FiInbox,
+  FiClock,
 } from 'react-icons/fi'
 import {
   EventFeePermissions,
   EventPermissions,
   MemberRequestPermissions,
+  SchedulePermissions,
   SubscriptionPermissions,
   TeamInstancePermissions,
   TeamTemplatePermissions,
@@ -203,6 +205,13 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         path: ROUTE_PATHS.TEAM_TEMPLATES,
         icon: FiLayers,
         permission: TeamTemplatePermissions.Read,
+      },
+      {
+        label: 'Planejar Cronograma',
+        path: ROUTE_PATHS.SCHEDULE_PLANNING,
+        icon: FiClock,
+        permission: SchedulePermissions.Update,
+        featureFlag: FeatureFlag.Schedule,
       },
     ],
   },

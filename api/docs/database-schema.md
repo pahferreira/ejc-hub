@@ -212,6 +212,45 @@ Status meanings:
 
 A set `resolved_at` paired with a null `resolved_by` is the encoding of "the system closed this"; there is no other signal for it.
 
+**schedule_days**
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | Primary key |
+| event_id | uuid | FK → events |
+| date | date | A São Paulo calendar date within the event |
+| created_at, updated_at | timestamp | |
+
+*Constraints:* `UNIQUE (event_id, date)` · `UNIQUE (id, event_id)` — the target of the composite FK below
+
+There is no `schedules` table: an event's Cronograma *is* its days.
+
+**schedule_activities**
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | Primary key |
+| day_id | uuid | The day it belongs to |
+| event_id | uuid | Denormalized from `schedule_days` |
+| title | text | |
+| planned_starts_at | timestamptz | The schema's first `timestamptz` (ADR #9); entered and shown in São Paulo time |
+| duration_minutes | integer | `> 0`. The planned end is start + duration, never stored |
+| place | text | |
+| guest_name | text | Nullable — someone outside the teams who is responsible |
+| admins_responsible | boolean | Default `false` |
+| created_at, updated_at | timestamp | |
+
+*Constraints:* `FK (day_id, event_id) → schedule_days (id, event_id) ON DELETE CASCADE` · `CHECK (duration_minutes > 0)` · `INDEX (day_id, planned_starts_at)`
+
+Deleting a day deletes its activities. Existing tables keep `timestamp`, so comparing against `events.starts_at`/`ends_at` needs an explicit conversion.
+
+**schedule_activity_teams**
+| Column | Type | Notes |
+|--------|------|-------|
+| activity_id | uuid | FK → schedule_activities, `ON DELETE CASCADE` |
+| team_instance_id | uuid | A team responsible for the activity |
+| event_id | uuid | Denormalized, for the composite FK |
+
+*Constraints:* `PRIMARY KEY (activity_id, team_instance_id)` · `FK (team_instance_id, event_id) → team_instances (id, event_id)` — the same pattern as `team_memberships`
+
 ### Relationships
 
 ```
@@ -228,4 +267,6 @@ users ─┬─< subscriptions >── events
        └─< event_fee_payments >── events
 
 team_templates ─< team_instances >── events
+
+events ─< schedule_days ─< schedule_activities ─< schedule_activity_teams >── team_instances
 ```
