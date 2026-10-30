@@ -1,5 +1,7 @@
 import { EVENT_TIME_ZONE } from './schedule.constants'
 
+// Never shown to the user: only its numeric parts are read, to build
+// `HH:mm` and `YYYY-MM-DD`. A fixed locale keeps those parts predictable.
 const formatter = new Intl.DateTimeFormat('en-US', {
   timeZone: EVENT_TIME_ZONE,
   year: 'numeric',

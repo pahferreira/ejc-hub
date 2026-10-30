@@ -37,7 +37,7 @@ export const FeatureFlag = {
    * The Cronograma pages (`/schedule/planning` and `/schedule`). Off until
    * Phase 1 (Schedule Planning) is usable end to end.
    */
-  Schedule: 'schedule',
+  Schedule: 'schedule-visibility',
 } as const
 
 export type FeatureFlagValue = (typeof FeatureFlag)[keyof typeof FeatureFlag]
