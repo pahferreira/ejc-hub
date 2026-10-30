@@ -29,6 +29,7 @@ api/src/
 │       ├── adapters/PostHogObservability.ts   # PostHog adapter; the only importer of posthog-node
 │       ├── adapters/NoopObservability.ts      # Used when no PostHog key is set
 │       ├── scrub-error.ts                     # Drops data-policy values (query params) from errors
+│       ├── tracing.ts                         # OpenTelemetry SDK → PostHog traces; the only importer of the SDK
 │       └── observability.ts                   # `createObservability`: picks the adapter from env
 │
 ├── modules/                       # Single-table data access (repository interfaces + Drizzle impls)
@@ -85,11 +86,12 @@ api/src/
 │   ├── extract-user-info-from-token.ts  # JWT token decoder
 │   ├── fastify-auth-guard.ts      # Authentication middleware
 │   ├── fastify-error-handler.ts   # Shared route error handler (captures non-AppErrors)
-│   ├── fastify-observability.ts   # Decorates `observability`, 5xx safety net, flush on close
+│   ├── fastify-observability.ts   # Decorates `observability`, 5xx safety net, span identity, flush on close
 │   ├── fastify-require-permission.ts    # Authorization middleware
 │   ├── fastify.types.ts           # Typed Fastify instance
 │   └── http-statuses.ts           # HTTP status code constants
 │
+├── instrumentation.ts             # Loaded with `--import` before `server.ts`: starts tracing
 └── server.ts                      # Entry point: Fastify init, plugin registration, route binding
 ```
 
@@ -155,7 +157,7 @@ Validated variables:
 - `DATABASE_URL` — PostgreSQL connection string
 - `AUTH_DOMAIN` — Auth0 tenant domain
 - `AUTH_AUDIENCE` — Auth0 API audience identifier
-- `POSTHOG_API_KEY` — Optional PostHog project key; error capture is a no-op without it
+- `POSTHOG_API_KEY` — Optional PostHog project key; without it, error capture is a no-op and tracing never starts
 - `POSTHOG_HOST` — Optional PostHog host (default: `https://us.i.posthog.com`)
 
 ## Shared Utilities
@@ -166,7 +168,7 @@ Validated variables:
 | `fastify-auth-guard`           | Pre-handler that enforces authentication via `server.requireAuth()` with optional permission checks |
 | `fastify-require-permission`   | Pre-handler that verifies JWT permissions (supports `all` or `any` mode)                            |
 | `fastify-error-handler`        | Maps `AppError` to 403 (`Forbidden`), 404 (`NotFound`) or 422; unhandled errors to 500 and captured |
-| `fastify-observability`        | Decorates `server.observability`, adds the 5xx `setErrorHandler` safety net, flushes on close       |
+| `fastify-observability`        | Decorates `observability`, 5xx safety net, tags spans with person + session, flushes on close       |
 | `extract-user-info-from-token` | Decodes Auth0 JWT to extract `authId`, `email`, `name`, `picture`, and `permissions`                |
 | `http-statuses`                | Constants for HTTP status codes (200, 201, 401, 403, 404, 422, 500)                                 |
 | `fastify.types`                | Typed `FastifyServerInstance` with `ZodTypeProvider`                                                |
