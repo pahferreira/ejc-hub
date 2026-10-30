@@ -55,18 +55,8 @@ describe('getHomeView', () => {
     expect(getHomeView('completed', null)).toEqual({ kind: 'pendingTeam' })
   })
 
-  it('returns assignedTeam for completed status with a team when the MyTeam flag is on', () => {
-    expect(getHomeView('completed', team, { myTeamEnabled: true })).toEqual({
-      kind: 'assignedTeam',
-      team,
-    })
-  })
-
-  it('falls back to pendingTeam for completed status with a team when the MyTeam flag is off', () => {
-    expect(getHomeView('completed', team)).toEqual({ kind: 'pendingTeam' })
-    expect(getHomeView('completed', team, { myTeamEnabled: false })).toEqual({
-      kind: 'pendingTeam',
-    })
+  it('returns assignedTeam for completed status with a team', () => {
+    expect(getHomeView('completed', team)).toEqual({ kind: 'assignedTeam', team })
   })
 
   it('returns waitingList for waiting_list status regardless of team presence', () => {

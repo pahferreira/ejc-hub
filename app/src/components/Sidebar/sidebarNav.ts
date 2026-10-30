@@ -120,7 +120,6 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         path: ROUTE_PATHS.EVENT_FEE,
         icon: FiDollarSign,
         permission: EventFeePermissions.Read,
-        featureFlag: FeatureFlag.EventFee,
         end: true,
       },
       {
@@ -128,7 +127,6 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         path: ROUTE_PATHS.EVENT_FEE_MEMBERS,
         icon: FiUserCheck,
         permission: EventFeePermissions.Read,
-        featureFlag: FeatureFlag.EventFee,
       },
       {
         label: 'Camisetas',
@@ -150,7 +148,6 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         path: ROUTE_PATHS.MY_TEAM,
         icon: FiUser,
         requiresTeamMembership: true,
-        featureFlag: FeatureFlag.MyTeam,
         // `MY_TEAM_FEE` sits below this path and has a nav entry of its own, so
         // without this both light up while a coordinator is on the fee page.
         end: true,
@@ -160,7 +157,6 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         path: ROUTE_PATHS.MY_TEAM_FEE,
         icon: FiDollarSign,
         requiresCoordinator: true,
-        featureFlag: FeatureFlag.CoordinatorEventFee,
       },
       {
         label: 'Solicitar Membros',

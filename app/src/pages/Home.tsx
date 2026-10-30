@@ -25,7 +25,6 @@ export function Home() {
   const subscriptionStatusQuery = useCurrentEventSubscriptionStatusQuery()
   const { data: user } = useCurrentUserQuery()
   const { isFeatureEnabled } = useFeatureFlag()
-  const myTeamEnabled = isFeatureEnabled(FeatureFlag.MyTeam, false)
 
   const greetingName = user?.nickname ?? user?.name ?? ''
   const isLoading = currentEventQuery.isLoading || subscriptionStatusQuery.isLoading
@@ -40,7 +39,6 @@ export function Home() {
   const view = event
     ? getHomeView(subscriptionStatus, assignedTeam, {
         subscriptionMode: event.subscriptionMode,
-        myTeamEnabled,
       })
     : null
   // Gated on the assigned-team card actually showing: `/attendance/me` 403s for

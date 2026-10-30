@@ -51,7 +51,6 @@ export const routes: Route[] = [
     path: ROUTE_PATHS.MY_TEAM,
     name: 'Minha Equipe',
     component: MyTeamPage,
-    featureFlag: FeatureFlag.MyTeam,
   },
   {
     path: ROUTE_PATHS.MY_TEAM_FEE,
@@ -63,7 +62,6 @@ export const routes: Route[] = [
     // while that request is in flight would answer a coordinator's own bookmark
     // with "página não encontrada". The page itself holds the check, which is
     // the only place that can tell "still loading" from "not a coordinator".
-    featureFlag: FeatureFlag.CoordinatorEventFee,
   },
   {
     path: ROUTE_PATHS.MY_TEAM_REQUEST_MEMBERS,
@@ -162,7 +160,6 @@ export const routes: Route[] = [
     name: 'Taxa por Equipe',
     component: EventFeePage,
     permission: EventFeePermissions.Read,
-    featureFlag: FeatureFlag.EventFee,
   },
   {
     path: ROUTE_PATHS.EVENT_FEE_MEMBERS,
@@ -172,7 +169,6 @@ export const routes: Route[] = [
     // `financials-event-fee:update` — a treasurer's assistant may legitimately
     // see who owes without being able to settle it.
     permission: EventFeePermissions.Read,
-    featureFlag: FeatureFlag.EventFee,
   },
   {
     path: ROUTE_PATHS.SHIRTS,
