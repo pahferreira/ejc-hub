@@ -190,7 +190,10 @@ Practical rhythm **(opinion)**:
 ### Logs (pino → OTel → PostHog)
 
 - **Packages:** `@opentelemetry/sdk-node`, `exporter-logs-otlp-http`, `sdk-logs`, `resources`, `instrumentation-pino` (Pino v7–v10 supported, and the repo has pino 9.7). The endpoint is `https://us.i.posthog.com/i/v1/logs` with a `Bearer phc_…` token [ph-pino][ph-logs-node].
-- **The API is ESM**, so load the SDK with `--import` and register the OTel loader hook (`@opentelemetry/instrumentation/hook.mjs`) [ph-pino][otel-esm]. Combining that with `--experimental-strip-types` is **untested**: add `--import ./src/instrumentation.ts` to the `start` script and check that the patching works.
+- **Load the SDK with `--import ./src/instrumentation.ts` and don't register the OTel ESM loader hook.** The vendor docs say ESM apps need the hook (`@opentelemetry/instrumentation/hook.mjs`) [ph-pino][otel-esm], but spike #311 showed this API doesn't [spike-311]:
+  - Fastify, `pg` and Pino are CommonJS, so OTel patches them without the hook, on `--experimental-strip-types` and in the Docker image.
+  - The hook added ~55 MB idle RSS under a 1 GiB limit, for no extra coverage.
+  - Add it back only if an ESM-only library ever needs instrumenting.
 - **Link logs to a user** by putting `posthogDistinctId` and `sessionId` on log attributes [ph-logs-replay]. For example, use a pino child logger per request after auth.
 - **Drop `/health`** from logs and traces, which PostHog's cost guide explicitly recommends [ph-logs-pricing].
 
@@ -281,6 +284,7 @@ Reference definitions (rendered as links above):
 [otel-fastify]: https://github.com/fastify/otel
 [otel-fastify-dep]: https://www.npmjs.com/package/@opentelemetry/instrumentation-fastify
 [otel-esm]: https://github.com/open-telemetry/opentelemetry-js/blob/main/doc/esm-support.md
+[spike-311]: https://github.com/pahferreira/ejc-hub/issues/309#issuecomment-6498126423
 [fastify-cors]: https://github.com/fastify/fastify-cors#options
 [prom-config]: https://prometheus.io/docs/prometheus/latest/configuration/configuration/
 [sre-monitoring]: https://sre.google/sre-book/monitoring-distributed-systems/
@@ -358,6 +362,7 @@ Reference definitions (rendered as links above):
 - otel-fastify: https://github.com/fastify/otel
 - otel-fastify-dep (npm `deprecated` field: "Deprecated in favor of @fastify/otel"): https://www.npmjs.com/package/@opentelemetry/instrumentation-fastify
 - otel-esm: https://github.com/open-telemetry/opentelemetry-js/blob/main/doc/esm-support.md
+- spike-311 (spike verdict, measured 2026-10-29, not a vendor source): https://github.com/pahferreira/ejc-hub/issues/309#issuecomment-6498126423
 - fastify-cors: https://github.com/fastify/fastify-cors#options
 - prom-config: https://prometheus.io/docs/prometheus/latest/configuration/configuration/
 - sre-monitoring: https://sre.google/sre-book/monitoring-distributed-systems/
