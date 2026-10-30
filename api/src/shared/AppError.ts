@@ -14,6 +14,15 @@ export const AppErrorCode = {
   // read-then-write check, because a concurrent approval can slip between the
   // two. The app maps this code to its own pt-BR message.
   MemberAlreadyAssigned: 'member_already_assigned',
+  // The request is well-formed but its values break a rule the schema cannot
+  // express (a date outside the event, say). Answers 400.
+  Validation: 'validation',
+  // The request would duplicate something that must be unique (a second
+  // schedule day on one date). Answers 409.
+  Conflict: 'conflict',
+  // There is no current event to scope the request to. The app maps this code
+  // to its own pt-BR message.
+  NoCurrentEvent: 'no_current_event',
   // Something the code did not anticipate went wrong. The response carries
   // only this code and a generic message; the details go to the server log.
   InternalError: 'internal_error',

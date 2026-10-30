@@ -1,4 +1,4 @@
-import { EVENT_TIME_ZONE } from './schedule.constants'
+import { EVENT_TIME_ZONE } from './schedule.constants.ts'
 
 // Never shown to the user: only its numeric parts are read, to build
 // `HH:mm` and `YYYY-MM-DD`. A fixed locale keeps those parts predictable.

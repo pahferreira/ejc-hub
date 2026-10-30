@@ -4,6 +4,7 @@ import {
   EventFeePermissions,
   EventPermissions,
   MemberRequestPermissions,
+  SchedulePermissions,
   SubscriptionPermissions,
   TeamInstancePermissions,
   TeamTemplatePermissions,
@@ -20,6 +21,7 @@ import { RequestMembersPage } from '../../pages/RequestMembersPage'
 import { MyTeamRequestsPage } from '../../pages/MyTeamRequestsPage'
 import { MyTeamMeetingsPage } from '../../pages/MyTeamMeetingsPage'
 import { MemberRequestsQueuePage } from '../../pages/MemberRequestsQueuePage'
+import { SchedulePlanningPage } from '../../pages/SchedulePlanningPage'
 import { Placeholder } from '../../pages/Placeholder/Placeholder'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import { FeatureFlag, type FeatureFlagValue } from '../useFeatureFlag/feature-flags'
@@ -173,6 +175,15 @@ export const routes: Route[] = [
     // see who owes without being able to settle it.
     permission: EventFeePermissions.Read,
     featureFlag: FeatureFlag.EventFee,
+  },
+  {
+    path: ROUTE_PATHS.SCHEDULE_PLANNING,
+    name: 'Planejar Cronograma',
+    component: SchedulePlanningPage,
+    // Planning is editing, so `schedule:update` gates the page; the reads and
+    // writes it makes are gated on their own permissions by the API.
+    permission: SchedulePermissions.Update,
+    featureFlag: FeatureFlag.Schedule,
   },
   {
     path: ROUTE_PATHS.SHIRTS,
