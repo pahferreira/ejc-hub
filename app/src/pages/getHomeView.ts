@@ -13,7 +13,6 @@ export type HomeView =
 
 type HomeViewOptions = {
   subscriptionMode?: EventSubscriptionMode
-  myTeamEnabled?: boolean
 }
 
 export function getHomeView(
@@ -21,7 +20,7 @@ export function getHomeView(
   assignedTeam: AssignedTeam | null,
   options: HomeViewOptions = {}
 ): HomeView {
-  const { subscriptionMode = 'open', myTeamEnabled = false } = options
+  const { subscriptionMode = 'open' } = options
 
   if (subscriptionStatus === null) {
     if (subscriptionMode === 'closed') return { kind: 'subscriptionsClosed' }
@@ -31,7 +30,7 @@ export function getHomeView(
     return { kind: 'subscribe', waitingList: subscriptionMode === 'waiting_list' }
   }
   if (subscriptionStatus === 'waiting_list') return { kind: 'waitingList' }
-  if (subscriptionStatus === 'completed' && assignedTeam && myTeamEnabled) {
+  if (subscriptionStatus === 'completed' && assignedTeam) {
     return { kind: 'assignedTeam', team: assignedTeam }
   }
   return { kind: 'pendingTeam' }
