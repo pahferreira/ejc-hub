@@ -54,6 +54,13 @@ export const AttendancePermissions = {
   Delete: "attendance:delete",
 } as const;
 
+export const SchedulePermissions = {
+  Create: "schedule:create",
+  Read: "schedule:read",
+  Update: "schedule:update",
+  Delete: "schedule:delete",
+} as const;
+
 export const UserPermissions = {
   List: "users:list",
   Update: "users:update",
@@ -69,4 +76,5 @@ export type Permission =
   | (typeof EventFeePermissions)[keyof typeof EventFeePermissions]
   | (typeof MemberRequestPermissions)[keyof typeof MemberRequestPermissions]
   | (typeof AttendancePermissions)[keyof typeof AttendancePermissions]
+  | (typeof SchedulePermissions)[keyof typeof SchedulePermissions]
   | (typeof UserPermissions)[keyof typeof UserPermissions];
