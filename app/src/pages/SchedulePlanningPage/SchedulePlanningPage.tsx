@@ -6,6 +6,9 @@ import { ScheduleDayTabs } from '../../components/ScheduleDayTabs/ScheduleDayTab
 import { NewScheduleDayModal } from '../../components/NewScheduleDayModal/NewScheduleDayModal'
 import { useNewScheduleDayForm } from '../../components/NewScheduleDayModal/useNewScheduleDayForm'
 import { DeleteScheduleDayModal } from '../../components/DeleteScheduleDayModal/DeleteScheduleDayModal'
+import { ScheduleDayActivities } from '../../components/ScheduleDayActivities/ScheduleDayActivities'
+import { useScheduleActivityForm } from '../../components/ScheduleActivityForm/useScheduleActivityForm'
+import { useCurrentEventTeamsQuery } from '../../services/teams/useCurrentEventTeamsQuery'
 import { useScheduleQuery } from '../../services/schedule/useScheduleQuery'
 import { useDeleteScheduleDayMutation } from '../../services/schedule/useDeleteScheduleDayMutation'
 import { isNoCurrentEventError } from '../../services/schedule/schedule.api'
@@ -55,6 +58,13 @@ export function SchedulePlanningPage() {
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const newDayForm = useNewScheduleDayForm(setSelectedDayId)
+  const teamsQuery = useCurrentEventTeamsQuery()
+
+  const days = scheduleQuery.data?.days ?? []
+  const selectedDay = days.find((day) => day.id === selectedDayId) ?? days[0]
+  const activityForm = useScheduleActivityForm(
+    selectedDay ? { id: selectedDay.id, date: selectedDay.date } : null
+  )
 
   if (scheduleQuery.isLoading) {
     return <PageMessage message="Carregando cronograma..." />
@@ -73,8 +83,11 @@ export function SchedulePlanningPage() {
     )
   }
 
-  const { event, days } = scheduleQuery.data
-  const selectedDay = days.find((day) => day.id === selectedDayId) ?? days[0]
+  const { event } = scheduleQuery.data
+  const teamOptions = (teamsQuery.data ?? []).map((team) => ({
+    value: team.id,
+    label: team.templateName,
+  }))
   const dateOptions = eventDateOptions(
     event.startDate,
     event.endDate,
@@ -128,6 +141,13 @@ export function SchedulePlanningPage() {
                   Excluir dia
                 </Button>
               </div>
+
+              <ScheduleDayActivities
+                activities={selectedDay.activities}
+                dayDate={selectedDay.date}
+                teamOptions={teamOptions}
+                form={activityForm}
+              />
             </section>
           </>
         ) : (

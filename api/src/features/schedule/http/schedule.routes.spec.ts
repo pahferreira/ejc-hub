@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 const scheduleApp = vi.hoisted(() => ({
   getSchedule: vi.fn(),
   createDay: vi.fn(),
+  createActivity: vi.fn(),
   deleteDay: vi.fn(),
 }))
 
@@ -16,6 +17,20 @@ import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { authHeader, buildRouteTestServer } from '../../../shared/testing/route-test-server.ts'
 
 const DAY_ID = '7f0c2a52-8d2e-4c7b-9f43-1d1f3f0c9a11'
+const ACTIVITY_ID = '2b6e6a0f-6f3f-4a1a-9d0e-5f2a3b4c5d6e'
+const TEAM_ID = '3c7f7b1a-7a4a-4b2b-8e1f-6a3b4c5d6e7f'
+
+// A valid activity body the overlap/responsible rules in the core would accept.
+const ACTIVITY_BODY = {
+  dayId: DAY_ID,
+  title: 'Acolhida',
+  plannedStartsAt: '2026-04-03T21:00:00Z',
+  durationMinutes: 30,
+  place: 'Salão',
+  teamInstanceIds: [TEAM_ID],
+  guestName: null,
+  adminsResponsible: false,
+}
 
 const ADMIN = authHeader({
   permissions: [
@@ -35,6 +50,7 @@ describe('schedule routes', () => {
       days: [{ id: DAY_ID, date: '2026-04-03', activityCount: 2 }],
     })
     scheduleApp.createDay.mockResolvedValue({ dayId: DAY_ID, date: '2026-04-03' })
+    scheduleApp.createActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
     scheduleApp.deleteDay.mockResolvedValue({ dayId: DAY_ID })
 
     server = await buildRouteTestServer(scheduleRoutes)
@@ -47,11 +63,12 @@ describe('schedule routes', () => {
 
   describe('authentication', () => {
     it.each([
-      ['GET', '/schedule'],
-      ['POST', '/schedule/days'],
-      ['DELETE', `/schedule/days/${DAY_ID}`],
-    ] as const)('answers %s %s with 401 without a token', async (method, url) => {
-      const response = await server.inject({ method, url, payload: { date: '2026-04-03' } })
+      ['GET', '/schedule', {}],
+      ['POST', '/schedule/days', { date: '2026-04-03' }],
+      ['POST', '/schedule/activities', ACTIVITY_BODY],
+      ['DELETE', `/schedule/days/${DAY_ID}`, {}],
+    ] as const)('answers %s %s with 401 without a token', async (method, url, payload) => {
+      const response = await server.inject({ method, url, payload })
 
       expect(response.statusCode).toBe(401)
     })
@@ -122,6 +139,85 @@ describe('schedule routes', () => {
 
       expect(response.statusCode).toBe(400)
       expect(scheduleApp.createDay).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('POST /schedule/activities', () => {
+    it('creates an activity for a caller with schedule:create', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/schedule/activities',
+        headers: ADMIN,
+        payload: ACTIVITY_BODY,
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(response.json()).toEqual({ result: { activityId: ACTIVITY_ID } })
+      expect(scheduleApp.createActivity).toHaveBeenCalledWith({
+        dayId: DAY_ID,
+        title: 'Acolhida',
+        plannedStartsAt: '2026-04-03T21:00:00Z',
+        durationMinutes: 30,
+        place: 'Salão',
+        teamInstanceIds: [TEAM_ID],
+        guestName: null,
+        adminsResponsible: false,
+      })
+    })
+
+    it('defaults the optional fields when they are omitted', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/schedule/activities',
+        headers: ADMIN,
+        payload: {
+          dayId: DAY_ID,
+          title: 'Acolhida',
+          plannedStartsAt: '2026-04-03T21:00:00Z',
+          durationMinutes: 30,
+          place: 'Salão',
+        },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(scheduleApp.createActivity).toHaveBeenCalledWith(
+        expect.objectContaining({
+          teamInstanceIds: [],
+          guestName: null,
+          adminsResponsible: false,
+        })
+      )
+    })
+
+    it('refuses a caller without schedule:create', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/schedule/activities',
+        headers: authHeader({ permissions: [SchedulePermissions.Read] }),
+        payload: ACTIVITY_BODY,
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(scheduleApp.createActivity).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      ['a start that is not an ISO instant', { ...ACTIVITY_BODY, plannedStartsAt: '2026-04-03' }],
+      ['a duration of zero', { ...ACTIVITY_BODY, durationMinutes: 0 }],
+      ['a negative duration', { ...ACTIVITY_BODY, durationMinutes: -15 }],
+      ['no title', { ...ACTIVITY_BODY, title: '' }],
+      ['no place', { ...ACTIVITY_BODY, place: '' }],
+      ['a day id that is not a uuid', { ...ACTIVITY_BODY, dayId: 'not-a-uuid' }],
+    ])('answers 400 for %s', async (_label, payload) => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/schedule/activities',
+        headers: ADMIN,
+        payload,
+      })
+
+      expect(response.statusCode).toBe(400)
+      expect(scheduleApp.createActivity).not.toHaveBeenCalled()
     })
   })
 

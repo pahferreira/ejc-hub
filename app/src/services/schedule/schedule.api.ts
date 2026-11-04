@@ -2,6 +2,8 @@ import { isAxiosError } from 'axios'
 import { api } from '../api'
 import type { ApiError } from '../general/error'
 import type {
+  CreateScheduleActivityBody,
+  CreateScheduleActivityResult,
   CreateScheduleDayBody,
   CreateScheduleDayResult,
   ScheduleReadModel,
@@ -44,6 +46,38 @@ async function createDay(body: CreateScheduleDayBody) {
   }
 }
 
+/**
+ * The message the API's validation codes become on the form. The core refuses a
+ * plan for one of a few reasons; each gets its own pt-BR line.
+ */
+const CREATE_ACTIVITY_ERROR = 'Não foi possível adicionar a atividade.'
+
+const createActivityMessageByCode: Record<string, string> = {
+  validation: 'Confira o horário e os responsáveis: pode haver sobreposição ou falta alguém.',
+  not_found: 'Este dia não existe mais. Recarregue a página.',
+}
+
+/**
+ * The error the activity form shows. Carries the pt-BR message so the form can
+ * render it inline near its buttons.
+ */
+export class CreateActivityError extends Error {}
+
+/** Adds an activity to a day of the current event. */
+async function createActivity(body: CreateScheduleActivityBody) {
+  try {
+    const response = await api.post<{ result: CreateScheduleActivityResult }>(
+      '/schedule/activities',
+      body
+    )
+
+    return response.data.result
+  } catch (error: unknown) {
+    const code = isAxiosError(error) ? ((error as ApiError).response?.data?.code ?? '') : ''
+    throw new CreateActivityError(createActivityMessageByCode[code] ?? CREATE_ACTIVITY_ERROR)
+  }
+}
+
 /** Hard-deletes a day and every activity on it. */
 async function deleteDay(dayId: string) {
   try {
@@ -56,5 +90,6 @@ async function deleteDay(dayId: string) {
 export const scheduleApi = {
   getSchedule,
   createDay,
+  createActivity,
   deleteDay,
 }

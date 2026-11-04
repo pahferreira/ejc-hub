@@ -7,12 +7,36 @@ export type ScheduleEvent = {
   endDate: string | null
 }
 
-/** One schedule day: a São Paulo date of the current event. */
+/** One team responsible for an activity, as a card draws it. */
+export type ScheduleActivityTeam = {
+  teamInstanceId: string
+  teamName: string
+  teamKey: string
+  /** Picked from the team key; maps to the circle's color. */
+  colorToken: string
+}
+
+/** One activity on a day, as the Cronograma shows it. */
+export type ScheduleActivity = {
+  id: string
+  title: string
+  /** An ISO instant; shown in São Paulo time. */
+  plannedStartsAt: string
+  durationMinutes: number
+  place: string
+  guestName: string | null
+  adminsResponsible: boolean
+  teams: ScheduleActivityTeam[]
+}
+
+/** One schedule day: a São Paulo date of the current event, with its activities. */
 export type ScheduleDay = {
   id: string
   /** `YYYY-MM-DD`. */
   date: string
   activityCount: number
+  /** The day's activities, earliest planned start first. */
+  activities: ScheduleActivity[]
 }
 
 /** Everything `GET /schedule` answers. Days come earliest first. */
@@ -30,6 +54,23 @@ export type CreateScheduleDayBody = {
 export type CreateScheduleDayResult = {
   dayId: string
   date: string
+}
+
+/** The `POST /schedule/activities` body. */
+export type CreateScheduleActivityBody = {
+  dayId: string
+  title: string
+  /** An ISO instant, built from the day's date and the `HH:mm` start. */
+  plannedStartsAt: string
+  durationMinutes: number
+  place: string
+  teamInstanceIds: string[]
+  guestName: string | null
+  adminsResponsible: boolean
+}
+
+export type CreateScheduleActivityResult = {
+  activityId: string
 }
 
 export const scheduleQueryKeys = {

@@ -14,6 +14,9 @@ export interface ScheduleDayRepository {
   /** The event's day on that date, or `undefined` when it has none. */
   findDayByDate: (eventId: string, date: string) => Promise<ScheduleDayModel | undefined>
 
+  /** The event's day with that id, or `undefined` when it names no day of it. */
+  findDayById: (id: string, eventId: string) => Promise<ScheduleDayModel | undefined>
+
   /**
    * Inserts a day. A second day on the same date in the event is refused by
    * `schedule_days_event_id_date_unique`.

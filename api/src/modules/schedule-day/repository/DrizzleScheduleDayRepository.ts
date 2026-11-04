@@ -32,6 +32,15 @@ class DrizzleScheduleDayRepository implements ScheduleDayRepository {
     return rows[0]
   }
 
+  async findDayById(id: string, eventId: string) {
+    const rows = await db
+      .select()
+      .from(schema.scheduleDays)
+      .where(and(eq(schema.scheduleDays.id, id), eq(schema.scheduleDays.eventId, eventId)))
+
+    return rows[0]
+  }
+
   async insertDay(input: InsertScheduleDayInput, executor: DbExecutor = db) {
     const rows = await executor
       .insert(schema.scheduleDays)
