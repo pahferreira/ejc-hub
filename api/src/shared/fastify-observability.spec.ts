@@ -1,7 +1,11 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import Fastify, { type FastifyInstance, type preHandlerHookHandler } from 'fastify'
+import Fastify, {
+  type FastifyInstance,
+  type FastifyRequest,
+  type preHandlerHookHandler,
+} from 'fastify'
 import type { FastifyOtelRequestContext } from '@fastify/otel'
-import { registerObservability } from './fastify-observability.ts'
+import { registerObservability, bindRequestLogger } from './fastify-observability.ts'
 import { NoopObservability } from '../core/observability/adapters/NoopObservability.ts'
 
 const AUTH_SUB = 'auth0|abc123'
@@ -85,5 +89,51 @@ describe('registerObservability span identity', () => {
     const response = await server.inject({ method: 'GET', url: '/private' })
 
     expect(response.statusCode).toBe(200)
+  })
+})
+
+describe('bindRequestLogger', () => {
+  const buildRequest = (overrides: Partial<FastifyRequest>) => {
+    const child = vi.fn((bindings: Record<string, unknown>) => ({ name: 'child', bindings }))
+    const request = {
+      id: 'req-1',
+      headers: {},
+      log: { child },
+      ...overrides,
+    } as unknown as FastifyRequest
+
+    return { request, child }
+  }
+
+  it('binds the person, their session and the request id onto the logger', () => {
+    const { request, child } = buildRequest({
+      user: { sub: AUTH_SUB },
+      headers: { 'x-posthog-session-id': 'session-7' },
+    })
+
+    bindRequestLogger(request)
+
+    expect(child).toHaveBeenCalledWith({
+      requestId: 'req-1',
+      posthogDistinctId: AUTH_SUB,
+      sessionId: 'session-7',
+    })
+    expect(request.log).toMatchObject({ name: 'child' })
+  })
+
+  it('does not set the internal user_id, which is only known later', () => {
+    const { request, child } = buildRequest({ user: { sub: AUTH_SUB } })
+
+    bindRequestLogger(request)
+
+    expect(child.mock.calls[0][0]).not.toHaveProperty('user_id')
+  })
+
+  it('leaves the logger untouched when there is nothing to link', () => {
+    const { request, child } = buildRequest({})
+
+    bindRequestLogger(request)
+
+    expect(child).not.toHaveBeenCalled()
   })
 })

@@ -34,14 +34,20 @@ export async function startTracing({ apiKey, host }: TracingConfig) {
   const [
     { NodeSDK },
     { OTLPTraceExporter },
+    { OTLPLogExporter },
+    { BatchLogRecordProcessor },
     { HttpInstrumentation },
     { PgInstrumentation },
+    { PinoInstrumentation },
     { FastifyOtelInstrumentation },
   ] = await Promise.all([
     import('@opentelemetry/sdk-node'),
     import('@opentelemetry/exporter-trace-otlp-proto'),
+    import('@opentelemetry/exporter-logs-otlp-proto'),
+    import('@opentelemetry/sdk-logs'),
     import('@opentelemetry/instrumentation-http'),
     import('@opentelemetry/instrumentation-pg'),
+    import('@opentelemetry/instrumentation-pino'),
     import('@fastify/otel'),
   ])
 
@@ -53,11 +59,26 @@ export async function startTracing({ apiKey, host }: TracingConfig) {
         headers: { Authorization: `Bearer ${apiKey}` },
       })
     ),
-    // Empty, not omitted: otherwise the SDK starts default OTLP metric and
-    // log exporters aimed at localhost. Logs will reuse this SDK later.
+    // Empty, not omitted: otherwise the SDK starts a default OTLP metric
+    // exporter aimed at localhost.
     metricReaders: [],
-    logRecordProcessors: [],
+    // Fastify's built-in Pino logs, patched by `instrumentation-pino`, go to
+    // PostHog's logs endpoint. A batch processor (spike #311), not the simple
+    // one, so a burst of lines doesn't become a burst of HTTP calls. In
+    // OpenTelemetry JS 3.0 the processor takes an options object.
+    logRecordProcessors: [
+      new BatchLogRecordProcessor({
+        exporter: new OTLPLogExporter({
+          url: `${host}/i/v1/logs`,
+          headers: { Authorization: `Bearer ${apiKey}` },
+        }),
+      }),
+    ],
     instrumentations: [
+      // Patches Fastify's built-in Pino 9.7 so every log line becomes an OTel
+      // log record. Child-logger bindings (set after auth) ride along as log
+      // attributes, and lines inside a request carry its trace.
+      new PinoInstrumentation(),
       // `instrumentation-http` only sees the raw URL, and `@fastify/otel` only
       // the route, so `/health` is excluded in both.
       new HttpInstrumentation({

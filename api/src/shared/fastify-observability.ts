@@ -48,6 +48,31 @@ export function registerObservability(server: FastifyInstance, observability: Ob
   })
 }
 
+/**
+ * Rebinds the request's Pino logger to a child carrying the person, their
+ * replay and the request id. `instrumentation-pino` turns those bindings into
+ * attributes on every OTel log record for the request, so logs around an error
+ * link to the same person, session and request as its trace.
+ *
+ * Runs as a route `preHandler`, after `requireAuth`, so the verified `sub` is
+ * known. Without a session or a verified person there is nothing to link, and
+ * the logger is left untouched. The internal `user_id` is added later, where a
+ * handler loads the user, with a further `request.log.child({ user_id })`.
+ */
+export function bindRequestLogger(request: FastifyRequest) {
+  const { distinctId, sessionId, requestId } = requestContextFrom(request)
+
+  if (!distinctId && !sessionId) {
+    return
+  }
+
+  request.log = request.log.child({
+    requestId,
+    ...(distinctId && { posthogDistinctId: distinctId }),
+    ...(sessionId && { sessionId }),
+  })
+}
+
 function tagRequestSpan(request: FastifyRequest) {
   if (typeof request.opentelemetry !== 'function') {
     return
