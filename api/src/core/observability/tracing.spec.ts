@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto'
+import type { ReadableSpan } from '@opentelemetry/sdk-trace'
 import { isHealthCheck, startTracing, stopTracing } from './tracing.ts'
 
 // The SDK and exporter are the boundary this module wraps, so the test
@@ -14,8 +15,13 @@ vi.mock('@opentelemetry/sdk-node', () => ({
   NodeSDK: vi.fn(() => sdk),
 }))
 
+const exporter = vi.hoisted(() => ({
+  export: vi.fn(),
+  shutdown: vi.fn(async () => {}),
+}))
+
 vi.mock('@opentelemetry/exporter-trace-otlp-proto', () => ({
-  OTLPTraceExporter: vi.fn(),
+  OTLPTraceExporter: vi.fn(() => exporter),
 }))
 
 const NodeSDKMock = vi.mocked(NodeSDK)
@@ -69,6 +75,76 @@ describe('startTracing', () => {
     await stopTracing()
 
     expect(sdk.shutdown).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('what leaves the API on a span', () => {
+  const LEAK = 'Failed query: select $1\nparams: maria@example.com'
+
+  const failedSpan = {
+    name: 'request',
+    status: { code: 2, message: LEAK },
+    events: [
+      {
+        name: 'exception',
+        time: [0, 0],
+        attributes: {
+          'exception.type': 'DrizzleQueryError',
+          'exception.message': LEAK,
+          'exception.stacktrace': `Error: ${LEAK}\n    at query (session.js:42:15)`,
+        },
+      },
+    ],
+    attributes: {
+      'url.path': '/events?name=maria',
+      'url.query': 'name=maria',
+      'client.address': '203.0.113.7',
+      'network.peer.address': '203.0.113.7',
+      'user_agent.original': 'Mozilla/5.0',
+      'db.query.text': 'select $1',
+      posthogDistinctId: 'auth0|abc',
+      sessionId: 'session-7',
+    },
+  } as unknown as ReadableSpan
+
+  const exportedSpan = async () => {
+    vi.clearAllMocks()
+    await startTracing({ apiKey: 'phc_test', host: 'https://us.i.posthog.com' })
+
+    const { traceExporter } = NodeSDKMock.mock.calls[0][0]!
+    traceExporter!.export([failedSpan], () => {})
+
+    return (exporter.export.mock.calls[0] as [ReadableSpan[]])[0][0]
+  }
+
+  afterEach(async () => {
+    await stopTracing()
+  })
+
+  it('keeps that a request failed, but not the error text, which can quote query values', async () => {
+    const span = await exportedSpan()
+
+    expect(span.status).toEqual({ code: 2 })
+    expect(span.events[0].attributes).toEqual({ 'exception.type': 'DrizzleQueryError' })
+  })
+
+  it('drops the query string, client IP and user agent', async () => {
+    const span = await exportedSpan()
+
+    expect(span.attributes).toEqual({
+      'url.path': '/events',
+      'db.query.text': 'select $1',
+      posthogDistinctId: 'auth0|abc',
+      sessionId: 'session-7',
+    })
+  })
+
+  it('leaves the rest of the span as it was', async () => {
+    const span = await exportedSpan()
+
+    expect(span.name).toBe('request')
+    expect(span.events[0].name).toBe('exception')
+    expect(failedSpan.status.message).toBe(LEAK)
   })
 })
 

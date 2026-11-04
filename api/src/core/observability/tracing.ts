@@ -1,4 +1,5 @@
 import type { NodeSDK } from '@opentelemetry/sdk-node'
+import { ScrubbingSpanExporter } from './scrub-span.ts'
 
 // The only file that imports the OpenTelemetry SDK. It must not import
 // Fastify, `pg` or Pino: `src/instrumentation.ts` loads it before they are
@@ -46,10 +47,12 @@ export async function startTracing({ apiKey, host }: TracingConfig) {
 
   sdk = new NodeSDK({
     serviceName: 'ejc-hub-api',
-    traceExporter: new OTLPTraceExporter({
-      url: `${host}/i/v1/traces`,
-      headers: { Authorization: `Bearer ${apiKey}` },
-    }),
+    traceExporter: new ScrubbingSpanExporter(
+      new OTLPTraceExporter({
+        url: `${host}/i/v1/traces`,
+        headers: { Authorization: `Bearer ${apiKey}` },
+      })
+    ),
     // Empty, not omitted: otherwise the SDK starts default OTLP metric and
     // log exporters aimed at localhost. Logs will reuse this SDK later.
     metricReaders: [],

@@ -29,6 +29,7 @@ api/src/
 │       ├── adapters/PostHogObservability.ts   # PostHog adapter; the only importer of posthog-node
 │       ├── adapters/NoopObservability.ts      # Used when no PostHog key is set
 │       ├── scrub-error.ts                     # Drops data-policy values (query params) from errors
+│       ├── scrub-span.ts                      # Drops data-policy values (error text, IP, query string) from spans
 │       ├── tracing.ts                         # OpenTelemetry SDK → PostHog traces; the only importer of the SDK
 │       └── observability.ts                   # `createObservability`: picks the adapter from env
 │
