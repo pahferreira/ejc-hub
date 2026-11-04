@@ -4,14 +4,15 @@ import { AppError, AppErrorCode } from './AppError.ts'
 import { HttpStatus } from './http-statuses.ts'
 
 /**
- * IDs only (ADR #7): never the body, the token itself, or anything personal.
+ * The IDs attached to errors and spans. IDs only (ADR #7): never the body,
+ * the token itself, or anything personal.
  *
  * `distinctId` is the `sub` that `requireAuth` verified, so it is absent on
  * routes that fail before authentication. The `X-POSTHOG-DISTINCT-ID` header
  * is client-controlled and never used as identity; the session header is fine
- * because it only links the error to a replay.
+ * because it only links the error or trace to a replay.
  */
-function errorContextFrom(request: FastifyRequest): ErrorContext {
+export function requestContextFrom(request: FastifyRequest): ErrorContext {
   const sessionHeader = request.headers['x-posthog-session-id']
   const sessionId = typeof sessionHeader === 'string' ? sessionHeader : undefined
 
@@ -50,7 +51,7 @@ export function fastifyErrorHandler(request: FastifyRequest, reply: FastifyReply
   // Fastify's logger (tied to the request id), send it to error tracking, and
   // keep its details off the wire.
   reply.log.error({ err: error }, 'Unhandled error in route handler')
-  request.server.observability.captureError(error, errorContextFrom(request))
+  request.server.observability.captureError(error, requestContextFrom(request))
   return reply.code(HttpStatus.InternalServerError).send({
     message: 'Internal server error',
     code: AppErrorCode.InternalError,

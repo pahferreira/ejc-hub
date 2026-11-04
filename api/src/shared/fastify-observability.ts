@@ -1,6 +1,9 @@
-import type { FastifyError, FastifyInstance } from 'fastify'
+import type { FastifyError, FastifyInstance, FastifyRequest } from 'fastify'
 import type { Observability } from '../core/observability/domain/Observability.ts'
-import { fastifyErrorHandler } from './fastify-error-handler.ts'
+// Type-only: brings in `@fastify/otel`'s `request.opentelemetry()` declaration.
+import type {} from '@fastify/otel'
+import { stopTracing } from '../core/observability/tracing.ts'
+import { fastifyErrorHandler, requestContextFrom } from './fastify-error-handler.ts'
 import { HttpStatus } from './http-statuses.ts'
 
 declare module 'fastify' {
@@ -31,8 +34,34 @@ export function registerObservability(server: FastifyInstance, observability: Ob
     return fastifyErrorHandler(request, reply, error)
   })
 
-  // Flush buffered events, so a deploy doesn't drop the last errors.
+  // Links the trace to the person and their replay. `onSend` runs after the
+  // route's `requireAuth`, so the verified `sub` is known by now. Without the
+  // SDK (no PostHog key) `@fastify/otel` never decorates the request.
+  server.addHook('onSend', (request, _reply, payload, done) => {
+    tagRequestSpan(request)
+    done(null, payload)
+  })
+
+  // Flush buffered events and spans, so a deploy doesn't drop the last ones.
   server.addHook('onClose', async () => {
-    await observability.shutdown()
+    await Promise.all([observability.shutdown(), stopTracing()])
+  })
+}
+
+function tagRequestSpan(request: FastifyRequest) {
+  if (typeof request.opentelemetry !== 'function') {
+    return
+  }
+
+  const { span } = request.opentelemetry()
+  const { distinctId, sessionId } = requestContextFrom(request)
+
+  if (!span || (!distinctId && !sessionId)) {
+    return
+  }
+
+  span.setAttributes({
+    ...(distinctId && { posthogDistinctId: distinctId }),
+    ...(sessionId && { sessionId }),
   })
 }
