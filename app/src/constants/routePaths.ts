@@ -16,4 +16,6 @@ export const ROUTE_PATHS = {
   EVENT_FEE: '/financial/event-fee',
   EVENT_FEE_MEMBERS: '/financial/event-fee/members',
   SHIRTS: '/financial/shirts',
+  SCHEDULE: '/schedule',
+  SCHEDULE_PLANNING: '/schedule/planning',
 } as const
