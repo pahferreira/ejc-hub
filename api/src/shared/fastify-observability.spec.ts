@@ -105,7 +105,7 @@ describe('bindRequestLogger', () => {
     return { request, child }
   }
 
-  it('binds the person, their session and the request id onto the logger', () => {
+  it('binds the person and their session onto the logger', () => {
     const { request, child } = buildRequest({
       user: { sub: AUTH_SUB },
       headers: { 'x-posthog-session-id': 'session-7' },
@@ -114,11 +114,18 @@ describe('bindRequestLogger', () => {
     bindRequestLogger(request)
 
     expect(child).toHaveBeenCalledWith({
-      requestId: 'req-1',
       posthogDistinctId: AUTH_SUB,
       sessionId: 'session-7',
     })
     expect(request.log).toMatchObject({ name: 'child' })
+  })
+
+  it('does not repeat the request id, which Pino already logs as reqId', () => {
+    const { request, child } = buildRequest({ user: { sub: AUTH_SUB } })
+
+    bindRequestLogger(request)
+
+    expect(child.mock.calls[0][0]).not.toHaveProperty('requestId')
   })
 
   it('does not set the internal user_id, which is only known later', () => {
@@ -158,10 +165,17 @@ describe('request logging', () => {
       { preHandler: [fakeAuth, (request, _reply, done) => (bindRequestLogger(request), done())] },
       () => ({ ok: true })
     )
+    srv.get('/unprocessable', (_request, reply) => reply.code(422).send({ message: 'nope' }))
+    srv.get('/boom', () => {
+      throw new Error('kaboom')
+    })
     srv.get('/health', { logLevel: 'silent' }, () => ({ message: 'OK' }))
 
     return { srv, lines }
   }
+
+  // Pino levels: info=30, warn=40, error=50.
+  const LEVEL = { info: 30, warn: 40, error: 50 } as const
 
   afterEach(async () => {
     await server?.close()
@@ -183,7 +197,7 @@ describe('request logging', () => {
 
     const completed = lineFor(lines, 'request completed')
     expect(completed).toMatchObject({ posthogDistinctId: AUTH_SUB, sessionId: 'session-7' })
-    expect(typeof completed?.requestId).toBe('string')
+    expect(typeof completed?.reqId).toBe('string')
   })
 
   it('logs incoming before auth, so it carries no person yet', async () => {
@@ -195,6 +209,42 @@ describe('request logging', () => {
     const incoming = lineFor(lines, 'incoming request')
     expect(incoming).toBeDefined()
     expect(incoming).not.toHaveProperty('posthogDistinctId')
+  })
+
+  it('logs a rejected request (4xx) as a warning, not an error', async () => {
+    const { srv, lines } = buildLoggingServer()
+    server = srv
+
+    await srv.inject({ method: 'GET', url: '/unprocessable' })
+
+    expect(lineFor(lines, 'request completed')).toMatchObject({
+      level: LEVEL.warn,
+      res: { statusCode: 422 },
+    })
+  })
+
+  it('logs a server fault (5xx) as an error', async () => {
+    const { srv, lines } = buildLoggingServer()
+    server = srv
+
+    await srv.inject({ method: 'GET', url: '/boom' })
+
+    expect(lineFor(lines, 'request completed')).toMatchObject({
+      level: LEVEL.error,
+      res: { statusCode: 500 },
+    })
+  })
+
+  it('logs a success as info', async () => {
+    const { srv, lines } = buildLoggingServer()
+    server = srv
+
+    await srv.inject({ method: 'GET', url: '/private' })
+
+    expect(lineFor(lines, 'request completed')).toMatchObject({
+      level: LEVEL.info,
+      res: { statusCode: 200 },
+    })
   })
 
   it('produces no log lines for /health', async () => {

@@ -1,4 +1,4 @@
-import type { FastifyError, FastifyInstance, FastifyRequest } from 'fastify'
+import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import type { Observability } from '../core/observability/domain/Observability.ts'
 // Type-only: brings in `@fastify/otel`'s `request.opentelemetry()` declaration.
 import type {} from '@fastify/otel'
@@ -57,7 +57,7 @@ export function registerObservability(server: FastifyInstance, observability: Ob
 
   server.addHook('onResponse', (request, reply, done) => {
     if (!isHealthCheck(request.url)) {
-      request.log.info({ res: reply, responseTime: reply.elapsedTime }, 'request completed')
+      logCompleted(request, reply)
     }
     done()
   })
@@ -69,10 +69,11 @@ export function registerObservability(server: FastifyInstance, observability: Ob
 }
 
 /**
- * Rebinds the request's Pino logger to a child carrying the person, their
- * replay and the request id. `instrumentation-pino` turns those bindings into
- * attributes on every OTel log record for the request, so logs around an error
- * link to the same person, session and request as its trace.
+ * Rebinds the request's Pino logger to a child carrying the person and their
+ * replay. `instrumentation-pino` turns those bindings into attributes on every
+ * OTel log record for the request, so logs around an error link to the same
+ * person and session as its trace. The request id is already on every line as
+ * Pino's own `reqId`, so it isn't repeated here.
  *
  * Runs as a route `preHandler`, after `requireAuth`, so the verified `sub` is
  * known. Without a session or a verified person there is nothing to link, and
@@ -80,17 +81,35 @@ export function registerObservability(server: FastifyInstance, observability: Ob
  * handler loads the user, with a further `request.log.child({ user_id })`.
  */
 export function bindRequestLogger(request: FastifyRequest) {
-  const { distinctId, sessionId, requestId } = requestContextFrom(request)
+  const { distinctId, sessionId } = requestContextFrom(request)
 
   if (!distinctId && !sessionId) {
     return
   }
 
   request.log = request.log.child({
-    requestId,
     ...(distinctId && { posthogDistinctId: distinctId }),
     ...(sessionId && { sessionId }),
   })
+}
+
+/**
+ * Logs the completed line at a level that matches the outcome: a server fault
+ * (5xx) is an `error`, a rejected request (4xx, including a 422 from a business
+ * rule like an unknown team key) is a `warn`, and a success is `info`. The 4xx
+ * is a warning, not an error, because the request was answered as intended; it
+ * is not `info` so these stand out from normal traffic without raising a fault.
+ */
+function logCompleted(request: FastifyRequest, reply: FastifyReply) {
+  const payload = { res: reply, responseTime: reply.elapsedTime }
+
+  if (reply.statusCode >= HttpStatus.InternalServerError) {
+    request.log.error(payload, 'request completed')
+  } else if (reply.statusCode >= HttpStatus.BadRequest) {
+    request.log.warn(payload, 'request completed')
+  } else {
+    request.log.info(payload, 'request completed')
+  }
 }
 
 function tagRequestSpan(request: FastifyRequest) {

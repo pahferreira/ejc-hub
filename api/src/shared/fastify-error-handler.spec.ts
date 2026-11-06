@@ -84,7 +84,11 @@ describe('fastifyErrorHandler', () => {
 
     await server.inject({ method: 'POST', url: '/boom' })
 
-    const errorLogs = built.logs.filter((line) => line.level === PINO_ERROR_LEVEL)
+    // The completed line is also error-level for a 5xx, so target the
+    // unhandled-error line by its message.
+    const errorLogs = built.logs.filter(
+      (line) => line.level === PINO_ERROR_LEVEL && line.msg === 'Unhandled error in route handler'
+    )
     expect(errorLogs).toHaveLength(1)
     expect(errorLogs[0].err?.message).toBe('connection to db-internal:5432 refused')
   })
