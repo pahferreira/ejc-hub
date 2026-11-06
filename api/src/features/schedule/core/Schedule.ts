@@ -10,6 +10,7 @@ import type { TeamInstanceRepository } from '../../../modules/team-instance/doma
 import { toEventDate } from '../../../../../common/schedule/toEventDate.ts'
 import { toEventInstant } from '../../../../../common/schedule/toEventInstant.ts'
 import { teamColorToken } from '../../../../../common/schedule/teamColorToken.ts'
+import { activityEnd, intervalsOverlap } from './activity-interval.ts'
 import type {
   CreateScheduleActivityInput,
   CreateScheduleActivityResult,
@@ -20,18 +21,6 @@ import type {
   ScheduleEvent,
   ScheduleReadModel,
 } from '../domain/schedule.types.ts'
-
-const MINUTE_MS = 60_000
-
-/** The end instant of an activity: its start plus its duration. */
-function activityEnd(start: Date, durationMinutes: number): Date {
-  return new Date(start.getTime() + durationMinutes * MINUTE_MS)
-}
-
-/** Half-open intervals `[start, end)` overlap; touching edges do not. */
-function intervalsOverlap(startA: Date, endA: Date, startB: Date, endB: Date): boolean {
-  return startA < endB && startB < endA
-}
 
 const DAY_DATE_UNIQUE = 'schedule_days_event_id_date_unique'
 const DAY_DATE_TAKEN = 'The event already has a day on this date'
