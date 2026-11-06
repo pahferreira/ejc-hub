@@ -56,6 +56,10 @@ EJC Hub - A event management application for managing events, teams, subscriptio
 
 - Use descriptive test names
 
+## Git Hooks
+
+- Never use `--no-verify` (or `HUSKY=0`) to skip the git hooks. Fix the failing check instead.
+
 ## Agent skills
 
 ### Issue tracker
