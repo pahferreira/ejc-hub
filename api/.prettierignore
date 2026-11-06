@@ -1,3 +1,6 @@
 node_modules
 build
 .env
+# Generated or exported by tools; rewritten on every run.
+src/core/database/migrations/meta
+insomnia.json
