@@ -31,9 +31,12 @@
     "@fastify/cors": "^11.2.0",
     "@fastify/otel": "^0.21.4",
     "@opentelemetry/api": "^1.10.0",
+    "@opentelemetry/exporter-logs-otlp-proto": "^0.300.0",
     "@opentelemetry/exporter-trace-otlp-proto": "^0.300.0",
     "@opentelemetry/instrumentation-http": "^0.300.0",
     "@opentelemetry/instrumentation-pg": "^0.77.0",
+    "@opentelemetry/instrumentation-pino": "^0.47.0",
+    "@opentelemetry/sdk-logs": "^3.0.0",
     "@opentelemetry/sdk-node": "^0.300.0",
     "@opentelemetry/sdk-trace": "^3.0.0",
     "dotenv": "^16.5.0",
@@ -64,5 +67,8 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.33.1",
     "vitest": "^2.1.8"
+  },
+  "overrides": {
+    "@opentelemetry/api-logs": "0.223.0"
   }
 }

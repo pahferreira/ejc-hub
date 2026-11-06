@@ -2,6 +2,7 @@ import fastify from 'fastify'
 import { env } from './core/envs/env.ts'
 import { createObservability } from './core/observability/observability.ts'
 import { registerObservability } from './shared/fastify-observability.ts'
+import { serializeRequestForLog } from './shared/request-log-serializer.ts'
 import Auth0 from '@auth0/auth0-fastify-api'
 import cors from '@fastify/cors'
 import {
@@ -21,7 +22,15 @@ import { attendanceRoutes } from './features/attendance/http/attendance.routes.t
 import { scheduleRoutes } from './features/schedule/http/schedule.routes.ts'
 
 const server = fastify({
-  logger: true,
+  // Fastify's built-in Pino logger, the single source of logs. The `req`
+  // serializer drops the `authorization` header and cookies (ADR #7); bodies
+  // are never logged. `instrumentation-pino` ships these lines to PostHog.
+  logger: {
+    serializers: { req: serializeRequestForLog },
+  },
+  // The incoming/completed lines are logged in `registerObservability` instead,
+  // after auth, so they carry the person and session. See the hooks there.
+  disableRequestLogging: true,
 }).withTypeProvider<ZodTypeProvider>()
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -43,7 +52,9 @@ server.register(Auth0, {
   audience: env.AUTH_AUDIENCE,
 })
 
-server.get('/health', () => {
+// `logLevel: 'silent'` keeps the load balancer's health check out of the logs,
+// as PostHog's cost guide recommends. Tracing already excludes it too.
+server.get('/health', { logLevel: 'silent' }, () => {
   return { message: 'OK' }
 })
 

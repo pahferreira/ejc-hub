@@ -39,6 +39,11 @@ export function fastifyErrorHandler(request: FastifyRequest, reply: FastifyReply
   if (error instanceof AppError) {
     const code = error.getAppErrorCode()
 
+    // A handled business rejection, not a fault. The code (never the message,
+    // which could one day quote personal data) rides on the reply, so the
+    // single `request completed` line carries it. No separate log line.
+    reply.appErrorCode = code
+
     return reply.code(appErrorStatus[code] ?? HttpStatus.UnprocessableEntity).send({
       message: error.getMessage(),
       code,
@@ -48,6 +53,7 @@ export function fastifyErrorHandler(request: FastifyRequest, reply: FastifyReply
   // Anything else is a bug, not a business rule. Log the real error through
   // Fastify's logger (tied to the request id), send it to error tracking, and
   // keep its details off the wire.
+  reply.appErrorCode = AppErrorCode.InternalError
   reply.log.error({ err: error }, 'Unhandled error in route handler')
   request.server.observability.captureError(error, requestContextFrom(request))
   return reply.code(HttpStatus.InternalServerError).send({

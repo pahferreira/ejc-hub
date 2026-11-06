@@ -6,9 +6,16 @@ import { registerObservability } from './fastify-observability.ts'
 import { AppError, AppErrorCode } from './AppError.ts'
 import type { Observability } from '../core/observability/domain/Observability.ts'
 
-type LogLine = { level: number; msg: string; err?: { message: string } }
+type LogLine = {
+  level: number
+  msg: string
+  err?: { message: string }
+  errorCode?: string
+  res?: { statusCode: number }
+}
 
 const PINO_ERROR_LEVEL = 50
+const PINO_WARN_LEVEL = 40
 
 const AUTH_SUB = 'auth0|abc123'
 
@@ -84,7 +91,11 @@ describe('fastifyErrorHandler', () => {
 
     await server.inject({ method: 'POST', url: '/boom' })
 
-    const errorLogs = built.logs.filter((line) => line.level === PINO_ERROR_LEVEL)
+    // The completed line is also error-level for a 5xx, so target the
+    // unhandled-error line by its message.
+    const errorLogs = built.logs.filter(
+      (line) => line.level === PINO_ERROR_LEVEL && line.msg === 'Unhandled error in route handler'
+    )
     expect(errorLogs).toHaveLength(1)
     expect(errorLogs[0].err?.message).toBe('connection to db-internal:5432 refused')
   })
@@ -235,6 +246,24 @@ describe('fastifyErrorHandler', () => {
     await server.inject({ method: 'POST', url: '/boom' })
 
     expect(built.logs.filter((line) => line.level === PINO_ERROR_LEVEL)).toHaveLength(0)
+  })
+
+  it('reports the code (not the message) on the single completed line for an AppError', async () => {
+    const built = buildServer(new AppError('Team "noop" not found', AppErrorCode.NotFound))
+    server = built.server
+
+    await server.inject({ method: 'POST', url: '/boom' })
+
+    // One warn entry, not a separate "request rejected" line.
+    const warnings = built.logs.filter((line) => line.level === PINO_WARN_LEVEL)
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toMatchObject({
+      msg: 'request completed',
+      errorCode: AppErrorCode.NotFound,
+      res: { statusCode: 404 },
+    })
+    // The message never reaches the logs.
+    expect(JSON.stringify(built.logs)).not.toContain('noop')
   })
 
   it.each([

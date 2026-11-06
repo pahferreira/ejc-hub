@@ -1,7 +1,11 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import Fastify, { type FastifyInstance, type preHandlerHookHandler } from 'fastify'
+import Fastify, {
+  type FastifyInstance,
+  type FastifyRequest,
+  type preHandlerHookHandler,
+} from 'fastify'
 import type { FastifyOtelRequestContext } from '@fastify/otel'
-import { registerObservability } from './fastify-observability.ts'
+import { registerObservability, bindRequestLogger } from './fastify-observability.ts'
 import { NoopObservability } from '../core/observability/adapters/NoopObservability.ts'
 
 const AUTH_SUB = 'auth0|abc123'
@@ -85,5 +89,172 @@ describe('registerObservability span identity', () => {
     const response = await server.inject({ method: 'GET', url: '/private' })
 
     expect(response.statusCode).toBe(200)
+  })
+})
+
+describe('bindRequestLogger', () => {
+  const buildRequest = (overrides: Partial<FastifyRequest>) => {
+    const child = vi.fn((bindings: Record<string, unknown>) => ({ name: 'child', bindings }))
+    const request = {
+      id: 'req-1',
+      headers: {},
+      log: { child },
+      ...overrides,
+    } as unknown as FastifyRequest
+
+    return { request, child }
+  }
+
+  it('binds the person and their session onto the logger', () => {
+    const { request, child } = buildRequest({
+      user: { sub: AUTH_SUB },
+      headers: { 'x-posthog-session-id': 'session-7' },
+    })
+
+    bindRequestLogger(request)
+
+    expect(child).toHaveBeenCalledWith({
+      posthogDistinctId: AUTH_SUB,
+      sessionId: 'session-7',
+    })
+    expect(request.log).toMatchObject({ name: 'child' })
+  })
+
+  it('does not repeat the request id, which Pino already logs as reqId', () => {
+    const { request, child } = buildRequest({ user: { sub: AUTH_SUB } })
+
+    bindRequestLogger(request)
+
+    expect(child.mock.calls[0][0]).not.toHaveProperty('requestId')
+  })
+
+  it('does not set the internal user_id, which is only known later', () => {
+    const { request, child } = buildRequest({ user: { sub: AUTH_SUB } })
+
+    bindRequestLogger(request)
+
+    expect(child.mock.calls[0][0]).not.toHaveProperty('user_id')
+  })
+
+  it('leaves the logger untouched when there is nothing to link', () => {
+    const { request, child } = buildRequest({})
+
+    bindRequestLogger(request)
+
+    expect(child).not.toHaveBeenCalled()
+  })
+})
+
+describe('request logging', () => {
+  let server: FastifyInstance | undefined
+
+  // Capture the lines Pino writes, so the test reads what would reach PostHog.
+  const buildLoggingServer = () => {
+    const lines: Record<string, unknown>[] = []
+    const stream = {
+      write: (line: string) => {
+        lines.push(JSON.parse(line) as Record<string, unknown>)
+      },
+    }
+    const srv = Fastify({ logger: { stream } })
+    registerObservability(srv, new NoopObservability())
+
+    // An authenticated route that binds the request logger after "auth".
+    srv.get(
+      '/private',
+      { preHandler: [fakeAuth, (request, _reply, done) => (bindRequestLogger(request), done())] },
+      () => ({ ok: true })
+    )
+    srv.get('/unprocessable', (_request, reply) => reply.code(422).send({ message: 'nope' }))
+    srv.get('/boom', () => {
+      throw new Error('kaboom')
+    })
+    srv.get('/health', { logLevel: 'silent' }, () => ({ message: 'OK' }))
+
+    return { srv, lines }
+  }
+
+  // Pino levels: info=30, warn=40, error=50.
+  const LEVEL = { info: 30, warn: 40, error: 50 } as const
+
+  afterEach(async () => {
+    await server?.close()
+    server = undefined
+  })
+
+  const lineFor = (lines: Record<string, unknown>[], msg: string) =>
+    lines.find((l) => l.msg === msg)
+
+  it('logs completed with the person, session and request id after auth', async () => {
+    const { srv, lines } = buildLoggingServer()
+    server = srv
+
+    await srv.inject({
+      method: 'GET',
+      url: '/private',
+      headers: { 'x-posthog-session-id': 'session-7' },
+    })
+
+    const completed = lineFor(lines, 'request completed')
+    expect(completed).toMatchObject({ posthogDistinctId: AUTH_SUB, sessionId: 'session-7' })
+    expect(typeof completed?.reqId).toBe('string')
+  })
+
+  it('logs incoming before auth, so it carries no person yet', async () => {
+    const { srv, lines } = buildLoggingServer()
+    server = srv
+
+    await srv.inject({ method: 'GET', url: '/private' })
+
+    const incoming = lineFor(lines, 'incoming request')
+    expect(incoming).toBeDefined()
+    expect(incoming).not.toHaveProperty('posthogDistinctId')
+  })
+
+  it('logs a rejected request (4xx) as a warning, not an error', async () => {
+    const { srv, lines } = buildLoggingServer()
+    server = srv
+
+    await srv.inject({ method: 'GET', url: '/unprocessable' })
+
+    expect(lineFor(lines, 'request completed')).toMatchObject({
+      level: LEVEL.warn,
+      res: { statusCode: 422 },
+    })
+  })
+
+  it('logs a server fault (5xx) as an error', async () => {
+    const { srv, lines } = buildLoggingServer()
+    server = srv
+
+    await srv.inject({ method: 'GET', url: '/boom' })
+
+    expect(lineFor(lines, 'request completed')).toMatchObject({
+      level: LEVEL.error,
+      res: { statusCode: 500 },
+    })
+  })
+
+  it('logs a success as info', async () => {
+    const { srv, lines } = buildLoggingServer()
+    server = srv
+
+    await srv.inject({ method: 'GET', url: '/private' })
+
+    expect(lineFor(lines, 'request completed')).toMatchObject({
+      level: LEVEL.info,
+      res: { statusCode: 200 },
+    })
+  })
+
+  it('produces no log lines for /health', async () => {
+    const { srv, lines } = buildLoggingServer()
+    server = srv
+
+    await srv.inject({ method: 'GET', url: '/health' })
+
+    expect(lines.some((l) => l.msg === 'incoming request' || l.msg === 'request completed')).toBe(
+      false
+    )
   })
 })

@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto'
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-proto'
+import { BatchLogRecordProcessor, LoggerProvider } from '@opentelemetry/sdk-logs'
+import { logs } from '@opentelemetry/api-logs'
+import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino'
 import type { ReadableSpan } from '@opentelemetry/sdk-trace'
 import { isHealthCheck, startTracing, stopTracing } from './tracing.ts'
 
@@ -24,8 +28,44 @@ vi.mock('@opentelemetry/exporter-trace-otlp-proto', () => ({
   OTLPTraceExporter: vi.fn(() => exporter),
 }))
 
+const logExporter = vi.hoisted(() => ({
+  export: vi.fn(),
+  shutdown: vi.fn(async () => {}),
+}))
+
+vi.mock('@opentelemetry/exporter-logs-otlp-proto', () => ({
+  OTLPLogExporter: vi.fn(() => logExporter),
+}))
+
+const loggerProvider = vi.hoisted(() => ({
+  shutdown: vi.fn(async () => {}),
+}))
+
+vi.mock('@opentelemetry/sdk-logs', () => ({
+  BatchLogRecordProcessor: vi.fn((options: unknown) => ({ options })),
+  LoggerProvider: vi.fn(() => loggerProvider),
+}))
+
+vi.mock('@opentelemetry/api-logs', () => ({
+  logs: { setGlobalLoggerProvider: vi.fn(), disable: vi.fn() },
+}))
+
+vi.mock('@opentelemetry/resources', () => ({
+  resourceFromAttributes: vi.fn((attrs: unknown) => ({ attrs })),
+}))
+
+vi.mock('@opentelemetry/instrumentation-pino', () => ({
+  PinoInstrumentation: vi.fn(() => ({ name: 'pino' })),
+}))
+
 const NodeSDKMock = vi.mocked(NodeSDK)
 const OTLPTraceExporterMock = vi.mocked(OTLPTraceExporter)
+const OTLPLogExporterMock = vi.mocked(OTLPLogExporter)
+const BatchLogRecordProcessorMock = vi.mocked(BatchLogRecordProcessor)
+const LoggerProviderMock = vi.mocked(LoggerProvider)
+// eslint-disable-next-line @typescript-eslint/unbound-method -- asserting the mock, not calling it
+const setGlobalLoggerProviderMock = vi.mocked(logs.setGlobalLoggerProvider)
+const PinoInstrumentationMock = vi.mocked(PinoInstrumentation)
 
 describe('startTracing', () => {
   beforeEach(() => {
@@ -61,20 +101,52 @@ describe('startTracing', () => {
     expect(sdk.start).toHaveBeenCalledTimes(1)
   })
 
-  it('starts no metrics or logs pipeline', async () => {
+  it('starts no metrics or SDK-managed logs pipeline', async () => {
     await startTracing({ apiKey: 'phc_test', host: 'https://us.i.posthog.com' })
 
+    // Logs are registered by hand through `api-logs`, not the NodeSDK: this
+    // build keeps the two Logs APIs separate, and `instrumentation-pino` reads
+    // the provider from `api-logs`.
     expect(NodeSDKMock).toHaveBeenCalledWith(
       expect.objectContaining({ metricReaders: [], logRecordProcessors: [] })
     )
   })
 
-  it('shuts the SDK down, flushing buffered spans', async () => {
+  it('exports logs to the PostHog logs endpoint through a batch processor', async () => {
+    await startTracing({ apiKey: 'phc_test', host: 'https://us.i.posthog.com' })
+
+    expect(OTLPLogExporterMock).toHaveBeenCalledWith({
+      url: 'https://us.i.posthog.com/i/v1/logs',
+      headers: { Authorization: 'Bearer phc_test' },
+    })
+    expect(BatchLogRecordProcessorMock).toHaveBeenCalledWith({ exporter: logExporter })
+
+    // The processor goes into a hand-built LoggerProvider with one processor.
+    const { processors } = LoggerProviderMock.mock.calls[0][0]!
+    expect(processors).toHaveLength(1)
+  })
+
+  it('registers the logger provider through the api-logs the Pino instrumentation reads', async () => {
+    await startTracing({ apiKey: 'phc_test', host: 'https://us.i.posthog.com' })
+
+    expect(setGlobalLoggerProviderMock).toHaveBeenCalledWith(loggerProvider)
+  })
+
+  it('patches Pino so its log lines become OTel log records', async () => {
+    await startTracing({ apiKey: 'phc_test', host: 'https://us.i.posthog.com' })
+
+    expect(PinoInstrumentationMock).toHaveBeenCalledTimes(1)
+    const { instrumentations } = NodeSDKMock.mock.calls[0][0]!
+    expect(instrumentations).toContainEqual({ name: 'pino' })
+  })
+
+  it('shuts the SDK and logger provider down, flushing buffered spans and logs', async () => {
     await startTracing({ apiKey: 'phc_test', host: 'https://us.i.posthog.com' })
 
     await stopTracing()
 
     expect(sdk.shutdown).toHaveBeenCalledTimes(1)
+    expect(loggerProvider.shutdown).toHaveBeenCalledTimes(1)
   })
 })
 
