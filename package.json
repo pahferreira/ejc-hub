@@ -18,6 +18,11 @@
     ],
     "app/**/!(*.ts|*.tsx)": [
       "app/node_modules/.bin/prettier --write --ignore-unknown --ignore-path app/.prettierignore"
-    ]
+    ],
+    "common/**/*.ts": [
+      "npm --prefix common exec -- prettier --write --ignore-path common/.prettierignore",
+      "npm --prefix common exec -- eslint --config common/eslint.config.mjs --fix"
+    ],
+    "common/**/*.{mjs,json,md}": "npm --prefix common exec -- prettier --write --ignore-path common/.prettierignore"
   }
 }
