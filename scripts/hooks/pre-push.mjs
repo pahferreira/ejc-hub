@@ -7,13 +7,16 @@ import { stepsFor } from './pre-push-steps.mjs'
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8' }).trim()
 
-const changedFiles = () => {
-  let base
+const mergeBase = () => {
   try {
-    base = git('merge-base', 'origin/main', 'HEAD')
+    return git('merge-base', 'origin/main', 'HEAD')
   } catch {
-    fail('Cannot find origin/main. Run "git fetch origin main" and push again.')
+    return fail('Cannot find origin/main. Run "git fetch origin main" and push again.')
   }
+}
+
+const changedFiles = () => {
+  const base = mergeBase()
   return git('diff', '--name-only', base, 'HEAD').split('\n').filter(Boolean)
 }
 

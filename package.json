@@ -7,7 +7,7 @@
   "scripts": {
     "sandcastle": "npx tsx .sandcastle/main.mts",
     "prepare": "husky",
-    "test": "node --test scripts/hooks/*.spec.mjs"
+    "test": "node --test scripts/hooks/changed-packages.spec.mjs scripts/hooks/pre-push-steps.spec.mjs"
   },
   "lint-staged": {
     "*": []
