@@ -35,11 +35,11 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # CI gates — re-run lint + tests on main before we ship. Self-contained so the
-  # deploy job has a single, legible dependency.
+  # CI gates — re-run the API checks on main before we ship. Self-contained so
+  # the deploy job has a single, legible dependency.
   # ---------------------------------------------------------------------------
   gate:
-    name: CI gates (lint + tests)
+    name: CI gates
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -55,6 +55,14 @@ jobs:
       - name: Install deps (api)
         working-directory: ./api
         run: npm ci
+
+      - name: Typecheck
+        working-directory: ./api
+        run: npm run typecheck
+
+      - name: Format check
+        working-directory: ./api
+        run: npm run format:check
 
       - name: Lint
         working-directory: ./api

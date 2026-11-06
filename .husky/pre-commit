@@ -1,1 +1,2 @@
-npx lint-staged
+# Serial because the lint-staged globs overlap: Prettier and ESLint would race on the same file.
+npx lint-staged --concurrent false
