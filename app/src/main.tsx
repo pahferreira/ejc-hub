@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Auth0ProviderWithNavigate } from './Auth0ProviderWithNavigate'
 import { PostHogErrorBoundary, PostHogProvider } from '@posthog/react'
 import posthog from 'posthog-js'
+import { getApiTracingHosts } from './services/apiHost/apiHost'
 
 const posthogProjectToken = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN
 const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST
@@ -16,6 +17,10 @@ if (posthogProjectToken && posthogHost) {
   posthog.init(posthogProjectToken, {
     api_host: posthogHost,
     defaults: '2026-01-30',
+    // Inject X-POSTHOG-* tracing headers only on requests to the API host, so a
+    // session replay links to the API traces made during it. Scoped to the API
+    // host so requests to Auth0, PostHog ingest, etc. are untouched.
+    tracing_headers: getApiTracingHosts(import.meta.env.VITE_API_URL),
     capture_exceptions: {
       capture_unhandled_errors: true,
       capture_unhandled_rejections: true,
