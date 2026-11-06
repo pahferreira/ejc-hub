@@ -23,17 +23,16 @@ export function requestContextFrom(request: FastifyRequest): ErrorContext {
   }
 }
 
-/** The HTTP status a business rule maps to. The request is well-formed, so an
- * authorization failure is a 403 and a missing record a 404; the rest are a
- * 422. */
-function appErrorStatus(code: ReturnType<AppError['getAppErrorCode']>) {
-  if (code === AppErrorCode.Forbidden) {
-    return HttpStatus.Forbidden
-  }
-  if (code === AppErrorCode.NotFound) {
-    return HttpStatus.NotFound
-  }
-  return HttpStatus.UnprocessableEntity
+/**
+ * The status an `AppError` answers with, by code. Any code not listed is a
+ * broken business rule and answers 422. An authorization failure is a 403, not
+ * a 422: the request is well-formed, the caller simply may not perform it.
+ */
+const appErrorStatus: Partial<Record<string, number>> = {
+  [AppErrorCode.Forbidden]: HttpStatus.Forbidden,
+  [AppErrorCode.NotFound]: HttpStatus.NotFound,
+  [AppErrorCode.Validation]: HttpStatus.BadRequest,
+  [AppErrorCode.Conflict]: HttpStatus.Conflict,
 }
 
 export function fastifyErrorHandler(request: FastifyRequest, reply: FastifyReply, error: unknown) {
@@ -45,7 +44,10 @@ export function fastifyErrorHandler(request: FastifyRequest, reply: FastifyReply
     // single `request completed` line carries it. No separate log line.
     reply.appErrorCode = code
 
-    return reply.code(appErrorStatus(code)).send({ message: error.getMessage(), code })
+    return reply.code(appErrorStatus[code] ?? HttpStatus.UnprocessableEntity).send({
+      message: error.getMessage(),
+      code,
+    })
   }
 
   // Anything else is a bug, not a business rule. Log the real error through

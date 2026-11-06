@@ -4,6 +4,7 @@ export const HttpStatus = {
 
   BadRequest: 400,
   NotFound: 404,
+  Conflict: 409,
   UnprocessableEntity: 422,
   Forbidden: 403,
   Unauthorized: 401,

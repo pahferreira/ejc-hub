@@ -351,6 +351,13 @@
       "when": 1792506225574,
       "tag": "0049_event_banner_details",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793293051310,
+      "tag": "0050_schedule",
+      "breakpoints": true
     }
   ]
 }
