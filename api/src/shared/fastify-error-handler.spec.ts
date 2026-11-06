@@ -10,8 +10,8 @@ type LogLine = {
   level: number
   msg: string
   err?: { message: string }
-  errorMessage?: string
   errorCode?: string
+  res?: { statusCode: number }
 }
 
 const PINO_ERROR_LEVEL = 50
@@ -225,16 +225,22 @@ describe('fastifyErrorHandler', () => {
     expect(built.logs.filter((line) => line.level === PINO_ERROR_LEVEL)).toHaveLength(0)
   })
 
-  it('logs a handled AppError at warn with its message and code', async () => {
+  it('reports the code (not the message) on the single completed line for an AppError', async () => {
     const built = buildServer(new AppError('Team "noop" not found', AppErrorCode.NotFound))
     server = built.server
 
     await server.inject({ method: 'POST', url: '/boom' })
 
-    const rejected = built.logs.find((line) => line.msg === 'request rejected')
-    expect(rejected?.level).toBe(PINO_WARN_LEVEL)
-    expect(rejected?.errorMessage).toBe('Team "noop" not found')
-    expect(rejected?.errorCode).toBe(AppErrorCode.NotFound)
+    // One warn entry, not a separate "request rejected" line.
+    const warnings = built.logs.filter((line) => line.level === PINO_WARN_LEVEL)
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toMatchObject({
+      msg: 'request completed',
+      errorCode: AppErrorCode.NotFound,
+      res: { statusCode: 404 },
+    })
+    // The message never reaches the logs.
+    expect(JSON.stringify(built.logs)).not.toContain('noop')
   })
 
   it.each([

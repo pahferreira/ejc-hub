@@ -10,6 +10,11 @@ declare module 'fastify' {
   interface FastifyInstance {
     observability: Observability
   }
+  interface FastifyReply {
+    // The business error code of a handled `AppError`, set by the error handler
+    // so the `request completed` line can report it. `null` on a success.
+    appErrorCode: string | null
+  }
 }
 
 /**
@@ -21,6 +26,7 @@ declare module 'fastify' {
  */
 export function registerObservability(server: FastifyInstance, observability: Observability) {
   server.decorate('observability', observability)
+  server.decorateReply('appErrorCode', null)
 
   // The safety net for errors that escape a route's `try/catch` (hooks,
   // serialization, a route that forgot to catch). Anything Fastify already
@@ -101,7 +107,11 @@ export function bindRequestLogger(request: FastifyRequest) {
  * is not `info` so these stand out from normal traffic without raising a fault.
  */
 function logCompleted(request: FastifyRequest, reply: FastifyReply) {
-  const payload = { res: reply, responseTime: reply.elapsedTime }
+  const payload = {
+    res: reply,
+    responseTime: reply.elapsedTime,
+    ...(reply.appErrorCode && { errorCode: reply.appErrorCode }),
+  }
 
   if (reply.statusCode >= HttpStatus.InternalServerError) {
     request.log.error(payload, 'request completed')

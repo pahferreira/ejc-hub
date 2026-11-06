@@ -39,22 +39,19 @@ function appErrorStatus(code: ReturnType<AppError['getAppErrorCode']>) {
 export function fastifyErrorHandler(request: FastifyRequest, reply: FastifyReply, error: unknown) {
   if (error instanceof AppError) {
     const code = error.getAppErrorCode()
-    const message = error.getMessage()
 
-    // A handled business rejection, not a fault. Log it at warn with its
-    // message so it's searchable in PostHog, linked through the request logger
-    // to the person, session and trace. Flat fields, not an `err` object, so
-    // Pino's error serializer doesn't add an empty stack. The message is
-    // developer-authored business copy (ADR #7: no bodies, tokens or personal
-    // data).
-    reply.log.warn({ errorMessage: message, errorCode: code }, 'request rejected')
+    // A handled business rejection, not a fault. The code (never the message,
+    // which could one day quote personal data) rides on the reply, so the
+    // single `request completed` line carries it. No separate log line.
+    reply.appErrorCode = code
 
-    return reply.code(appErrorStatus(code)).send({ message, code })
+    return reply.code(appErrorStatus(code)).send({ message: error.getMessage(), code })
   }
 
   // Anything else is a bug, not a business rule. Log the real error through
   // Fastify's logger (tied to the request id), send it to error tracking, and
   // keep its details off the wire.
+  reply.appErrorCode = AppErrorCode.InternalError
   reply.log.error({ err: error }, 'Unhandled error in route handler')
   request.server.observability.captureError(error, requestContextFrom(request))
   return reply.code(HttpStatus.InternalServerError).send({
