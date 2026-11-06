@@ -6,9 +6,16 @@ import { registerObservability } from './fastify-observability.ts'
 import { AppError, AppErrorCode } from './AppError.ts'
 import type { Observability } from '../core/observability/domain/Observability.ts'
 
-type LogLine = { level: number; msg: string; err?: { message: string } }
+type LogLine = {
+  level: number
+  msg: string
+  err?: { message: string }
+  errorMessage?: string
+  errorCode?: string
+}
 
 const PINO_ERROR_LEVEL = 50
+const PINO_WARN_LEVEL = 40
 
 const AUTH_SUB = 'auth0|abc123'
 
@@ -216,6 +223,18 @@ describe('fastifyErrorHandler', () => {
     await server.inject({ method: 'POST', url: '/boom' })
 
     expect(built.logs.filter((line) => line.level === PINO_ERROR_LEVEL)).toHaveLength(0)
+  })
+
+  it('logs a handled AppError at warn with its message and code', async () => {
+    const built = buildServer(new AppError('Team "noop" not found', AppErrorCode.NotFound))
+    server = built.server
+
+    await server.inject({ method: 'POST', url: '/boom' })
+
+    const rejected = built.logs.find((line) => line.msg === 'request rejected')
+    expect(rejected?.level).toBe(PINO_WARN_LEVEL)
+    expect(rejected?.errorMessage).toBe('Team "noop" not found')
+    expect(rejected?.errorCode).toBe(AppErrorCode.NotFound)
   })
 
   it.each([

@@ -23,28 +23,33 @@ export function requestContextFrom(request: FastifyRequest): ErrorContext {
   }
 }
 
+/** The HTTP status a business rule maps to. The request is well-formed, so an
+ * authorization failure is a 403 and a missing record a 404; the rest are a
+ * 422. */
+function appErrorStatus(code: ReturnType<AppError['getAppErrorCode']>) {
+  if (code === AppErrorCode.Forbidden) {
+    return HttpStatus.Forbidden
+  }
+  if (code === AppErrorCode.NotFound) {
+    return HttpStatus.NotFound
+  }
+  return HttpStatus.UnprocessableEntity
+}
+
 export function fastifyErrorHandler(request: FastifyRequest, reply: FastifyReply, error: unknown) {
   if (error instanceof AppError) {
-    // An authorization failure is a 403, not a 422: the request is well-formed,
-    // the caller simply may not perform it.
-    if (error.getAppErrorCode() === AppErrorCode.Forbidden) {
-      return reply.code(HttpStatus.Forbidden).send({
-        message: error.getMessage(),
-        code: error.getAppErrorCode(),
-      })
-    }
+    const code = error.getAppErrorCode()
+    const message = error.getMessage()
 
-    if (error.getAppErrorCode() === AppErrorCode.NotFound) {
-      return reply.code(HttpStatus.NotFound).send({
-        message: error.getMessage(),
-        code: error.getAppErrorCode(),
-      })
-    }
+    // A handled business rejection, not a fault. Log it at warn with its
+    // message so it's searchable in PostHog, linked through the request logger
+    // to the person, session and trace. Flat fields, not an `err` object, so
+    // Pino's error serializer doesn't add an empty stack. The message is
+    // developer-authored business copy (ADR #7: no bodies, tokens or personal
+    // data).
+    reply.log.warn({ errorMessage: message, errorCode: code }, 'request rejected')
 
-    return reply.code(HttpStatus.UnprocessableEntity).send({
-      message: error.getMessage(),
-      code: error.getAppErrorCode(),
-    })
+    return reply.code(appErrorStatus(code)).send({ message, code })
   }
 
   // Anything else is a bug, not a business rule. Log the real error through
