@@ -65,7 +65,7 @@ const main = () => {
     fail(`node_modules is missing for: ${missing.join(', ')}.\nInstall them, then push again:\n${install}`)
   }
 
-  if (!chromiumInstalled()) {
+  if (packages.includes('app') && !chromiumInstalled()) {
     fail(
       'Chromium for Playwright is missing. Install it with "cd app && npx playwright install chromium" (see README), then push again.',
     )

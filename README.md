@@ -15,11 +15,11 @@ Running `npm install` at the root installs the Husky hooks.
 - **pre-commit** runs `lint-staged` on the staged files and re-stages any files the tasks fix.
 - **pre-push** finds the packages changed since `origin/main` and runs the checks from `scripts/hooks/pre-push-steps.mjs`. It never installs anything, so it fails with an actionable message when:
   - `node_modules` is missing for a changed package (run `npm install` in that package).
-  - Chromium is missing (see below).
+  - Chromium is missing and `app` is being checked (see below).
 
 ## Installing Chromium
 
-The browser tests and the pre-push checks need Chromium for Playwright. Install it from `app/`:
+The browser tests and the `app` pre-push checks need Chromium for Playwright. Install it from `app/`:
 
 ```sh
 cd app
