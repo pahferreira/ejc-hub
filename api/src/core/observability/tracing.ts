@@ -1,4 +1,6 @@
 import type { NodeSDK } from '@opentelemetry/sdk-node'
+import type { LoggerProvider } from '@opentelemetry/sdk-logs'
+import type { logs as LogsApi } from '@opentelemetry/api-logs'
 import { ScrubbingSpanExporter } from './scrub-span.ts'
 
 // The only file that imports the OpenTelemetry SDK. It must not import
@@ -16,6 +18,8 @@ type TracingConfig = {
 const HEALTH_PATH = '/health'
 
 let sdk: NodeSDK | undefined
+let loggerProvider: LoggerProvider | undefined
+let logsApi: typeof LogsApi | undefined
 
 /** True for the load balancer's health check, which is never traced. */
 export function isHealthCheck(url: string | undefined) {
@@ -35,7 +39,9 @@ export async function startTracing({ apiKey, host }: TracingConfig) {
     { NodeSDK },
     { OTLPTraceExporter },
     { OTLPLogExporter },
-    { BatchLogRecordProcessor },
+    { LoggerProvider, BatchLogRecordProcessor },
+    { logs },
+    { resourceFromAttributes },
     { HttpInstrumentation },
     { PgInstrumentation },
     { PinoInstrumentation },
@@ -45,11 +51,37 @@ export async function startTracing({ apiKey, host }: TracingConfig) {
     import('@opentelemetry/exporter-trace-otlp-proto'),
     import('@opentelemetry/exporter-logs-otlp-proto'),
     import('@opentelemetry/sdk-logs'),
+    import('@opentelemetry/api-logs'),
+    import('@opentelemetry/resources'),
     import('@opentelemetry/instrumentation-http'),
     import('@opentelemetry/instrumentation-pg'),
     import('@opentelemetry/instrumentation-pino'),
     import('@fastify/otel'),
   ])
+
+  // The logs pipeline is built and registered by hand, not through the
+  // `NodeSDK`'s `logRecordProcessors`. This OpenTelemetry build ships two
+  // separate Logs APIs: the `NodeSDK` registers its logger provider through
+  // `@opentelemetry/api`, but `instrumentation-pino` reads the provider from
+  // `@opentelemetry/api-logs`. Registering through the same `api-logs` the Pino
+  // instrumentation uses is what connects Fastify's log lines to the exporter;
+  // without it, every line is emitted into a disconnected no-op provider.
+  loggerProvider = new LoggerProvider({
+    resource: resourceFromAttributes({ 'service.name': 'ejc-hub-api' }),
+    // A batch processor (spike #311), not the simple one, so a burst of lines
+    // doesn't become a burst of HTTP calls. In OpenTelemetry JS 3.0 the
+    // processor takes an options object.
+    processors: [
+      new BatchLogRecordProcessor({
+        exporter: new OTLPLogExporter({
+          url: `${host}/i/v1/logs`,
+          headers: { Authorization: `Bearer ${apiKey}` },
+        }),
+      }),
+    ],
+  })
+  logsApi = logs
+  logs.setGlobalLoggerProvider(loggerProvider)
 
   sdk = new NodeSDK({
     serviceName: 'ejc-hub-api',
@@ -59,21 +91,11 @@ export async function startTracing({ apiKey, host }: TracingConfig) {
         headers: { Authorization: `Bearer ${apiKey}` },
       })
     ),
-    // Empty, not omitted: otherwise the SDK starts a default OTLP metric
-    // exporter aimed at localhost.
+    // Both empty, not omitted: otherwise the SDK starts default OTLP metric and
+    // log exporters aimed at localhost. The logs pipeline is the hand-built
+    // `loggerProvider` above, registered through `api-logs`.
     metricReaders: [],
-    // Fastify's built-in Pino logs, patched by `instrumentation-pino`, go to
-    // PostHog's logs endpoint. A batch processor (spike #311), not the simple
-    // one, so a burst of lines doesn't become a burst of HTTP calls. In
-    // OpenTelemetry JS 3.0 the processor takes an options object.
-    logRecordProcessors: [
-      new BatchLogRecordProcessor({
-        exporter: new OTLPLogExporter({
-          url: `${host}/i/v1/logs`,
-          headers: { Authorization: `Bearer ${apiKey}` },
-        }),
-      }),
-    ],
+    logRecordProcessors: [],
     instrumentations: [
       // Patches Fastify's built-in Pino 9.7 so every log line becomes an OTel
       // log record. Child-logger bindings (set after auth) ride along as log
@@ -95,8 +117,13 @@ export async function startTracing({ apiKey, host }: TracingConfig) {
   return true
 }
 
-/** Flushes buffered spans. A no-op when tracing never started. */
+/** Flushes buffered spans and logs. A no-op when tracing never started. */
 export async function stopTracing() {
-  await sdk?.shutdown()
+  await Promise.all([sdk?.shutdown(), loggerProvider?.shutdown()])
+  // Clear the `api-logs` global so a later `startTracing` can register again;
+  // `setGlobalLoggerProvider` is a no-op while one is already registered.
+  logsApi?.disable()
   sdk = undefined
+  loggerProvider = undefined
+  logsApi = undefined
 }
