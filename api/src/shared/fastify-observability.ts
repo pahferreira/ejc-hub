@@ -2,7 +2,7 @@ import type { FastifyError, FastifyInstance, FastifyRequest } from 'fastify'
 import type { Observability } from '../core/observability/domain/Observability.ts'
 // Type-only: brings in `@fastify/otel`'s `request.opentelemetry()` declaration.
 import type {} from '@fastify/otel'
-import { stopTracing } from '../core/observability/tracing.ts'
+import { isHealthCheck, stopTracing } from '../core/observability/tracing.ts'
 import { fastifyErrorHandler, requestContextFrom } from './fastify-error-handler.ts'
 import { HttpStatus } from './http-statuses.ts'
 
@@ -40,6 +40,26 @@ export function registerObservability(server: FastifyInstance, observability: Ob
   server.addHook('onSend', (request, _reply, payload, done) => {
     tagRequestSpan(request)
     done(null, payload)
+  })
+
+  // Our own request logging, replacing Fastify's built-in pair (turned off with
+  // `disableRequestLogging` in `server.ts`). The reason is the completed line:
+  // Fastify logs it with the logger it captured at request start, before
+  // `bindRequestLogger` runs, so it would miss the person and session. Logging
+  // it here, through `request.log`, picks up the child bound after auth.
+  // `/health` is skipped so the load balancer's probes stay out of the logs.
+  server.addHook('onRequest', (request, _reply, done) => {
+    if (!isHealthCheck(request.url)) {
+      request.log.info({ req: request }, 'incoming request')
+    }
+    done()
+  })
+
+  server.addHook('onResponse', (request, reply, done) => {
+    if (!isHealthCheck(request.url)) {
+      request.log.info({ res: reply, responseTime: reply.elapsedTime }, 'request completed')
+    }
+    done()
   })
 
   // Flush buffered events and spans, so a deploy doesn't drop the last ones.

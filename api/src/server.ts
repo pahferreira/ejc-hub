@@ -27,6 +27,9 @@ const server = fastify({
   logger: {
     serializers: { req: serializeRequestForLog },
   },
+  // The incoming/completed lines are logged in `registerObservability` instead,
+  // after auth, so they carry the person and session. See the hooks there.
+  disableRequestLogging: true,
 }).withTypeProvider<ZodTypeProvider>()
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
