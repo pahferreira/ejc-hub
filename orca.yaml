@@ -1,0 +1,4 @@
+scripts:
+  setup: |
+    echo "📦 Installing dependencies..."
+    cd api && npm i; cd ..; cd app && npm i;
