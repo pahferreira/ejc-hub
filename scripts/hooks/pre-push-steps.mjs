@@ -7,7 +7,10 @@ export const PRE_PUSH_STEPS = {
     { name: 'typecheck', command: 'npm', args: ['run', 'typecheck'] },
     { name: 'test', command: 'npm', args: ['test'] },
   ],
-  app: [],
+  app: [
+    { name: 'typecheck', command: 'npm', args: ['run', 'typecheck'] },
+    { name: 'test', command: 'npm', args: ['test'] },
+  ],
 }
 
 export const stepsFor = (packages, table = PRE_PUSH_STEPS) =>
