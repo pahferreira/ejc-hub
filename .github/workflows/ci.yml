@@ -111,6 +111,10 @@ jobs:
           cache-dependency-path: ./app/package-lock.json
       - name: Install dependencies
         run: npm install
+      - name: Run typecheck
+        run: npm run typecheck
+      - name: Check formatting
+        run: npm run format:check
       - name: Run ESLint
         run: npm run lint
 

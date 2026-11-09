@@ -11,8 +11,5 @@
     "incremental": false,
     "tsBuildInfoFile": null
   },
-  "include": [
-    ".ds-entry/index.ts",
-    "src/vite-env.d.ts"
-  ]
+  "include": [".ds-entry/index.ts", "src/vite-env.d.ts"]
 }
