@@ -48,9 +48,9 @@ export function MultiSelector(props: MultiSelectorProps) {
         )
 
   return (
-    <div className="w-full max-w-xs">
+    <div className="w-full max-w-xs flex flex-col gap-1">
       {props.label && (
-        <label className="mb-2 block text-sm font-semibold text-dark-brown">{props.label}</label>
+        <label className="block text-sm font-semibold text-dark-brown">{props.label}</label>
       )}
       <Listbox value={props.selected} onChange={props.onChange} multiple disabled={disabled}>
         {({ open }) => (

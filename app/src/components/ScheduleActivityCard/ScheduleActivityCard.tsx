@@ -33,15 +33,15 @@ export function ScheduleActivityCard(props: ScheduleActivityCardProps) {
 
   return (
     <article className="group relative flex gap-4 rounded-xl border border-tertiary bg-white p-4 shadow-sm">
-      <div className="flex min-w-14 flex-col items-center justify-center rounded-lg bg-tertiary-background px-2 py-1 text-center">
-        <span className="text-xl font-bold leading-tight text-dark-brown">
+      <div className="flex min-w-14 flex-col items-start rounded-lg py-0.5 text-center">
+        <span className="text-base font-bold leading-tight text-dark-brown">
           {activityStartTime(activity)}
         </span>
         <span className="text-xs text-gray-500">{activityEndTime(activity)}</span>
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <h3 className="m-0 text-base font-semibold text-dark-brown">{activity.title}</h3>
+        <p className="m-0 text-base font-semibold text-dark-brown">{activity.title}</p>
 
         <p className="m-0 flex items-center gap-1.5 text-sm text-gray-600">
           <FiMapPin aria-hidden className="shrink-0" />
@@ -60,14 +60,34 @@ export function ScheduleActivityCard(props: ScheduleActivityCardProps) {
                 {team.teamName}
               </Chip>
             ))}
-            {activity.adminsResponsible && <Chip>Administração</Chip>}
-            {activity.guestName && <Chip>Convidado: {activity.guestName}</Chip>}
+            {activity.adminsResponsible && (
+              <div className="flex flex-wrap gap-1.5">
+                <Chip>
+                  <span
+                    aria-hidden
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: teamColorHex('jotas') }}
+                  />
+                  Jotas
+                </Chip>
+              </div>
+            )}
+            {activity.guestName && (
+              <div className="flex flex-wrap gap-1.5">
+                <span
+                  aria-hidden
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: teamColorHex('guest') }}
+                />
+                <Chip>Convidado: {activity.guestName}</Chip>
+              </div>
+            )}
           </div>
         )}
       </div>
 
       <div className="flex flex-col items-end justify-between">
-        <span className="text-sm font-medium text-gray-500">
+        <span className="text-sm font-semibold text-primary">
           {formatDuration(activity.durationMinutes)}
         </span>
         <button

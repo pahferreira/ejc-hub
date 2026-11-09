@@ -95,23 +95,24 @@ export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
         <legend className="px-1 text-xs font-semibold text-gray-500">
           Responsáveis · uma ou mais opções
         </legend>
+        <div className="flex items-center gap-2">
+          <MultiSelector
+            label="Equipes"
+            options={props.teamOptions}
+            selected={selectedTeams}
+            onChange={(selected) =>
+              onChange({ teamInstanceIds: selected.map((option) => option.value) })
+            }
+            placeholder="Buscar equipes..."
+          />
 
-        <MultiSelector
-          label="Equipes"
-          options={props.teamOptions}
-          selected={selectedTeams}
-          onChange={(selected) =>
-            onChange({ teamInstanceIds: selected.map((option) => option.value) })
-          }
-          placeholder="Buscar equipes..."
-        />
-
-        <Input
-          label="Convidado"
-          name="guestName"
-          value={values.guestName}
-          onChange={(guestName) => onChange({ guestName })}
-        />
+          <Input
+            label="Convidado"
+            name="guestName"
+            value={values.guestName}
+            onChange={(guestName) => onChange({ guestName })}
+          />
+        </div>
 
         <Checkbox
           label="Administração conduz esta atividade"

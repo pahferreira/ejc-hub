@@ -9,7 +9,7 @@ import type {
 const MINUTE_MS = 60_000
 
 /** The default start and duration for the first activity of an empty day. */
-export const DEFAULT_ACTIVITY_START = '08:00'
+export const DEFAULT_ACTIVITY_START = '06:00'
 export const DEFAULT_ACTIVITY_DURATION = 30
 
 /** What the inline "NOVA ATIVIDADE" form holds before it becomes a request. */
