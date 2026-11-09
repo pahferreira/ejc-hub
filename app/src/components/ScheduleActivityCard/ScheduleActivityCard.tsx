@@ -66,22 +66,13 @@ export function ScheduleActivityCard(props: ScheduleActivityCardProps) {
                   <span
                     aria-hidden
                     className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: teamColorHex('jotas') }}
+                    style={{ backgroundColor: teamColorHex('coord-geral') }}
                   />
-                  Jotas
+                  Coord. Geral
                 </Chip>
               </div>
             )}
-            {activity.guestName && (
-              <div className="flex flex-wrap gap-1.5">
-                <span
-                  aria-hidden
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: teamColorHex('guest') }}
-                />
-                <Chip>Convidado: {activity.guestName}</Chip>
-              </div>
-            )}
+            {activity.guestName && <Chip>Convidado: {activity.guestName}</Chip>}
           </div>
         )}
       </div>

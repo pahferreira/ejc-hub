@@ -5,6 +5,7 @@ import type {
   CreateScheduleActivityBody,
   ScheduleActivity,
 } from '../../services/schedule/schedule.types'
+import type { ScheduleActivityFormValues } from './scheduleActivityForm.schema'
 
 const MINUTE_MS = 60_000
 
@@ -12,17 +13,7 @@ const MINUTE_MS = 60_000
 export const DEFAULT_ACTIVITY_START = '06:00'
 export const DEFAULT_ACTIVITY_DURATION = 30
 
-/** What the inline "NOVA ATIVIDADE" form holds before it becomes a request. */
-export type ScheduleActivityFormValues = {
-  title: string
-  /** `HH:mm` on the São Paulo clock. */
-  startTime: string
-  durationMinutes: number
-  place: string
-  teamInstanceIds: string[]
-  guestName: string
-  adminsResponsible: boolean
-}
+export type { ScheduleActivityFormValues }
 
 /** The end instant of an activity: its start plus its duration. */
 function endInstant(activity: Pick<ScheduleActivity, 'plannedStartsAt' | 'durationMinutes'>): Date {

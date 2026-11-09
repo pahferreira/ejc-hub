@@ -13,6 +13,8 @@ export type ScheduleActivityFieldErrors = {
   startTime?: string
   durationMinutes?: string
   place?: string
+  /** Nobody responsible: no team, no guest and not the admins. */
+  responsible?: string
 }
 
 export type ScheduleActivityFormProps = {
@@ -119,6 +121,10 @@ export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
           checked={values.adminsResponsible}
           onChange={(adminsResponsible) => onChange({ adminsResponsible })}
         />
+
+        {props.fieldErrors?.responsible && (
+          <p className="m-0 text-sm text-destructive">{props.fieldErrors.responsible}</p>
+        )}
       </fieldset>
 
       {props.error && <p className="m-0 text-sm text-destructive">{props.error}</p>}

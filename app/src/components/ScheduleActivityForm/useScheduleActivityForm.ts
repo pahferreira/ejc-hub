@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { useCreateScheduleActivityMutation } from '../../services/schedule/useCreateScheduleActivityMutation'
 import { CreateActivityError } from '../../services/schedule/schedule.api'
@@ -6,11 +8,12 @@ import {
   buildActivityBody,
   DEFAULT_ACTIVITY_DURATION,
   DEFAULT_ACTIVITY_START,
-  type ScheduleActivityFormValues,
 } from '../../utils/scheduleActivity/scheduleActivity'
+import {
+  scheduleActivityFormSchema,
+  type ScheduleActivityFormValues,
+} from '../../utils/scheduleActivity/scheduleActivityForm.schema'
 import type { ScheduleActivityFieldErrors } from './ScheduleActivityForm'
-
-const TIME_PATTERN = /^\d{1,2}:\d{2}$/
 
 /** The form's values when it first opens: everything empty, the given start. */
 function initialValues(startTime: string): ScheduleActivityFormValues {
@@ -25,47 +28,28 @@ function initialValues(startTime: string): ScheduleActivityFormValues {
   }
 }
 
-/** The shape-level errors the form can catch before it reaches the API. */
-function validate(values: ScheduleActivityFormValues): ScheduleActivityFieldErrors {
-  const errors: ScheduleActivityFieldErrors = {}
-
-  if (values.title.trim() === '') {
-    errors.title = 'Informe um título'
-  }
-  if (!TIME_PATTERN.test(values.startTime)) {
-    errors.startTime = 'Informe um horário'
-  }
-  if (!Number.isFinite(values.durationMinutes) || values.durationMinutes <= 0) {
-    errors.durationMinutes = 'Informe uma duração'
-  }
-  if (values.place.trim() === '') {
-    errors.place = 'Informe o local'
-  }
-
-  return errors
-}
-
 /**
  * The inline "NOVA ATIVIDADE" form: open state, its values, the shape checks it
- * runs before submitting, and the create. `day` is the day the activity lands
- * on; `open` seeds the start (the suggested next start, or 08:00).
+ * runs before submitting (`scheduleActivityFormSchema`), and the create. `day`
+ * is the day the activity lands on; `open` seeds the start (the suggested next
+ * start, or 06:00).
  *
- * The field errors stay hidden until the first submit. API validation errors
- * (overlap, nobody responsible…) come back from the mutation and render inline.
+ * The field errors stay hidden until the first submit, then follow every
+ * change. API validation errors (overlap…) come back from
+ * the mutation and render inline.
  */
 export function useScheduleActivityForm(day: { id: string; date: string } | null) {
   const createMutation = useCreateScheduleActivityMutation()
 
+  const form = useForm<ScheduleActivityFormValues>({
+    resolver: zodResolver(scheduleActivityFormSchema),
+    defaultValues: initialValues(DEFAULT_ACTIVITY_START),
+  })
   const [isOpen, setIsOpen] = useState(false)
-  const [values, setValues] = useState<ScheduleActivityFormValues>(
-    initialValues(DEFAULT_ACTIVITY_START)
-  )
-  const [showErrors, setShowErrors] = useState(false)
   const [apiError, setApiError] = useState<string>()
 
   const open = (startTime: string = DEFAULT_ACTIVITY_START) => {
-    setValues(initialValues(startTime))
-    setShowErrors(false)
+    form.reset(initialValues(startTime))
     setApiError(undefined)
     setIsOpen(true)
   }
@@ -74,44 +58,60 @@ export function useScheduleActivityForm(day: { id: string; date: string } | null
 
   const change = (patch: Partial<ScheduleActivityFormValues>) => {
     setApiError(undefined)
-    setValues((current) => ({ ...current, ...patch }))
+    for (const name of Object.keys(patch) as (keyof ScheduleActivityFormValues)[]) {
+      form.setValue(name, patch[name] as ScheduleActivityFormValues[typeof name])
+    }
+    // Inputs stay unregistered (the form is controlled), so after the first
+    // submit each change re-validates by hand. The whole form, not just the
+    // changed field: the responsible error sits on `teamInstanceIds` but a
+    // guest or the admins toggle clears it too.
+    if (form.formState.isSubmitted) {
+      void form.trigger()
+    }
   }
 
-  const fieldErrors = showErrors ? validate(values) : undefined
+  const { errors } = form.formState
+  const fieldErrors: ScheduleActivityFieldErrors = {
+    title: errors.title?.message,
+    startTime: errors.startTime?.message,
+    durationMinutes: errors.durationMinutes?.message,
+    place: errors.place?.message,
+    responsible: errors.teamInstanceIds?.message,
+  }
+
+  const create = async (values: ScheduleActivityFormValues) => {
+    if (!day) {
+      return
+    }
+
+    setApiError(undefined)
+
+    try {
+      await createMutation.mutateAsync(buildActivityBody(day.id, day.date, values))
+      setIsOpen(false)
+      toast.success('Atividade adicionada!', { position: 'top-center' })
+    } catch (error) {
+      setApiError(
+        error instanceof CreateActivityError || error instanceof Error
+          ? error.message
+          : 'Não foi possível adicionar a atividade.'
+      )
+    }
+  }
 
   const submit = () => {
     if (!day) {
       return
     }
 
-    const errors = validate(values)
-    if (Object.keys(errors).length > 0) {
-      setShowErrors(true)
-      return
-    }
-
-    setApiError(undefined)
-
-    createMutation
-      .mutateAsync(buildActivityBody(day.id, day.date, values))
-      .then(() => {
-        setIsOpen(false)
-        toast.success('Atividade adicionada!', { position: 'top-center' })
-      })
-      .catch((error: unknown) => {
-        setApiError(
-          error instanceof CreateActivityError || error instanceof Error
-            ? error.message
-            : 'Não foi possível adicionar a atividade.'
-        )
-      })
+    void form.handleSubmit(create)()
   }
 
   return {
     isOpen,
     open,
     close,
-    values,
+    values: form.watch(),
     change,
     fieldErrors,
     error: apiError,
