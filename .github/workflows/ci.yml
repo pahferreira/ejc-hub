@@ -158,6 +158,34 @@ jobs:
       - name: Run tests
         run: npm test -- --passWithNoTests
 
+  common-code-quality:
+    name: Common Code Quality Checks
+    needs: changes
+    if: needs.changes.outputs.common == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ./common
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ./common/package-lock.json
+      - name: Install dependencies
+        run: npm install
+      - name: Run typecheck
+        run: npm run typecheck
+      - name: Check formatting
+        run: npm run format:check
+      - name: Run ESLint
+        run: npm run lint
+
   common-test:
     name: Common Tests
     needs: changes

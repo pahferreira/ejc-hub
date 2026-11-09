@@ -1,4 +1,4 @@
-import type { Permission } from "../permissions.types";
+import type { Permission } from '../permissions.types'
 
 /**
  * Helper function to check if user has any of the permissions
@@ -8,9 +8,7 @@ import type { Permission } from "../permissions.types";
  */
 export function hasAnyPermission(
   userPermissions: string[],
-  requiredPermissions: string[] | Permission[],
+  requiredPermissions: string[] | Permission[]
 ): boolean {
-  return requiredPermissions.some((permission) =>
-    userPermissions.includes(permission),
-  );
+  return requiredPermissions.some((permission) => userPermissions.includes(permission))
 }

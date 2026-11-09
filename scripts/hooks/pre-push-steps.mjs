@@ -2,7 +2,10 @@ import { PACKAGES } from './changed-packages.mjs'
 
 // Per-package checks run on push. Package tickets add their own steps.
 export const PRE_PUSH_STEPS = {
-  common: [],
+  common: [
+    { name: 'typecheck', command: 'npm', args: ['run', 'typecheck'] },
+    { name: 'test', command: 'npm', args: ['test'] },
+  ],
   api: [
     { name: 'typecheck', command: 'npm', args: ['run', 'typecheck'] },
     { name: 'test', command: 'npm', args: ['test'] },
