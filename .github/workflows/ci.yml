@@ -27,11 +27,14 @@ jobs:
         uses: dorny/paths-filter@v3
         id: filter
         with:
+          # common/ is a dependency of api and app, so a change there re-checks both.
           filters: |
             api:
               - 'api/**'
+              - 'common/**'
             app:
               - 'app/**'
+              - 'common/**'
             common:
               - 'common/**'
 
@@ -56,6 +59,10 @@ jobs:
           cache-dependency-path: ./api/package-lock.json
       - name: Install dependencies
         run: npm install
+      - name: Run typecheck
+        run: npm run typecheck
+      - name: Check formatting
+        run: npm run format:check
       - name: Run ESLint
         run: npm run lint
 

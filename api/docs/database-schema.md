@@ -11,7 +11,7 @@
 | color | text | Palette token |
 | created_at, updated_at | timestamp | |
 
-*Constraints:* `UNIQUE (key)`
+_Constraints:_ `UNIQUE (key)`
 
 **users**
 | Column | Type | Notes |
@@ -34,7 +34,7 @@
 | already_worked_event, already_worked_teams, groups | text | Nullable |
 | created_at, updated_at | timestamp | |
 
-*Constraints:* `UNIQUE (email)`
+_Constraints:_ `UNIQUE (email)`
 
 **events**
 | Column | Type | Notes |
@@ -57,16 +57,16 @@
 `subscription_mode` governs both whether the form is offered and what status a new subscription
 lands on:
 
-| Mode | New subscriptions | Form |
-|---|---|---|
-| `open` | land `pending` | shown |
-| `waiting_list` | land `waiting_list` | shown, with a warning that the spot is not guaranteed |
-| `closed` | rejected with `subscriptions_closed` | replaced by a closed notice |
+| Mode           | New subscriptions                    | Form                                                  |
+| -------------- | ------------------------------------ | ----------------------------------------------------- |
+| `open`         | land `pending`                       | shown                                                 |
+| `waiting_list` | land `waiting_list`                  | shown, with a warning that the spot is not guaranteed |
+| `closed`       | rejected with `subscriptions_closed` | replaced by a closed notice                           |
 
 It replaced a `subscriptions_open` boolean in migrations 0046/0047. One enum rather than the
 boolean plus a second `waiting_list_mode` flag, because two booleans would allow
 `subscriptions_open = false` together with waiting-list mode — a state with no meaning, since
-nothing is created while subscriptions are closed. Waiting-list mode *is* open; only the
+nothing is created while subscriptions are closed. Waiting-list mode _is_ open; only the
 resulting status differs.
 
 The mode shapes **new** subscriptions only. Flipping an event to `waiting_list` does not move
@@ -86,7 +86,7 @@ There is no UI for changing it: `PATCH /control-panel/events/:eventId/subscripti
 | max_allowed_coordinators | integer | Default `3` |
 | created_at, updated_at | timestamp | |
 
-*Constraints:* `UNIQUE (key)`
+_Constraints:_ `UNIQUE (key)`
 
 **team_instances**
 | Column | Type | Notes |
@@ -106,7 +106,8 @@ There is no UI for changing it: `PATCH /control-panel/events/:eventId/subscripti
 | type | enum | `member`, `coordinator` — default `member` |
 | created_at, updated_at | timestamp | |
 
-*Constraints:*
+_Constraints:_
+
 - `UNIQUE (team_instance_id, user_id)` — one row per user per team, keeping a user's member and coordinator rows disjoint for the same team.
 - `UNIQUE (event_id, user_id)` — one membership per user per event, members and coordinators alike.
 - `FOREIGN KEY (team_instance_id, event_id) → team_instances (id, event_id)` — replaces the plain FK on `team_instance_id`, which it implies.
@@ -130,7 +131,7 @@ Coordinators are a flat peer set (`type = 'coordinator'`) with no rank or orderi
 | already_worked_event, already_worked_teams, groups | text | Nullable |
 | created_at, updated_at | timestamp | |
 
-*Constraints:* `UNIQUE (user_id, event_id)`
+_Constraints:_ `UNIQUE (user_id, event_id)`
 
 **subscription_options**
 | Column | Type | Notes |
@@ -156,7 +157,7 @@ The team preferences a person picked when subscribing.
 | recorded_by | uuid | FK → users, nullable — no actor for imported rows |
 | created_at, updated_at | timestamp | |
 
-*Constraints:* `UNIQUE (event_id, user_id)` · `INDEX (event_id, status)`
+_Constraints:_ `UNIQUE (event_id, user_id)` · `INDEX (event_id, status)`
 
 The subscription fee is owed by anyone holding a team membership for the event, and is paid once per event regardless of how many teams the person passes through — hence the grain is `(event, user)`, not `(team, user)`. The team is a reporting dimension, resolved by joining `team_memberships`; storing `team_instance_id` here would go stale on a team move and break the per-team "who hasn't paid" report.
 
@@ -164,14 +165,14 @@ Rows are lazy: **no row means the person owes and nothing has been recorded yet.
 
 Status meanings, which are easy to confuse:
 
-| Status | Meaning |
-|---|---|
-| *(no row)* | Nobody has looked at this person yet |
-| `pending` | A row exists but nothing is settled — including a declared PIX the treasurer hasn't verified |
-| `not_paid` | A treasurer actively checked and confirmed this person has not paid |
-| `paid` | Confirmed received |
-| `exempt` | Comped — deliberately not `paid`, so totals stay honest |
-| `refunded` | Returned |
+| Status     | Meaning                                                                                      |
+| ---------- | -------------------------------------------------------------------------------------------- |
+| _(no row)_ | Nobody has looked at this person yet                                                         |
+| `pending`  | A row exists but nothing is settled — including a declared PIX the treasurer hasn't verified |
+| `not_paid` | A treasurer actively checked and confirmed this person has not paid                          |
+| `paid`     | Confirmed received                                                                           |
+| `exempt`   | Comped — deliberately not `paid`, so totals stay honest                                      |
+| `refunded` | Returned                                                                                     |
 
 `amount_cents` is snapshotted from `events.fee_amount_cents` at record time. The event fee rises as the event approaches, so two people paying in full at different times legitimately owe different amounts — the snapshot is what makes each payment reconcilable against the fee that applied when it was taken, and editing `events.fee_amount_cents` never rewrites history.
 
@@ -190,25 +191,25 @@ Status meanings, which are easy to confuse:
 | resolution_reason | text | Nullable, free text |
 | created_at, updated_at | timestamp | |
 
-*Constraints:* `FK (team_instance_id, event_id) → team_instances` · `FK (user_id, event_id) → subscriptions` · `UNIQUE (team_instance_id, user_id) WHERE status = 'pending'` · `INDEX (team_instance_id, status)` · `INDEX (event_id, status)`
+_Constraints:_ `FK (team_instance_id, event_id) → team_instances` · `FK (user_id, event_id) → subscriptions` · `UNIQUE (team_instance_id, user_id) WHERE status = 'pending'` · `INDEX (team_instance_id, status)` · `INDEX (event_id, status)`
 
 A coordinator asks for a specific person; an admin approves or denies. The member is the resource being requested — there is no member-initiated path.
 
-Keyed by `user_id` rather than `subscription_id` because every team-building write path is user-keyed, so an approval hands the id straight through to `insertTeamMembership`. The composite FK to `subscriptions (user_id, event_id)` still guarantees the person holds a subscription to this event, and supplies `user_id`'s reference to `users` transitively. It proves a subscription *exists*, not that it is active — a cancelled subscription keeps its row, so "is this person still coming" stays an API-level check.
+Keyed by `user_id` rather than `subscription_id` because every team-building write path is user-keyed, so an approval hands the id straight through to `insertTeamMembership`. The composite FK to `subscriptions (user_id, event_id)` still guarantees the person holds a subscription to this event, and supplies `user_id`'s reference to `users` transitively. It proves a subscription _exists_, not that it is active — a cancelled subscription keeps its row, so "is this person still coming" stays an API-level check.
 
 `event_id` is denormalized for the same reason it is on `team_memberships`: a UNIQUE cannot span tables, and both composite FKs need it here.
 
-The unique index is **partial** — one *open* request per (team, person). A plain unique would make a denial permanent; an event-wide one would forbid two teams asking for the same person, which is allowed and is the signal this queue exists to surface. Only the *acceptance* is exclusive, and `team_memberships (event_id, user_id)` is what enforces that.
+The unique index is **partial** — one _open_ request per (team, person). A plain unique would make a denial permanent; an event-wide one would forbid two teams asking for the same person, which is allowed and is the signal this queue exists to surface. Only the _acceptance_ is exclusive, and `team_memberships (event_id, user_id)` is what enforces that.
 
 Status meanings:
 
-| Status | Written by | `resolved_by` | Meaning |
-|---|---|---|---|
-| `pending` | default | null | Open, in the admin queue |
-| `approved` | admin | the admin | The membership was written in the same transaction |
-| `denied` | admin | the admin | An explicit "no" to *this* request |
-| `cancelled` | coordinator, or subscription cancellation | the coordinator, or null | Withdrawn — nobody answered it |
-| `outdated` | system | **null** | The person took a membership elsewhere in the event, so the request became unanswerable |
+| Status      | Written by                                | `resolved_by`            | Meaning                                                                                 |
+| ----------- | ----------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------- |
+| `pending`   | default                                   | null                     | Open, in the admin queue                                                                |
+| `approved`  | admin                                     | the admin                | The membership was written in the same transaction                                      |
+| `denied`    | admin                                     | the admin                | An explicit "no" to _this_ request                                                      |
+| `cancelled` | coordinator, or subscription cancellation | the coordinator, or null | Withdrawn — nobody answered it                                                          |
+| `outdated`  | system                                    | **null**                 | The person took a membership elsewhere in the event, so the request became unanswerable |
 
 A set `resolved_at` paired with a null `resolved_by` is the encoding of "the system closed this"; there is no other signal for it.
 
@@ -220,9 +221,9 @@ A set `resolved_at` paired with a null `resolved_by` is the encoding of "the sys
 | date | date | A São Paulo calendar date within the event |
 | created_at, updated_at | timestamp | |
 
-*Constraints:* `UNIQUE (event_id, date)` · `UNIQUE (id, event_id)` — the target of the composite FK below
+_Constraints:_ `UNIQUE (event_id, date)` · `UNIQUE (id, event_id)` — the target of the composite FK below
 
-There is no `schedules` table: an event's Cronograma *is* its days.
+There is no `schedules` table: an event's Cronograma _is_ its days.
 
 **schedule_activities**
 | Column | Type | Notes |
@@ -238,7 +239,7 @@ There is no `schedules` table: an event's Cronograma *is* its days.
 | admins_responsible | boolean | Default `false` |
 | created_at, updated_at | timestamp | |
 
-*Constraints:* `FK (day_id, event_id) → schedule_days (id, event_id) ON DELETE CASCADE` · `CHECK (duration_minutes > 0)` · `INDEX (day_id, planned_starts_at)`
+_Constraints:_ `FK (day_id, event_id) → schedule_days (id, event_id) ON DELETE CASCADE` · `CHECK (duration_minutes > 0)` · `INDEX (day_id, planned_starts_at)`
 
 Deleting a day deletes its activities. Existing tables keep `timestamp`, so comparing against `events.starts_at`/`ends_at` needs an explicit conversion.
 
@@ -249,7 +250,7 @@ Deleting a day deletes its activities. Existing tables keep `timestamp`, so comp
 | team_instance_id | uuid | A team responsible for the activity |
 | event_id | uuid | Denormalized, for the composite FK |
 
-*Constraints:* `PRIMARY KEY (activity_id, team_instance_id)` · `FK (team_instance_id, event_id) → team_instances (id, event_id)` — the same pattern as `team_memberships`
+_Constraints:_ `PRIMARY KEY (activity_id, team_instance_id)` · `FK (team_instance_id, event_id) → team_instances (id, event_id)` — the same pattern as `team_memberships`
 
 ### Relationships
 
