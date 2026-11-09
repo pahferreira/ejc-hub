@@ -10,7 +10,7 @@
     "test": "node --test scripts/hooks/changed-packages.spec.mjs scripts/hooks/pre-push-steps.spec.mjs"
   },
   "lint-staged": {
-    "api/**": "npm --prefix api run format:staged --",
-    "api/src/**/*.{ts,js}": "npm --prefix api run lint:staged --"
+    "api/src/**/*.{ts,js}": "npm --prefix api run lint:staged --",
+    "api/**": "npm --prefix api run format:staged --"
   }
 }

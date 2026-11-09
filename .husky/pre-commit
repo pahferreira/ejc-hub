@@ -1,2 +1,2 @@
-# Serial because the lint-staged globs overlap: Prettier and ESLint would race on the same file.
+# Serial so ESLint (checks) runs before Prettier (formats) on overlapping globs: Prettier writes last.
 npx lint-staged --concurrent false

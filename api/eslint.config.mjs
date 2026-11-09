@@ -1,6 +1,5 @@
 import { defineConfig } from 'eslint/config'
 import typescriptEslint from '@typescript-eslint/eslint-plugin'
-import prettier from 'eslint-plugin-prettier'
 import globals from 'globals'
 import tsParser from '@typescript-eslint/parser'
 import path from 'node:path'
@@ -22,12 +21,11 @@ export default defineConfig([
       'eslint:recommended',
       'plugin:@typescript-eslint/recommended',
       'plugin:@typescript-eslint/recommended-requiring-type-checking',
-      'plugin:prettier/recommended'
+      'prettier'
     ),
 
     plugins: {
       '@typescript-eslint': typescriptEslint,
-      prettier,
     },
 
     languageOptions: {
@@ -44,8 +42,6 @@ export default defineConfig([
     },
 
     rules: {
-      'prettier/prettier': ['error', { printWidth: 100 }],
-      'prettier/print-width': 'off',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
     },
