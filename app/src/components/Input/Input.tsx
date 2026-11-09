@@ -25,6 +25,7 @@ export function Input(props: InputProps) {
         {`${props.label}${props.isRequired ? '*' : ''}`}
       </label>
       <input
+        id={props.name}
         name={props.name}
         required={props.isRequired}
         className={clsx(

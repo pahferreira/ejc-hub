@@ -8,8 +8,8 @@ import {
 import { pluralize } from '../../utils/pluralize/pluralize'
 
 export type ScheduleDayTabsProps = {
-  /** Earliest first, as the API sends them. */
-  days: ScheduleDay[]
+  /** Earliest first, as the API sends them. Only the tab's own fields are needed. */
+  days: Array<Pick<ScheduleDay, 'id' | 'date' | 'activityCount'>>
   selectedDayId: string | null
   onSelectDay: (dayId: string) => void
   onNewDay: () => void

@@ -4,7 +4,11 @@ import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
 import { SchedulePermissions } from '../../../../../common/permissions/permissions.types.ts'
 import { scheduleApp } from '../application/schedule-app.ts'
-import { createScheduleDayBodySchema, scheduleDayParamsSchema } from './schedule.schema.ts'
+import {
+  createScheduleActivityBodySchema,
+  createScheduleDayBodySchema,
+  scheduleDayParamsSchema,
+} from './schedule.schema.ts'
 
 export function scheduleRoutes(server: FastifyServerInstance) {
   return () => {
@@ -35,6 +39,33 @@ export function scheduleRoutes(server: FastifyServerInstance) {
       async (request, reply) => {
         try {
           const result = await scheduleApp.createDay(request.body)
+
+          return reply.code(HttpStatus.Created).send({ result })
+        } catch (error) {
+          fastifyErrorHandler(request, reply, error)
+        }
+      }
+    )
+
+    server.post(
+      '/schedule/activities',
+      {
+        schema: { body: createScheduleActivityBodySchema },
+        preHandler: authGuard(server, { permissions: [SchedulePermissions.Create] }),
+      },
+      async (request, reply) => {
+        try {
+          const body = request.body
+          const result = await scheduleApp.createActivity({
+            dayId: body.dayId,
+            title: body.title,
+            plannedStartsAt: body.plannedStartsAt,
+            durationMinutes: body.durationMinutes,
+            place: body.place,
+            teamInstanceIds: body.teamInstanceIds,
+            guestName: body.guestName ?? null,
+            adminsResponsible: body.adminsResponsible,
+          })
 
           return reply.code(HttpStatus.Created).send({ result })
         } catch (error) {

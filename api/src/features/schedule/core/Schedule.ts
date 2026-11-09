@@ -1,13 +1,23 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import { isUniqueViolation } from '../../../shared/is-unique-violation.ts'
-import type { EventModel } from '../../../core/database/schemas/index.ts'
+import { runInTransaction } from '../../../core/database/client.ts'
+import type { EventModel, ScheduleActivityModel } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { ScheduleDayRepository } from '../../../modules/schedule-day/domain/ScheduleDayRepository.ts'
+import type { ScheduleActivityRepository } from '../../../modules/schedule-activity/domain/ScheduleActivityRepository.ts'
+import type { ScheduleActivityTeamRepository } from '../../../modules/schedule-activity-team/domain/ScheduleActivityTeamRepository.ts'
+import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import { toEventDate } from '../../../../../common/schedule/toEventDate.ts'
+import { toEventInstant } from '../../../../../common/schedule/toEventInstant.ts'
+import { teamColorToken } from '../../../../../common/schedule/teamColorToken.ts'
+import { activityEnd, intervalsOverlap } from './activity-interval.ts'
 import type {
+  CreateScheduleActivityInput,
+  CreateScheduleActivityResult,
   CreateScheduleDayInput,
   CreateScheduleDayResult,
   DeleteScheduleDayResult,
+  ScheduleActivity,
   ScheduleEvent,
   ScheduleReadModel,
 } from '../domain/schedule.types.ts'
@@ -39,10 +49,22 @@ function toScheduleEvent(event: EventModel): ScheduleEvent {
 export class Schedule {
   #eventRepository: EventRepository
   #scheduleDayRepository: ScheduleDayRepository
+  #scheduleActivityRepository: ScheduleActivityRepository
+  #scheduleActivityTeamRepository: ScheduleActivityTeamRepository
+  #teamInstanceRepository: TeamInstanceRepository
 
-  constructor(eventRepo: EventRepository, scheduleDayRepo: ScheduleDayRepository) {
+  constructor(
+    eventRepo: EventRepository,
+    scheduleDayRepo: ScheduleDayRepository,
+    scheduleActivityRepo: ScheduleActivityRepository,
+    scheduleActivityTeamRepo: ScheduleActivityTeamRepository,
+    teamInstanceRepo: TeamInstanceRepository
+  ) {
     this.#eventRepository = eventRepo
     this.#scheduleDayRepository = scheduleDayRepo
+    this.#scheduleActivityRepository = scheduleActivityRepo
+    this.#scheduleActivityTeamRepository = scheduleActivityTeamRepo
+    this.#teamInstanceRepository = teamInstanceRepo
   }
 
   // Resolves the current event once per call and hands it to `fn`.
@@ -56,10 +78,44 @@ export class Schedule {
     return fn(currentEvent)
   }
 
-  /** The current event's days, earliest date first. */
+  /** The current event's days, earliest date first, each with its activities. */
   async getSchedule(): Promise<ScheduleReadModel> {
     return this.#withCurrentEvent(async (event) => {
-      const days = await this.#scheduleDayRepository.listDaysByEvent(event.id)
+      const [days, activities, teamRows] = await Promise.all([
+        this.#scheduleDayRepository.listDaysByEvent(event.id),
+        this.#scheduleActivityRepository.listActivitiesByEvent(event.id),
+        this.#scheduleActivityTeamRepository.listTeamsByEvent(event.id),
+      ])
+
+      // The teams of each activity, keyed by activity id, each with its circle color.
+      const teamsByActivity = new Map<string, ScheduleActivity['teams']>()
+      for (const row of teamRows) {
+        const teams = teamsByActivity.get(row.activityId) ?? []
+        teams.push({
+          teamInstanceId: row.teamInstanceId,
+          teamName: row.teamName,
+          teamKey: row.teamKey,
+          colorToken: teamColorToken(row.teamKey),
+        })
+        teamsByActivity.set(row.activityId, teams)
+      }
+
+      // The activities of each day, earliest planned start first (the repo orders).
+      const activitiesByDay = new Map<string, ScheduleActivity[]>()
+      for (const activity of activities) {
+        const dayActivities = activitiesByDay.get(activity.dayId) ?? []
+        dayActivities.push({
+          id: activity.id,
+          title: activity.title,
+          plannedStartsAt: activity.plannedStartsAt.toISOString(),
+          durationMinutes: activity.durationMinutes,
+          place: activity.place,
+          guestName: activity.guestName,
+          adminsResponsible: activity.adminsResponsible,
+          teams: teamsByActivity.get(activity.id) ?? [],
+        })
+        activitiesByDay.set(activity.dayId, dayActivities)
+      }
 
       return {
         event: toScheduleEvent(event),
@@ -67,6 +123,7 @@ export class Schedule {
           id: day.id,
           date: day.date,
           activityCount: day.activityCount,
+          activities: activitiesByDay.get(day.id) ?? [],
         })),
       }
     })
@@ -111,6 +168,102 @@ export class Schedule {
         }
         throw error
       }
+    })
+  }
+
+  /**
+   * Adds an activity to a day of the current event, with its teams, in one
+   * transaction. Every planning rule is checked before any write:
+   *
+   * - the day must belong to the current event;
+   * - the start must be at or after the day's São Paulo 00:00;
+   * - someone must be responsible (a team, a guest or the admins);
+   * - every team must belong to the current event;
+   * - the activity must not overlap another on any day (touching edges are fine).
+   */
+  async createActivity(input: CreateScheduleActivityInput): Promise<CreateScheduleActivityResult> {
+    return this.#withCurrentEvent(async (event) => {
+      const day = await this.#scheduleDayRepository.findDayById(input.dayId, event.id)
+
+      if (!day) {
+        throw new AppError('Schedule day not found', AppErrorCode.NotFound)
+      }
+
+      const start = new Date(input.plannedStartsAt)
+
+      if (Number.isNaN(start.getTime())) {
+        throw new AppError('The planned start is not a valid instant', AppErrorCode.Validation)
+      }
+
+      if (input.durationMinutes <= 0) {
+        throw new AppError('The duration must be greater than zero', AppErrorCode.Validation)
+      }
+
+      const hasTeams = input.teamInstanceIds.length > 0
+
+      if (!hasTeams && !input.guestName && !input.adminsResponsible) {
+        throw new AppError('The activity needs someone responsible', AppErrorCode.Validation)
+      }
+
+      // The day's 00:00 on the São Paulo clock. A start before it belongs to another day.
+      const dayStart = toEventInstant(day.date, '00:00')
+
+      if (start < dayStart) {
+        throw new AppError("The planned start is before the day's start", AppErrorCode.Validation)
+      }
+
+      if (hasTeams) {
+        const eventTeams = await this.#teamInstanceRepository.listTeamInstances(event.id)
+        const eventTeamIds = new Set(eventTeams.map((team) => team.id))
+
+        if (input.teamInstanceIds.some((id) => !eventTeamIds.has(id))) {
+          throw new AppError('A team does not belong to the event', AppErrorCode.Validation)
+        }
+      }
+
+      // Overlap is checked across the whole event, not just the day, so a last
+      // activity that runs past midnight is caught against the next day's first.
+      const end = activityEnd(start, input.durationMinutes)
+      const existing = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
+      const overlaps = existing.some((other: ScheduleActivityModel) =>
+        intervalsOverlap(
+          start,
+          end,
+          other.plannedStartsAt,
+          activityEnd(other.plannedStartsAt, other.durationMinutes)
+        )
+      )
+
+      if (overlaps) {
+        throw new AppError('The activity overlaps another one', AppErrorCode.Validation)
+      }
+
+      const activity = await runInTransaction(async (tx) => {
+        const created = await this.#scheduleActivityRepository.insertActivity(
+          {
+            dayId: day.id,
+            eventId: event.id,
+            title: input.title,
+            plannedStartsAt: start,
+            durationMinutes: input.durationMinutes,
+            place: input.place,
+            guestName: input.guestName,
+            adminsResponsible: input.adminsResponsible,
+          },
+          tx
+        )
+
+        await this.#scheduleActivityTeamRepository.insertTeams(
+          created.id,
+          input.teamInstanceIds,
+          event.id,
+          tx
+        )
+
+        return created
+      })
+
+      return { activityId: activity.id }
     })
   }
 
