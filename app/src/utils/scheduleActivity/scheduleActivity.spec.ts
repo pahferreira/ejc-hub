@@ -118,8 +118,8 @@ describe('summarizeDay / formatDaySummary', () => {
 })
 
 describe('suggestedNextStart', () => {
-  it('defaults to 08:00 for an empty day', () => {
-    expect(suggestedNextStart([])).toBe('08:00')
+  it('defaults to 06:00 for an empty day', () => {
+    expect(suggestedNextStart([])).toBe('06:00')
   })
 
   it('suggests the end of the last activity', () => {
