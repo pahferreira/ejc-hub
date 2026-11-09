@@ -61,7 +61,7 @@ export const AllResponsible: Story = {
     const canvas = within(canvasElement)
 
     await expect(canvas.getByText('1h15')).toBeInTheDocument()
-    await expect(canvas.getByText('Administração')).toBeInTheDocument()
+    await expect(canvas.getByText('Coord. Geral')).toBeInTheDocument()
     await expect(canvas.getByText('Convidado: Padre João')).toBeInTheDocument()
   },
 }
