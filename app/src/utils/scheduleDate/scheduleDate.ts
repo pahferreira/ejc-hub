@@ -15,6 +15,9 @@ const MONTHS_ABBR = [
 
 const WEEKDAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
+// The day cards' "SEX": three capital letters, accents dropped ("SÁB" reads oddly small).
+const WEEKDAYS_ABBR = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB']
+
 const DAY_MS = 24 * 60 * 60 * 1000
 
 // Schedule days are São Paulo calendar dates (`YYYY-MM-DD`), not instants. They
@@ -73,4 +76,17 @@ export function formatScheduleShortDate(date: string): string {
 /** A schedule day as headings and chips name it: `Sexta, 03 abr`. */
 export function formatScheduleDay(date: string): string {
   return `${formatScheduleWeekday(date)}, ${formatScheduleShortDate(date)}`
+}
+
+/** The weekday as a day card's eyebrow abbreviates it: `SEX`. */
+export function formatScheduleWeekdayAbbr(date: string): string {
+  return WEEKDAYS_ABBR[toUtcMidnight(date).getUTCDay()]
+}
+
+/** A schedule day's full date, as a day card shows it: `3 Abr 2026`. */
+export function formatScheduleLongDate(date: string): string {
+  const [year, month, day] = date.split('-')
+  const monthAbbr = MONTHS_ABBR[Number(month) - 1]
+
+  return `${Number(day)} ${monthAbbr[0].toUpperCase()}${monthAbbr.slice(1)} ${year}`
 }

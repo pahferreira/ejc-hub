@@ -90,6 +90,13 @@ export function Sidebar(props: SidebarProps) {
         if (item.requiresCoordinator && !isCoordinator) {
           return false
         }
+        if (
+          item.teamMembershipOrPermission &&
+          !hasTeam &&
+          !hasPermission(permissions, item.teamMembershipOrPermission)
+        ) {
+          return false
+        }
         if (item.featureFlag && !isFeatureEnabled(item.featureFlag, false)) {
           return false
         }

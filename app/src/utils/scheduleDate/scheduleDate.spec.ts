@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { eventDateOptions, formatScheduleDay, formatScheduleShortDate } from './scheduleDate'
+import {
+  eventDateOptions,
+  formatScheduleDay,
+  formatScheduleLongDate,
+  formatScheduleShortDate,
+  formatScheduleWeekdayAbbr,
+} from './scheduleDate'
 
 describe('eventDateOptions', () => {
   it('lists every São Paulo date from the event start to its end', () => {
@@ -49,5 +55,19 @@ describe('formatScheduleDay', () => {
 describe('formatScheduleShortDate', () => {
   it('reads a padded day and a lowercase month', () => {
     expect(formatScheduleShortDate('2026-12-05')).toBe('05 dez')
+  })
+})
+
+describe('formatScheduleWeekdayAbbr', () => {
+  it('abbreviates the weekday in capitals, accents dropped', () => {
+    expect(formatScheduleWeekdayAbbr('2026-04-03')).toBe('SEX')
+    expect(formatScheduleWeekdayAbbr('2026-04-04')).toBe('SAB')
+  })
+})
+
+describe('formatScheduleLongDate', () => {
+  it('writes the day unpadded, the month capitalized and the year', () => {
+    expect(formatScheduleLongDate('2026-04-03')).toBe('3 Abr 2026')
+    expect(formatScheduleLongDate('2026-12-25')).toBe('25 Dez 2026')
   })
 })

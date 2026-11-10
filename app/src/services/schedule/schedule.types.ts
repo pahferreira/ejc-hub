@@ -42,6 +42,8 @@ export type ScheduleDay = {
 /** Everything `GET /schedule` answers. Days come earliest first. */
 export type ScheduleReadModel = {
   event: ScheduleEvent
+  /** The caller's team in the current event, or null (an admin on no team). */
+  myTeamInstanceId: string | null
   days: ScheduleDay[]
 }
 

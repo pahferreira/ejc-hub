@@ -50,6 +50,7 @@ describe('schedule routes', () => {
   beforeEach(async () => {
     scheduleApp.getSchedule.mockResolvedValue({
       event: { name: 'EJC 2026', startDate: '2026-04-03', endDate: '2026-04-05' },
+      myTeamInstanceId: TEAM_ID,
       days: [{ id: DAY_ID, date: '2026-04-03', activityCount: 2 }],
     })
     scheduleApp.createDay.mockResolvedValue({ dayId: DAY_ID, date: '2026-04-03' })
@@ -84,25 +85,43 @@ describe('schedule routes', () => {
   })
 
   describe('GET /schedule', () => {
-    it('answers the schedule read model to a caller with schedule:read', async () => {
+    it('answers the schedule read model to a team member without schedule:read', async () => {
       const response = await server.inject({
         method: 'GET',
         url: '/schedule',
-        headers: authHeader({ permissions: [SchedulePermissions.Read] }),
+        headers: authHeader({ sub: 'auth0|member' }),
       })
 
       expect(response.statusCode).toBe(200)
       expect(response.json()).toEqual({
         event: { name: 'EJC 2026', startDate: '2026-04-03', endDate: '2026-04-05' },
+        myTeamInstanceId: TEAM_ID,
         days: [{ id: DAY_ID, date: '2026-04-03', activityCount: 2 }],
       })
     })
 
-    it('refuses a caller without schedule:read', async () => {
+    it('hands the core the caller and their permissions to decide on', async () => {
+      await server.inject({
+        method: 'GET',
+        url: '/schedule',
+        headers: authHeader({ sub: 'auth0|admin', permissions: [SchedulePermissions.Read] }),
+      })
+
+      expect(scheduleApp.getSchedule).toHaveBeenCalledWith({
+        authId: 'auth0|admin',
+        permissions: [SchedulePermissions.Read],
+      })
+    })
+
+    it('answers 403 to a caller the core refuses (an outsider)', async () => {
+      scheduleApp.getSchedule.mockRejectedValue(
+        new AppError('Not on a team', AppErrorCode.Forbidden)
+      )
+
       const response = await server.inject({
         method: 'GET',
         url: '/schedule',
-        headers: authHeader({ permissions: [SchedulePermissions.Create] }),
+        headers: authHeader({ sub: 'auth0|outsider' }),
       })
 
       expect(response.statusCode).toBe(403)

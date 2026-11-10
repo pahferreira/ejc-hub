@@ -27,8 +27,43 @@ import type {
   ScheduleActivityTeamRow,
 } from '../../../modules/schedule-activity-team/domain/ScheduleActivityTeamRepository.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
+import type {
+  EventMembership,
+  TeamMembershipRepository,
+} from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
+import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
+import { SchedulePermissions } from '../../../../../common/permissions/permissions.types.ts'
 
 const EVENT_ID = 'event-1'
+
+// The admin holds `schedule:read`; the others reach the schedule only through a
+// `team_memberships` row in the current event.
+const ADMIN = { authId: 'auth0|admin', permissions: [SchedulePermissions.Read] }
+const MEMBER = { authId: 'auth0|member', permissions: [] }
+const COORDINATOR = { authId: 'auth0|coordinator', permissions: [] }
+const OUTSIDER = { authId: 'auth0|outsider', permissions: [] }
+
+const MEMBERSHIPS: Record<string, EventMembership> = {
+  'user-member': { id: 'membership-1', teamInstanceId: 'team-cozinha', type: 'member' },
+  'user-coordinator': { id: 'membership-2', teamInstanceId: 'team-liturgia', type: 'coordinator' },
+}
+
+/** Every caller resolves to a user named after its Auth0 subject: `auth0|member` → `user-member`. */
+function buildUserRepository(): UserRepository {
+  return {
+    getUser: (authId: string) => Promise.resolve({ id: `user-${authId.split('|')[1]}` }),
+  } as unknown as UserRepository
+}
+
+/** The current event's memberships, keyed by user id. */
+function buildTeamMembershipRepository(
+  memberships: Record<string, EventMembership> = MEMBERSHIPS
+): TeamMembershipRepository {
+  return {
+    findMembershipByUserAndEvent: (userId: string, eventId: string) =>
+      Promise.resolve(eventId === EVENT_ID ? memberships[userId] : undefined),
+  } as unknown as TeamMembershipRepository
+}
 
 // Friday 03 to Sunday 05 April 2026 in São Paulo. The end is 23:00 on the 5th,
 // which is already the 6th in UTC: the São Paulo date is what counts.
@@ -293,7 +328,9 @@ function buildSchedule(
     dayRepository,
     options.activityRepository ?? built.activityRepository,
     options.teamRepository ?? built.teamRepository,
-    options.teamInstanceRepository ?? buildTeamInstanceRepository()
+    options.teamInstanceRepository ?? buildTeamInstanceRepository(),
+    buildUserRepository(),
+    buildTeamMembershipRepository()
   )
 }
 
@@ -326,7 +363,7 @@ describe('Schedule', () => {
         ])
       )
 
-      const model = await schedule.getSchedule()
+      const model = await schedule.getSchedule(ADMIN)
 
       expect(model.days).toEqual([
         { id: 'day-fri', date: '2026-04-03', activityCount: 7, activities: [] },
@@ -335,7 +372,7 @@ describe('Schedule', () => {
     })
 
     it('names the event with its São Paulo start and end dates', async () => {
-      const model = await schedule.getSchedule()
+      const model = await schedule.getSchedule(ADMIN)
 
       expect(model.event).toEqual({
         name: 'EJC 2026',
@@ -350,7 +387,7 @@ describe('Schedule', () => {
         dayRepository
       )
 
-      const model = await schedule.getSchedule()
+      const model = await schedule.getSchedule(ADMIN)
 
       expect(model.event).toMatchObject({ startDate: null, endDate: null })
     })
@@ -358,7 +395,35 @@ describe('Schedule', () => {
     it('refuses with no current event', async () => {
       schedule = buildSchedule(buildEventRepository(undefined), dayRepository)
 
-      await expectAppError(schedule.getSchedule(), AppErrorCode.NoCurrentEvent)
+      await expectAppError(schedule.getSchedule(ADMIN), AppErrorCode.NoCurrentEvent)
+    })
+
+    it('lets in an admin who is not on a team, with no team to highlight', async () => {
+      const model = await schedule.getSchedule(ADMIN)
+
+      expect(model.myTeamInstanceId).toBeNull()
+    })
+
+    it('lets in a member of the current event, with their team to highlight', async () => {
+      const model = await schedule.getSchedule(MEMBER)
+
+      expect(model.myTeamInstanceId).toBe('team-cozinha')
+    })
+
+    it('lets in a coordinator of the current event, with their team to highlight', async () => {
+      const model = await schedule.getSchedule(COORDINATOR)
+
+      expect(model.myTeamInstanceId).toBe('team-liturgia')
+    })
+
+    it("highlights an admin's own team when the admin is also on one", async () => {
+      const model = await schedule.getSchedule({ ...MEMBER, permissions: ADMIN.permissions })
+
+      expect(model.myTeamInstanceId).toBe('team-cozinha')
+    })
+
+    it('refuses someone neither on a current-event team nor an admin', async () => {
+      await expectAppError(schedule.getSchedule(OUTSIDER), AppErrorCode.Forbidden)
     })
   })
 
@@ -369,7 +434,7 @@ describe('Schedule', () => {
         const result = await schedule.createDay({ date })
 
         expect(result.date).toBe(date)
-        expect((await schedule.getSchedule()).days.map((day) => day.date)).toEqual([date])
+        expect((await schedule.getSchedule(ADMIN)).days.map((day) => day.date)).toEqual([date])
       }
     )
 
@@ -378,7 +443,7 @@ describe('Schedule', () => {
       ['the day after the event, though UTC has reached it', '2026-04-06'],
     ])('refuses %s', async (_label, date) => {
       await expectAppError(schedule.createDay({ date }), AppErrorCode.Validation)
-      expect((await schedule.getSchedule()).days).toEqual([])
+      expect((await schedule.getSchedule(ADMIN)).days).toEqual([])
     })
 
     it('refuses any date when the event has no dates', async () => {
@@ -446,7 +511,9 @@ describe('Schedule', () => {
 
       await schedule.deleteDay(dayId)
 
-      expect((await schedule.getSchedule()).days.map((day) => day.date)).toEqual(['2026-04-04'])
+      expect((await schedule.getSchedule(ADMIN)).days.map((day) => day.date)).toEqual([
+        '2026-04-04',
+      ])
     })
 
     it('answers not found for a day of another event', async () => {
@@ -519,7 +586,7 @@ describe('Schedule', () => {
 
       expect(activityId).toBeTruthy()
 
-      const model = await schedule.getSchedule()
+      const model = await schedule.getSchedule(ADMIN)
       const day = model.days.find((candidate) => candidate.id === 'day-fri')
 
       expect(day?.activities).toHaveLength(1)
@@ -666,7 +733,7 @@ describe('Schedule', () => {
 
       expect(result).toEqual({ activityId: 'a1' })
 
-      const model = await schedule.getSchedule()
+      const model = await schedule.getSchedule(ADMIN)
       const friday = model.days.find((day) => day.id === 'day-fri')
       const saturday = model.days.find((day) => day.id === 'day-sat')
 
@@ -791,7 +858,7 @@ describe('Schedule', () => {
 
       expect(result).toEqual({ activityId: 'a1' })
 
-      const model = await schedule.getSchedule()
+      const model = await schedule.getSchedule(ADMIN)
       const friday = model.days.find((day) => day.id === 'day-fri')
 
       expect(friday?.activities.map((activity) => activity.id)).toEqual(['a2'])
@@ -838,7 +905,7 @@ describe('Schedule', () => {
       const result = await schedule.updateDay('day-fri', { date: '2026-04-05' })
 
       expect(result).toEqual({ dayId: 'day-fri', date: '2026-04-05' })
-      const model = await schedule.getSchedule()
+      const model = await schedule.getSchedule(ADMIN)
       const day = model.days.find((candidate) => candidate.id === 'day-fri')
       expect(day?.date).toBe('2026-04-05')
       expect(day?.activities.map((activity) => activity.plannedStartsAt)).toEqual([
@@ -854,7 +921,7 @@ describe('Schedule', () => {
 
         await expectAppError(schedule.updateDay('day-fri', { date }), AppErrorCode.Validation)
 
-        const model = await schedule.getSchedule()
+        const model = await schedule.getSchedule(ADMIN)
         const day = model.days.find((candidate) => candidate.id === 'day-fri')
         expect(day?.date).toBe('2026-04-03')
         expect(day?.activities[0].plannedStartsAt).toBe('2026-04-03T21:00:00.000Z')
@@ -910,7 +977,7 @@ describe('Schedule', () => {
           AppErrorCode.Validation
         )
 
-        const model = await schedule.getSchedule()
+        const model = await schedule.getSchedule(ADMIN)
         expect(model.days.map((day) => day.date)).toEqual(['2026-04-03', '2026-04-05'])
         expect(model.days[0].activities[0].plannedStartsAt).toBe('2026-04-04T02:00:00.000Z')
       })
@@ -949,7 +1016,7 @@ describe('Schedule', () => {
       const result = await schedule.updateDay('day-fri', { date: '2026-04-03' })
 
       expect(result).toEqual({ dayId: 'day-fri', date: '2026-04-03' })
-      const model = await schedule.getSchedule()
+      const model = await schedule.getSchedule(ADMIN)
       expect(model.days[0].activities[0].plannedStartsAt).toBe('2026-04-03T21:00:00.000Z')
     })
 

@@ -1,11 +1,13 @@
+import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { z } from 'zod/v4'
 import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
+import { extractUserInformationFromToken } from '../../../shared/extract-user-info-from-token.ts'
 import { SchedulePermissions } from '../../../../../common/permissions/permissions.types.ts'
 import { scheduleApp } from '../application/schedule-app.ts'
-import type { ScheduleActivityPlan } from '../domain/schedule.types.ts'
+import type { ScheduleActivityPlan, ScheduleViewer } from '../domain/schedule.types.ts'
 import {
   createScheduleActivityBodySchema,
   createScheduleDayBodySchema,
@@ -30,18 +32,48 @@ function toActivityPlan(body: z.infer<typeof scheduleActivityBodySchema>): Sched
   }
 }
 
+/**
+ * The caller as the schedule read needs them, or a 401 already sent.
+ *
+ * Whether they may read is decided by `Schedule` from their permissions and
+ * their team membership, so both travel with the call.
+ */
+function viewerOrUnauthorized(request: FastifyRequest, reply: FastifyReply): ScheduleViewer | null {
+  const token = request.getToken()
+
+  if (!token) {
+    void reply.code(HttpStatus.Unauthorized).send({
+      error: 'Unauthorized',
+      message: 'Authentication required',
+    })
+
+    return null
+  }
+
+  const { authId, permissions } = extractUserInformationFromToken(token)
+
+  return { authId, permissions }
+}
+
 export function scheduleRoutes(server: FastifyServerInstance) {
   return () => {
-    // Admins only for now. The Cronograma read view opens it to anyone on a
-    // team in the current event, which the core will decide from the data.
+    // Authentication only. Admins (`schedule:read`) and anyone on a team in the
+    // current event may read; the token cannot express membership, so
+    // `Schedule` decides and answers 403 for everyone else.
     server.get(
       '/schedule',
       {
-        preHandler: authGuard(server, { permissions: [SchedulePermissions.Read] }),
+        preHandler: authGuard(server),
       },
       async (request, reply) => {
         try {
-          const readModel = await scheduleApp.getSchedule()
+          const viewer = viewerOrUnauthorized(request, reply)
+
+          if (!viewer) {
+            return reply
+          }
+
+          const readModel = await scheduleApp.getSchedule(viewer)
 
           return reply.code(HttpStatus.Ok).send(readModel)
         } catch (error) {

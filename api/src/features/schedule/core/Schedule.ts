@@ -10,6 +10,10 @@ import type {
 } from '../../../modules/schedule-activity/domain/ScheduleActivityRepository.ts'
 import type { ScheduleActivityTeamRepository } from '../../../modules/schedule-activity-team/domain/ScheduleActivityTeamRepository.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
+import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
+import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
+import { SchedulePermissions } from '../../../../../common/permissions/permissions.types.ts'
+import { hasPermission } from '../../../../../common/permissions/helpers/hasPermission.ts'
 import { toEventInstant } from '../../../../../common/schedule/toEventInstant.ts'
 import { daysBetween } from '../../../../../common/schedule/daysBetween.ts'
 import { shiftByEventDays } from '../../../../../common/schedule/shiftByEventDays.ts'
@@ -26,6 +30,7 @@ import type {
   ScheduleActivity,
   ScheduleActivityPlan,
   ScheduleReadModel,
+  ScheduleViewer,
   UpdateScheduleActivityInput,
   UpdateScheduleActivityResult,
   UpdateScheduleDayInput,
@@ -47,19 +52,25 @@ export class Schedule {
   #scheduleActivityRepository: ScheduleActivityRepository
   #scheduleActivityTeamRepository: ScheduleActivityTeamRepository
   #teamInstanceRepository: TeamInstanceRepository
+  #userRepository: UserRepository
+  #teamMembershipRepository: TeamMembershipRepository
 
   constructor(
     eventRepo: EventRepository,
     scheduleDayRepo: ScheduleDayRepository,
     scheduleActivityRepo: ScheduleActivityRepository,
     scheduleActivityTeamRepo: ScheduleActivityTeamRepository,
-    teamInstanceRepo: TeamInstanceRepository
+    teamInstanceRepo: TeamInstanceRepository,
+    userRepo: UserRepository,
+    teamMembershipRepo: TeamMembershipRepository
   ) {
     this.#eventRepository = eventRepo
     this.#scheduleDayRepository = scheduleDayRepo
     this.#scheduleActivityRepository = scheduleActivityRepo
     this.#scheduleActivityTeamRepository = scheduleActivityTeamRepo
     this.#teamInstanceRepository = teamInstanceRepo
+    this.#userRepository = userRepo
+    this.#teamMembershipRepository = teamMembershipRepo
   }
 
   // Resolves the current event once per call and hands it to `fn`.
@@ -117,9 +128,39 @@ export class Schedule {
     }
   }
 
-  /** The current event's days, earliest date first, each with its activities. */
-  async getSchedule(): Promise<ScheduleReadModel> {
+  /**
+   * The team the viewer is on in the current event, or null for an admin who is
+   * on none. Anyone else gets a 403: being on a team is data the token cannot
+   * express, so the route lets every signed-in caller through and this decides.
+   */
+  async #resolveViewerTeam(viewer: ScheduleViewer, eventId: string): Promise<string | null> {
+    const user = await this.#userRepository.getUser(viewer.authId)
+    const membership = user
+      ? await this.#teamMembershipRepository.findMembershipByUserAndEvent(user.id, eventId)
+      : undefined
+
+    if (membership) {
+      return membership.teamInstanceId
+    }
+
+    if (hasPermission(viewer.permissions, SchedulePermissions.Read)) {
+      return null
+    }
+
+    throw new AppError(
+      'Only an admin or a team member of the current event can read the schedule',
+      AppErrorCode.Forbidden
+    )
+  }
+
+  /**
+   * The current event's days, earliest date first, each with its activities,
+   * plus the viewer's own team so the Cronograma can highlight its activities.
+   */
+  async getSchedule(viewer: ScheduleViewer): Promise<ScheduleReadModel> {
     return this.#withCurrentEvent(async (event) => {
+      const myTeamInstanceId = await this.#resolveViewerTeam(viewer, event.id)
+
       const [days, activities, teamRows] = await Promise.all([
         this.#scheduleDayRepository.listDaysByEvent(event.id),
         this.#scheduleActivityRepository.listActivitiesByEvent(event.id),
@@ -158,6 +199,7 @@ export class Schedule {
 
       return {
         event: toScheduleEvent(event),
+        myTeamInstanceId,
         days: days.map((day) => ({
           id: day.id,
           date: day.date,

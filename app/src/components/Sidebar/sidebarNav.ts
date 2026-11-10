@@ -45,6 +45,12 @@ export type SidebarNavItem = {
    */
   requiresCoordinator?: boolean
   /**
+   * Shown to users on a team in the current event **or** holding this
+   * permission: a page open to every team and to the admins, who may be on none.
+   * Use instead of `permission` and `requiresTeamMembership`, which both must hold.
+   */
+  teamMembershipOrPermission?: string
+  /**
    * Only shown when this feature flag is enabled. Not a permission, so it's
    * filtered at render time against the feature-flag state.
    */
@@ -77,6 +83,15 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         label: 'Início',
         path: ROUTE_PATHS.HOME,
         icon: FiHome,
+      },
+      {
+        label: 'Cronograma',
+        path: ROUTE_PATHS.SCHEDULE,
+        icon: FiClock,
+        teamMembershipOrPermission: SchedulePermissions.Read,
+        featureFlag: FeatureFlag.Schedule,
+        // `SCHEDULE_PLANNING` sits below this path and has a nav entry of its own.
+        end: true,
       },
     ],
   },
