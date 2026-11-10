@@ -73,6 +73,10 @@ export type CreateScheduleActivityResult = {
   activityId: string
 }
 
+export type UpdateScheduleActivityResult = {
+  activityId: string
+}
+
 export const scheduleQueryKeys = {
   all: ['schedule'] as const,
 }

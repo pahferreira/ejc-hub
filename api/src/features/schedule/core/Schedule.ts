@@ -4,7 +4,10 @@ import { runInTransaction } from '../../../core/database/client.ts'
 import type { EventModel, ScheduleActivityModel } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { ScheduleDayRepository } from '../../../modules/schedule-day/domain/ScheduleDayRepository.ts'
-import type { ScheduleActivityRepository } from '../../../modules/schedule-activity/domain/ScheduleActivityRepository.ts'
+import type {
+  InsertScheduleActivityInput,
+  ScheduleActivityRepository,
+} from '../../../modules/schedule-activity/domain/ScheduleActivityRepository.ts'
 import type { ScheduleActivityTeamRepository } from '../../../modules/schedule-activity-team/domain/ScheduleActivityTeamRepository.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import { toEventDate } from '../../../../../common/schedule/toEventDate.ts'
@@ -16,10 +19,14 @@ import type {
   CreateScheduleActivityResult,
   CreateScheduleDayInput,
   CreateScheduleDayResult,
+  DeleteScheduleActivityResult,
   DeleteScheduleDayResult,
   ScheduleActivity,
+  ScheduleActivityPlan,
   ScheduleEvent,
   ScheduleReadModel,
+  UpdateScheduleActivityInput,
+  UpdateScheduleActivityResult,
 } from '../domain/schedule.types.ts'
 
 const DAY_DATE_UNIQUE = 'schedule_days_event_id_date_unique'
@@ -172,86 +179,100 @@ export class Schedule {
   }
 
   /**
-   * Adds an activity to a day of the current event, with its teams, in one
-   * transaction. Every planning rule is checked before any write:
+   * Every planning rule an activity must meet, checked before any write:
    *
    * - the day must belong to the current event;
    * - the start must be at or after the day's São Paulo 00:00;
    * - someone must be responsible (a team, a guest or the admins);
    * - every team must belong to the current event;
    * - the activity must not overlap another on any day (touching edges are fine).
+   *
+   * An edit passes its own id so the activity is left out of its own overlap check.
    */
-  async createActivity(input: CreateScheduleActivityInput): Promise<CreateScheduleActivityResult> {
-    return this.#withCurrentEvent(async (event) => {
-      const day = await this.#scheduleDayRepository.findDayById(input.dayId, event.id)
+  async #checkActivityPlan(
+    event: EventModel,
+    input: ScheduleActivityPlan,
+    editedActivityId?: string
+  ): Promise<InsertScheduleActivityInput> {
+    const day = await this.#scheduleDayRepository.findDayById(input.dayId, event.id)
 
-      if (!day) {
-        throw new AppError('Schedule day not found', AppErrorCode.NotFound)
+    if (!day) {
+      throw new AppError('Schedule day not found', AppErrorCode.NotFound)
+    }
+
+    const start = new Date(input.plannedStartsAt)
+
+    if (Number.isNaN(start.getTime())) {
+      throw new AppError('The planned start is not a valid instant', AppErrorCode.Validation)
+    }
+
+    if (input.durationMinutes <= 0) {
+      throw new AppError('The duration must be greater than zero', AppErrorCode.Validation)
+    }
+
+    const hasTeams = input.teamInstanceIds.length > 0
+
+    if (!hasTeams && !input.guestName && !input.adminsResponsible) {
+      throw new AppError('The activity needs someone responsible', AppErrorCode.Validation)
+    }
+
+    // The day's 00:00 on the São Paulo clock. A start before it belongs to another day.
+    const dayStart = toEventInstant(day.date, '00:00')
+
+    if (start < dayStart) {
+      throw new AppError("The planned start is before the day's start", AppErrorCode.Validation)
+    }
+
+    if (hasTeams) {
+      const eventTeams = await this.#teamInstanceRepository.listTeamInstances(event.id)
+      const eventTeamIds = new Set(eventTeams.map((team) => team.id))
+
+      if (input.teamInstanceIds.some((id) => !eventTeamIds.has(id))) {
+        throw new AppError('A team does not belong to the event', AppErrorCode.Validation)
       }
+    }
 
-      const start = new Date(input.plannedStartsAt)
-
-      if (Number.isNaN(start.getTime())) {
-        throw new AppError('The planned start is not a valid instant', AppErrorCode.Validation)
-      }
-
-      if (input.durationMinutes <= 0) {
-        throw new AppError('The duration must be greater than zero', AppErrorCode.Validation)
-      }
-
-      const hasTeams = input.teamInstanceIds.length > 0
-
-      if (!hasTeams && !input.guestName && !input.adminsResponsible) {
-        throw new AppError('The activity needs someone responsible', AppErrorCode.Validation)
-      }
-
-      // The day's 00:00 on the São Paulo clock. A start before it belongs to another day.
-      const dayStart = toEventInstant(day.date, '00:00')
-
-      if (start < dayStart) {
-        throw new AppError("The planned start is before the day's start", AppErrorCode.Validation)
-      }
-
-      if (hasTeams) {
-        const eventTeams = await this.#teamInstanceRepository.listTeamInstances(event.id)
-        const eventTeamIds = new Set(eventTeams.map((team) => team.id))
-
-        if (input.teamInstanceIds.some((id) => !eventTeamIds.has(id))) {
-          throw new AppError('A team does not belong to the event', AppErrorCode.Validation)
-        }
-      }
-
-      // Overlap is checked across the whole event, not just the day, so a last
-      // activity that runs past midnight is caught against the next day's first.
-      const end = activityEnd(start, input.durationMinutes)
-      const existing = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
-      const overlaps = existing.some((other: ScheduleActivityModel) =>
+    // Overlap is checked across the whole event, not just the day, so a last
+    // activity that runs past midnight is caught against the next day's first.
+    const end = activityEnd(start, input.durationMinutes)
+    const existing = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
+    const overlaps = existing.some(
+      (other: ScheduleActivityModel) =>
+        other.id !== editedActivityId &&
         intervalsOverlap(
           start,
           end,
           other.plannedStartsAt,
           activityEnd(other.plannedStartsAt, other.durationMinutes)
         )
-      )
+    )
 
-      if (overlaps) {
-        throw new AppError('The activity overlaps another one', AppErrorCode.Validation)
-      }
+    if (overlaps) {
+      throw new AppError('The activity overlaps another one', AppErrorCode.Validation)
+    }
+
+    return {
+      dayId: day.id,
+      eventId: event.id,
+      title: input.title,
+      plannedStartsAt: start,
+      durationMinutes: input.durationMinutes,
+      place: input.place,
+      guestName: input.guestName,
+      adminsResponsible: input.adminsResponsible,
+    }
+  }
+
+  /**
+   * Adds an activity to a day of the current event, with its teams, in one
+   * transaction, once it passes every planning rule (`#checkActivityPlan`).
+   */
+  async createActivity(input: CreateScheduleActivityInput): Promise<CreateScheduleActivityResult> {
+    return this.#withCurrentEvent(async (event) => {
+      const plan = await this.#checkActivityPlan(event, input)
 
       const activity = await runInTransaction(async (tx) => {
-        const created = await this.#scheduleActivityRepository.insertActivity(
-          {
-            dayId: day.id,
-            eventId: event.id,
-            title: input.title,
-            plannedStartsAt: start,
-            durationMinutes: input.durationMinutes,
-            place: input.place,
-            guestName: input.guestName,
-            adminsResponsible: input.adminsResponsible,
-          },
-          tx
-        )
+        const created = await this.#scheduleActivityRepository.insertActivity(plan, tx)
 
         await this.#scheduleActivityTeamRepository.insertTeams(
           created.id,
@@ -264,6 +285,54 @@ export class Schedule {
       })
 
       return { activityId: activity.id }
+    })
+  }
+
+  /**
+   * Edits any field of one of the current event's activities, teams included.
+   * Every planning rule runs again, leaving the activity out of its own overlap
+   * check; the activity and its whole team set are replaced in one transaction.
+   */
+  async updateActivity(
+    activityId: string,
+    input: UpdateScheduleActivityInput
+  ): Promise<UpdateScheduleActivityResult> {
+    return this.#withCurrentEvent(async (event) => {
+      const existing = await this.#scheduleActivityRepository.findActivityById(activityId, event.id)
+
+      if (!existing) {
+        throw new AppError('Schedule activity not found', AppErrorCode.NotFound)
+      }
+
+      const plan = await this.#checkActivityPlan(event, input, activityId)
+
+      await runInTransaction(async (tx) => {
+        await this.#scheduleActivityRepository.updateActivity(activityId, plan, tx)
+        await this.#scheduleActivityTeamRepository.replaceTeams(
+          activityId,
+          input.teamInstanceIds,
+          event.id,
+          tx
+        )
+      })
+
+      return { activityId }
+    })
+  }
+
+  /**
+   * Hard-deletes one of the current event's activities with its team links. No
+   * status guard in Phase 1. An activity of another event reads as missing.
+   */
+  async deleteActivity(activityId: string): Promise<DeleteScheduleActivityResult> {
+    return this.#withCurrentEvent(async (event) => {
+      const deleted = await this.#scheduleActivityRepository.deleteActivity(activityId, event.id)
+
+      if (!deleted) {
+        throw new AppError('Schedule activity not found', AppErrorCode.NotFound)
+      }
+
+      return { activityId }
     })
   }
 

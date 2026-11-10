@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   activityEndTime,
+  activityFormValues,
+  activityGaps,
   activityStartTime,
   buildActivityBody,
   endTimeLabel,
@@ -165,5 +167,84 @@ describe('buildActivityBody', () => {
     })
 
     expect(body.guestName).toBe('Padre João')
+  })
+})
+
+describe('activityGaps', () => {
+  it('finds no gaps in an empty day or a day with one activity', () => {
+    expect(activityGaps([])).toEqual([])
+    expect(activityGaps([activity()])).toEqual([])
+  })
+
+  it('finds the free interval between two activities', () => {
+    const morning = activity({
+      id: 'almoco',
+      plannedStartsAt: '2026-04-03T15:00:00Z', // 12:00
+      durationMinutes: 60,
+    })
+    const afternoon = activity({
+      id: 'palestra',
+      plannedStartsAt: '2026-04-03T17:00:00Z', // 14:00
+      durationMinutes: 45,
+    })
+
+    expect(activityGaps([morning, afternoon])).toEqual([
+      { afterActivityId: 'almoco', startTime: '13:00', endTime: '14:00', durationMinutes: 60 },
+    ])
+  })
+
+  it('skips back-to-back activities', () => {
+    const first = activity({ id: 'a1', plannedStartsAt: FRI_18H, durationMinutes: 30 })
+    const second = activity({ id: 'a2', plannedStartsAt: '2026-04-03T21:30:00Z' })
+
+    expect(activityGaps([first, second])).toEqual([])
+  })
+
+  it('leaves no gap after a last activity that runs past midnight', () => {
+    const evening = activity({
+      id: 'jantar',
+      plannedStartsAt: '2026-04-03T22:00:00Z', // 19:00
+      durationMinutes: 60,
+    })
+    const lastOne = activity({
+      id: 'vigilia',
+      plannedStartsAt: '2026-04-04T01:30:00Z', // 22:30, ends 00:30 the next day
+      durationMinutes: 120,
+    })
+
+    expect(activityGaps([evening, lastOne])).toEqual([
+      { afterActivityId: 'jantar', startTime: '20:00', endTime: '22:30', durationMinutes: 150 },
+    ])
+  })
+})
+
+describe('activityFormValues', () => {
+  it('pre-fills every field of the edit form from the activity', () => {
+    const card = activity({
+      title: 'Missa',
+      plannedStartsAt: '2026-04-03T22:15:00Z', // 19:15
+      durationMinutes: 50,
+      place: 'Capela',
+      guestName: 'Padre João',
+      adminsResponsible: true,
+      teams: [
+        { teamInstanceId: 't1', teamName: 'Liturgia', teamKey: 'liturgia', colorToken: 'blue' },
+        { teamInstanceId: 't2', teamName: 'Música', teamKey: 'musica', colorToken: 'red' },
+      ],
+    })
+
+    expect(activityFormValues(card)).toEqual({
+      title: 'Missa',
+      startTime: '19:15',
+      durationMinutes: 50,
+      place: 'Capela',
+      teamInstanceIds: ['t1', 't2'],
+      guestName: 'Padre João',
+      adminsResponsible: true,
+    })
+  })
+
+  it('reads no guest as an empty field', () => {
+    expect(activityFormValues(activity({ guestName: null })).guestName).toBe('')
   })
 })

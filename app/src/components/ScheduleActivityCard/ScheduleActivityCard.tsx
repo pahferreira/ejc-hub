@@ -9,7 +9,7 @@ import { teamColorHex } from './teamColorHex'
 
 export type ScheduleActivityCardProps = {
   activity: ScheduleActivity
-  /** Opens the edit form. Wired up by the next ticket. */
+  /** Opens the edit form in place of the card. */
   onEdit?: (activityId: string) => void
 }
 

@@ -7,7 +7,9 @@ import { scheduleApp } from '../application/schedule-app.ts'
 import {
   createScheduleActivityBodySchema,
   createScheduleDayBodySchema,
+  scheduleActivityParamsSchema,
   scheduleDayParamsSchema,
+  updateScheduleActivityBodySchema,
 } from './schedule.schema.ts'
 
 export function scheduleRoutes(server: FastifyServerInstance) {
@@ -68,6 +70,50 @@ export function scheduleRoutes(server: FastifyServerInstance) {
           })
 
           return reply.code(HttpStatus.Created).send({ result })
+        } catch (error) {
+          fastifyErrorHandler(request, reply, error)
+        }
+      }
+    )
+
+    server.patch(
+      '/schedule/activities/:activityId',
+      {
+        schema: { params: scheduleActivityParamsSchema, body: updateScheduleActivityBodySchema },
+        preHandler: authGuard(server, { permissions: [SchedulePermissions.Update] }),
+      },
+      async (request, reply) => {
+        try {
+          const body = request.body
+          const result = await scheduleApp.updateActivity(request.params.activityId, {
+            dayId: body.dayId,
+            title: body.title,
+            plannedStartsAt: body.plannedStartsAt,
+            durationMinutes: body.durationMinutes,
+            place: body.place,
+            teamInstanceIds: body.teamInstanceIds,
+            guestName: body.guestName ?? null,
+            adminsResponsible: body.adminsResponsible,
+          })
+
+          return reply.code(HttpStatus.Ok).send({ result })
+        } catch (error) {
+          fastifyErrorHandler(request, reply, error)
+        }
+      }
+    )
+
+    server.delete(
+      '/schedule/activities/:activityId',
+      {
+        schema: { params: scheduleActivityParamsSchema },
+        preHandler: authGuard(server, { permissions: [SchedulePermissions.Delete] }),
+      },
+      async (request, reply) => {
+        try {
+          const result = await scheduleApp.deleteActivity(request.params.activityId)
+
+          return reply.code(HttpStatus.Ok).send({ result })
         } catch (error) {
           fastifyErrorHandler(request, reply, error)
         }

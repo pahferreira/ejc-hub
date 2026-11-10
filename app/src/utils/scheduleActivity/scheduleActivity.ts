@@ -121,6 +121,61 @@ export function suggestedNextStart(activities: ScheduleActivity[]): string {
   return summary ? summary.lastEnd : DEFAULT_ACTIVITY_START
 }
 
+/** A free interval between two of a day's activities, as its gap row shows it. */
+export type ActivityGap = {
+  /** The activity the gap follows, so the row renders right under its card. */
+  afterActivityId: string
+  /** `HH:mm` on the São Paulo clock: the earlier activity's end. */
+  startTime: string
+  /** `HH:mm` on the São Paulo clock: the later activity's start. */
+  endTime: string
+  durationMinutes: number
+}
+
+/**
+ * The free intervals between a day's activities, earliest first. Back-to-back
+ * activities leave no gap, and nothing follows the last one, so a last activity
+ * that runs past midnight adds none.
+ */
+export function activityGaps(activities: ScheduleActivity[]): ActivityGap[] {
+  const sorted = [...activities].sort(
+    (a, b) => new Date(a.plannedStartsAt).getTime() - new Date(b.plannedStartsAt).getTime()
+  )
+
+  return sorted.slice(1).flatMap((next, index) => {
+    const previous = sorted[index]
+    const gapStart = endInstant(previous)
+    const gapEnd = new Date(next.plannedStartsAt)
+    const durationMinutes = Math.round((gapEnd.getTime() - gapStart.getTime()) / MINUTE_MS)
+
+    if (durationMinutes <= 0) {
+      return []
+    }
+
+    return [
+      {
+        afterActivityId: previous.id,
+        startTime: toEventTime(gapStart),
+        endTime: toEventTime(gapEnd),
+        durationMinutes,
+      },
+    ]
+  })
+}
+
+/** The edit form's values, pre-filled from the activity it edits. */
+export function activityFormValues(activity: ScheduleActivity): ScheduleActivityFormValues {
+  return {
+    title: activity.title,
+    startTime: activityStartTime(activity),
+    durationMinutes: activity.durationMinutes,
+    place: activity.place,
+    teamInstanceIds: activity.teams.map((team) => team.teamInstanceId),
+    guestName: activity.guestName ?? '',
+    adminsResponsible: activity.adminsResponsible,
+  }
+}
+
 /**
  * Turns the form's values into the request body. The `HH:mm` start becomes an
  * ISO instant through the shared São Paulo helper, so the device's own time

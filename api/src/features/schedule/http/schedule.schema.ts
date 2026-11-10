@@ -26,3 +26,13 @@ export const createScheduleActivityBodySchema = z.object({
   guestName: z.string().trim().min(1).nullish(),
   adminsResponsible: z.boolean().default(false),
 })
+
+/**
+ * Editing an activity. The form sends every field again, teams included, so the
+ * shape is the same as adding one; the core re-runs every planning rule.
+ */
+export const updateScheduleActivityBodySchema = createScheduleActivityBodySchema
+
+export const scheduleActivityParamsSchema = z.object({
+  activityId: z.uuid(),
+})

@@ -28,15 +28,20 @@ export type ScheduleActivityFormProps = {
   onSubmit: () => void
   onCancel: () => void
   isSubmitting?: boolean
+  /** `edit` titles the card "EDITAR ATIVIDADE" and saves changes instead of adding. */
+  mode?: 'create' | 'edit'
+  /** Asks to delete the activity being edited; shows "Excluir" when given. */
+  onDelete?: () => void
 }
 
 /**
- * The inline "NOVA ATIVIDADE" card. Not a drawer: it sits in the day's list
- * where the new activity will land. A live "Termina às" tracks the start and
+ * The inline "NOVA ATIVIDADE" card, or "EDITAR ATIVIDADE" in place of the card
+ * it edits. Not a drawer: it sits in the day's list where the activity lands. A live "Termina às" tracks the start and
  * duration; the responsible box groups teams, a guest and the admins toggle.
  */
 export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
   const { values, onChange } = props
+  const isEdit = props.mode === 'edit'
   const endLabel = endTimeLabel(values.startTime, values.durationMinutes)
 
   const selectedTeams = props.teamOptions.filter((option) =>
@@ -47,7 +52,7 @@ export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
     <div className="flex flex-col gap-4 rounded-xl border border-primary bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <h3 className="m-0 text-xs font-bold uppercase tracking-wide text-primary">
-          Nova atividade
+          {isEdit ? 'Editar atividade' : 'Nova atividade'}
         </h3>
         {endLabel && (
           <span className="text-sm font-medium text-gray-500">Termina às {endLabel}</span>
@@ -129,13 +134,20 @@ export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
 
       {props.error && <p className="m-0 text-sm text-destructive">{props.error}</p>}
 
-      <div className="flex justify-end gap-2">
-        <Button variant="text" onClick={props.onCancel}>
-          Cancelar
-        </Button>
-        <Button variant="primary" onClick={props.onSubmit} disabled={props.isSubmitting}>
-          Adicionar atividade
-        </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        {props.onDelete && (
+          <Button variant="destructive" onClick={props.onDelete} disabled={props.isSubmitting}>
+            Excluir
+          </Button>
+        )}
+        <div className="ml-auto flex gap-2">
+          <Button variant="text" onClick={props.onCancel}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={props.onSubmit} disabled={props.isSubmitting}>
+            {isEdit ? 'Salvar alterações' : 'Adicionar atividade'}
+          </Button>
+        </div>
       </div>
     </div>
   )

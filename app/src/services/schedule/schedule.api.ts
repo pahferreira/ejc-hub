@@ -7,6 +7,7 @@ import type {
   CreateScheduleDayBody,
   CreateScheduleDayResult,
   ScheduleReadModel,
+  UpdateScheduleActivityResult,
 } from './schedule.types'
 
 const NO_CURRENT_EVENT_CODE = 'no_current_event'
@@ -57,11 +58,25 @@ const createActivityMessageByCode: Record<string, string> = {
   not_found: 'Este dia não existe mais. Recarregue a página.',
 }
 
+const UPDATE_ACTIVITY_ERROR = 'Não foi possível salvar a atividade.'
+
+const updateActivityMessageByCode: Record<string, string> = {
+  ...createActivityMessageByCode,
+  not_found: 'Esta atividade não existe mais. Recarregue a página.',
+}
+
+const DELETE_ACTIVITY_ERROR = 'Não foi possível excluir a atividade.'
+
 /**
  * The error the activity form shows. Carries the pt-BR message so the form can
  * render it inline near its buttons.
  */
-export class CreateActivityError extends Error {}
+export class ScheduleActivityError extends Error {}
+
+/** The API's error code, or an empty string when the failure carried none. */
+function apiErrorCode(error: unknown): string {
+  return isAxiosError(error) ? ((error as ApiError).response?.data?.code ?? '') : ''
+}
 
 /** Adds an activity to a day of the current event. */
 async function createActivity(body: CreateScheduleActivityBody) {
@@ -73,8 +88,34 @@ async function createActivity(body: CreateScheduleActivityBody) {
 
     return response.data.result
   } catch (error: unknown) {
-    const code = isAxiosError(error) ? ((error as ApiError).response?.data?.code ?? '') : ''
-    throw new CreateActivityError(createActivityMessageByCode[code] ?? CREATE_ACTIVITY_ERROR)
+    throw new ScheduleActivityError(
+      createActivityMessageByCode[apiErrorCode(error)] ?? CREATE_ACTIVITY_ERROR
+    )
+  }
+}
+
+/** Edits an activity: every field is sent again, teams included. */
+async function updateActivity(input: { activityId: string; body: CreateScheduleActivityBody }) {
+  try {
+    const response = await api.patch<{ result: UpdateScheduleActivityResult }>(
+      `/schedule/activities/${input.activityId}`,
+      input.body
+    )
+
+    return response.data.result
+  } catch (error: unknown) {
+    throw new ScheduleActivityError(
+      updateActivityMessageByCode[apiErrorCode(error)] ?? UPDATE_ACTIVITY_ERROR
+    )
+  }
+}
+
+/** Hard-deletes an activity and its team links. */
+async function deleteActivity(activityId: string) {
+  try {
+    await api.delete(`/schedule/activities/${activityId}`)
+  } catch {
+    throw new ScheduleActivityError(DELETE_ACTIVITY_ERROR)
   }
 }
 
@@ -91,5 +132,7 @@ export const scheduleApi = {
   getSchedule,
   createDay,
   createActivity,
+  updateActivity,
+  deleteActivity,
   deleteDay,
 }

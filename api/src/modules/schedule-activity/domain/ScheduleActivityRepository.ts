@@ -29,4 +29,23 @@ export interface ScheduleActivityRepository {
     input: InsertScheduleActivityInput,
     executor?: DbExecutor
   ) => Promise<ScheduleActivityModel>
+
+  /** One activity of an event, or undefined when it is missing or another event's. */
+  findActivityById: (id: string, eventId: string) => Promise<ScheduleActivityModel | undefined>
+
+  /**
+   * Overwrites an activity's fields. Accepts an executor so it shares the
+   * transaction that also replaces the activity's teams.
+   */
+  updateActivity: (
+    id: string,
+    input: InsertScheduleActivityInput,
+    executor?: DbExecutor
+  ) => Promise<ScheduleActivityModel | undefined>
+
+  /**
+   * Hard-deletes one of an event's activities; its team links go with it by the
+   * FK's cascade. Returns the deleted row, or undefined when there was none.
+   */
+  deleteActivity: (id: string, eventId: string) => Promise<ScheduleActivityModel | undefined>
 }
