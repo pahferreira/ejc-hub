@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { activityEnd, intervalsOverlap } from './activity-interval.ts'
+import { activityEnd, intervalsOverlap, overlapsAny } from './activity-interval.ts'
 
 describe('activityEnd', () => {
   it('adds the duration in minutes to the start instant', () => {
@@ -69,5 +69,34 @@ describe('intervalsOverlap', () => {
         a('2026-04-03T21:45:00Z')
       )
     ).toBe(true)
+  })
+})
+
+describe('overlapsAny', () => {
+  const planned = (iso: string, durationMinutes: number) => ({
+    plannedStartsAt: new Date(iso),
+    durationMinutes,
+  })
+
+  it('is true when the activity overlaps one of the others', () => {
+    expect(
+      overlapsAny(planned('2026-04-03T21:15:00Z', 30), [
+        planned('2026-04-03T19:00:00Z', 30),
+        planned('2026-04-03T21:00:00Z', 30),
+      ])
+    ).toBe(true)
+  })
+
+  it('is false when the activity only touches the others', () => {
+    expect(
+      overlapsAny(planned('2026-04-03T21:30:00Z', 30), [
+        planned('2026-04-03T21:00:00Z', 30),
+        planned('2026-04-03T22:00:00Z', 30),
+      ])
+    ).toBe(false)
+  })
+
+  it('is false against no others', () => {
+    expect(overlapsAny(planned('2026-04-03T21:00:00Z', 30), [])).toBe(false)
   })
 })

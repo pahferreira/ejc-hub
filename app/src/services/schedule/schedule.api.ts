@@ -8,6 +8,8 @@ import type {
   CreateScheduleDayResult,
   ScheduleReadModel,
   UpdateScheduleActivityResult,
+  UpdateScheduleDayBody,
+  UpdateScheduleDayResult,
 } from './schedule.types'
 
 const NO_CURRENT_EVENT_CODE = 'no_current_event'
@@ -119,6 +121,31 @@ async function deleteActivity(activityId: string) {
   }
 }
 
+const UPDATE_DAY_ERROR = 'Erro ao alterar a data do dia'
+
+// The chips and the date input keep the date inside the event, so a 400 is
+// most likely a moved activity overlapping one on the days around it.
+const updateDayErrorByStatus: Record<number, string> = {
+  400: 'Não foi possível mover o dia: confira se a data está dentro do encontro e se as atividades não se sobrepõem às dos dias vizinhos.',
+  404: 'Este dia não existe mais. Recarregue a página.',
+  409: 'Já existe um dia nesta data.',
+}
+
+/** Moves a day to another date; its activities keep their times of day. */
+async function updateDay(dayId: string, body: UpdateScheduleDayBody) {
+  try {
+    const response = await api.patch<{ result: UpdateScheduleDayResult }>(
+      `/schedule/days/${dayId}`,
+      body
+    )
+
+    return response.data.result
+  } catch (error: unknown) {
+    const status = isAxiosError(error) ? (error.response?.status ?? 0) : 0
+    throw new Error(updateDayErrorByStatus[status] ?? UPDATE_DAY_ERROR)
+  }
+}
+
 /** Hard-deletes a day and every activity on it. */
 async function deleteDay(dayId: string) {
   try {
@@ -134,5 +161,6 @@ export const scheduleApi = {
   createActivity,
   updateActivity,
   deleteActivity,
+  updateDay,
   deleteDay,
 }

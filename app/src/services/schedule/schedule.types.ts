@@ -56,6 +56,16 @@ export type CreateScheduleDayResult = {
   date: string
 }
 
+export type UpdateScheduleDayBody = {
+  /** `YYYY-MM-DD`, within the event's dates and free of other days. */
+  date: string
+}
+
+export type UpdateScheduleDayResult = {
+  dayId: string
+  date: string
+}
+
 /** The activity body, sent whole both to add (`POST`) and to edit (`PATCH`) one. */
 export type ScheduleActivityBody = {
   dayId: string

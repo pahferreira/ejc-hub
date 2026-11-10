@@ -50,6 +50,16 @@ class DrizzleScheduleDayRepository implements ScheduleDayRepository {
     return rows[0]
   }
 
+  async updateDayDate(id: string, eventId: string, date: string, executor: DbExecutor = db) {
+    const rows = await executor
+      .update(schema.scheduleDays)
+      .set({ date, updatedAt: new Date() })
+      .where(and(eq(schema.scheduleDays.id, id), eq(schema.scheduleDays.eventId, eventId)))
+      .returning()
+
+    return rows[0]
+  }
+
   async deleteDay(id: string, eventId: string, executor: DbExecutor = db) {
     const rows = await executor
       .delete(schema.scheduleDays)

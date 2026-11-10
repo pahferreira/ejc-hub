@@ -61,3 +61,23 @@ export const MissingDate: Story = {
     error: 'Escolha a data do dia',
   },
 }
+
+/** "Editar dia": pre-filled with the day's date, its chip picked, saving moves the day. */
+export const Editing: Story = {
+  args: {
+    mode: 'edit',
+    dateOptions: ['2026-04-03', '2026-04-05'],
+    date: '2026-04-03',
+  },
+  play: async ({ args, canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body)
+
+    await expect(screen.getByText('Editar dia do cronograma')).toBeInTheDocument()
+    await expect(screen.getByRole('button', { name: 'Sexta, 03 abr' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await expect(args.onSubmit).toHaveBeenCalledOnce()
+  },
+}

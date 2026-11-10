@@ -90,10 +90,11 @@ export function SchedulePlanningPage() {
     value: team.id,
     label: team.templateName,
   }))
+  // Moving a day keeps its own date among the chips; only other days' dates drop out.
   const dateOptions = eventDateOptions(
     event.startDate,
     event.endDate,
-    days.map((day) => day.date)
+    days.map((day) => day.date).filter((date) => date !== newDayForm.editingDate)
   )
 
   const confirmDelete = () => {
@@ -143,9 +144,14 @@ export function SchedulePlanningPage() {
                 <h2 className="m-0 text-xl font-semibold text-dark-brown">
                   {formatScheduleDay(selectedDay.date)}
                 </h2>
-                <Button variant="text" onClick={() => setIsConfirmingDelete(true)}>
-                  Excluir dia
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="text" onClick={() => newDayForm.openToEdit(selectedDay)}>
+                    Editar dia
+                  </Button>
+                  <Button variant="text" onClick={() => setIsConfirmingDelete(true)}>
+                    Excluir dia
+                  </Button>
+                </div>
               </div>
 
               <ScheduleDayActivities
@@ -173,6 +179,7 @@ export function SchedulePlanningPage() {
       <NewScheduleDayModal
         open={newDayForm.isOpen}
         onClose={newDayForm.close}
+        mode={newDayForm.mode}
         dateOptions={dateOptions}
         date={newDayForm.date}
         onDateChange={newDayForm.setDate}
@@ -180,7 +187,7 @@ export function SchedulePlanningPage() {
         maxDate={event.endDate ?? undefined}
         error={newDayForm.error}
         onSubmit={newDayForm.submit}
-        isCreating={newDayForm.isCreating}
+        isSubmitting={newDayForm.isSubmitting}
       />
 
       {selectedDay && (

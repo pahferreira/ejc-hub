@@ -4,6 +4,7 @@ import { schema } from '../../../core/database/schemas/index.ts'
 import type {
   InsertScheduleActivityInput,
   ScheduleActivityRepository,
+  UpdatePlannedStartInput,
 } from '../domain/ScheduleActivityRepository.ts'
 
 // One activity, only when it belongs to the event.
@@ -75,6 +76,21 @@ class DrizzleScheduleActivityRepository implements ScheduleActivityRepository {
       .returning()
 
     return rows[0]
+  }
+
+  async updatePlannedStarts(
+    eventId: string,
+    updates: UpdatePlannedStartInput[],
+    executor: DbExecutor = db
+  ) {
+    // One statement per activity: a day holds a handful, and the caller's
+    // transaction keeps them all-or-nothing.
+    for (const update of updates) {
+      await executor
+        .update(schema.scheduleActivities)
+        .set({ plannedStartsAt: update.plannedStartsAt, updatedAt: new Date() })
+        .where(byIdInEvent(update.id, eventId))
+    }
   }
 }
 

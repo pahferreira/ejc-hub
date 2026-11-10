@@ -90,6 +90,22 @@ function buildDayRepository(initial: StoredDay[] = []): ScheduleDayRepository {
       days.push(day)
       return Promise.resolve(day)
     },
+    updateDayDate: (id, eventId, date) => {
+      const day = days.find((candidate) => candidate.id === id && candidate.eventId === eventId)
+      if (!day) {
+        return Promise.resolve(undefined)
+      }
+      if (days.some((other) => other !== day && other.eventId === eventId && other.date === date)) {
+        return Promise.reject(
+          Object.assign(new Error('duplicate key'), {
+            code: '23505',
+            constraint: 'schedule_days_event_id_date_unique',
+          })
+        )
+      }
+      day.date = date
+      return Promise.resolve(day)
+    },
     deleteDay: (id, eventId) => {
       const day = days.find((candidate) => candidate.id === id && candidate.eventId === eventId)
       days = days.filter((candidate) => candidate !== day)
@@ -166,6 +182,17 @@ function buildActivityRepositories(initial: StoredActivity[] = []) {
       // Removing the row takes its team links with it, like the FK's cascade.
       const [deleted] = index === -1 ? [] : activities.splice(index, 1)
       return Promise.resolve(deleted)
+    },
+    updatePlannedStarts: (eventId, updates) => {
+      for (const update of updates) {
+        const activity = activities.find(
+          (candidate) => candidate.id === update.id && candidate.eventId === eventId
+        )
+        if (activity) {
+          activity.plannedStartsAt = update.plannedStartsAt
+        }
+      }
+      return Promise.resolve()
     },
   }
 
@@ -760,6 +787,163 @@ describe('Schedule', () => {
       schedule = buildSchedule(buildEventRepository(undefined), dayRepository)
 
       await expectAppError(schedule.deleteActivity('a1'), AppErrorCode.NoCurrentEvent)
+    })
+  })
+
+  describe('updateDay', () => {
+    function buildMoveSchedule(initialActivities: StoredActivity[] = []) {
+      const { activityRepository, teamRepository } = buildActivityRepositories(initialActivities)
+      return buildSchedule(
+        buildEventRepository(buildEvent()),
+        buildDayRepository([
+          storedDay('day-fri', '2026-04-03'),
+          storedDay('day-sat', '2026-04-04'),
+        ]),
+        { activityRepository, teamRepository }
+      )
+    }
+
+    it('moves the day and keeps every activity at its São Paulo time of day', async () => {
+      schedule = buildMoveSchedule([
+        // 18:00 and 23:00–01:00 São Paulo on Friday.
+        storedActivity('a1', 'day-fri', '2026-04-03T21:00:00Z', 30),
+        storedActivity('a2', 'day-fri', '2026-04-04T02:00:00Z', 120),
+      ])
+
+      const result = await schedule.updateDay('day-fri', { date: '2026-04-05' })
+
+      expect(result).toEqual({ dayId: 'day-fri', date: '2026-04-05' })
+      const model = await schedule.getSchedule()
+      const day = model.days.find((candidate) => candidate.id === 'day-fri')
+      expect(day?.date).toBe('2026-04-05')
+      expect(day?.activities.map((activity) => activity.plannedStartsAt)).toEqual([
+        '2026-04-05T21:00:00.000Z',
+        '2026-04-06T02:00:00.000Z',
+      ])
+    })
+
+    it.each(['2026-04-02', '2026-04-06'])(
+      'refuses %s, a date outside the event, and leaves the day where it was',
+      async (date) => {
+        schedule = buildMoveSchedule([storedActivity('a1', 'day-fri', '2026-04-03T21:00:00Z', 30)])
+
+        await expectAppError(schedule.updateDay('day-fri', { date }), AppErrorCode.Validation)
+
+        const model = await schedule.getSchedule()
+        const day = model.days.find((candidate) => candidate.id === 'day-fri')
+        expect(day?.date).toBe('2026-04-03')
+        expect(day?.activities[0].plannedStartsAt).toBe('2026-04-03T21:00:00.000Z')
+      }
+    )
+
+    it("refuses moving onto another day's date", async () => {
+      schedule = buildMoveSchedule()
+
+      await expectAppError(
+        schedule.updateDay('day-fri', { date: '2026-04-04' }),
+        AppErrorCode.Conflict
+      )
+    })
+
+    it('answers a conflict when a concurrent write takes the date first', async () => {
+      const racingDays = buildDayRepository([storedDay('day-fri', '2026-04-03')])
+      // The read misses the other day; the unique constraint still refuses the write.
+      racingDays.findDayByDate = () => Promise.resolve(undefined)
+      await racingDays.insertDay({ eventId: EVENT_ID, date: '2026-04-05' })
+      schedule = buildSchedule(buildEventRepository(buildEvent()), racingDays)
+
+      await expectAppError(
+        schedule.updateDay('day-fri', { date: '2026-04-05' }),
+        AppErrorCode.Conflict
+      )
+    })
+
+    describe('against the days around its new date', () => {
+      // Friday 03 and Sunday 05, Saturday free to move onto.
+      function buildNeighbourSchedule(initialActivities: StoredActivity[]) {
+        const { activityRepository, teamRepository } = buildActivityRepositories(initialActivities)
+        return buildSchedule(
+          buildEventRepository(buildEvent()),
+          buildDayRepository([
+            storedDay('day-fri', '2026-04-03'),
+            storedDay('day-sun', '2026-04-05'),
+          ]),
+          { activityRepository, teamRepository }
+        )
+      }
+
+      it("refuses a past-midnight activity that would overlap the next day's first", async () => {
+        schedule = buildNeighbourSchedule([
+          // Friday 23:00–01:00 São Paulo; moved to Saturday it ends 01:00 Sunday.
+          storedActivity('a1', 'day-fri', '2026-04-04T02:00:00Z', 120),
+          // Sunday 00:30 São Paulo.
+          storedActivity('a2', 'day-sun', '2026-04-05T03:30:00Z', 30),
+        ])
+
+        await expectAppError(
+          schedule.updateDay('day-fri', { date: '2026-04-04' }),
+          AppErrorCode.Validation
+        )
+
+        const model = await schedule.getSchedule()
+        expect(model.days.map((day) => day.date)).toEqual(['2026-04-03', '2026-04-05'])
+        expect(model.days[0].activities[0].plannedStartsAt).toBe('2026-04-04T02:00:00.000Z')
+      })
+
+      it("refuses a first activity that would overlap the previous day's past-midnight one", async () => {
+        schedule = buildNeighbourSchedule([
+          // Friday 23:00–01:00 São Paulo, ending inside Saturday.
+          storedActivity('a1', 'day-fri', '2026-04-04T02:00:00Z', 120),
+          // Sunday 00:30 São Paulo; moved to Saturday it falls inside Friday's last.
+          storedActivity('a2', 'day-sun', '2026-04-05T03:30:00Z', 30),
+        ])
+
+        await expectAppError(
+          schedule.updateDay('day-sun', { date: '2026-04-04' }),
+          AppErrorCode.Validation
+        )
+      })
+
+      it('allows a move that only touches the neighbouring activities', async () => {
+        schedule = buildNeighbourSchedule([
+          // Friday 23:00–01:00 São Paulo.
+          storedActivity('a1', 'day-fri', '2026-04-04T02:00:00Z', 120),
+          // Sunday 01:00 São Paulo; moved to Saturday it starts as Friday's last ends.
+          storedActivity('a2', 'day-sun', '2026-04-05T04:00:00Z', 30),
+        ])
+
+        const result = await schedule.updateDay('day-sun', { date: '2026-04-04' })
+
+        expect(result).toEqual({ dayId: 'day-sun', date: '2026-04-04' })
+      })
+    })
+
+    it('keeps a day on its own date as it is', async () => {
+      schedule = buildMoveSchedule([storedActivity('a1', 'day-fri', '2026-04-03T21:00:00Z', 30)])
+
+      const result = await schedule.updateDay('day-fri', { date: '2026-04-03' })
+
+      expect(result).toEqual({ dayId: 'day-fri', date: '2026-04-03' })
+      const model = await schedule.getSchedule()
+      expect(model.days[0].activities[0].plannedStartsAt).toBe('2026-04-03T21:00:00.000Z')
+    })
+
+    it('answers not found for a day of another event', async () => {
+      schedule = buildMoveSchedule()
+
+      await expectAppError(
+        schedule.updateDay('missing-day', { date: '2026-04-05' }),
+        AppErrorCode.NotFound
+      )
+    })
+
+    it('refuses with no current event', async () => {
+      schedule = buildSchedule(buildEventRepository(undefined), dayRepository)
+
+      await expectAppError(
+        schedule.updateDay('day-fri', { date: '2026-04-05' }),
+        AppErrorCode.NoCurrentEvent
+      )
     })
   })
 })

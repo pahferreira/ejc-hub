@@ -8,6 +8,14 @@ export const createScheduleDayBodySchema = z.object({
   date: z.iso.date(),
 })
 
+/**
+ * Moving a day to another date. Shape only — the event range, the free date and
+ * the moved activities' overlaps are the core's.
+ */
+export const updateScheduleDayBodySchema = z.object({
+  date: z.iso.date(),
+})
+
 export const scheduleDayParamsSchema = z.object({
   dayId: z.uuid(),
 })
