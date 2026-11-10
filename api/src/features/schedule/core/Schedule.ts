@@ -307,7 +307,13 @@ export class Schedule {
       const plan = await this.#checkActivityPlan(event, input, activityId)
 
       await runInTransaction(async (tx) => {
-        await this.#scheduleActivityRepository.updateActivity(activityId, plan, tx)
+        const updated = await this.#scheduleActivityRepository.updateActivity(activityId, plan, tx)
+
+        // Deleted by another admin since the read: roll back before touching its teams.
+        if (!updated) {
+          throw new AppError('Schedule activity not found', AppErrorCode.NotFound)
+        }
+
         await this.#scheduleActivityTeamRepository.replaceTeams(
           activityId,
           input.teamInstanceIds,

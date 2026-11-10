@@ -1,9 +1,11 @@
+import type { z } from 'zod/v4'
 import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
 import { SchedulePermissions } from '../../../../../common/permissions/permissions.types.ts'
 import { scheduleApp } from '../application/schedule-app.ts'
+import type { ScheduleActivityPlan } from '../domain/schedule.types.ts'
 import {
   createScheduleActivityBodySchema,
   createScheduleDayBodySchema,
@@ -11,6 +13,22 @@ import {
   scheduleDayParamsSchema,
   updateScheduleActivityBodySchema,
 } from './schedule.schema.ts'
+
+// The activity body as the core takes it: a missing guest becomes null.
+function toActivityPlan(
+  body: z.infer<typeof createScheduleActivityBodySchema>
+): ScheduleActivityPlan {
+  return {
+    dayId: body.dayId,
+    title: body.title,
+    plannedStartsAt: body.plannedStartsAt,
+    durationMinutes: body.durationMinutes,
+    place: body.place,
+    teamInstanceIds: body.teamInstanceIds,
+    guestName: body.guestName ?? null,
+    adminsResponsible: body.adminsResponsible,
+  }
+}
 
 export function scheduleRoutes(server: FastifyServerInstance) {
   return () => {
@@ -57,17 +75,7 @@ export function scheduleRoutes(server: FastifyServerInstance) {
       },
       async (request, reply) => {
         try {
-          const body = request.body
-          const result = await scheduleApp.createActivity({
-            dayId: body.dayId,
-            title: body.title,
-            plannedStartsAt: body.plannedStartsAt,
-            durationMinutes: body.durationMinutes,
-            place: body.place,
-            teamInstanceIds: body.teamInstanceIds,
-            guestName: body.guestName ?? null,
-            adminsResponsible: body.adminsResponsible,
-          })
+          const result = await scheduleApp.createActivity(toActivityPlan(request.body))
 
           return reply.code(HttpStatus.Created).send({ result })
         } catch (error) {
@@ -84,17 +92,10 @@ export function scheduleRoutes(server: FastifyServerInstance) {
       },
       async (request, reply) => {
         try {
-          const body = request.body
-          const result = await scheduleApp.updateActivity(request.params.activityId, {
-            dayId: body.dayId,
-            title: body.title,
-            plannedStartsAt: body.plannedStartsAt,
-            durationMinutes: body.durationMinutes,
-            place: body.place,
-            teamInstanceIds: body.teamInstanceIds,
-            guestName: body.guestName ?? null,
-            adminsResponsible: body.adminsResponsible,
-          })
+          const result = await scheduleApp.updateActivity(
+            request.params.activityId,
+            toActivityPlan(request.body)
+          )
 
           return reply.code(HttpStatus.Ok).send({ result })
         } catch (error) {

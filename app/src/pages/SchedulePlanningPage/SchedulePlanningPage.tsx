@@ -128,7 +128,11 @@ export function SchedulePlanningPage() {
             <ScheduleDayTabs
               days={days}
               selectedDayId={selectedDay.id}
-              onSelectDay={setSelectedDayId}
+              onSelectDay={(dayId) => {
+                // An open form belongs to the day it was opened on.
+                activityForm.close()
+                setSelectedDayId(dayId)
+              }}
               onNewDay={newDayForm.open}
             />
 

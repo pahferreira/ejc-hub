@@ -693,6 +693,26 @@ describe('Schedule', () => {
       await expectAppError(editActivity(schedule, 'old'), AppErrorCode.NotFound)
     })
 
+    it('answers not found when the activity is deleted while the edit is checked', async () => {
+      const { activityRepository, teamRepository } = buildActivityRepositories([
+        storedActivity('a1', 'day-fri', FRI_18H, 30),
+      ])
+      schedule = buildSchedule(
+        buildEventRepository(buildEvent()),
+        buildDayRepository([storedDay('day-fri', '2026-04-03')]),
+        {
+          // The read finds it; by the write, another admin has deleted it.
+          activityRepository: {
+            ...activityRepository,
+            updateActivity: () => Promise.resolve(undefined),
+          },
+          teamRepository,
+        }
+      )
+
+      await expectAppError(editActivity(schedule, 'a1'), AppErrorCode.NotFound)
+    })
+
     it('refuses with no current event', async () => {
       schedule = buildSchedule(buildEventRepository(undefined), dayRepository)
 
