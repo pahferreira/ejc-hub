@@ -24,6 +24,19 @@ export interface ScheduleDayRepository {
   insertDay: (input: InsertScheduleDayInput, executor?: DbExecutor) => Promise<ScheduleDayModel>
 
   /**
+   * Moves one of the event's days to another date. A date another day of the
+   * event already has is refused by `schedule_days_event_id_date_unique`.
+   *
+   * Returns the updated row, or `undefined` when the id names no day of that event.
+   */
+  updateDayDate: (
+    id: string,
+    eventId: string,
+    date: string,
+    executor?: DbExecutor
+  ) => Promise<ScheduleDayModel | undefined>
+
+  /**
    * Hard-deletes one of the event's days. Its activities go with it, by the FK's cascade.
    *
    * Returns the deleted row, or `undefined` when the id names no day of that event.

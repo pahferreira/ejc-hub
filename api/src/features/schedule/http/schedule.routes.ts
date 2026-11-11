@@ -13,6 +13,7 @@ import {
   scheduleActivityParamsSchema,
   scheduleDayParamsSchema,
   updateScheduleActivityBodySchema,
+  updateScheduleDayBodySchema,
 } from './schedule.schema.ts'
 
 // The activity body as the core takes it: a missing guest becomes null.
@@ -112,6 +113,23 @@ export function scheduleRoutes(server: FastifyServerInstance) {
       async (request, reply) => {
         try {
           const result = await scheduleApp.deleteActivity(request.params.activityId)
+
+          return reply.code(HttpStatus.Ok).send({ result })
+        } catch (error) {
+          fastifyErrorHandler(request, reply, error)
+        }
+      }
+    )
+
+    server.patch(
+      '/schedule/days/:dayId',
+      {
+        schema: { params: scheduleDayParamsSchema, body: updateScheduleDayBodySchema },
+        preHandler: authGuard(server, { permissions: [SchedulePermissions.Update] }),
+      },
+      async (request, reply) => {
+        try {
+          const result = await scheduleApp.updateDay(request.params.dayId, request.body)
 
           return reply.code(HttpStatus.Ok).send({ result })
         } catch (error) {

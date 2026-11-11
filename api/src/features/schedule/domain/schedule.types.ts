@@ -56,6 +56,17 @@ export type CreateScheduleDayResult = {
   date: string
 }
 
+/** Moving a day of the current event to another date. */
+export type UpdateScheduleDayInput = {
+  /** `YYYY-MM-DD`, a São Paulo date within the event that no other day has. */
+  date: string
+}
+
+export type UpdateScheduleDayResult = {
+  dayId: string
+  date: string
+}
+
 export type DeleteScheduleDayResult = {
   dayId: string
 }

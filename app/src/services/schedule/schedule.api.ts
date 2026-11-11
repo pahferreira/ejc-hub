@@ -8,6 +8,8 @@ import type {
   CreateScheduleDayResult,
   ScheduleReadModel,
   UpdateScheduleActivityResult,
+  UpdateScheduleDayBody,
+  UpdateScheduleDayResult,
 } from './schedule.types'
 
 const NO_CURRENT_EVENT_CODE = 'no_current_event'
@@ -26,6 +28,11 @@ async function getSchedule() {
   return response.data
 }
 
+/** The HTTP status of a failed request, or 0 when it never got a response. */
+function apiErrorStatus(error: unknown): number {
+  return isAxiosError(error) ? (error.response?.status ?? 0) : 0
+}
+
 const CREATE_DAY_ERROR = 'Erro ao criar dia'
 
 // The modal only offers free dates inside the event, so these mean the form is
@@ -42,8 +49,7 @@ async function createDay(body: CreateScheduleDayBody) {
 
     return response.data.result
   } catch (error: unknown) {
-    const status = isAxiosError(error) ? (error.response?.status ?? 0) : 0
-    throw new Error(createDayErrorByStatus[status] ?? CREATE_DAY_ERROR)
+    throw new Error(createDayErrorByStatus[apiErrorStatus(error)] ?? CREATE_DAY_ERROR)
   }
 }
 
@@ -119,6 +125,30 @@ async function deleteActivity(activityId: string) {
   }
 }
 
+const UPDATE_DAY_ERROR = 'Erro ao alterar a data do dia'
+
+// The chips and the date input keep the date inside the event, so a 400 is
+// most likely a moved activity overlapping one on the days around it.
+const updateDayErrorByStatus: Record<number, string> = {
+  400: 'Não foi possível mover o dia: confira se a data está dentro do encontro e se as atividades não se sobrepõem às dos dias vizinhos.',
+  404: 'Este dia não existe mais. Recarregue a página.',
+  409: 'Já existe um dia nesta data.',
+}
+
+/** Moves a day to another date; its activities keep their times of day. */
+async function updateDay(input: { dayId: string; body: UpdateScheduleDayBody }) {
+  try {
+    const response = await api.patch<{ result: UpdateScheduleDayResult }>(
+      `/schedule/days/${input.dayId}`,
+      input.body
+    )
+
+    return response.data.result
+  } catch (error: unknown) {
+    throw new Error(updateDayErrorByStatus[apiErrorStatus(error)] ?? UPDATE_DAY_ERROR)
+  }
+}
+
 /** Hard-deletes a day and every activity on it. */
 async function deleteDay(dayId: string) {
   try {
@@ -134,5 +164,6 @@ export const scheduleApi = {
   createActivity,
   updateActivity,
   deleteActivity,
+  updateDay,
   deleteDay,
 }

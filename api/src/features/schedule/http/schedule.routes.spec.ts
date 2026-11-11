@@ -7,6 +7,7 @@ const scheduleApp = vi.hoisted(() => ({
   createActivity: vi.fn(),
   updateActivity: vi.fn(),
   deleteActivity: vi.fn(),
+  updateDay: vi.fn(),
   deleteDay: vi.fn(),
 }))
 
@@ -53,6 +54,7 @@ describe('schedule routes', () => {
     })
     scheduleApp.createDay.mockResolvedValue({ dayId: DAY_ID, date: '2026-04-03' })
     scheduleApp.createActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
+    scheduleApp.updateDay.mockResolvedValue({ dayId: DAY_ID, date: '2026-04-04' })
     scheduleApp.deleteDay.mockResolvedValue({ dayId: DAY_ID })
     scheduleApp.updateActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
     scheduleApp.deleteActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
@@ -70,6 +72,7 @@ describe('schedule routes', () => {
       ['GET', '/schedule', {}],
       ['POST', '/schedule/days', { date: '2026-04-03' }],
       ['POST', '/schedule/activities', ACTIVITY_BODY],
+      ['PATCH', `/schedule/days/${DAY_ID}`, { date: '2026-04-04' }],
       ['DELETE', `/schedule/days/${DAY_ID}`, {}],
       ['PATCH', `/schedule/activities/${ACTIVITY_ID}`, ACTIVITY_BODY],
       ['DELETE', `/schedule/activities/${ACTIVITY_ID}`, {}],
@@ -224,6 +227,61 @@ describe('schedule routes', () => {
 
       expect(response.statusCode).toBe(400)
       expect(scheduleApp.createActivity).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('PATCH /schedule/days/:dayId', () => {
+    it('moves a day for a caller with schedule:update', async () => {
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/days/${DAY_ID}`,
+        headers: ADMIN,
+        payload: { date: '2026-04-04' },
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(response.json()).toEqual({ result: { dayId: DAY_ID, date: '2026-04-04' } })
+      expect(scheduleApp.updateDay).toHaveBeenCalledWith(DAY_ID, { date: '2026-04-04' })
+    })
+
+    it('refuses a caller without schedule:update', async () => {
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/days/${DAY_ID}`,
+        headers: authHeader({
+          permissions: [SchedulePermissions.Create, SchedulePermissions.Delete],
+        }),
+        payload: { date: '2026-04-04' },
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(scheduleApp.updateDay).not.toHaveBeenCalled()
+    })
+
+    it('answers 409 when another day already has the date', async () => {
+      scheduleApp.updateDay.mockRejectedValue(
+        new AppError('The event already has a day on this date', AppErrorCode.Conflict)
+      )
+
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/days/${DAY_ID}`,
+        headers: ADMIN,
+        payload: { date: '2026-04-04' },
+      })
+
+      expect(response.statusCode).toBe(409)
+    })
+
+    it.each([
+      ['a date that is not YYYY-MM-DD', `/schedule/days/${DAY_ID}`, { date: '04/04/2026' }],
+      ['no date', `/schedule/days/${DAY_ID}`, {}],
+      ['a day id that is not a uuid', '/schedule/days/not-a-uuid', { date: '2026-04-04' }],
+    ])('answers 400 for %s', async (_label, url, payload) => {
+      const response = await server.inject({ method: 'PATCH', url, headers: ADMIN, payload })
+
+      expect(response.statusCode).toBe(400)
+      expect(scheduleApp.updateDay).not.toHaveBeenCalled()
     })
   })
 

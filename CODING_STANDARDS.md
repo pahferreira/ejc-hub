@@ -15,6 +15,7 @@ The rules a review checks a change against. ESLint already enforces `prefer-cons
 - **Layers:** follow `api/docs/architecture.md`, "Modules vs Features". Anything that maps to a database table is a module, whatever the number of features that use it.
 - **Endpoints:** follow the `create-endpoint` skill (`.claude/skills/create-endpoint.md`): Zod (`zod/v4`) schemas in `<feature>.schema.ts`, routes in `<feature>.routes.ts` behind `authGuard` with the route's permission, and `fastifyErrorHandler` around the handler.
 - **Business rules:** in the feature's core class (`core/<Feature>.ts`), thrown as `AppError` with an `AppErrorCode`. Schemas check only the shape.
+- **Transactions:** a core method may read and run its checks before `runInTransaction`; the transaction makes the writes all-or-nothing. A race between the read and the write is the database constraints' job (unique, FK). A race no constraint catches is accepted and named in a comment (`Accepted race: …`).
 - **Tests:** the core's rules in `core/<Feature>.spec.ts`; a route's permissions and error mapping (403, 404, …) in `http/<feature>.routes.spec.ts`.
 
 ## App
@@ -27,5 +28,6 @@ The rules a review checks a change against. ESLint already enforces `prefer-cons
 
 ## Common
 
-- **One function per file:** `<functionName>.ts` with its `<functionName>.spec.ts`.
-- **Tests:** at least one positive and one negative case per function.
+- **One function per file:** `<functionName>.ts`, named after the function it exports.
+- **Event-clock maths:** anything that reads or builds São Paulo dates and times lives in `common/schedule/`, even with one caller.
+- **Tests:** at least one positive and one negative case per function. The `<functionName>.spec.ts` next to every `<functionName>.ts` is checked by `common/spec-siblings.spec.ts`.

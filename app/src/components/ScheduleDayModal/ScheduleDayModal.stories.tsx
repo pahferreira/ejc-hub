@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
-import { NewScheduleDayModal } from './NewScheduleDayModal'
+import { ScheduleDayModal } from './ScheduleDayModal'
 
 const meta = {
-  title: 'Schedule/NewScheduleDayModal',
-  component: NewScheduleDayModal,
+  title: 'Schedule/ScheduleDayModal',
+  component: ScheduleDayModal,
   parameters: {
     layout: 'fullscreen',
   },
@@ -19,7 +19,7 @@ const meta = {
     onSubmit: fn(),
   },
   tags: ['autodocs'],
-} satisfies Meta<typeof NewScheduleDayModal>
+} satisfies Meta<typeof ScheduleDayModal>
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -59,5 +59,25 @@ export const NoFreeDates: Story = {
 export const MissingDate: Story = {
   args: {
     error: 'Escolha a data do dia',
+  },
+}
+
+/** "Editar dia": pre-filled with the day's date, its chip picked, saving moves the day. */
+export const Editing: Story = {
+  args: {
+    mode: 'edit',
+    dateOptions: ['2026-04-03', '2026-04-05'],
+    date: '2026-04-03',
+  },
+  play: async ({ args, canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body)
+
+    await expect(screen.getByText('Editar dia do cronograma')).toBeInTheDocument()
+    await expect(screen.getByRole('button', { name: 'Sexta, 03 abr' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+    await expect(args.onSubmit).toHaveBeenCalledOnce()
   },
 }

@@ -1,7 +1,6 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
-import { isUniqueViolation } from '../../../shared/is-unique-violation.ts'
 import { runInTransaction } from '../../../core/database/client.ts'
-import type { EventModel, ScheduleActivityModel } from '../../../core/database/schemas/index.ts'
+import type { EventModel } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { ScheduleDayRepository } from '../../../modules/schedule-day/domain/ScheduleDayRepository.ts'
 import type {
@@ -10,10 +9,13 @@ import type {
 } from '../../../modules/schedule-activity/domain/ScheduleActivityRepository.ts'
 import type { ScheduleActivityTeamRepository } from '../../../modules/schedule-activity-team/domain/ScheduleActivityTeamRepository.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
-import { toEventDate } from '../../../../../common/schedule/toEventDate.ts'
 import { toEventInstant } from '../../../../../common/schedule/toEventInstant.ts'
+import { daysBetween } from '../../../../../common/schedule/daysBetween.ts'
+import { shiftByEventDays } from '../../../../../common/schedule/shiftByEventDays.ts'
 import { teamColorToken } from '../../../../../common/schedule/teamColorToken.ts'
-import { activityEnd, intervalsOverlap } from './activity-interval.ts'
+import { overlapsAny } from '../helpers/activity-interval.ts'
+import { DAY_DATE_TAKEN, withDayDateUnique } from '../helpers/day-date-unique.ts'
+import { assertDateInEvent, toScheduleEvent } from '../helpers/schedule-event.ts'
 import type {
   CreateScheduleActivityInput,
   CreateScheduleActivityResult,
@@ -23,29 +25,12 @@ import type {
   DeleteScheduleDayResult,
   ScheduleActivity,
   ScheduleActivityPlan,
-  ScheduleEvent,
   ScheduleReadModel,
   UpdateScheduleActivityInput,
   UpdateScheduleActivityResult,
+  UpdateScheduleDayInput,
+  UpdateScheduleDayResult,
 } from '../domain/schedule.types.ts'
-
-const DAY_DATE_UNIQUE = 'schedule_days_event_id_date_unique'
-const DAY_DATE_TAKEN = 'The event already has a day on this date'
-
-/**
- * The event's name and its São Paulo start and end dates.
- *
- * `starts_at`/`ends_at` are plain `timestamp` columns read as UTC instants, so
- * an event ending at 23:00 on a Sunday is already Monday in UTC. Reading them in
- * São Paulo is what keeps that Sunday the last day.
- */
-function toScheduleEvent(event: EventModel): ScheduleEvent {
-  return {
-    name: event.name,
-    startDate: event.startsAt ? toEventDate(event.startsAt) : null,
-    endDate: event.endsAt ? toEventDate(event.endsAt) : null,
-  }
-}
 
 /**
  * The single entry point for schedule (Cronograma) reads and writes.
@@ -83,6 +68,20 @@ export class Schedule {
     }
 
     return fn(currentEvent)
+  }
+
+  /**
+   * Refuses a day date outside the event (400) or one another day already has
+   * (409). `dayId` is the day taking the date, which may keep its own.
+   */
+  async #assertDayDateAvailable(event: EventModel, date: string, dayId?: string): Promise<void> {
+    assertDateInEvent(event, date)
+
+    const existing = await this.#scheduleDayRepository.findDayByDate(event.id, date)
+
+    if (existing && existing.id !== dayId) {
+      throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
+    }
   }
 
   /** The current event's days, earliest date first, each with its activities. */
@@ -145,36 +144,13 @@ export class Schedule {
    */
   async createDay(input: CreateScheduleDayInput): Promise<CreateScheduleDayResult> {
     return this.#withCurrentEvent(async (event) => {
-      const { startDate, endDate } = toScheduleEvent(event)
+      await this.#assertDayDateAvailable(event, input.date)
 
-      if (!startDate || !endDate) {
-        throw new AppError('The current event has no dates set', AppErrorCode.Validation)
-      }
+      const day = await withDayDateUnique(() =>
+        this.#scheduleDayRepository.insertDay({ eventId: event.id, date: input.date })
+      )
 
-      // `YYYY-MM-DD` strings compare as days.
-      if (input.date < startDate || input.date > endDate) {
-        throw new AppError('The date is outside the event dates', AppErrorCode.Validation)
-      }
-
-      const existing = await this.#scheduleDayRepository.findDayByDate(event.id, input.date)
-
-      if (existing) {
-        throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
-      }
-
-      try {
-        const day = await this.#scheduleDayRepository.insertDay({
-          eventId: event.id,
-          date: input.date,
-        })
-
-        return { dayId: day.id, date: day.date }
-      } catch (error) {
-        if (isUniqueViolation(error, DAY_DATE_UNIQUE)) {
-          throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
-        }
-        throw error
-      }
+      return { dayId: day.id, date: day.date }
     })
   }
 
@@ -234,20 +210,12 @@ export class Schedule {
 
     // Overlap is checked across the whole event, not just the day, so a last
     // activity that runs past midnight is caught against the next day's first.
-    const end = activityEnd(start, input.durationMinutes)
+    // Accepted race: two admins writing overlapping activities at once both pass
+    // this read, and no constraint catches it.
     const existing = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
-    const overlaps = existing.some(
-      (other: ScheduleActivityModel) =>
-        other.id !== editedActivityId &&
-        intervalsOverlap(
-          start,
-          end,
-          other.plannedStartsAt,
-          activityEnd(other.plannedStartsAt, other.durationMinutes)
-        )
-    )
+    const others = existing.filter((other) => other.id !== editedActivityId)
 
-    if (overlaps) {
+    if (overlapsAny({ plannedStartsAt: start, durationMinutes: input.durationMinutes }, others)) {
       throw new AppError('The activity overlaps another one', AppErrorCode.Validation)
     }
 
@@ -344,6 +312,70 @@ export class Schedule {
       }
 
       return { activityId }
+    })
+  }
+
+  /**
+   * Moves one of the current event's days to another date. Every activity on
+   * it shifts by the same whole number of days and keeps its São Paulo time of
+   * day. The day and its activities move in one transaction.
+   */
+  async updateDay(dayId: string, input: UpdateScheduleDayInput): Promise<UpdateScheduleDayResult> {
+    return this.#withCurrentEvent(async (event) => {
+      const day = await this.#scheduleDayRepository.findDayById(dayId, event.id)
+
+      if (!day) {
+        throw new AppError('Schedule day not found', AppErrorCode.NotFound)
+      }
+
+      await this.#assertDayDateAvailable(event, input.date, day.id)
+
+      const shift = daysBetween(day.date, input.date)
+      // Accepted race: an activity added to the day after this read stays on the
+      // old date, and no constraint catches it.
+      const activities = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
+      const moved = activities
+        .filter((activity) => activity.dayId === day.id)
+        .map((activity) => ({
+          id: activity.id,
+          plannedStartsAt: shiftByEventDays(activity.plannedStartsAt, shift),
+          durationMinutes: activity.durationMinutes,
+        }))
+
+      // Checked against every other day's activities. Only the new neighbours can
+      // be reached, so this catches a past-midnight overlap in either direction.
+      const others = activities.filter((activity) => activity.dayId !== day.id)
+
+      if (moved.some((activity) => overlapsAny(activity, others))) {
+        throw new AppError(
+          'An activity of the day overlaps one on the days around its new date',
+          AppErrorCode.Validation
+        )
+      }
+
+      await withDayDateUnique(() =>
+        runInTransaction(async (tx) => {
+          const updated = await this.#scheduleDayRepository.updateDayDate(
+            day.id,
+            event.id,
+            input.date,
+            tx
+          )
+
+          // Deleted since the read: throwing rolls the transaction back.
+          if (!updated) {
+            throw new AppError('Schedule day not found', AppErrorCode.NotFound)
+          }
+
+          await this.#scheduleActivityRepository.updatePlannedStarts(
+            event.id,
+            moved.map(({ id, plannedStartsAt }) => ({ id, plannedStartsAt })),
+            tx
+          )
+        })
+      )
+
+      return { dayId: day.id, date: input.date }
     })
   }
 

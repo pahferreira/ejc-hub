@@ -13,6 +13,11 @@ export type InsertScheduleActivityInput = {
   adminsResponsible: boolean
 }
 
+export type UpdatePlannedStartInput = {
+  id: string
+  plannedStartsAt: Date
+}
+
 export interface ScheduleActivityRepository {
   /**
    * Every activity of one event across all its days, earliest planned start
@@ -49,4 +54,14 @@ export interface ScheduleActivityRepository {
    * FK's cascade. Returns the deleted row, or undefined when there was none.
    */
   deleteActivity: (id: string, eventId: string) => Promise<ScheduleActivityModel | undefined>
+
+  /**
+   * Sets the planned start of each given activity of the event. Accepts an
+   * executor so it can share the transaction that also moves the activities' day.
+   */
+  updatePlannedStarts: (
+    eventId: string,
+    updates: UpdatePlannedStartInput[],
+    executor?: DbExecutor
+  ) => Promise<void>
 }
