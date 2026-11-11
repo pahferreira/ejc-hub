@@ -27,5 +27,6 @@ The rules a review checks a change against. ESLint already enforces `prefer-cons
 
 ## Common
 
-- **One function per file:** `<functionName>.ts` with its `<functionName>.spec.ts`.
-- **Tests:** at least one positive and one negative case per function.
+- **One function per file:** `<functionName>.ts`, named after the function it exports.
+- **Event-clock maths:** anything that reads or builds São Paulo dates and times lives in `common/schedule/`, even with one caller.
+- **Tests:** at least one positive and one negative case per function. The `<functionName>.spec.ts` next to every `<functionName>.ts` is checked by `common/spec-siblings.spec.ts`.

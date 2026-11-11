@@ -23,7 +23,7 @@ Reviews check code against `CODING_STANDARDS.md` at the repo root.
 
 ### Issue tracker
 
-GitHub Issues on `pahferreira/ejc-hub`, each linked to the "EJC Hub" GitHub Project (#7). See `docs/agents/issue-tracker.md`.
+GitHub Issues on `pahferreira/ejc-hub`, each linked to the "pontoEJC" GitHub Project (#7). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
