@@ -6,6 +6,8 @@ import { isHealthCheck, stopTracing } from '../core/observability/tracing.ts'
 import { fastifyErrorHandler, requestContextFrom } from './fastify-error-handler.ts'
 import { HttpStatus } from './http-statuses.ts'
 
+// Augmenting Fastify's types needs interfaces (declaration merging), not types.
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
 declare module 'fastify' {
   interface FastifyInstance {
     observability: Observability
@@ -16,6 +18,7 @@ declare module 'fastify' {
     appErrorCode: string | null
   }
 }
+/* eslint-enable @typescript-eslint/consistent-type-definitions */
 
 /**
  * Makes `observability` reachable from every request, and closes the holes

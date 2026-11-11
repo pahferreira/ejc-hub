@@ -44,6 +44,15 @@ export default defineConfig([
     rules: {
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
+      'prefer-const': 'error',
+      '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
+    },
+  },
+  {
+    // Ports a class implements are interfaces: the modules' repositories and Observability.
+    files: ['src/modules/*/domain/*Repository.ts', 'src/core/observability/domain/*.ts'],
+    rules: {
+      '@typescript-eslint/consistent-type-definitions': 'off',
     },
   },
 ])

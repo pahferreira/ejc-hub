@@ -9,6 +9,9 @@ import tseslint from 'typescript-eslint'
 import prettier from 'eslint-plugin-prettier'
 import { globalIgnores } from 'eslint/config'
 
+const PROPS_IN_SIGNATURE_MESSAGE =
+  'Read props as `props.name`. Destructure in the signature only to give a prop a default value.'
+
 export default tseslint.config(
   [
     globalIgnores(['dist', 'storybook-static']),
@@ -28,6 +31,40 @@ export default tseslint.config(
       rules: {
         'prettier/prettier': ['error', { printWidth: 100 }],
         'prettier/print-width': 'off',
+        'prefer-const': 'error',
+        '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
+        'no-restricted-syntax': [
+          'error',
+          {
+            selector:
+              'FunctionDeclaration[id.name=/^[A-Z]/] > ObjectPattern.params:not(:has(AssignmentPattern))',
+            message: PROPS_IN_SIGNATURE_MESSAGE,
+          },
+          {
+            selector:
+              'VariableDeclarator[id.name=/^[A-Z]/] > ArrowFunctionExpression > ObjectPattern.params:not(:has(AssignmentPattern))',
+            message: PROPS_IN_SIGNATURE_MESSAGE,
+          },
+        ],
+        '@typescript-eslint/no-restricted-imports': [
+          'error',
+          {
+            patterns: [
+              {
+                group: ['react-hook-form', '@hookform/*'],
+                allowTypeImports: true,
+                message:
+                  "Form libraries live in the form's `use<Intention>Form.ts` hook (or its `use<Intention>Form/` folder).",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      files: ['**/use*Form.ts', '**/use*Form/**'],
+      rules: {
+        '@typescript-eslint/no-restricted-imports': 'off',
       },
     },
   ],
