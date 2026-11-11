@@ -5,6 +5,7 @@ import type { TeamMembershipRepository } from '../../../modules/team-membership/
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
 import type { MemberRequestRepository } from '../../../modules/member-request/domain/MemberRequestRepository.ts'
 import { formatAreas } from '../../event/helpers/format-areas.ts'
+import { toEventOccupancy } from '../helpers/event-occupancy.ts'
 import { comparePeopleByNickname } from '../../../shared/compare-people-by-nickname.ts'
 import { resolveNickname } from '../../../shared/resolve-nickname.ts'
 import {
@@ -103,29 +104,10 @@ export class TeamPlacement {
       )
     }
 
-    // Build member exclusion set — everyone who has a team membership in the event.
-    const membershipUserIdsByTeam =
-      await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds])
-    const memberExclusionSet = new Set<string>()
-    for (const [, userIds] of membershipUserIdsByTeam) {
-      for (const userId of userIds) {
-        memberExclusionSet.add(userId)
-      }
-    }
-
-    // Build coordinator exclusion set from OTHER teams only, and capture the
-    // target team's own coordinator IDs for force-include.
-    const coordinatorIdsByTeam =
+    const { memberTeamsByUser, coordinatedTeamByUser } = toEventOccupancy(
+      await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds]),
       await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds([...instanceIds])
-    const otherTeamCoordinatorSet = new Set<string>()
-    const targetCoordinatorSet = new Set<string>()
-    for (const [tid, coordIds] of coordinatorIdsByTeam) {
-      if (tid === teamInstanceId) {
-        for (const id of coordIds) targetCoordinatorSet.add(id)
-      } else {
-        for (const id of coordIds) otherTeamCoordinatorSet.add(id)
-      }
-    }
+    )
 
     const subscriptions = await this.#subscriptionRepository.listSubscriptionsByEventId(eventId)
     const instanceNameById = new Map(
@@ -137,11 +119,12 @@ export class TeamPlacement {
       // The target team's own current coordinators: kept for coordinator assignment
       // (so the drawer can show/re-pick them), excluded for member assignment (they
       // already occupy the (team, user) row and must not be added as a member too).
-      if (targetCoordinatorSet.has(sub.userId)) return role === 'coordinator'
+      const coordinatedTeamId = coordinatedTeamByUser.get(sub.userId)
+      if (coordinatedTeamId === teamInstanceId) return role === 'coordinator'
       // Exclude members of any team.
-      if (memberExclusionSet.has(sub.userId)) return false
+      if (memberTeamsByUser.has(sub.userId)) return false
       // Exclude coordinators of other teams.
-      if (otherTeamCoordinatorSet.has(sub.userId)) return false
+      if (coordinatedTeamId) return false
       return true
     })
 
@@ -235,36 +218,27 @@ export class TeamPlacement {
       throw new AppError('At least one member is required', AppErrorCode.Validation)
     }
 
-    // Anyone with a membership in the event is already assigned and cannot be added.
-    const membershipUserIdsByTeam =
-      await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds])
-    const assignedUserSet = new Set<string>()
-    for (const [, ids] of membershipUserIdsByTeam) {
-      for (const id of ids) assignedUserSet.add(id)
-    }
-
-    // Coordinators of *any* team in the event already hold a membership, so adding
-    // them as a member would be a second membership in the same event — not just a
-    // clash on the target team's (team, user) row.
-    const coordinatorIdsByTeam =
+    const { memberTeamsByUser, coordinatedTeamByUser } = toEventOccupancy(
+      await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds]),
       await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds([...instanceIds])
-    const coordinatorUserSet = new Set<string>()
-    for (const [, ids] of coordinatorIdsByTeam) {
-      for (const id of ids) coordinatorUserSet.add(id)
-    }
+    )
 
     // Validate and resolve subscriptions up front so a bad entry aborts the whole
     // batch cleanly before opening the transaction.
     const resolved = await Promise.all(
       deduped.map(async (userId) => {
-        if (assignedUserSet.has(userId)) {
+        // Anyone with a membership in the event is already assigned and cannot be added.
+        if (memberTeamsByUser.has(userId)) {
           throw new AppError(
             `User ${userId} is already assigned to a team`,
             AppErrorCode.MemberAlreadyAssigned
           )
         }
 
-        if (coordinatorUserSet.has(userId)) {
+        // Coordinators of *any* team in the event already hold a membership, so
+        // adding them as a member would be a second membership in the same event —
+        // not just a clash on the target team's (team, user) row.
+        if (coordinatedTeamByUser.has(userId)) {
           throw new AppError(
             `User ${userId} already coordinates a team in this event`,
             AppErrorCode.MemberAlreadyAssigned

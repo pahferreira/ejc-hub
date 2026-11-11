@@ -8,6 +8,7 @@ import type { SubscriptionRepository } from '../../../modules/subscription/domai
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { MemberRequestRepository } from '../../../modules/member-request/domain/MemberRequestRepository.ts'
 import { mapSubscriptionToPerson } from '../../event/helpers/subscription-to-person.ts'
+import { toEventOccupancy } from '../helpers/event-occupancy.ts'
 import type { TeamPlacement } from './TeamPlacement.ts'
 import {
   COMPLETED_STATUS,
@@ -181,31 +182,13 @@ export class TeamBuilding {
     await this.#withCurrentEvent(async (event) => {
       const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(event.id)
       const instanceIds = new Set(instances.map((instance) => instance.id))
-      const membershipUserIdsByTeam =
-        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds])
-      const coordinatorIdsByTeam =
+      const { memberTeamsByUser, coordinatedTeamByUser } = toEventOccupancy(
+        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds]),
         await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds([...instanceIds])
+      )
       const instanceNameById = new Map(
         instances.map((instance) => [instance.id, instance.templateName])
       )
-
-      const currentTeamsByUser = new Map<string, string[]>()
-      for (const [teamInstanceId, userIds] of membershipUserIdsByTeam) {
-        for (const userId of userIds) {
-          const teams = currentTeamsByUser.get(userId) ?? []
-          teams.push(teamInstanceId)
-          currentTeamsByUser.set(userId, teams)
-        }
-      }
-
-      // Which team, if any, each user coordinates in this event. A user holds at
-      // most one membership per event, so a single team id per user is enough.
-      const coordinatedTeamByUser = new Map<string, string>()
-      for (const [teamInstanceId, userIds] of coordinatorIdsByTeam) {
-        for (const userId of userIds) {
-          coordinatedTeamByUser.set(userId, teamInstanceId)
-        }
-      }
 
       // Validate every change and resolve subscriptions before touching the DB so
       // a bad change aborts the whole batch cleanly.
@@ -249,7 +232,7 @@ export class TeamBuilding {
       await runInTransaction(async (tx) => {
         for (const { change, subscription } of resolved) {
           // Clear any existing event membership(s) so the move is a clean reassign.
-          for (const teamInstanceId of currentTeamsByUser.get(change.userId) ?? []) {
+          for (const teamInstanceId of memberTeamsByUser.get(change.userId) ?? []) {
             await this.#teamMembershipRepository.deleteByMemberAndTeam(
               teamInstanceId,
               change.userId,
@@ -387,33 +370,23 @@ export class TeamBuilding {
         instances.map((instance) => [instance.id, instance.templateName])
       )
 
-      const membershipUserIdsByTeam =
-        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds(instanceIds)
-      const memberTeamByUser = new Map<string, string>()
-      for (const [tid, userIds] of membershipUserIdsByTeam) {
-        for (const userId of userIds) memberTeamByUser.set(userId, tid)
-      }
-
-      const coordinatorIdsByTeam =
+      const { memberTeamsByUser, coordinatedTeamByUser } = toEventOccupancy(
+        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds(instanceIds),
         await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds(instanceIds)
-      const otherTeamCoordinatedByUser = new Map<string, string>()
-      for (const [tid, userIds] of coordinatorIdsByTeam) {
-        if (tid === teamInstanceId) continue
-        for (const userId of userIds) otherTeamCoordinatedByUser.set(userId, tid)
-      }
+      )
 
       // Each userId must have a subscription in the current event. Resolve them
       // up front so a bad entry aborts before we open the transaction.
       const subscriptions = await Promise.all(
         deduped.map(async (userId) => {
-          const memberTeamId = memberTeamByUser.get(userId)
+          const [memberTeamId] = memberTeamsByUser.get(userId) ?? []
           if (memberTeamId) {
             const teamName = instanceNameById.get(memberTeamId) ?? memberTeamId
             throw new AppError(`User ${userId} is already a member of ${teamName}`)
           }
 
-          const coordinatedTeamId = otherTeamCoordinatedByUser.get(userId)
-          if (coordinatedTeamId) {
+          const coordinatedTeamId = coordinatedTeamByUser.get(userId)
+          if (coordinatedTeamId && coordinatedTeamId !== teamInstanceId) {
             const teamName = instanceNameById.get(coordinatedTeamId) ?? coordinatedTeamId
             throw new AppError(`User ${userId} already coordinates ${teamName}`)
           }
