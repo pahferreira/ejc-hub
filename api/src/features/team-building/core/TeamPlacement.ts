@@ -1,4 +1,4 @@
-import { AppError } from '../../../shared/AppError.ts'
+import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import { runInTransaction, type DbExecutor } from '../../../core/database/client.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
@@ -38,6 +38,14 @@ export type PlaceInput = {
    * repository write already has.
    */
   executor?: DbExecutor
+}
+
+export type PlaceResult = {
+  /**
+   * The member requests this placement made unanswerable: anyone holding a
+   * membership in the event cannot be requested by anybody.
+   */
+  supersededRequestIds: string[]
 }
 
 /**
@@ -89,7 +97,10 @@ export class TeamPlacement {
     const targetInstance = instances.find((instance) => instance.id === teamInstanceId)
 
     if (!targetInstance) {
-      throw new AppError(`Team instance ${teamInstanceId} does not belong to the current event`)
+      throw new AppError(
+        `Team instance ${teamInstanceId} does not belong to the current event`,
+        AppErrorCode.NotFound
+      )
     }
 
     // Build member exclusion set — everyone who has a team membership in the event.
@@ -191,20 +202,23 @@ export class TeamPlacement {
    * Validate-then-write throughout: every read, check and throw happens above the
    * transaction, whose body is writes only, sequentially.
    *
-   * Resolves to the ids of the member requests this placement made unanswerable —
-   * what an approval reports to the client as `supersededRequestIds`. Anyone
+   * Resolves to the member requests this placement made unanswerable — what an
+   * approval reports to the client as `supersededRequestIds`. Anyone
    * holding a membership in the event cannot be requested by anybody, so the
    * outdating belongs *here*, with the insert, rather than at each call site where
    * one of them would eventually forget it.
    */
-  async place(input: PlaceInput): Promise<string[]> {
+  async place(input: PlaceInput): Promise<PlaceResult> {
     const { eventId, teamInstanceId, userIds, executor } = input
 
     const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(eventId)
     const instanceIds = new Set(instances.map((instance) => instance.id))
 
     if (!instanceIds.has(teamInstanceId)) {
-      throw new AppError(`Team instance ${teamInstanceId} does not belong to the current event`)
+      throw new AppError(
+        `Team instance ${teamInstanceId} does not belong to the current event`,
+        AppErrorCode.NotFound
+      )
     }
 
     // Dedupe while preserving order.
@@ -218,7 +232,7 @@ export class TeamPlacement {
     }
 
     if (deduped.length === 0) {
-      throw new AppError('At least one member is required')
+      throw new AppError('At least one member is required', AppErrorCode.Validation)
     }
 
     // Anyone with a membership in the event is already assigned and cannot be added.
@@ -244,11 +258,17 @@ export class TeamPlacement {
     const resolved = await Promise.all(
       deduped.map(async (userId) => {
         if (assignedUserSet.has(userId)) {
-          throw new AppError(`User ${userId} is already assigned to a team`)
+          throw new AppError(
+            `User ${userId} is already assigned to a team`,
+            AppErrorCode.MemberAlreadyAssigned
+          )
         }
 
         if (coordinatorUserSet.has(userId)) {
-          throw new AppError(`User ${userId} already coordinates a team in this event`)
+          throw new AppError(
+            `User ${userId} already coordinates a team in this event`,
+            AppErrorCode.MemberAlreadyAssigned
+          )
         }
 
         const subscription = await this.#subscriptionRepository.getSubscriptionByUserAndEvent(
@@ -257,7 +277,10 @@ export class TeamPlacement {
         )
 
         if (!subscription) {
-          throw new AppError(`No subscription found for user ${userId} in the current event`)
+          throw new AppError(
+            `No subscription found for user ${userId} in the current event`,
+            AppErrorCode.NotFound
+          )
         }
 
         return { userId, subscription }
@@ -285,10 +308,12 @@ export class TeamPlacement {
       // After the loop, one set-based statement rather than one per member:
       // holding a membership in the event is what makes every other open request
       // for these people unanswerable, whichever team asked.
-      return this.#memberRequestRepository.outdateOpenRequestsForUsers(
+      const supersededRequestIds = await this.#memberRequestRepository.outdateOpenRequestsForUsers(
         { eventId, userIds: deduped },
         tx
       )
+
+      return { supersededRequestIds }
     }
 
     return executor ? write(executor) : runInTransaction(write)

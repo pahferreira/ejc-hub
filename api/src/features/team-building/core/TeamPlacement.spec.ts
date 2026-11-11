@@ -7,6 +7,8 @@ vi.mock('../../../core/database/client.ts', () => ({
 }))
 
 import { TeamPlacement } from './TeamPlacement.ts'
+import { AppErrorCode } from '../../../shared/AppError.ts'
+import { rejectionCode } from '../../../shared/testing/rejection-code.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
@@ -157,13 +159,14 @@ describe('TeamPlacement.listCandidates by role', () => {
   })
 
   it('rejects a team instance outside the event', async () => {
-    await expect(
-      scenario().placement.listCandidates({
-        eventId: EVENT_ID,
-        teamInstanceId: 'elsewhere',
-        role: 'member',
-      })
-    ).rejects.toThrow('does not belong to the current event')
+    const result = scenario().placement.listCandidates({
+      eventId: EVENT_ID,
+      teamInstanceId: 'elsewhere',
+      role: 'member',
+    })
+
+    await expect(result).rejects.toThrow('does not belong to the current event')
+    expect(await rejectionCode(result)).toBe(AppErrorCode.NotFound)
   })
 })
 
@@ -175,13 +178,13 @@ describe('TeamPlacement.place', () => {
         outdatedRequestIds: ['req-9'],
       })
 
-    const outdated = await placement.place({
+    const result = await placement.place({
       eventId: EVENT_ID,
       teamInstanceId: TEAM_A,
       userIds: ['u1', 'u1'],
     })
 
-    expect(outdated).toEqual(['req-9'])
+    expect(result).toEqual({ supersededRequestIds: ['req-9'] })
     expect(teamMembershipRepository.insertTeamMembership).toHaveBeenCalledTimes(1)
     expect(teamMembershipRepository.insertTeamMembership).toHaveBeenCalledWith(
       { userId: 'u1', teamInstanceId: TEAM_A, eventId: EVENT_ID, type: 'member' },
@@ -222,6 +225,7 @@ describe('TeamPlacement.place rejections', () => {
     )
 
     await expect(result).rejects.toThrow('User u2 is already assigned to a team')
+    expect(await rejectionCode(result)).toBe(AppErrorCode.MemberAlreadyAssigned)
     expect(teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
   })
 
@@ -235,18 +239,21 @@ describe('TeamPlacement.place rejections', () => {
     )
 
     await expect(result).rejects.toThrow('User coord-b already coordinates a team in this event')
+    expect(await rejectionCode(result)).toBe(AppErrorCode.MemberAlreadyAssigned)
   })
 
   it('rejects a user without a subscription in the event', async () => {
     const { result } = placeOn({}, ['ghost'])
 
     await expect(result).rejects.toThrow('No subscription found for user ghost')
+    expect(await rejectionCode(result)).toBe(AppErrorCode.NotFound)
   })
 
   it('rejects an empty batch', async () => {
     const { result } = placeOn({}, [])
 
     await expect(result).rejects.toThrow('At least one member is required')
+    expect(await rejectionCode(result)).toBe(AppErrorCode.Validation)
   })
 
   it('rejects a team instance outside the event', async () => {
@@ -257,6 +264,7 @@ describe('TeamPlacement.place rejections', () => {
     )
 
     await expect(result).rejects.toThrow('does not belong to the current event')
+    expect(await rejectionCode(result)).toBe(AppErrorCode.NotFound)
   })
 })
 

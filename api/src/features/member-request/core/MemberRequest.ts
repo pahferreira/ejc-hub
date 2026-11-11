@@ -650,7 +650,7 @@ export class MemberRequest {
       }
 
       try {
-        const supersededRequestIds = await runInTransaction(async (tx) => {
+        const { supersededRequestIds } = await runInTransaction(async (tx) => {
           // ORDER IS LOAD-BEARING, and nothing about the code makes it visible.
           //
           // `addMembers` outdates open requests scoped to `status = 'pending'`.

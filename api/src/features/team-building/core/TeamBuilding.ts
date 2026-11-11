@@ -1,4 +1,4 @@
-import { AppError } from '../../../shared/AppError.ts'
+import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import { comparePeopleByNickname } from '../../../shared/compare-people-by-nickname.ts'
 import { runInTransaction, type DbExecutor } from '../../../core/database/client.ts'
 import type { EventModel } from '../../../core/database/schemas/index.ts'
@@ -13,6 +13,7 @@ import {
   COMPLETED_STATUS,
   UNASSIGNED_STATUS,
   WAITING_LIST_STATUS,
+  type AddMembersResult,
   type AssignmentChange,
   type CandidateListResult,
   type CandidateRole,
@@ -212,7 +213,8 @@ export class TeamBuilding {
         changes.map(async (change) => {
           if (change.target.kind === 'team' && !instanceIds.has(change.target.teamInstanceId)) {
             throw new AppError(
-              `Team instance ${change.target.teamInstanceId} does not belong to the current event`
+              `Team instance ${change.target.teamInstanceId} does not belong to the current event`,
+              AppErrorCode.NotFound
             )
           }
 
@@ -235,7 +237,8 @@ export class TeamBuilding {
 
           if (!subscription) {
             throw new AppError(
-              `No subscription found for user ${change.userId} in the current event`
+              `No subscription found for user ${change.userId} in the current event`,
+              AppErrorCode.NotFound
             )
           }
 
@@ -332,15 +335,14 @@ export class TeamBuilding {
    * outdating that must follow every placement cannot be forgotten by one of
    * them — see the plan's Phase D.
    *
-   * Resolves to the ids of the member requests this placement made
-   * unanswerable. `executor` lets a caller run it inside a transaction it
-   * already owns.
+   * Resolves to the member requests this placement made unanswerable.
+   * `executor` lets a caller run it inside a transaction it already owns.
    */
   async addMembers(
     teamInstanceId: string,
     userIds: string[],
     executor?: DbExecutor
-  ): Promise<string[]> {
+  ): Promise<AddMembersResult> {
     return this.#withCurrentEvent((event) =>
       this.#teamPlacement.place({ eventId: event.id, teamInstanceId, userIds, executor })
     )
@@ -355,7 +357,10 @@ export class TeamBuilding {
       const targetInstance = instances.find((i) => i.id === teamInstanceId)
 
       if (!targetInstance) {
-        throw new AppError(`Team instance ${teamInstanceId} does not belong to the current event`)
+        throw new AppError(
+          `Team instance ${teamInstanceId} does not belong to the current event`,
+          AppErrorCode.NotFound
+        )
       }
 
       // Dedupe while preserving order, then enforce the template's max.
@@ -418,7 +423,10 @@ export class TeamBuilding {
             event.id
           )
           if (!subscription) {
-            throw new AppError(`No subscription found for user ${userId} in the current event`)
+            throw new AppError(
+              `No subscription found for user ${userId} in the current event`,
+              AppErrorCode.NotFound
+            )
           }
           return subscription
         })

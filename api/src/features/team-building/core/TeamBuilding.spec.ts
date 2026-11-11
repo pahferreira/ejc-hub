@@ -8,6 +8,8 @@ vi.mock('../../../core/database/client.ts', () => ({
 
 import { TeamBuilding } from './TeamBuilding.ts'
 import { TeamPlacement } from './TeamPlacement.ts'
+import { AppErrorCode } from '../../../shared/AppError.ts'
+import { rejectionCode } from '../../../shared/testing/rejection-code.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
@@ -339,13 +341,22 @@ describe('TeamBuilding.applyAssignments', () => {
   })
 
   it('rejects a team target that does not belong to the current event', async () => {
-    await expect(
-      teamBuilding.applyAssignments([
-        { userId: 'u1', target: { kind: 'team', teamInstanceId: 'foreign-team' } },
-      ])
-    ).rejects.toThrow(/does not belong to the current event/)
+    const result = teamBuilding.applyAssignments([
+      { userId: 'u1', target: { kind: 'team', teamInstanceId: 'foreign-team' } },
+    ])
 
+    await expect(result).rejects.toThrow(/does not belong to the current event/)
+    expect(await rejectionCode(result)).toBe(AppErrorCode.NotFound)
     expect(repos.teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
+  })
+
+  it('rejects a user without a subscription in the current event', async () => {
+    const result = teamBuilding.applyAssignments([
+      { userId: 'ghost', target: { kind: 'waiting_list' } },
+    ])
+
+    await expect(result).rejects.toThrow(/No subscription found for user ghost/)
+    expect(await rejectionCode(result)).toBe(AppErrorCode.NotFound)
   })
 
   it('rejects moving a user into a team they already coordinate', async () => {
@@ -835,9 +846,10 @@ describe('TeamBuilding.assignCoordinators', () => {
       placementFor(repos)
     )
 
-    await expect(tb.assignCoordinators(TEAM_A, ['unknown-user'])).rejects.toThrow(
-      /No subscription found for user/
-    )
+    const result = tb.assignCoordinators(TEAM_A, ['unknown-user'])
+
+    await expect(result).rejects.toThrow(/No subscription found for user/)
+    expect(await rejectionCode(result)).toBe(AppErrorCode.NotFound)
     expect(repos.teamMembershipRepository.setCoordinators).not.toHaveBeenCalled()
   })
 
@@ -852,9 +864,10 @@ describe('TeamBuilding.assignCoordinators', () => {
       placementFor(repos)
     )
 
-    await expect(tb.assignCoordinators('foreign-team', [])).rejects.toThrow(
-      /does not belong to the current event/
-    )
+    const result = tb.assignCoordinators('foreign-team', [])
+
+    await expect(result).rejects.toThrow(/does not belong to the current event/)
+    expect(await rejectionCode(result)).toBe(AppErrorCode.NotFound)
     expect(repos.teamMembershipRepository.setCoordinators).not.toHaveBeenCalled()
   })
 
@@ -1174,7 +1187,7 @@ describe('member requests are outdated on every membership write path', () => {
       placementFor(repos)
     )
 
-    const superseded = await tb.addMembers(TEAM_A, ['u1', 'u2'])
+    const result = await tb.addMembers(TEAM_A, ['u1', 'u2'])
 
     // One set-based statement after the loop, not one per member.
     expect(outdate).toHaveBeenCalledTimes(1)
@@ -1184,7 +1197,7 @@ describe('member requests are outdated on every membership write path', () => {
     )
     // The ids have to come back: an approval reports them as
     // `supersededRequestIds`, and a statement that closes rows silently cannot.
-    expect(superseded).toEqual(['req-1', 'req-2'])
+    expect(result).toEqual({ supersededRequestIds: ['req-1', 'req-2'] })
   })
 
   it('addMembers runs on a caller-supplied executor instead of opening its own transaction', async () => {
