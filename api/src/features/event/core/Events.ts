@@ -1,7 +1,6 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import { comparePeopleByNickname } from '../../../shared/compare-people-by-nickname.ts'
 import type {
-  AssignedTeamForUser,
   TeamInstanceRepository,
   TeamInstanceWithDetails,
 } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
@@ -35,35 +34,11 @@ import { getTeamSummaryBucket } from '../helpers/team-summary.ts'
 import { getTeamStatus, type TeamStatus } from '../helpers/team-status.ts'
 import { mapSubscriptionToPerson } from '../helpers/subscription-to-person.ts'
 import { filterSubscriptions } from '../helpers/filter-subscriptions.ts'
+import { toMyMembershipType } from '../helpers/my-membership-type.ts'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_SIZE = 10
 const DEFAULT_PAGE_SIZE = 20
-
-/**
- * How the caller belongs to the team they were placed on, or null when they
- * have no team in the event.
- *
- * Derived from the coordinator list already loaded for `assignedTeam` rather
- * than from a second membership read: that list is exactly the team's
- * `team_memberships` rows of type `coordinator`, so being absent from it while
- * holding a team is what `member` means.
- *
- * Clients use it to decide whether the coordinator-only screens exist for this
- * person. It is a visibility signal, never an authorization one — every write
- * re-derives the caller's membership server-side.
- */
-function toMyMembershipType(
-  team: AssignedTeamForUser | undefined,
-  coordinators: TeamCoordinator[],
-  userId: string
-): 'member' | 'coordinator' | null {
-  if (!team) {
-    return null
-  }
-
-  return coordinators.some((coordinator) => coordinator.id === userId) ? 'coordinator' : 'member'
-}
 
 export class Events {
   #teamInstanceRepository: TeamInstanceRepository

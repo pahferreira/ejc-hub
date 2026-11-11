@@ -1,7 +1,6 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import { runInTransaction } from '../../../core/database/client.ts'
 import { isUniqueViolation } from '../../../shared/is-unique-violation.ts'
-import { resolveNickname } from '../../../shared/resolve-nickname.ts'
 import type { EventModel } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
@@ -28,9 +27,7 @@ import type {
   MyTeamRequestList,
   MyTeamRequestRow,
   QueueSiblingRequest,
-  RequestActor,
   RequestPagination,
-  RequestPerson,
   RequestableCandidateFilters,
   RequestableCandidateList,
   RequestableCandidateRow,
@@ -59,6 +56,7 @@ import {
   DEFAULT_PAGE_SIZE as QUEUE_DEFAULT_PAGE_SIZE,
 } from '../helpers/member-request-queue.ts'
 import { countMyTeamStats, filterMyTeamRows } from '../helpers/member-request-my-team.ts'
+import { toActor, toPerson } from '../helpers/request-people.ts'
 
 const COORDINATOR_TYPE = 'coordinator'
 const CANCELLED_SUBSCRIPTION = 'cancelled'
@@ -71,21 +69,6 @@ const CANCELLED_SUBSCRIPTION = 'cancelled'
  * team commits in exactly that gap. It inserts and lets this answer.
  */
 const MEMBERSHIP_UNIQUE_CONSTRAINT = 'team_memberships_event_id_user_id_unique'
-
-function toPerson(person: MemberRequestRow['user']): RequestPerson {
-  return {
-    userId: person.userId,
-    name: person.name,
-    nickname: resolveNickname(person.name, person.nickname),
-    pictureUrl: person.pictureUrl,
-    experienceType: person.experienceType,
-    circleKey: person.circleKey,
-  }
-}
-
-function toActor(actor: { name: string; nickname: string | null }): RequestActor {
-  return { name: actor.name, nickname: resolveNickname(actor.name, actor.nickname) }
-}
 
 export class MemberRequest {
   #memberRequestRepository: MemberRequestRepository

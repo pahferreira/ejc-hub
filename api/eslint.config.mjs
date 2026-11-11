@@ -55,4 +55,24 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-definitions': 'off',
     },
   },
+  {
+    // A feature's core class file holds only the class; standalone functions live in its helpers/.
+    files: ['src/features/*/core/[A-Z]*.ts'],
+    ignores: ['src/features/*/core/*.spec.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'Program > FunctionDeclaration, Program > ExportNamedDeclaration > FunctionDeclaration, Program > ExportDefaultDeclaration > :matches(FunctionDeclaration, ArrowFunctionExpression, FunctionExpression)',
+          message: "Move top-level functions to the feature's helpers/ folder.",
+        },
+        {
+          selector:
+            'Program > VariableDeclaration > VariableDeclarator > :matches(ArrowFunctionExpression, FunctionExpression), Program > ExportNamedDeclaration > VariableDeclaration > VariableDeclarator > :matches(ArrowFunctionExpression, FunctionExpression)',
+          message: "Move top-level functions to the feature's helpers/ folder.",
+        },
+      ],
+    },
+  },
 ])

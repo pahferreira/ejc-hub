@@ -1,24 +1,15 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import type { EventModel } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
-import type {
-  EventFeePaymentRepository,
-  MemberFeeStatusRow,
-} from '../../../modules/event-fee-payment/domain/EventFeePaymentRepository.ts'
-import {
-  toMemberFeeStanding,
-  toSettableFeeStatus,
-  type SettableFeeStatus,
-} from '../../../modules/event-fee-payment/domain/fee-payment-status.ts'
+import type { EventFeePaymentRepository } from '../../../modules/event-fee-payment/domain/EventFeePaymentRepository.ts'
+import type { SettableFeeStatus } from '../../../modules/event-fee-payment/domain/fee-payment-status.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
 import { comparePeopleByNickname } from '../../../shared/compare-people-by-nickname.ts'
-import { resolveNickname } from '../../../shared/resolve-nickname.ts'
 import type {
   EventFeeMemberFilters,
   EventFeeMemberList,
   EventFeeMemberPagination,
-  EventFeeMemberRow,
   EventFeeCounts,
   EventFeeMembersOverview,
   EventFeeTeamsOverview,
@@ -33,40 +24,11 @@ import {
   paginateMemberFees,
 } from '../helpers/member-fee-list.ts'
 import { toFeeRates } from '../helpers/fee-rates.ts'
+import { toPercentage } from '../helpers/percentage.ts'
+import { toMemberRow } from '../helpers/member-row.ts'
 
 const COORDINATOR_TYPE = 'coordinator'
 const PAID_STATUS = 'paid' as const
-
-function toPercentage(paid: number, total: number): number {
-  if (total <= 0) {
-    return 0
-  }
-
-  return Math.round((paid / total) * 100)
-}
-
-// The repository speaks in stored columns; the page speaks in people. This is
-// the one place the two are reconciled, so a new consumer of the member list
-// cannot invent its own nickname fallback or its own idea of "paid".
-function toMemberRow(row: MemberFeeStatusRow): EventFeeMemberRow {
-  return {
-    userId: row.userId,
-    name: row.name,
-    nickname: resolveNickname(row.name, row.nickname),
-    phone: row.phone,
-    pictureUrl: row.pictureUrl,
-    experienceType: row.experienceType,
-    circleKey: row.circleKey,
-    membershipType: row.membershipType,
-    teamId: row.teamId,
-    teamKey: row.teamKey,
-    teamName: row.teamName,
-    status: toMemberFeeStanding(row.feeStatus),
-    // Both readings of the same column: the fold the list acts on, and the
-    // stored status the review dialog preselects.
-    paymentStatus: toSettableFeeStatus(row.feeStatus),
-  }
-}
 
 export class Financial {
   #eventFeePaymentRepository: EventFeePaymentRepository
