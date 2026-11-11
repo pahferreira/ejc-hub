@@ -7,6 +7,7 @@ vi.mock('../../../core/database/client.ts', () => ({
 }))
 
 import { MemberRequest } from './MemberRequest.ts'
+import { TeamPlacement } from '../../team-building/core/TeamPlacement.ts'
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
@@ -26,7 +27,7 @@ const TEAM_B = 'team-b'
 const ACTOR_AUTH_ID = 'auth0|coord'
 const ACTOR_ID = 'coord-1'
 
-// `listTeamCandidates` derives candidates from the event's subscriptions, so
+// `TeamPlacement.listCandidates` derives candidates from the event's subscriptions, so
 // the fixtures are subscription rows rather than pre-built candidates.
 function buildSub(overrides: Partial<Sub> & Pick<Sub, 'id' | 'userId'>): Sub {
   return {
@@ -195,16 +196,21 @@ function makeMemberRequest(scenario: Scenario = {}) {
   } as unknown as MemberRequestRepository
 
   return {
-    // Repositories only — no team-building application object. Placement and
-    // eligibility come from the shared core helpers, which read these same
-    // repositories.
+    // No team-building application object. Placement and eligibility come from
+    // a real `TeamPlacement` over these same repositories.
     memberRequest: new MemberRequest(
       memberRequestRepository,
       eventRepository,
       subscriptionRepository,
       teamInstanceRepository,
       teamMembershipRepository,
-      userRepository
+      userRepository,
+      new TeamPlacement(
+        teamInstanceRepository,
+        teamMembershipRepository,
+        subscriptionRepository,
+        memberRequestRepository
+      )
     ),
     memberRequestRepository,
     teamMembershipRepository,
@@ -845,7 +851,7 @@ describe('MemberRequest.resolveRequest', () => {
   })
 
   it("runs the placement on the approval's own transaction, never a second one", async () => {
-    // The Phase C composition, seen from this side: `placeMembers` receives the
+    // The Phase C composition, seen from this side: `TeamPlacement.place` receives the
     // handle `runInTransaction` handed this method, so a failed insert rolls the
     // request\'s own `approved` write back with it.
     const { memberRequest, memberRequestRepository, teamMembershipRepository } = makeMemberRequest({

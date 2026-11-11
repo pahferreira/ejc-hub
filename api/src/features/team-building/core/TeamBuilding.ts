@@ -8,8 +8,7 @@ import type { SubscriptionRepository } from '../../../modules/subscription/domai
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { MemberRequestRepository } from '../../../modules/member-request/domain/MemberRequestRepository.ts'
 import { mapSubscriptionToPerson } from '../../event/helpers/subscription-to-person.ts'
-import { listTeamCandidates } from '../helpers/list-team-candidates.ts'
-import { placeMembers } from '../helpers/place-members.ts'
+import type { TeamPlacement } from './TeamPlacement.ts'
 import {
   COMPLETED_STATUS,
   UNASSIGNED_STATUS,
@@ -32,19 +31,22 @@ export class TeamBuilding {
   #subscriptionRepository: SubscriptionRepository
   #eventRepository: EventRepository
   #memberRequestRepository: MemberRequestRepository
+  #teamPlacement: TeamPlacement
 
   constructor(
     teamInstanceRepo: TeamInstanceRepository,
     teamMembershipRepo: TeamMembershipRepository,
     subscriptionRepo: SubscriptionRepository,
     eventRepo: EventRepository,
-    memberRequestRepo: MemberRequestRepository
+    memberRequestRepo: MemberRequestRepository,
+    teamPlacement: TeamPlacement
   ) {
     this.#teamInstanceRepository = teamInstanceRepo
     this.#teamMembershipRepository = teamMembershipRepo
     this.#subscriptionRepository = subscriptionRepo
     this.#eventRepository = eventRepo
     this.#memberRequestRepository = memberRequestRepo
+    this.#teamPlacement = teamPlacement
   }
 
   // Resolves the current event once per call and hands it to `fn`. The id is a
@@ -309,7 +311,7 @@ export class TeamBuilding {
   /**
    * Who may be picked for this team.
    *
-   * The rules themselves live in `listTeamCandidates`, which the coordinator's
+   * The rules themselves live in `TeamPlacement.listCandidates`, which the coordinator's
    * "Solicitar Membros" list also reads — one answer to "who is available in
    * this event", not one per screen.
    */
@@ -318,21 +320,14 @@ export class TeamBuilding {
     role: CandidateRole = 'coordinator'
   ): Promise<CandidateListResult> {
     return this.#withCurrentEvent((event) =>
-      listTeamCandidates(
-        {
-          teamInstanceRepository: this.#teamInstanceRepository,
-          teamMembershipRepository: this.#teamMembershipRepository,
-          subscriptionRepository: this.#subscriptionRepository,
-        },
-        { eventId: event.id, teamInstanceId, role }
-      )
+      this.#teamPlacement.listCandidates({ eventId: event.id, teamInstanceId, role })
     )
   }
 
   /**
    * Adds a batch of members to a single team instance atomically.
    *
-   * The write sequence itself lives in `placeMembers`, which approving a member
+   * The write sequence itself lives in `TeamPlacement.place`, which approving a member
    * request also calls. One implementation of the membership write path, so the
    * outdating that must follow every placement cannot be forgotten by one of
    * them — see the plan's Phase D.
@@ -347,15 +342,7 @@ export class TeamBuilding {
     executor?: DbExecutor
   ): Promise<string[]> {
     return this.#withCurrentEvent((event) =>
-      placeMembers(
-        {
-          teamInstanceRepository: this.#teamInstanceRepository,
-          teamMembershipRepository: this.#teamMembershipRepository,
-          subscriptionRepository: this.#subscriptionRepository,
-          memberRequestRepository: this.#memberRequestRepository,
-        },
-        { eventId: event.id, teamInstanceId, userIds, executor }
-      )
+      this.#teamPlacement.place({ eventId: event.id, teamInstanceId, userIds, executor })
     )
   }
 
