@@ -16,8 +16,8 @@ import {
   MemberRequestStatus,
   type SettableRequestStatus,
 } from '../../../modules/member-request/domain/member-request-status.ts'
-import { listTeamCandidates } from '../../team-building/core/list-team-candidates.ts'
-import { placeMembers } from '../../team-building/core/place-members.ts'
+import { listTeamCandidates } from '../../team-building/helpers/list-team-candidates.ts'
+import { placeMembers } from '../../team-building/helpers/place-members.ts'
 import type {
   CancelRequestResult,
   CreateRequestsResult,
@@ -41,7 +41,7 @@ import {
   assertAdminCanResolve,
   assertCoordinatorCanCancel,
   assertRequestable,
-} from './member-request-guards.ts'
+} from '../helpers/member-request-guards.ts'
 import {
   DEFAULT_PAGE,
   DEFAULT_PAGE_SIZE,
@@ -50,15 +50,15 @@ import {
   sortRequestableCandidates,
   toRequestableStats,
   toRowStatus,
-} from './requestable-members.ts'
+} from '../helpers/requestable-members.ts'
 import {
   countQueueStats,
   filterQueueRows,
   paginateQueueRows,
   DEFAULT_PAGE as QUEUE_DEFAULT_PAGE,
   DEFAULT_PAGE_SIZE as QUEUE_DEFAULT_PAGE_SIZE,
-} from './member-request-queue.ts'
-import { countMyTeamStats, filterMyTeamRows } from './member-request-my-team.ts'
+} from '../helpers/member-request-queue.ts'
+import { countMyTeamStats, filterMyTeamRows } from '../helpers/member-request-my-team.ts'
 
 const COORDINATOR_TYPE = 'coordinator'
 const CANCELLED_SUBSCRIPTION = 'cancelled'

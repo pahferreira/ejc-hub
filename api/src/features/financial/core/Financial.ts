@@ -31,8 +31,8 @@ import {
   DEFAULT_PAGE_SIZE,
   filterMemberFees,
   paginateMemberFees,
-} from './member-fee-list.ts'
-import { toFeeRates } from './fee-rates.ts'
+} from '../helpers/member-fee-list.ts'
+import { toFeeRates } from '../helpers/fee-rates.ts'
 
 const COORDINATOR_TYPE = 'coordinator'
 const PAID_STATUS = 'paid' as const

@@ -7,9 +7,9 @@ import type { TeamMembershipRepository } from '../../../modules/team-membership/
 import type { SubscriptionRepository } from '../../../modules/subscription/domain/SubscriptionRepository.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { MemberRequestRepository } from '../../../modules/member-request/domain/MemberRequestRepository.ts'
-import { mapSubscriptionToPerson } from '../../event/core/subscription-to-person.ts'
-import { listTeamCandidates } from './list-team-candidates.ts'
-import { placeMembers } from './place-members.ts'
+import { mapSubscriptionToPerson } from '../../event/helpers/subscription-to-person.ts'
+import { listTeamCandidates } from '../helpers/list-team-candidates.ts'
+import { placeMembers } from '../helpers/place-members.ts'
 import {
   COMPLETED_STATUS,
   UNASSIGNED_STATUS,
