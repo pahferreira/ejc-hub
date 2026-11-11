@@ -32,7 +32,7 @@ export function ScheduleActivityCard(props: ScheduleActivityCardProps) {
     activity.teams.length > 0 || activity.adminsResponsible || activity.guestName
 
   return (
-    <article className="group relative flex gap-4 rounded-xl border border-tertiary bg-white p-4 shadow-sm">
+    <article className="group relative flex gap-1 md:gap-4 rounded-xl border border-tertiary bg-white p-4 shadow-sm">
       <div className="flex min-w-14 flex-col items-start rounded-lg py-0.5 text-center">
         <span className="text-base font-bold leading-tight text-dark-brown">
           {activityStartTime(activity)}

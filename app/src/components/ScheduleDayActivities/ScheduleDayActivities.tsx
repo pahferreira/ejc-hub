@@ -14,6 +14,7 @@ import {
   summarizeDay,
   type ActivityGap,
 } from '../../utils/scheduleActivity/scheduleActivity'
+import { Button } from '../Button/Button'
 
 type ActivityForm = ReturnType<typeof useScheduleActivityForm>
 
@@ -45,18 +46,15 @@ function GapRow(props: { gap: ActivityGap; onFill: () => void }) {
   const { gap } = props
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-tertiary px-4 py-1.5 text-xs text-gray-500">
+    <div className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-gray-500">
+      <span className="h-5 w-[1px] border border-tertiary" />
       <span>
         Intervalo livre · {gap.startTime}–{gap.endTime} · {formatDuration(gap.durationMinutes)}
       </span>
-      <button
-        type="button"
-        onClick={props.onFill}
-        className="inline-flex items-center gap-1 rounded-md px-2 py-1 font-semibold text-primary transition hover:cursor-pointer hover:bg-tertiary-background"
-      >
+      <Button variant="text" size="small" onClick={props.onFill}>
         <FiPlus aria-hidden />
         Preencher
-      </button>
+      </Button>
     </div>
   )
 }
