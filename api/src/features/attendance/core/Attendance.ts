@@ -18,9 +18,9 @@ import type {
   RegisterMeetingResult,
   UpdateMeetingInput,
 } from '../domain/attendance.types.ts'
-import { buildCoordinatorReadModel } from './coordinator-read-model.ts'
-import { buildMemberReadModel } from './member-read-model.ts'
-import { toSaoPauloDay } from './attendance-rate.ts'
+import { buildCoordinatorReadModel } from '../helpers/coordinator-read-model.ts'
+import { buildMemberReadModel } from '../helpers/member-read-model.ts'
+import { toSaoPauloDay } from '../helpers/attendance-rate.ts'
 
 const COORDINATOR_TYPE = 'coordinator'
 

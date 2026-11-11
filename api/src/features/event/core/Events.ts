@@ -29,12 +29,12 @@ import type {
 } from '../domain/team-overview.types.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import { EventSubscriptionMode } from '../../../modules/event/domain/event-subscription-mode.ts'
-import { resolveInitialSubscriptionStatus } from './resolve-initial-subscription-status.ts'
+import { resolveInitialSubscriptionStatus } from '../helpers/resolve-initial-subscription-status.ts'
 import type { SubscriptionStatus } from '../../../modules/subscription/domain/subscription.types.ts'
-import { getTeamSummaryBucket } from './team-summary.ts'
-import { getTeamStatus, type TeamStatus } from './team-status.ts'
-import { mapSubscriptionToPerson } from './subscription-to-person.ts'
-import { filterSubscriptions } from './filter-subscriptions.ts'
+import { getTeamSummaryBucket } from '../helpers/team-summary.ts'
+import { getTeamStatus, type TeamStatus } from '../helpers/team-status.ts'
+import { mapSubscriptionToPerson } from '../helpers/subscription-to-person.ts'
+import { filterSubscriptions } from '../helpers/filter-subscriptions.ts'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_SIZE = 10
