@@ -259,6 +259,8 @@ export class Schedule {
 
     // Overlap is checked across the whole event, not just the day, so a last
     // activity that runs past midnight is caught against the next day's first.
+    // Accepted race: two admins writing overlapping activities at once both pass
+    // this read, and no constraint catches it.
     const existing = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
     const others = existing.filter((other) => other.id !== editedActivityId)
 
@@ -378,6 +380,8 @@ export class Schedule {
       await this.#assertDayDateAvailable(event, input.date, day.id)
 
       const shift = daysBetween(day.date, input.date)
+      // Accepted race: an activity added to the day after this read stays on the
+      // old date, and no constraint catches it.
       const activities = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
       const moved = activities
         .filter((activity) => activity.dayId === day.id)
