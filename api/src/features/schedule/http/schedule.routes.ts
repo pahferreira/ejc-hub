@@ -9,15 +9,14 @@ import type { ScheduleActivityPlan } from '../domain/schedule.types.ts'
 import {
   createScheduleActivityBodySchema,
   createScheduleDayBodySchema,
+  scheduleActivityBodySchema,
   scheduleActivityParamsSchema,
   scheduleDayParamsSchema,
   updateScheduleActivityBodySchema,
 } from './schedule.schema.ts'
 
 // The activity body as the core takes it: a missing guest becomes null.
-function toActivityPlan(
-  body: z.infer<typeof createScheduleActivityBodySchema>
-): ScheduleActivityPlan {
+function toActivityPlan(body: z.infer<typeof scheduleActivityBodySchema>): ScheduleActivityPlan {
   return {
     dayId: body.dayId,
     title: body.title,

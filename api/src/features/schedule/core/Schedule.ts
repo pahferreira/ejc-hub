@@ -307,7 +307,12 @@ export class Schedule {
       const plan = await this.#checkActivityPlan(event, input, activityId)
 
       await runInTransaction(async (tx) => {
-        const updated = await this.#scheduleActivityRepository.updateActivity(activityId, plan, tx)
+        const updated = await this.#scheduleActivityRepository.updateActivity(
+          activityId,
+          event.id,
+          plan,
+          tx
+        )
 
         // Deleted by another admin since the read: roll back before touching its teams.
         if (!updated) {

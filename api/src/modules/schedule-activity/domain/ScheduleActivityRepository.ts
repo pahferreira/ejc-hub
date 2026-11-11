@@ -39,7 +39,8 @@ export interface ScheduleActivityRepository {
    */
   updateActivity: (
     id: string,
-    input: InsertScheduleActivityInput,
+    eventId: string,
+    input: Omit<InsertScheduleActivityInput, 'eventId'>,
     executor?: DbExecutor
   ) => Promise<ScheduleActivityModel | undefined>
 

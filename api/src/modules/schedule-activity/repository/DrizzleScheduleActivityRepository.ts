@@ -6,6 +6,11 @@ import type {
   ScheduleActivityRepository,
 } from '../domain/ScheduleActivityRepository.ts'
 
+// One activity, only when it belongs to the event.
+function byIdInEvent(id: string, eventId: string) {
+  return and(eq(schema.scheduleActivities.id, id), eq(schema.scheduleActivities.eventId, eventId))
+}
+
 class DrizzleScheduleActivityRepository implements ScheduleActivityRepository {
   async listActivitiesByEvent(eventId: string) {
     return db
@@ -34,17 +39,17 @@ class DrizzleScheduleActivityRepository implements ScheduleActivityRepository {
   }
 
   async findActivityById(id: string, eventId: string) {
-    const rows = await db
-      .select()
-      .from(schema.scheduleActivities)
-      .where(
-        and(eq(schema.scheduleActivities.id, id), eq(schema.scheduleActivities.eventId, eventId))
-      )
+    const rows = await db.select().from(schema.scheduleActivities).where(byIdInEvent(id, eventId))
 
     return rows[0]
   }
 
-  async updateActivity(id: string, input: InsertScheduleActivityInput, executor: DbExecutor = db) {
+  async updateActivity(
+    id: string,
+    eventId: string,
+    input: Omit<InsertScheduleActivityInput, 'eventId'>,
+    executor: DbExecutor = db
+  ) {
     const rows = await executor
       .update(schema.scheduleActivities)
       .set({
@@ -57,12 +62,7 @@ class DrizzleScheduleActivityRepository implements ScheduleActivityRepository {
         adminsResponsible: input.adminsResponsible,
         updatedAt: new Date(),
       })
-      .where(
-        and(
-          eq(schema.scheduleActivities.id, id),
-          eq(schema.scheduleActivities.eventId, input.eventId)
-        )
-      )
+      .where(byIdInEvent(id, eventId))
       .returning()
 
     return rows[0]
@@ -71,9 +71,7 @@ class DrizzleScheduleActivityRepository implements ScheduleActivityRepository {
   async deleteActivity(id: string, eventId: string) {
     const rows = await db
       .delete(schema.scheduleActivities)
-      .where(
-        and(eq(schema.scheduleActivities.id, id), eq(schema.scheduleActivities.eventId, eventId))
-      )
+      .where(byIdInEvent(id, eventId))
       .returning()
 
     return rows[0]

@@ -49,6 +49,7 @@ class DrizzleScheduleActivityTeamRepository implements ScheduleActivityTeamRepos
     await executor
       .delete(schema.scheduleActivityTeams)
       .where(eq(schema.scheduleActivityTeams.activityId, activityId))
+      .returning()
 
     await this.insertTeams(activityId, teamInstanceIds, eventId, executor)
   }

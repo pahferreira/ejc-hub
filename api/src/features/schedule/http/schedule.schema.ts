@@ -13,10 +13,11 @@ export const scheduleDayParamsSchema = z.object({
 })
 
 /**
- * Adding an activity. The shape is checked here; whether it fits the day (start
- * in range, no overlap, someone responsible, teams of the event) is the core's.
+ * An activity's fields, sent whole both when adding and when editing one. The
+ * shape is checked here; whether it fits the day (start in range, no overlap,
+ * someone responsible, teams of the event) is the core's.
  */
-export const createScheduleActivityBodySchema = z.object({
+export const scheduleActivityBodySchema = z.object({
   dayId: z.uuid(),
   title: z.string().trim().min(1),
   plannedStartsAt: z.iso.datetime({ offset: true }),
@@ -27,11 +28,11 @@ export const createScheduleActivityBodySchema = z.object({
   adminsResponsible: z.boolean().default(false),
 })
 
-/**
- * Editing an activity. The form sends every field again, teams included, so the
- * shape is the same as adding one; the core re-runs every planning rule.
- */
-export const updateScheduleActivityBodySchema = createScheduleActivityBodySchema
+/** Adding an activity. */
+export const createScheduleActivityBodySchema = scheduleActivityBodySchema
+
+/** Editing an activity: every field is sent again, teams included. */
+export const updateScheduleActivityBodySchema = scheduleActivityBodySchema
 
 export const scheduleActivityParamsSchema = z.object({
   activityId: z.uuid(),

@@ -150,8 +150,10 @@ function buildActivityRepositories(initial: StoredActivity[] = []) {
       Promise.resolve(
         activities.find((activity) => activity.id === id && activity.eventId === eventId)
       ),
-    updateActivity: (id, input: InsertScheduleActivityInput) => {
-      const activity = activities.find((candidate) => candidate.id === id)
+    updateActivity: (id, eventId, input: Omit<InsertScheduleActivityInput, 'eventId'>) => {
+      const activity = activities.find(
+        (candidate) => candidate.id === id && candidate.eventId === eventId
+      )
       if (activity) {
         Object.assign(activity, input, { updatedAt: new Date() })
       }
