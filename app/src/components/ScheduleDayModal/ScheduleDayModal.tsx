@@ -4,7 +4,13 @@ import { Input } from '../Input/Input'
 import { Modal } from '../Modal/Modal'
 import { formatScheduleDay } from '../../utils/scheduleDate/scheduleDate'
 
-const COPY = {
+/** Adding a new day, or moving an existing one to another date. */
+export type ScheduleDayModalMode = 'create' | 'edit'
+
+const COPY: Record<
+  ScheduleDayModalMode,
+  Record<'title' | 'description' | 'submit' | 'submitting', string>
+> = {
   create: {
     title: 'Novo dia do cronograma',
     description:
@@ -20,11 +26,11 @@ const COPY = {
   },
 }
 
-export type NewScheduleDayModalProps = {
+export type ScheduleDayModalProps = {
   open: boolean
   onClose: () => void
-  /** Adding a new day, or moving an existing one to another date. Defaults to `create`. */
-  mode?: 'create' | 'edit'
+  /** Defaults to `create`. */
+  mode?: ScheduleDayModalMode
   /** The event's dates no other day has, one chip each. */
   dateOptions: string[]
   /** `YYYY-MM-DD`, or empty when nothing is picked yet. */
@@ -44,7 +50,7 @@ export type NewScheduleDayModalProps = {
  *
  * "Editar dia" reuses it pre-filled with the day's date, to move the day.
  */
-export function NewScheduleDayModal(props: NewScheduleDayModalProps) {
+export function ScheduleDayModal(props: ScheduleDayModalProps) {
   const copy = COPY[props.mode ?? 'create']
 
   return (

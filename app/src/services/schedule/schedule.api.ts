@@ -28,6 +28,11 @@ async function getSchedule() {
   return response.data
 }
 
+/** The HTTP status of a failed request, or 0 when it never got a response. */
+function apiErrorStatus(error: unknown): number {
+  return isAxiosError(error) ? (error.response?.status ?? 0) : 0
+}
+
 const CREATE_DAY_ERROR = 'Erro ao criar dia'
 
 // The modal only offers free dates inside the event, so these mean the form is
@@ -44,8 +49,7 @@ async function createDay(body: CreateScheduleDayBody) {
 
     return response.data.result
   } catch (error: unknown) {
-    const status = isAxiosError(error) ? (error.response?.status ?? 0) : 0
-    throw new Error(createDayErrorByStatus[status] ?? CREATE_DAY_ERROR)
+    throw new Error(createDayErrorByStatus[apiErrorStatus(error)] ?? CREATE_DAY_ERROR)
   }
 }
 
@@ -132,17 +136,16 @@ const updateDayErrorByStatus: Record<number, string> = {
 }
 
 /** Moves a day to another date; its activities keep their times of day. */
-async function updateDay(dayId: string, body: UpdateScheduleDayBody) {
+async function updateDay(input: { dayId: string; body: UpdateScheduleDayBody }) {
   try {
     const response = await api.patch<{ result: UpdateScheduleDayResult }>(
-      `/schedule/days/${dayId}`,
-      body
+      `/schedule/days/${input.dayId}`,
+      input.body
     )
 
     return response.data.result
   } catch (error: unknown) {
-    const status = isAxiosError(error) ? (error.response?.status ?? 0) : 0
-    throw new Error(updateDayErrorByStatus[status] ?? UPDATE_DAY_ERROR)
+    throw new Error(updateDayErrorByStatus[apiErrorStatus(error)] ?? UPDATE_DAY_ERROR)
   }
 }
 

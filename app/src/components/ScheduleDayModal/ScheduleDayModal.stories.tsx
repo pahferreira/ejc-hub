@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
-import { NewScheduleDayModal } from './NewScheduleDayModal'
+import { ScheduleDayModal } from './ScheduleDayModal'
 
 const meta = {
-  title: 'Schedule/NewScheduleDayModal',
-  component: NewScheduleDayModal,
+  title: 'Schedule/ScheduleDayModal',
+  component: ScheduleDayModal,
   parameters: {
     layout: 'fullscreen',
   },
@@ -19,7 +19,7 @@ const meta = {
     onSubmit: fn(),
   },
   tags: ['autodocs'],
-} satisfies Meta<typeof NewScheduleDayModal>
+} satisfies Meta<typeof ScheduleDayModal>
 
 export default meta
 type Story = StoryObj<typeof meta>

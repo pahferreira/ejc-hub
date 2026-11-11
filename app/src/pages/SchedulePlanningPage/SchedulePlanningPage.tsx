@@ -3,8 +3,8 @@ import { Link } from 'react-router'
 import { FiCalendar, FiExternalLink } from 'react-icons/fi'
 import { Button } from '../../components/Button/Button'
 import { ScheduleDayTabs } from '../../components/ScheduleDayTabs/ScheduleDayTabs'
-import { NewScheduleDayModal } from '../../components/NewScheduleDayModal/NewScheduleDayModal'
-import { useNewScheduleDayForm } from '../../components/NewScheduleDayModal/useNewScheduleDayForm'
+import { ScheduleDayModal } from '../../components/ScheduleDayModal/ScheduleDayModal'
+import { useScheduleDayForm } from '../../components/ScheduleDayModal/useScheduleDayForm'
 import { DeleteScheduleDayModal } from '../../components/DeleteScheduleDayModal/DeleteScheduleDayModal'
 import { ScheduleDayActivities } from '../../components/ScheduleDayActivities/ScheduleDayActivities'
 import { useScheduleActivityForm } from '../../components/ScheduleActivityForm/useScheduleActivityForm'
@@ -58,7 +58,7 @@ export function SchedulePlanningPage() {
 
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
-  const newDayForm = useNewScheduleDayForm(setSelectedDayId)
+  const dayForm = useScheduleDayForm(setSelectedDayId)
   const teamsQuery = useCurrentEventTeamsQuery()
 
   const days = scheduleQuery.data?.days ?? []
@@ -94,7 +94,7 @@ export function SchedulePlanningPage() {
   const dateOptions = eventDateOptions(
     event.startDate,
     event.endDate,
-    days.map((day) => day.date).filter((date) => date !== newDayForm.editingDate)
+    days.map((day) => day.date).filter((date) => date !== dayForm.editingDate)
   )
 
   const confirmDelete = () => {
@@ -136,7 +136,7 @@ export function SchedulePlanningPage() {
                 activityForm.close()
                 setSelectedDayId(dayId)
               }}
-              onNewDay={newDayForm.open}
+              onNewDay={dayForm.open}
             />
 
             <section className="mt-8">
@@ -145,7 +145,7 @@ export function SchedulePlanningPage() {
                   {formatScheduleDay(selectedDay.date)}
                 </h2>
                 <div className="flex items-center gap-2">
-                  <Button variant="text" onClick={() => newDayForm.openToEdit(selectedDay)}>
+                  <Button variant="text" onClick={() => dayForm.openToEdit(selectedDay)}>
                     Editar dia
                   </Button>
                   <Button variant="text" onClick={() => setIsConfirmingDelete(true)}>
@@ -171,23 +171,23 @@ export function SchedulePlanningPage() {
               Comece criando o primeiro dia do evento. Depois, adicione as atividades uma abaixo da
               outra.
             </p>
-            <Button onClick={newDayForm.open}>Criar primeiro dia</Button>
+            <Button onClick={dayForm.open}>Criar primeiro dia</Button>
           </div>
         )}
       </div>
 
-      <NewScheduleDayModal
-        open={newDayForm.isOpen}
-        onClose={newDayForm.close}
-        mode={newDayForm.mode}
+      <ScheduleDayModal
+        open={dayForm.isOpen}
+        onClose={dayForm.close}
+        mode={dayForm.mode}
         dateOptions={dateOptions}
-        date={newDayForm.date}
-        onDateChange={newDayForm.setDate}
+        date={dayForm.date}
+        onDateChange={dayForm.setDate}
         minDate={event.startDate ?? undefined}
         maxDate={event.endDate ?? undefined}
-        error={newDayForm.error}
-        onSubmit={newDayForm.submit}
-        isSubmitting={newDayForm.isSubmitting}
+        error={dayForm.error}
+        onSubmit={dayForm.submit}
+        isSubmitting={dayForm.isSubmitting}
       />
 
       {selectedDay && (

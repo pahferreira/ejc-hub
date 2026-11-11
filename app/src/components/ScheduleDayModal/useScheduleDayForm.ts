@@ -3,6 +3,7 @@ import { useCreateScheduleDayMutation } from '../../services/schedule/useCreateS
 import { useUpdateScheduleDayMutation } from '../../services/schedule/useUpdateScheduleDayMutation'
 import { toastPromise } from '../../utils/toast/toast'
 import type { ScheduleDay } from '../../services/schedule/schedule.types'
+import type { ScheduleDayModalMode } from './ScheduleDayModal'
 
 type EditedDay = Pick<ScheduleDay, 'id' | 'date'>
 
@@ -14,7 +15,7 @@ type EditedDay = Pick<ScheduleDay, 'id' | 'date'>
  * The error stays hidden until the first submit, so the modal doesn't open on red.
  * `onSaved` hands back the day's id so the page can select its tab.
  */
-export function useNewScheduleDayForm(onSaved: (dayId: string) => void) {
+export function useScheduleDayForm(onSaved: (dayId: string) => void) {
   const createMutation = useCreateScheduleDayMutation()
   const updateMutation = useUpdateScheduleDayMutation()
 
@@ -60,12 +61,14 @@ export function useNewScheduleDayForm(onSaved: (dayId: string) => void) {
     })
   }
 
+  const mode: ScheduleDayModalMode = editingDay ? 'edit' : 'create'
+
   return {
     isOpen,
     open,
     openToEdit,
     close,
-    mode: editingDay ? ('edit' as const) : ('create' as const),
+    mode,
     /** The date of the day being moved, which stays among its chips. */
     editingDate: editingDay?.date ?? null,
     date,

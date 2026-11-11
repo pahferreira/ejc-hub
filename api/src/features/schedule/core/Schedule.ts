@@ -12,7 +12,8 @@ import type { ScheduleActivityTeamRepository } from '../../../modules/schedule-a
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import { toEventDate } from '../../../../../common/schedule/toEventDate.ts'
 import { toEventInstant } from '../../../../../common/schedule/toEventInstant.ts'
-import { toEventTime } from '../../../../../common/schedule/toEventTime.ts'
+import { daysBetween } from '../../../../../common/schedule/daysBetween.ts'
+import { shiftByEventDays } from '../../../../../common/schedule/shiftByEventDays.ts'
 import { teamColorToken } from '../../../../../common/schedule/teamColorToken.ts'
 import { overlapsAny } from './activity-interval.ts'
 import type {
@@ -64,25 +65,20 @@ function assertDateInEvent(event: EventModel, date: string): void {
   }
 }
 
-const DAY_MS = 86_400_000
-
-/** Whole calendar days from one `YYYY-MM-DD` to another (negative when earlier). */
-function daysBetween(from: string, to: string): number {
-  return (Date.parse(to) - Date.parse(from)) / DAY_MS
-}
-
-/** `YYYY-MM-DD` plus a whole number of days. */
-function addDays(date: string, days: number): string {
-  return new Date(Date.parse(date) + days * DAY_MS).toISOString().slice(0, 10)
-}
-
 /**
- * The instant `days` São Paulo days later than `instant`, at the same São Paulo
- * time of day. Reading the clock rather than adding 24 h steps keeps the time
- * even across an offset change.
+ * Runs a write that sets a day's date, turning the `unique(event_id, date)`
+ * violation into the same 409 the read gives. The constraint is what catches
+ * two admins taking the same date at once.
  */
-function shiftByEventDays(instant: Date, days: number): Date {
-  return toEventInstant(addDays(toEventDate(instant), days), toEventTime(instant))
+async function withDayDateUnique<T>(write: () => Promise<T>): Promise<T> {
+  try {
+    return await write()
+  } catch (error) {
+    if (isUniqueViolation(error, DAY_DATE_UNIQUE)) {
+      throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
+    }
+    throw error
+  }
 }
 
 /**
@@ -121,6 +117,20 @@ export class Schedule {
     }
 
     return fn(currentEvent)
+  }
+
+  /**
+   * Refuses a day date outside the event (400) or one another day already has
+   * (409). `dayId` is the day taking the date, which may keep its own.
+   */
+  async #assertDayDateAvailable(event: EventModel, date: string, dayId?: string): Promise<void> {
+    assertDateInEvent(event, date)
+
+    const existing = await this.#scheduleDayRepository.findDayByDate(event.id, date)
+
+    if (existing && existing.id !== dayId) {
+      throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
+    }
   }
 
   /** The current event's days, earliest date first, each with its activities. */
@@ -183,27 +193,13 @@ export class Schedule {
    */
   async createDay(input: CreateScheduleDayInput): Promise<CreateScheduleDayResult> {
     return this.#withCurrentEvent(async (event) => {
-      assertDateInEvent(event, input.date)
+      await this.#assertDayDateAvailable(event, input.date)
 
-      const existing = await this.#scheduleDayRepository.findDayByDate(event.id, input.date)
+      const day = await withDayDateUnique(() =>
+        this.#scheduleDayRepository.insertDay({ eventId: event.id, date: input.date })
+      )
 
-      if (existing) {
-        throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
-      }
-
-      try {
-        const day = await this.#scheduleDayRepository.insertDay({
-          eventId: event.id,
-          date: input.date,
-        })
-
-        return { dayId: day.id, date: day.date }
-      } catch (error) {
-        if (isUniqueViolation(error, DAY_DATE_UNIQUE)) {
-          throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
-        }
-        throw error
-      }
+      return { dayId: day.id, date: day.date }
     })
   }
 
@@ -379,13 +375,7 @@ export class Schedule {
         throw new AppError('Schedule day not found', AppErrorCode.NotFound)
       }
 
-      assertDateInEvent(event, input.date)
-
-      const existing = await this.#scheduleDayRepository.findDayByDate(event.id, input.date)
-
-      if (existing && existing.id !== day.id) {
-        throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
-      }
+      await this.#assertDayDateAvailable(event, input.date, day.id)
 
       const shift = daysBetween(day.date, input.date)
       const activities = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
@@ -408,8 +398,8 @@ export class Schedule {
         )
       }
 
-      try {
-        await runInTransaction(async (tx) => {
+      await withDayDateUnique(() =>
+        runInTransaction(async (tx) => {
           const updated = await this.#scheduleDayRepository.updateDayDate(
             day.id,
             event.id,
@@ -428,12 +418,7 @@ export class Schedule {
             tx
           )
         })
-      } catch (error) {
-        if (isUniqueViolation(error, DAY_DATE_UNIQUE)) {
-          throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
-        }
-        throw error
-      }
+      )
 
       return { dayId: day.id, date: input.date }
     })
