@@ -5,14 +5,7 @@ import type { EventSubscriptionMode } from '../../../modules/event/domain/event-
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type { TeamTemplateRepository } from '../../../modules/team-template/domain/TeamTemplateRepository.ts'
 import type { CallCampaignService } from '../services/call-campaign/CallCampaignService.ts'
-
-// Trims text and turns blank input into null. undefined stays undefined (leave
-// untouched) and null stays null (clear).
-const normalizeOptionalText = (value: string | null | undefined) => {
-  if (value === undefined || value === null) return value
-  const trimmed = value.trim()
-  return trimmed === '' ? null : trimmed
-}
+import { normalizeOptionalText } from '../helpers/normalize-optional-text.ts'
 
 export class ControlPanel {
   #teamTemplateRepository: TeamTemplateRepository

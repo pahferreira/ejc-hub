@@ -1,5 +1,6 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import { runInTransaction } from '../../../core/database/client.ts'
+import { isUniqueViolation } from '../../../shared/is-unique-violation.ts'
 import type { EventModel } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { ScheduleDayRepository } from '../../../modules/schedule-day/domain/ScheduleDayRepository.ts'
@@ -14,8 +15,7 @@ import { daysBetween } from '../../../../../common/schedule/daysBetween.ts'
 import { shiftByEventDays } from '../../../../../common/schedule/shiftByEventDays.ts'
 import { teamColorToken } from '../../../../../common/schedule/teamColorToken.ts'
 import { overlapsAny } from '../helpers/activity-interval.ts'
-import { DAY_DATE_TAKEN, withDayDateUnique } from '../helpers/day-date-unique.ts'
-import { assertDateInEvent, toScheduleEvent } from '../helpers/schedule-event.ts'
+import { toScheduleEvent } from '../helpers/schedule-event.ts'
 import type {
   CreateScheduleActivityInput,
   CreateScheduleActivityResult,
@@ -31,6 +31,9 @@ import type {
   UpdateScheduleDayInput,
   UpdateScheduleDayResult,
 } from '../domain/schedule.types.ts'
+
+const DAY_DATE_UNIQUE = 'schedule_days_event_id_date_unique'
+const DAY_DATE_TAKEN = 'The event already has a day on this date'
 
 /**
  * The single entry point for schedule (Cronograma) reads and writes.
@@ -70,17 +73,47 @@ export class Schedule {
     return fn(currentEvent)
   }
 
+  /** Refuses a day date outside the event's São Paulo dates, or any date when it has none. */
+  #assertDateInEvent(event: EventModel, date: string): void {
+    const { startDate, endDate } = toScheduleEvent(event)
+
+    if (!startDate || !endDate) {
+      throw new AppError('The current event has no dates set', AppErrorCode.Validation)
+    }
+
+    // `YYYY-MM-DD` strings compare as days.
+    if (date < startDate || date > endDate) {
+      throw new AppError('The date is outside the event dates', AppErrorCode.Validation)
+    }
+  }
+
   /**
    * Refuses a day date outside the event (400) or one another day already has
    * (409). `dayId` is the day taking the date, which may keep its own.
    */
   async #assertDayDateAvailable(event: EventModel, date: string, dayId?: string): Promise<void> {
-    assertDateInEvent(event, date)
+    this.#assertDateInEvent(event, date)
 
     const existing = await this.#scheduleDayRepository.findDayByDate(event.id, date)
 
     if (existing && existing.id !== dayId) {
       throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
+    }
+  }
+
+  /**
+   * Runs a write that sets a day's date, turning the `unique(event_id, date)`
+   * violation into the same 409 the read gives. The constraint is what catches
+   * two admins taking the same date at once.
+   */
+  async #withDayDateUnique<T>(write: () => Promise<T>): Promise<T> {
+    try {
+      return await write()
+    } catch (error) {
+      if (isUniqueViolation(error, DAY_DATE_UNIQUE)) {
+        throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
+      }
+      throw error
     }
   }
 
@@ -146,7 +179,7 @@ export class Schedule {
     return this.#withCurrentEvent(async (event) => {
       await this.#assertDayDateAvailable(event, input.date)
 
-      const day = await withDayDateUnique(() =>
+      const day = await this.#withDayDateUnique(() =>
         this.#scheduleDayRepository.insertDay({ eventId: event.id, date: input.date })
       )
 
@@ -353,7 +386,7 @@ export class Schedule {
         )
       }
 
-      await withDayDateUnique(() =>
+      await this.#withDayDateUnique(() =>
         runInTransaction(async (tx) => {
           const updated = await this.#scheduleDayRepository.updateDayDate(
             day.id,

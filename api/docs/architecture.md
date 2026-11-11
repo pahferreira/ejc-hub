@@ -118,8 +118,10 @@ Rules for modules:
 feature/
 ├── domain/          # Feature-specific types (HTTP payloads, JOIN-derived types)
 ├── core/            # Business logic classes
-├── helpers/         # Stateless functions extracted from the core class; repositories are passed in,
-│                    # never constructed. Specs: see `CODING_STANDARDS.md` › API › Tests
+├── helpers/         # Pure functions extracted from the core class: data in, data out. No
+│                    # AppError, repositories or transactions; a rule that rejects a request or
+│                    # touches the database is a method on the core class.
+│                    # Specs: see `CODING_STANDARDS.md` › API › Tests
 ├── application/     # Wiring layer — instantiates core classes with concrete repositories
 └── http/            # Route definitions, request/response Zod schemas
 ```

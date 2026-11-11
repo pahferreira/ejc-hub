@@ -1,4 +1,3 @@
-import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import type { EventModel } from '../../../core/database/schemas/index.ts'
 import { toEventDate } from '../../../../../common/schedule/toEventDate.ts'
 import type { ScheduleEvent } from '../domain/schedule.types.ts'
@@ -15,19 +14,5 @@ export function toScheduleEvent(event: EventModel): ScheduleEvent {
     name: event.name,
     startDate: event.startsAt ? toEventDate(event.startsAt) : null,
     endDate: event.endsAt ? toEventDate(event.endsAt) : null,
-  }
-}
-
-/** Refuses a day date outside the event's São Paulo dates, or any date when it has none. */
-export function assertDateInEvent(event: EventModel, date: string): void {
-  const { startDate, endDate } = toScheduleEvent(event)
-
-  if (!startDate || !endDate) {
-    throw new AppError('The current event has no dates set', AppErrorCode.Validation)
-  }
-
-  // `YYYY-MM-DD` strings compare as days.
-  if (date < startDate || date > endDate) {
-    throw new AppError('The date is outside the event dates', AppErrorCode.Validation)
   }
 }

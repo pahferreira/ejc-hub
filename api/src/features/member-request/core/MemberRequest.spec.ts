@@ -307,6 +307,19 @@ describe('MemberRequest.createRequests', () => {
     )
   })
 
+  it('reports the missing subscription before the membership, so the first true fact wins', async () => {
+    // Both are wrong here; the message must name one reason rather than the
+    // last check to run.
+    const { memberRequest } = makeMemberRequest({
+      subscriptionsByUser: new Map([['u1', { id: 'sub-1', status: 'cancelled' }]]),
+      membershipsByUser: new Map([['u1', { id: 'm-9', teamInstanceId: TEAM_B, type: 'member' }]]),
+    })
+
+    await expect(memberRequest.createRequests(ACTOR_AUTH_ID, ['u1'])).rejects.toThrow(
+      /no active subscription/
+    )
+  })
+
   it('rejects a person this team already has an open request for', async () => {
     const { memberRequest, memberRequestRepository } = makeMemberRequest({
       openRequests: [{ id: 'req-old', userId: 'u1', teamInstanceId: TEAM_A }],
@@ -583,15 +596,48 @@ describe('MemberRequest.cancelRequest', () => {
     expect(memberRequestRepository.resolveRequests).not.toHaveBeenCalled()
   })
 
-  it('refuses to cancel a request that was already answered', async () => {
+  it('answers the same 403 for an id that names nothing, revealing no existence', async () => {
+    // Deliberately indistinguishable from another team's request: a distinct
+    // "not found" would let a coordinator probe which request ids exist.
+    const missing = await makeMemberRequest({ request: undefined })
+      .memberRequest.cancelRequest(ACTOR_AUTH_ID, 'req-1')
+      .catch((error: unknown) => error as AppError)
+    const foreign = await makeMemberRequest({
+      request: buildRequestRow({ id: 'req-1', teamInstanceId: TEAM_B }),
+    })
+      .memberRequest.cancelRequest(ACTOR_AUTH_ID, 'req-1')
+      .catch((error: unknown) => error as AppError)
+
+    expect(missing).toBeInstanceOf(AppError)
+    expect((missing as AppError).getMessage()).toBe((foreign as AppError).getMessage())
+    expect((missing as AppError).getAppErrorCode()).toBe(AppErrorCode.Forbidden)
+  })
+
+  it('answers 403 for a request belonging to another event', async () => {
     const { memberRequest } = makeMemberRequest({
-      request: buildRequestRow({ id: 'req-1', status: 'approved' }),
+      request: buildRequestRow({ id: 'req-1', eventId: 'event-old' }),
     })
 
-    await expect(memberRequest.cancelRequest(ACTOR_AUTH_ID, 'req-1')).rejects.toThrow(
-      /Only a pending request can be cancelled/
-    )
+    try {
+      await memberRequest.cancelRequest(ACTOR_AUTH_ID, 'req-1')
+      expect.unreachable('should have thrown')
+    } catch (error) {
+      expect((error as AppError).getAppErrorCode()).toBe(AppErrorCode.Forbidden)
+    }
   })
+
+  it.each(['approved', 'denied', 'cancelled', 'outdated'] as const)(
+    'refuses to cancel a request already %s',
+    async (status) => {
+      const { memberRequest } = makeMemberRequest({
+        request: buildRequestRow({ id: 'req-1', status }),
+      })
+
+      await expect(memberRequest.cancelRequest(ACTOR_AUTH_ID, 'req-1')).rejects.toThrow(
+        /Only a pending request can be cancelled/
+      )
+    }
+  )
 })
 
 describe('MemberRequest.listCurrentEventRequests', () => {
@@ -864,15 +910,36 @@ describe('MemberRequest.resolveRequest', () => {
     expect(teamMembershipRepository.insertTeamMembership).not.toHaveBeenCalled()
   })
 
-  it('refuses a request that was already answered', async () => {
+  it("does not scope to a team: any team's request is answerable", async () => {
     const { memberRequest } = makeMemberRequest({
-      request: buildRequestRow({ id: 'req-1', status: 'approved' }),
+      request: buildRequestRow({ id: 'req-1', teamInstanceId: 'some-other-team' }),
     })
 
+    const result = await memberRequest.resolveRequest(ACTOR_AUTH_ID, 'req-1', 'denied')
+
+    expect(result.status).toBe('denied')
+  })
+
+  it('refuses an id that names nothing', async () => {
+    const { memberRequest } = makeMemberRequest({ request: undefined })
+
     await expect(memberRequest.resolveRequest(ACTOR_AUTH_ID, 'req-1', 'denied')).rejects.toThrow(
-      /Only a pending request can be approved or denied/
+      /not found in the current event/
     )
   })
+
+  it.each(['approved', 'denied', 'cancelled', 'outdated'] as const)(
+    'refuses a request already %s',
+    async (status) => {
+      const { memberRequest } = makeMemberRequest({
+        request: buildRequestRow({ id: 'req-1', status }),
+      })
+
+      await expect(memberRequest.resolveRequest(ACTOR_AUTH_ID, 'req-1', 'denied')).rejects.toThrow(
+        /Only a pending request can be approved or denied/
+      )
+    }
+  )
 })
 
 describe('MemberRequest with no current event', () => {
