@@ -117,7 +117,8 @@ Rules for modules:
 ```
 feature/
 ├── domain/          # Feature-specific types (HTTP payloads, JOIN-derived types)
-├── core/            # Business logic classes
+├── core/            # Business logic classes. Besides `<Feature>.ts`, may hold a class another
+│                    # feature also builds (e.g. team-building's `TeamPlacement`)
 ├── helpers/         # Pure functions extracted from the core class: data in, data out. No
 │                    # AppError, repositories or transactions; a rule that rejects a request or
 │                    # touches the database is a method on the core class.
