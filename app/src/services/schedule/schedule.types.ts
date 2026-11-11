@@ -56,8 +56,8 @@ export type CreateScheduleDayResult = {
   date: string
 }
 
-/** The `POST /schedule/activities` body. */
-export type CreateScheduleActivityBody = {
+/** The activity body, sent whole both to add (`POST`) and to edit (`PATCH`) one. */
+export type ScheduleActivityBody = {
   dayId: string
   title: string
   /** An ISO instant, built from the day's date and the `HH:mm` start. */

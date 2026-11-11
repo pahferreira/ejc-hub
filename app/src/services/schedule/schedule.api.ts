@@ -2,7 +2,7 @@ import { isAxiosError } from 'axios'
 import { api } from '../api'
 import type { ApiError } from '../general/error'
 import type {
-  CreateScheduleActivityBody,
+  ScheduleActivityBody,
   CreateScheduleActivityResult,
   CreateScheduleDayBody,
   CreateScheduleDayResult,
@@ -79,7 +79,7 @@ function apiErrorCode(error: unknown): string {
 }
 
 /** Adds an activity to a day of the current event. */
-async function createActivity(body: CreateScheduleActivityBody) {
+async function createActivity(body: ScheduleActivityBody) {
   try {
     const response = await api.post<{ result: CreateScheduleActivityResult }>(
       '/schedule/activities',
@@ -95,7 +95,7 @@ async function createActivity(body: CreateScheduleActivityBody) {
 }
 
 /** Edits an activity: every field is sent again, teams included. */
-async function updateActivity(input: { activityId: string; body: CreateScheduleActivityBody }) {
+async function updateActivity(input: { activityId: string; body: ScheduleActivityBody }) {
   try {
     const response = await api.patch<{ result: UpdateScheduleActivityResult }>(
       `/schedule/activities/${input.activityId}`,

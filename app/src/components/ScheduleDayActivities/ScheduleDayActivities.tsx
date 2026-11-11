@@ -6,6 +6,7 @@ import { ScheduleActivityCard } from '../ScheduleActivityCard/ScheduleActivityCa
 import { ScheduleActivityForm } from '../ScheduleActivityForm/ScheduleActivityForm'
 import type { useScheduleActivityForm } from '../ScheduleActivityForm/useScheduleActivityForm'
 import { DeleteScheduleActivityModal } from '../DeleteScheduleActivityModal/DeleteScheduleActivityModal'
+import type { useDeleteScheduleActivity } from '../DeleteScheduleActivityModal/useDeleteScheduleActivity'
 import {
   activityGaps,
   formatDaySummary,
@@ -17,6 +18,7 @@ import {
 import { Button } from '../Button/Button'
 
 type ActivityForm = ReturnType<typeof useScheduleActivityForm>
+type ActivityDeletion = ReturnType<typeof useDeleteScheduleActivity>
 
 export type ScheduleDayActivitiesProps = {
   activities: ScheduleActivity[]
@@ -25,6 +27,8 @@ export type ScheduleDayActivitiesProps = {
   /** Current-event teams for the form's Equipes selector. */
   teamOptions: Option[]
   form: ActivityForm
+  /** Excluir on the edit form: the confirmation, then the delete. */
+  deletion: ActivityDeletion
 }
 
 /** The dashed row that opens the inline form at a suggested start. */
@@ -67,16 +71,15 @@ function GapRow(props: { gap: ActivityGap; onFill: () => void }) {
  * offers a dashed "Adicionar primeira atividade".
  */
 export function ScheduleDayActivities(props: ScheduleDayActivitiesProps) {
-  const { activities, dayDate, form } = props
+  const { activities, dayDate, form, deletion } = props
   const summary = summarizeDay(activities, dayDate)
   const nextStart = suggestedNextStart(activities)
   const gapsByActivity = new Map(activityGaps(activities).map((gap) => [gap.afterActivityId, gap]))
   const isEmpty = activities.length === 0
   const placement = form.placement
-  const editedActivity =
-    placement?.kind === 'edit'
-      ? activities.find((activity) => activity.id === placement.activityId)
-      : undefined
+  const editedActivity = form.editingActivityId
+    ? activities.find((activity) => activity.id === form.editingActivityId)
+    : undefined
   const isOpenAtEnd = placement?.kind === 'end'
 
   const renderForm = () => (
@@ -89,8 +92,8 @@ export function ScheduleDayActivities(props: ScheduleDayActivitiesProps) {
       onSubmit={form.submit}
       onCancel={form.close}
       isSubmitting={form.isSubmitting}
-      mode={placement?.kind === 'edit' ? 'edit' : 'create'}
-      onDelete={placement?.kind === 'edit' ? form.askDelete : undefined}
+      mode={form.editingActivityId ? 'edit' : 'create'}
+      onDelete={form.editingActivityId ? deletion.ask : undefined}
     />
   )
 
@@ -110,12 +113,7 @@ export function ScheduleDayActivities(props: ScheduleDayActivitiesProps) {
               <ScheduleActivityCard activity={activity} onEdit={() => form.edit(activity)} />
             )}
             {isFillingGap && renderForm()}
-            {gap && !isFillingGap && (
-              <GapRow
-                gap={gap}
-                onFill={() => form.open(gap.startTime, gap.durationMinutes, activity.id)}
-              />
-            )}
+            {gap && !isFillingGap && <GapRow gap={gap} onFill={() => form.fillGap(gap)} />}
           </Fragment>
         )
       })}
@@ -135,11 +133,11 @@ export function ScheduleDayActivities(props: ScheduleDayActivitiesProps) {
 
       {editedActivity && (
         <DeleteScheduleActivityModal
-          open={form.isConfirmingDelete}
+          open={deletion.isConfirming}
           activityTitle={editedActivity.title}
-          onClose={form.cancelDelete}
-          onConfirm={() => void form.confirmDelete()}
-          isDeleting={form.isDeleting}
+          onClose={deletion.cancel}
+          onConfirm={() => deletion.confirm(editedActivity.id)}
+          isDeleting={deletion.isDeleting}
         />
       )}
     </div>

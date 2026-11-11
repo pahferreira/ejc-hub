@@ -8,6 +8,7 @@ import { useNewScheduleDayForm } from '../../components/NewScheduleDayModal/useN
 import { DeleteScheduleDayModal } from '../../components/DeleteScheduleDayModal/DeleteScheduleDayModal'
 import { ScheduleDayActivities } from '../../components/ScheduleDayActivities/ScheduleDayActivities'
 import { useScheduleActivityForm } from '../../components/ScheduleActivityForm/useScheduleActivityForm'
+import { useDeleteScheduleActivity } from '../../components/DeleteScheduleActivityModal/useDeleteScheduleActivity'
 import { useCurrentEventTeamsQuery } from '../../services/teams/useCurrentEventTeamsQuery'
 import { useScheduleQuery } from '../../services/schedule/useScheduleQuery'
 import { useDeleteScheduleDayMutation } from '../../services/schedule/useDeleteScheduleDayMutation'
@@ -65,6 +66,7 @@ export function SchedulePlanningPage() {
   const activityForm = useScheduleActivityForm(
     selectedDay ? { id: selectedDay.id, date: selectedDay.date } : null
   )
+  const activityDeletion = useDeleteScheduleActivity(activityForm.close)
 
   if (scheduleQuery.isLoading) {
     return <PageMessage message="Carregando cronograma..." />
@@ -151,6 +153,7 @@ export function SchedulePlanningPage() {
                 dayDate={selectedDay.date}
                 teamOptions={teamOptions}
                 form={activityForm}
+                deletion={activityDeletion}
               />
             </section>
           </>

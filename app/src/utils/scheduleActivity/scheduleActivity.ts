@@ -1,10 +1,7 @@
 import { toEventInstant } from '../../../../common/schedule/toEventInstant'
 import { toEventTime } from '../../../../common/schedule/toEventTime'
 import { toEventDate } from '../../../../common/schedule/toEventDate'
-import type {
-  CreateScheduleActivityBody,
-  ScheduleActivity,
-} from '../../services/schedule/schedule.types'
+import type { ScheduleActivityBody, ScheduleActivity } from '../../services/schedule/schedule.types'
 import type { ScheduleActivityFormValues } from './scheduleActivityForm.schema'
 
 const MINUTE_MS = 60_000
@@ -185,7 +182,7 @@ export function buildActivityBody(
   dayId: string,
   dayDate: string,
   values: ScheduleActivityFormValues
-): CreateScheduleActivityBody {
+): ScheduleActivityBody {
   const guestName = values.guestName.trim()
 
   return {

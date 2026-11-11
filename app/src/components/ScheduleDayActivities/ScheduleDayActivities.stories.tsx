@@ -6,6 +6,7 @@ import type {
   ScheduleActivityFormPlacement,
   useScheduleActivityForm,
 } from '../ScheduleActivityForm/useScheduleActivityForm'
+import type { useDeleteScheduleActivity } from '../DeleteScheduleActivityModal/useDeleteScheduleActivity'
 import type { ScheduleActivity } from '../../services/schedule/schedule.types'
 import {
   activityFormValues,
@@ -54,8 +55,8 @@ const EMPTY_VALUES: ScheduleActivityFormValues = {
 }
 
 /**
- * A stand-in for `useScheduleActivityForm`: same placements and pre-fill, no
- * API, so the story can walk the edit and gap flows.
+ * Stand-ins for `useScheduleActivityForm` and `useDeleteScheduleActivity`: same
+ * placements and pre-fill, no API, so the story can walk the edit and gap flows.
  */
 function StatefulDay(props: { onSubmit: () => void; onConfirmDelete: () => void }) {
   const [placement, setPlacement] = useState<ScheduleActivityFormPlacement | null>(null)
@@ -65,9 +66,14 @@ function StatefulDay(props: { onSubmit: () => void; onConfirmDelete: () => void 
   const form: ReturnType<typeof useScheduleActivityForm> = {
     isOpen: placement !== null,
     placement,
-    open: (startTime = '06:00', durationMinutes = 30, afterActivityId) => {
-      setValues({ ...EMPTY_VALUES, startTime, durationMinutes })
-      setPlacement(afterActivityId ? { kind: 'gap', afterActivityId } : { kind: 'end' })
+    editingActivityId: placement?.kind === 'edit' ? placement.activityId : undefined,
+    open: (startTime = '06:00') => {
+      setValues({ ...EMPTY_VALUES, startTime })
+      setPlacement({ kind: 'end' })
+    },
+    fillGap: (gap) => {
+      setValues({ ...EMPTY_VALUES, startTime: gap.startTime, durationMinutes: gap.durationMinutes })
+      setPlacement({ kind: 'gap', afterActivityId: gap.afterActivityId })
     },
     edit: (activity) => {
       setValues(activityFormValues(activity))
@@ -80,10 +86,13 @@ function StatefulDay(props: { onSubmit: () => void; onConfirmDelete: () => void 
     error: undefined,
     submit: props.onSubmit,
     isSubmitting: false,
-    isConfirmingDelete,
-    askDelete: () => setIsConfirmingDelete(true),
-    cancelDelete: () => setIsConfirmingDelete(false),
-    confirmDelete: async () => {
+  }
+
+  const deletion: ReturnType<typeof useDeleteScheduleActivity> = {
+    isConfirming: isConfirmingDelete,
+    ask: () => setIsConfirmingDelete(true),
+    cancel: () => setIsConfirmingDelete(false),
+    confirm: () => {
       props.onConfirmDelete()
       setIsConfirmingDelete(false)
       setPlacement(null)
@@ -98,6 +107,7 @@ function StatefulDay(props: { onSubmit: () => void; onConfirmDelete: () => void 
         dayDate="2026-04-03"
         teamOptions={TEAM_OPTIONS}
         form={form}
+        deletion={deletion}
       />
     </div>
   )

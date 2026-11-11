@@ -4,13 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 import { useCreateScheduleActivityMutation } from '../../services/schedule/useCreateScheduleActivityMutation'
 import { useUpdateScheduleActivityMutation } from '../../services/schedule/useUpdateScheduleActivityMutation'
-import { useDeleteScheduleActivityMutation } from '../../services/schedule/useDeleteScheduleActivityMutation'
 import type { ScheduleActivity } from '../../services/schedule/schedule.types'
 import {
   activityFormValues,
   buildActivityBody,
   DEFAULT_ACTIVITY_DURATION,
   DEFAULT_ACTIVITY_START,
+  type ActivityGap,
 } from '../../utils/scheduleActivity/scheduleActivity'
 import {
   scheduleActivityFormSchema,
@@ -41,18 +41,14 @@ export type ScheduleActivityFormPlacement =
   | { kind: 'gap'; afterActivityId: string }
   | { kind: 'edit'; activityId: string }
 
-function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback
-}
-
 /**
  * The inline activity form: open state, where it sits, its values, the shape
  * checks it runs before submitting (`scheduleActivityFormSchema`), and the
- * create, edit and delete. `day` is the day the activity lands on.
+ * create and edit. `day` is the day the activity lands on.
  *
- * `open` starts a new activity (the suggested next start, or a gap's start and
- * length); `edit` pre-fills every field from an activity. Excluir asks for
- * confirmation first (`askDelete`), then `confirmDelete` deletes.
+ * `open` starts a new activity at the end of the day, `fillGap` one filling a
+ * gap (its start and length), and `edit` pre-fills every field from an
+ * activity. `editingActivityId` names the activity being edited, if any.
  *
  * The field errors stay hidden until the first submit, then follow every
  * change. API validation errors (overlap…) come back from the mutation and
@@ -61,15 +57,14 @@ function errorMessage(error: unknown, fallback: string): string {
 export function useScheduleActivityForm(day: { id: string; date: string } | null) {
   const createMutation = useCreateScheduleActivityMutation()
   const updateMutation = useUpdateScheduleActivityMutation()
-  const deleteMutation = useDeleteScheduleActivityMutation()
 
   const form = useForm<ScheduleActivityFormValues>({
     resolver: zodResolver(scheduleActivityFormSchema),
     defaultValues: initialValues(DEFAULT_ACTIVITY_START, DEFAULT_ACTIVITY_DURATION),
   })
   const [placement, setPlacement] = useState<ScheduleActivityFormPlacement | null>(null)
-  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const [apiError, setApiError] = useState<string>()
+  const editingActivityId = placement?.kind === 'edit' ? placement.activityId : undefined
 
   const show = (next: ScheduleActivityFormPlacement, values: ScheduleActivityFormValues) => {
     form.reset(values)
@@ -77,15 +72,16 @@ export function useScheduleActivityForm(day: { id: string; date: string } | null
     setPlacement(next)
   }
 
-  /** A new activity: at the end of the day, or filling the gap after `afterActivityId`. */
-  const open = (
-    startTime: string = DEFAULT_ACTIVITY_START,
-    durationMinutes: number = DEFAULT_ACTIVITY_DURATION,
-    afterActivityId?: string
-  ) => {
+  /** A new activity at the end of the day. */
+  const open = (startTime: string = DEFAULT_ACTIVITY_START) => {
+    show({ kind: 'end' }, initialValues(startTime, DEFAULT_ACTIVITY_DURATION))
+  }
+
+  /** A new activity filling a gap: its start and length, right under the activity it follows. */
+  const fillGap = (gap: ActivityGap) => {
     show(
-      afterActivityId ? { kind: 'gap', afterActivityId } : { kind: 'end' },
-      initialValues(startTime, durationMinutes)
+      { kind: 'gap', afterActivityId: gap.afterActivityId },
+      initialValues(gap.startTime, gap.durationMinutes)
     )
   }
 
@@ -93,10 +89,7 @@ export function useScheduleActivityForm(day: { id: string; date: string } | null
     show({ kind: 'edit', activityId: activity.id }, activityFormValues(activity))
   }
 
-  const close = () => {
-    setPlacement(null)
-    setIsConfirmingDelete(false)
-  }
+  const close = () => setPlacement(null)
 
   const change = (patch: Partial<ScheduleActivityFormValues>) => {
     setApiError(undefined)
@@ -130,8 +123,8 @@ export function useScheduleActivityForm(day: { id: string; date: string } | null
     const body = buildActivityBody(day.id, day.date, values)
 
     try {
-      if (placement.kind === 'edit') {
-        await updateMutation.mutateAsync({ activityId: placement.activityId, body })
+      if (editingActivityId) {
+        await updateMutation.mutateAsync({ activityId: editingActivityId, body })
         toast.success('Atividade atualizada!', { position: 'top-center' })
       } else {
         await createMutation.mutateAsync(body)
@@ -139,7 +132,8 @@ export function useScheduleActivityForm(day: { id: string; date: string } | null
       }
       setPlacement(null)
     } catch (error) {
-      setApiError(errorMessage(error, 'Não foi possível salvar a atividade.'))
+      // The API layer always throws a `ScheduleActivityError` carrying the pt-BR message.
+      setApiError((error as Error).message)
     }
   }
 
@@ -151,29 +145,12 @@ export function useScheduleActivityForm(day: { id: string; date: string } | null
     void form.handleSubmit(save)()
   }
 
-  const askDelete = () => setIsConfirmingDelete(true)
-
-  const cancelDelete = () => setIsConfirmingDelete(false)
-
-  const confirmDelete = async () => {
-    if (placement?.kind !== 'edit') {
-      return
-    }
-
-    try {
-      await deleteMutation.mutateAsync(placement.activityId)
-      close()
-      toast.success('Atividade excluída!', { position: 'top-center' })
-    } catch (error) {
-      setIsConfirmingDelete(false)
-      setApiError(errorMessage(error, 'Não foi possível excluir a atividade.'))
-    }
-  }
-
   return {
     isOpen: placement !== null,
     placement,
+    editingActivityId,
     open,
+    fillGap,
     edit,
     close,
     values: form.watch(),
@@ -182,10 +159,5 @@ export function useScheduleActivityForm(day: { id: string; date: string } | null
     error: apiError,
     submit,
     isSubmitting: createMutation.isPending || updateMutation.isPending,
-    isConfirmingDelete,
-    askDelete,
-    cancelDelete,
-    confirmDelete,
-    isDeleting: deleteMutation.isPending,
   }
 }
