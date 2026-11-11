@@ -20,7 +20,7 @@ import type {
 import { buildCoordinatorReadModel } from '../helpers/coordinator-read-model.ts'
 import { buildMemberReadModel } from '../helpers/member-read-model.ts'
 import { toSaoPauloDay } from '../helpers/attendance-rate.ts'
-import { assertWritable, deriveAttendances, meetingFields } from '../helpers/meeting-write.ts'
+import { deriveAttendances, meetingFields } from '../helpers/meeting-write.ts'
 
 const COORDINATOR_TYPE = 'coordinator'
 
@@ -207,6 +207,39 @@ export class Attendance {
   }
 
   /**
+   * Every rule a registration or an edit must pass, checked before anything is
+   * written.
+   *
+   * `eligibleIds` is who may be listed: the current roster when registering, the
+   * meeting's existing rows when editing. The drawer mirrors these, so a
+   * rejection here means a stale form or a hand-built request rather than a typo
+   * to explain.
+   */
+  #assertWritable(input: RegisterMeetingInput, eligibleIds: Set<string>, today: string) {
+    // `YYYY-MM-DD` strings compare as days. "Today" is the org's São Paulo day.
+    if (input.heldOn > today) {
+      throw new AppError('A meeting cannot be held in the future')
+    }
+
+    const listedIds = [...input.presentUserIds, ...input.justified.map((entry) => entry.userId)]
+
+    // One status per row: a person listed twice, in either list or across both,
+    // would have two answers for one meeting.
+    if (new Set(listedIds).size !== listedIds.length) {
+      throw new AppError('A person can be listed only once, as present or as justified')
+    }
+
+    if (listedIds.some((userId) => !eligibleIds.has(userId))) {
+      throw new AppError('Every listed person must be on the meeting roster')
+    }
+
+    // The check constraint would refuse it too, but as a 500 mid-transaction.
+    if (input.justified.some((entry) => entry.reason.trim() === '')) {
+      throw new AppError('A justified absence needs a reason')
+    }
+  }
+
+  /**
    * Registers a meeting on the caller's own team.
    *
    * Writes the meeting plus **one row per current roster member** in one
@@ -224,7 +257,7 @@ export class Attendance {
       const roster = await this.#teamMembershipRepository.listRosterByTeamInstance(teamInstanceId)
 
       // Every read and every throw is above the transaction; it holds writes only.
-      assertWritable(
+      this.#assertWritable(
         input,
         new Set(roster.map((member) => member.userId)),
         toSaoPauloDay(new Date())
@@ -257,7 +290,7 @@ export class Attendance {
    * A meeting on the team the caller coordinates, or a 403.
    *
    * "No such meeting" and "another team's meeting" are the same `Forbidden`
-   * with the same message, following `assertCoordinatorCanCancel`: a distinct
+   * with the same message, following `MemberRequest.#assertCoordinatorCanCancel`: a distinct
    * not-found would let a coordinator probe which meeting ids exist elsewhere.
    * Team instances are per event, so this also fences off past events.
    */
@@ -296,7 +329,7 @@ export class Attendance {
         await this.#meetingAttendanceRepository.listAttendancesByMeeting(meetingId)
       const rowUserIds = existingRows.map((row) => row.userId)
 
-      assertWritable(input, new Set(rowUserIds), toSaoPauloDay(new Date()))
+      this.#assertWritable(input, new Set(rowUserIds), toSaoPauloDay(new Date()))
 
       const { rows, result } = deriveAttendances(input, rowUserIds)
 

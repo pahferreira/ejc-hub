@@ -405,6 +405,31 @@ describe('Schedule', () => {
       schedule = buildSchedule(buildEventRepository(buildEvent()), racingRepository)
 
       await expectAppError(schedule.createDay({ date: '2026-04-04' }), AppErrorCode.Conflict)
+      // The same sentence the read gives, so the race is invisible to the admin.
+      await expect(schedule.createDay({ date: '2026-04-04' })).rejects.toThrow(
+        'The event already has a day on this date'
+      )
+    })
+
+    it.each([
+      [
+        'another constraint’s violation',
+        () =>
+          Object.assign(new Error('duplicate key'), {
+            code: '23505',
+            constraint: 'some_other_unique',
+          }),
+      ],
+      ['an error that is not a unique violation', () => new Error('connection lost')],
+    ])('re-throws %s as it is', async (_label, buildFailure) => {
+      const failure = buildFailure()
+      const failingRepository: ScheduleDayRepository = {
+        ...dayRepository,
+        insertDay: () => Promise.reject(failure),
+      }
+      schedule = buildSchedule(buildEventRepository(buildEvent()), failingRepository)
+
+      await expect(schedule.createDay({ date: '2026-04-04' })).rejects.toBe(failure)
     })
 
     it('refuses with no current event', async () => {

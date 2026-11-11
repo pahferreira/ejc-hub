@@ -75,4 +75,46 @@ export default defineConfig([
       ],
     },
   },
+  {
+    // Helpers are pure: data in, data out. Rejecting a request or touching the
+    // database is a business rule, and business rules live on the core class.
+    files: ['src/features/*/helpers/**/*.ts'],
+    ignores: [
+      'src/features/*/helpers/**/*.spec.ts',
+      // TODO(#378): leave once these move into a core class.
+      'src/features/team-building/helpers/list-team-candidates.ts',
+      'src/features/team-building/helpers/place-members.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '**/shared/AppError*',
+                '**/shared/is-unique-violation*',
+                '**/core/database/client*',
+              ],
+              message:
+                'Helpers are pure. A rule that rejects a request or touches the database is a method on the core class.',
+            },
+          ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'TSTypeReference > Identifier[name=/Repository$/], TSTypeReference > TSQualifiedName > Identifier.right[name=/Repository$/]',
+          message:
+            'Helpers are pure. Work that reads or writes through a repository is a method on the core class.',
+        },
+        {
+          selector: ':function[async=true]',
+          message: 'Helpers are pure, so they have nothing to await. Move this to the core class.',
+        },
+      ],
+    },
+  },
 ])
