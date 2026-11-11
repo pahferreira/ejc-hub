@@ -24,8 +24,10 @@ const INITIAL: ScheduleActivityFormValues = {
 function StatefulForm(props: {
   initial?: Partial<ScheduleActivityFormValues>
   error?: string
+  mode?: 'create' | 'edit'
   onSubmit: () => void
   onCancel: () => void
+  onDelete?: () => void
 }) {
   const [values, setValues] = useState<ScheduleActivityFormValues>({ ...INITIAL, ...props.initial })
 
@@ -38,6 +40,8 @@ function StatefulForm(props: {
         error={props.error}
         onSubmit={props.onSubmit}
         onCancel={props.onCancel}
+        mode={props.mode}
+        onDelete={props.onDelete}
       />
     </div>
   )
@@ -83,5 +87,35 @@ export const WithError: Story = {
     const canvas = within(canvasElement)
 
     await expect(canvas.getByText('A atividade se sobrepõe a outra.')).toBeInTheDocument()
+  },
+}
+
+/** Editing: titled "EDITAR ATIVIDADE", pre-filled, with Excluir and Salvar alterações. */
+export const Edit: Story = {
+  args: {
+    mode: 'edit',
+    onDelete: fn(),
+    initial: {
+      title: 'Missa',
+      startTime: '19:00',
+      durationMinutes: 60,
+      place: 'Capela',
+      teamInstanceIds: ['t2'],
+      guestName: 'Padre João',
+    },
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByText('Editar atividade')).toBeInTheDocument()
+    await expect(canvas.getByLabelText('Título*')).toHaveValue('Missa')
+    await expect(canvas.getByText('Termina às 20:00')).toBeInTheDocument()
+    await expect(canvas.queryByRole('button', { name: 'Adicionar atividade' })).toBeNull()
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Excluir' }))
+    await expect(args.onDelete).toHaveBeenCalledOnce()
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Salvar alterações' }))
+    await expect(args.onSubmit).toHaveBeenCalledOnce()
   },
 }

@@ -22,4 +22,16 @@ export interface ScheduleActivityTeamRepository {
     eventId: string,
     executor?: DbExecutor
   ) => Promise<void>
+
+  /**
+   * Swaps an activity's whole team set for the given one: the old links go, the
+   * new ones are written. Accepts an executor so it shares the transaction that
+   * updates the activity.
+   */
+  replaceTeams: (
+    activityId: string,
+    teamInstanceIds: string[],
+    eventId: string,
+    executor?: DbExecutor
+  ) => Promise<void>
 }

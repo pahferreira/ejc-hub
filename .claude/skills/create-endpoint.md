@@ -17,10 +17,13 @@ Follow these patterns exactly:
 - `api/src/features/<feature>/http/<feature>.routes.ts` — route definitions
 - `api/src/features/<feature>/http/<feature>.schema.ts` — Zod v4 schemas
 - `api/src/features/<feature>/core/<Feature>.ts` — business logic class
-- `api/src/features/<feature>/domain/<Feature>Repository.ts` — repository interface
 - `api/src/features/<feature>/domain/<feature>.types.ts` — domain types
-- `api/src/features/<feature>/repository/Drizzle<Feature>Repository.ts` — Drizzle ORM implementation
 - `api/src/features/<feature>/application/<feature>-app.ts` — DI wiring
+
+Data access lives in a module per table, not in the feature (see `api/docs/architecture.md`, "Modules vs Features"):
+
+- `api/src/modules/<table>/domain/<Table>Repository.ts` — repository interface
+- `api/src/modules/<table>/repository/Drizzle<Table>Repository.ts` — Drizzle ORM implementation
 
 ### Route Pattern
 
@@ -28,7 +31,7 @@ Follow these patterns exactly:
 - Schema validation via `schema: { params, body, querystring }` using Zod
 - Auth via `preHandler: authGuard(server, { permissions: [...] })`
 - Handler: extract params -> call app method -> `reply.code(HttpStatus.X).send({ key: result })`
-- Wrap in try/catch with `fastifyErrorHandler(reply, error)`
+- Wrap in try/catch with `fastifyErrorHandler(request, reply, error)`
 - Import `FastifyServerInstance` from `api/src/shared/fastify.types.ts`
 - Import `authGuard` from `api/src/shared/fastify-auth-guard.ts`
 - Import `fastifyErrorHandler` from `api/src/shared/fastify-error-handler.ts`
@@ -54,7 +57,7 @@ Follow these patterns exactly:
 
 - Interface in `domain/`, implementation in `repository/`
 - Drizzle ORM: `db.select()`, `db.insert()`, `db.update()`, `db.delete()`
-- Always `.returning()` for mutations
+- `.returning()` on a mutation whose caller uses the written rows (the inserted id, the updated row, whether a delete found anything); a write whose result nobody reads can skip it
 - Conditions with `eq()`, `and()`, `or()`, `inArray()`, `isNull()`, `not()`
 - Export singleton instance from the implementation file
 - DB schema imported from `api/src/core/database/schemas/index.ts`

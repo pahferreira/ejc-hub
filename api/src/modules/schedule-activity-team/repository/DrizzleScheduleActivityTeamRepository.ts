@@ -39,6 +39,20 @@ class DrizzleScheduleActivityTeamRepository implements ScheduleActivityTeamRepos
       }))
     )
   }
+
+  async replaceTeams(
+    activityId: string,
+    teamInstanceIds: string[],
+    eventId: string,
+    executor: DbExecutor = db
+  ) {
+    await executor
+      .delete(schema.scheduleActivityTeams)
+      .where(eq(schema.scheduleActivityTeams.activityId, activityId))
+      .returning()
+
+    await this.insertTeams(activityId, teamInstanceIds, eventId, executor)
+  }
 }
 
 export const scheduleActivityTeamRepository = new DrizzleScheduleActivityTeamRepository()

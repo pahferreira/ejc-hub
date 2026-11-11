@@ -146,6 +146,27 @@ function buildActivityRepositories(initial: StoredActivity[] = []) {
       activities.push(activity)
       return Promise.resolve(activity)
     },
+    findActivityById: (id, eventId) =>
+      Promise.resolve(
+        activities.find((activity) => activity.id === id && activity.eventId === eventId)
+      ),
+    updateActivity: (id, eventId, input: Omit<InsertScheduleActivityInput, 'eventId'>) => {
+      const activity = activities.find(
+        (candidate) => candidate.id === id && candidate.eventId === eventId
+      )
+      if (activity) {
+        Object.assign(activity, input, { updatedAt: new Date() })
+      }
+      return Promise.resolve(activity)
+    },
+    deleteActivity: (id, eventId) => {
+      const index = activities.findIndex(
+        (activity) => activity.id === id && activity.eventId === eventId
+      )
+      // Removing the row takes its team links with it, like the FK's cascade.
+      const [deleted] = index === -1 ? [] : activities.splice(index, 1)
+      return Promise.resolve(deleted)
+    },
   }
 
   const teamRepository: ScheduleActivityTeamRepository = {
@@ -166,6 +187,18 @@ function buildActivityRepositories(initial: StoredActivity[] = []) {
             teamKey: teamInstanceId,
           }))
         )
+      }
+      return Promise.resolve()
+    },
+    replaceTeams: (activityId, teamInstanceIds) => {
+      const activity = activities.find((candidate) => candidate.id === activityId)
+      if (activity) {
+        activity.teams = teamInstanceIds.map((teamInstanceId) => ({
+          activityId,
+          teamInstanceId,
+          teamName: `Team ${teamInstanceId}`,
+          teamKey: teamInstanceId,
+        }))
       }
       return Promise.resolve()
     },
@@ -380,52 +413,49 @@ describe('Schedule', () => {
     })
   })
 
+  // 18:00 on the São Paulo clock of Friday 03 April 2026 (UTC-3).
+  const FRI_18H = '2026-04-03T21:00:00Z'
+  const FRI_1830 = '2026-04-03T21:30:00Z'
+  const FRI_1815 = '2026-04-03T21:15:00Z'
+
+  function buildActivitySchedule(
+    options: {
+      initialActivities?: StoredActivity[]
+      teamIds?: string[]
+    } = {}
+  ) {
+    const { activityRepository, teamRepository } = buildActivityRepositories(
+      options.initialActivities
+    )
+    return buildSchedule(
+      buildEventRepository(buildEvent()),
+      buildDayRepository([storedDay('day-fri', '2026-04-03'), storedDay('day-sat', '2026-04-04')]),
+      {
+        activityRepository,
+        teamRepository,
+        teamInstanceRepository: buildTeamInstanceRepository(options.teamIds ?? []),
+      }
+    )
+  }
+
+  function addActivity(
+    instance: Schedule,
+    overrides: Partial<Parameters<Schedule['createActivity']>[0]> = {}
+  ) {
+    return instance.createActivity({
+      dayId: 'day-fri',
+      title: 'Abertura',
+      plannedStartsAt: FRI_18H,
+      durationMinutes: 30,
+      place: 'Salão',
+      teamInstanceIds: [],
+      guestName: null,
+      adminsResponsible: true,
+      ...overrides,
+    })
+  }
+
   describe('createActivity', () => {
-    // 18:00 on the São Paulo clock of Friday 03 April 2026 (UTC-3).
-    const FRI_18H = '2026-04-03T21:00:00Z'
-    const FRI_1830 = '2026-04-03T21:30:00Z'
-    const FRI_1815 = '2026-04-03T21:15:00Z'
-
-    function buildActivitySchedule(
-      options: {
-        initialActivities?: StoredActivity[]
-        teamIds?: string[]
-      } = {}
-    ) {
-      const { activityRepository, teamRepository } = buildActivityRepositories(
-        options.initialActivities
-      )
-      return buildSchedule(
-        buildEventRepository(buildEvent()),
-        buildDayRepository([
-          storedDay('day-fri', '2026-04-03'),
-          storedDay('day-sat', '2026-04-04'),
-        ]),
-        {
-          activityRepository,
-          teamRepository,
-          teamInstanceRepository: buildTeamInstanceRepository(options.teamIds ?? []),
-        }
-      )
-    }
-
-    function addActivity(
-      instance: Schedule,
-      overrides: Partial<Parameters<Schedule['createActivity']>[0]> = {}
-    ) {
-      return instance.createActivity({
-        dayId: 'day-fri',
-        title: 'Abertura',
-        plannedStartsAt: FRI_18H,
-        durationMinutes: 30,
-        place: 'Salão',
-        teamInstanceIds: [],
-        guestName: null,
-        adminsResponsible: true,
-        ...overrides,
-      })
-    }
-
     it('adds the activity and its teams, and shows it under its day', async () => {
       schedule = buildActivitySchedule({ teamIds: ['team-a'] })
 
@@ -536,6 +566,200 @@ describe('Schedule', () => {
       schedule = buildSchedule(buildEventRepository(undefined), dayRepository)
 
       await expectAppError(addActivity(schedule), AppErrorCode.NoCurrentEvent)
+    })
+  })
+
+  describe('updateActivity', () => {
+    function editActivity(
+      instance: Schedule,
+      activityId: string,
+      overrides: Partial<Parameters<Schedule['updateActivity']>[1]> = {}
+    ) {
+      return instance.updateActivity(activityId, {
+        dayId: 'day-fri',
+        title: 'Abertura',
+        plannedStartsAt: FRI_18H,
+        durationMinutes: 30,
+        place: 'Salão',
+        teamInstanceIds: [],
+        guestName: null,
+        adminsResponsible: true,
+        ...overrides,
+      })
+    }
+
+    it('replaces every field and the whole team set', async () => {
+      schedule = buildActivitySchedule({
+        teamIds: ['team-a', 'team-b', 'team-c'],
+        initialActivities: [
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            teams: [
+              { activityId: 'a1', teamInstanceId: 'team-a', teamName: 'A', teamKey: 'team-a' },
+              { activityId: 'a1', teamInstanceId: 'team-b', teamName: 'B', teamKey: 'team-b' },
+            ],
+          }),
+        ],
+      })
+
+      const result = await editActivity(schedule, 'a1', {
+        dayId: 'day-sat',
+        title: 'Missa',
+        plannedStartsAt: '2026-04-04T12:00:00Z',
+        durationMinutes: 60,
+        place: 'Capela',
+        teamInstanceIds: ['team-c'],
+        guestName: 'Padre João',
+        adminsResponsible: false,
+      })
+
+      expect(result).toEqual({ activityId: 'a1' })
+
+      const model = await schedule.getSchedule()
+      const friday = model.days.find((day) => day.id === 'day-fri')
+      const saturday = model.days.find((day) => day.id === 'day-sat')
+
+      expect(friday?.activities).toEqual([])
+      expect(saturday?.activities).toHaveLength(1)
+      expect(saturday?.activities[0]).toMatchObject({
+        id: 'a1',
+        title: 'Missa',
+        plannedStartsAt: '2026-04-04T12:00:00.000Z',
+        durationMinutes: 60,
+        place: 'Capela',
+        guestName: 'Padre João',
+        adminsResponsible: false,
+      })
+      expect(saturday?.activities[0].teams.map((team) => team.teamInstanceId)).toEqual(['team-c'])
+    })
+
+    it('allows an edit that keeps the activity in its own slot', async () => {
+      schedule = buildActivitySchedule({
+        initialActivities: [storedActivity('a1', 'day-fri', FRI_18H, 30)],
+      })
+
+      // Same slot, a little longer: only the activity itself is there.
+      const result = await editActivity(schedule, 'a1', { durationMinutes: 45 })
+
+      expect(result).toEqual({ activityId: 'a1' })
+    })
+
+    it('refuses an edit that creates an overlap', async () => {
+      schedule = buildActivitySchedule({
+        initialActivities: [
+          storedActivity('a1', 'day-fri', FRI_18H, 30),
+          storedActivity('a2', 'day-fri', FRI_1830, 30),
+        ],
+      })
+
+      // Stretching the first to 45 minutes runs into the second at 18:30.
+      await expectAppError(
+        editActivity(schedule, 'a1', { durationMinutes: 45 }),
+        AppErrorCode.Validation
+      )
+    })
+
+    it("refuses changing the teams to another event's team", async () => {
+      schedule = buildActivitySchedule({
+        teamIds: ['team-a'],
+        initialActivities: [storedActivity('a1', 'day-fri', FRI_18H, 30)],
+      })
+
+      await expectAppError(
+        editActivity(schedule, 'a1', { teamInstanceIds: ['team-other'] }),
+        AppErrorCode.Validation
+      )
+    })
+
+    it('refuses an edit that leaves nobody responsible', async () => {
+      schedule = buildActivitySchedule({
+        initialActivities: [storedActivity('a1', 'day-fri', FRI_18H, 30)],
+      })
+
+      await expectAppError(
+        editActivity(schedule, 'a1', {
+          teamInstanceIds: [],
+          guestName: null,
+          adminsResponsible: false,
+        }),
+        AppErrorCode.Validation
+      )
+    })
+
+    it('answers not found for an activity of another event', async () => {
+      schedule = buildActivitySchedule({
+        initialActivities: [
+          storedActivity('old', 'day-fri', FRI_18H, 30, { eventId: 'past-event' }),
+        ],
+      })
+
+      await expectAppError(editActivity(schedule, 'old'), AppErrorCode.NotFound)
+    })
+
+    it('answers not found when the activity is deleted while the edit is checked', async () => {
+      const { activityRepository, teamRepository } = buildActivityRepositories([
+        storedActivity('a1', 'day-fri', FRI_18H, 30),
+      ])
+      schedule = buildSchedule(
+        buildEventRepository(buildEvent()),
+        buildDayRepository([storedDay('day-fri', '2026-04-03')]),
+        {
+          // The read finds it; by the write, another admin has deleted it.
+          activityRepository: {
+            ...activityRepository,
+            updateActivity: () => Promise.resolve(undefined),
+          },
+          teamRepository,
+        }
+      )
+
+      await expectAppError(editActivity(schedule, 'a1'), AppErrorCode.NotFound)
+    })
+
+    it('refuses with no current event', async () => {
+      schedule = buildSchedule(buildEventRepository(undefined), dayRepository)
+
+      await expectAppError(editActivity(schedule, 'a1'), AppErrorCode.NoCurrentEvent)
+    })
+  })
+
+  describe('deleteActivity', () => {
+    it('removes the activity and its team links from the schedule', async () => {
+      schedule = buildActivitySchedule({
+        initialActivities: [
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            teams: [
+              { activityId: 'a1', teamInstanceId: 'team-a', teamName: 'A', teamKey: 'team-a' },
+            ],
+          }),
+          storedActivity('a2', 'day-fri', FRI_1830, 30),
+        ],
+      })
+
+      const result = await schedule.deleteActivity('a1')
+
+      expect(result).toEqual({ activityId: 'a1' })
+
+      const model = await schedule.getSchedule()
+      const friday = model.days.find((day) => day.id === 'day-fri')
+
+      expect(friday?.activities.map((activity) => activity.id)).toEqual(['a2'])
+      expect(friday?.activities.flatMap((activity) => activity.teams)).toEqual([])
+    })
+
+    it('answers not found for an activity of another event', async () => {
+      schedule = buildActivitySchedule({
+        initialActivities: [
+          storedActivity('old', 'day-fri', FRI_18H, 30, { eventId: 'past-event' }),
+        ],
+      })
+
+      await expectAppError(schedule.deleteActivity('old'), AppErrorCode.NotFound)
+    })
+
+    it('refuses with no current event', async () => {
+      schedule = buildSchedule(buildEventRepository(undefined), dayRepository)
+
+      await expectAppError(schedule.deleteActivity('a1'), AppErrorCode.NoCurrentEvent)
     })
   })
 })

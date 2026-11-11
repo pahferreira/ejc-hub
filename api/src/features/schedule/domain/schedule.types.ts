@@ -60,8 +60,8 @@ export type DeleteScheduleDayResult = {
   dayId: string
 }
 
-/** Adding an activity to a day of the current event. */
-export type CreateScheduleActivityInput = {
+/** An activity's plan: everything an admin enters for it, on a day of the current event. */
+export type ScheduleActivityPlan = {
   dayId: string
   title: string
   /** An ISO instant. The core rejects a start before the day's São Paulo 00:00. */
@@ -74,6 +74,20 @@ export type CreateScheduleActivityInput = {
   adminsResponsible: boolean
 }
 
+/** Adding an activity to a day of the current event. */
+export type CreateScheduleActivityInput = ScheduleActivityPlan
+
 export type CreateScheduleActivityResult = {
+  activityId: string
+}
+
+/** Editing an activity: every field is sent again, teams included. */
+export type UpdateScheduleActivityInput = ScheduleActivityPlan
+
+export type UpdateScheduleActivityResult = {
+  activityId: string
+}
+
+export type DeleteScheduleActivityResult = {
   activityId: string
 }

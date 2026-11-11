@@ -5,6 +5,8 @@ const scheduleApp = vi.hoisted(() => ({
   getSchedule: vi.fn(),
   createDay: vi.fn(),
   createActivity: vi.fn(),
+  updateActivity: vi.fn(),
+  deleteActivity: vi.fn(),
   deleteDay: vi.fn(),
 }))
 
@@ -52,6 +54,8 @@ describe('schedule routes', () => {
     scheduleApp.createDay.mockResolvedValue({ dayId: DAY_ID, date: '2026-04-03' })
     scheduleApp.createActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
     scheduleApp.deleteDay.mockResolvedValue({ dayId: DAY_ID })
+    scheduleApp.updateActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
+    scheduleApp.deleteActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
 
     server = await buildRouteTestServer(scheduleRoutes)
   })
@@ -67,6 +71,8 @@ describe('schedule routes', () => {
       ['POST', '/schedule/days', { date: '2026-04-03' }],
       ['POST', '/schedule/activities', ACTIVITY_BODY],
       ['DELETE', `/schedule/days/${DAY_ID}`, {}],
+      ['PATCH', `/schedule/activities/${ACTIVITY_ID}`, ACTIVITY_BODY],
+      ['DELETE', `/schedule/activities/${ACTIVITY_ID}`, {}],
     ] as const)('answers %s %s with 401 without a token', async (method, url, payload) => {
       const response = await server.inject({ method, url, payload })
 
@@ -252,6 +258,111 @@ describe('schedule routes', () => {
       })
 
       expect(response.statusCode).toBe(400)
+    })
+  })
+
+  describe('PATCH /schedule/activities/:activityId', () => {
+    it('edits an activity for a caller with schedule:update', async () => {
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: ADMIN,
+        payload: ACTIVITY_BODY,
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(response.json()).toEqual({ result: { activityId: ACTIVITY_ID } })
+      expect(scheduleApp.updateActivity).toHaveBeenCalledWith(ACTIVITY_ID, {
+        dayId: DAY_ID,
+        title: 'Acolhida',
+        plannedStartsAt: '2026-04-03T21:00:00Z',
+        durationMinutes: 30,
+        place: 'Salão',
+        teamInstanceIds: [TEAM_ID],
+        guestName: null,
+        adminsResponsible: false,
+      })
+    })
+
+    it('refuses a caller without schedule:update', async () => {
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: authHeader({ permissions: [SchedulePermissions.Create] }),
+        payload: ACTIVITY_BODY,
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(scheduleApp.updateActivity).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      [
+        'a duration of zero',
+        `/schedule/activities/${ACTIVITY_ID}`,
+        { ...ACTIVITY_BODY, durationMinutes: 0 },
+      ],
+      ['no title', `/schedule/activities/${ACTIVITY_ID}`, { ...ACTIVITY_BODY, title: '' }],
+      ['an activity id that is not a uuid', '/schedule/activities/not-a-uuid', ACTIVITY_BODY],
+    ])('answers 400 for %s', async (_label, url, payload) => {
+      const response = await server.inject({ method: 'PATCH', url, headers: ADMIN, payload })
+
+      expect(response.statusCode).toBe(400)
+      expect(scheduleApp.updateActivity).not.toHaveBeenCalled()
+    })
+
+    it('answers 404 when the activity is not found', async () => {
+      scheduleApp.updateActivity.mockRejectedValue(
+        new AppError('Schedule activity not found', AppErrorCode.NotFound)
+      )
+
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: ADMIN,
+        payload: ACTIVITY_BODY,
+      })
+
+      expect(response.statusCode).toBe(404)
+    })
+  })
+
+  describe('DELETE /schedule/activities/:activityId', () => {
+    it('deletes an activity for a caller with schedule:delete', async () => {
+      const response = await server.inject({
+        method: 'DELETE',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: ADMIN,
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(response.json()).toEqual({ result: { activityId: ACTIVITY_ID } })
+      expect(scheduleApp.deleteActivity).toHaveBeenCalledWith(ACTIVITY_ID)
+    })
+
+    it('refuses a caller without schedule:delete', async () => {
+      const response = await server.inject({
+        method: 'DELETE',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: authHeader({ permissions: [SchedulePermissions.Update] }),
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(scheduleApp.deleteActivity).not.toHaveBeenCalled()
+    })
+
+    it('answers 404 when the activity is not found', async () => {
+      scheduleApp.deleteActivity.mockRejectedValue(
+        new AppError('Schedule activity not found', AppErrorCode.NotFound)
+      )
+
+      const response = await server.inject({
+        method: 'DELETE',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: ADMIN,
+      })
+
+      expect(response.statusCode).toBe(404)
     })
   })
 

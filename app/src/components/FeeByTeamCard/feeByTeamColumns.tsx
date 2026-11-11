@@ -6,8 +6,9 @@ import type { TeamFeeRow } from '../../services/finance/finance.types'
 
 declare module '@tanstack/react-table' {
   // The type parameters are fixed by the interface being augmented; this
-  // declaration adds a field that does not reference them.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // declaration adds a field that does not reference them. Augmenting needs an
+  // interface (declaration merging), not a type.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/consistent-type-definitions
   interface ColumnMeta<TData extends RowData, TValue> {
     /** Extra classes applied to both the header and body cells of this column. */
     className?: string
