@@ -1,5 +1,4 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
-import { isUniqueViolation } from '../../../shared/is-unique-violation.ts'
 import { runInTransaction } from '../../../core/database/client.ts'
 import type { EventModel } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
@@ -10,12 +9,13 @@ import type {
 } from '../../../modules/schedule-activity/domain/ScheduleActivityRepository.ts'
 import type { ScheduleActivityTeamRepository } from '../../../modules/schedule-activity-team/domain/ScheduleActivityTeamRepository.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
-import { toEventDate } from '../../../../../common/schedule/toEventDate.ts'
 import { toEventInstant } from '../../../../../common/schedule/toEventInstant.ts'
 import { daysBetween } from '../../../../../common/schedule/daysBetween.ts'
 import { shiftByEventDays } from '../../../../../common/schedule/shiftByEventDays.ts'
 import { teamColorToken } from '../../../../../common/schedule/teamColorToken.ts'
-import { overlapsAny } from './activity-interval.ts'
+import { overlapsAny } from '../helpers/activity-interval.ts'
+import { DAY_DATE_TAKEN, withDayDateUnique } from '../helpers/day-date-unique.ts'
+import { assertDateInEvent, toScheduleEvent } from '../helpers/schedule-event.ts'
 import type {
   CreateScheduleActivityInput,
   CreateScheduleActivityResult,
@@ -25,61 +25,12 @@ import type {
   DeleteScheduleDayResult,
   ScheduleActivity,
   ScheduleActivityPlan,
-  ScheduleEvent,
   ScheduleReadModel,
   UpdateScheduleActivityInput,
   UpdateScheduleActivityResult,
   UpdateScheduleDayInput,
   UpdateScheduleDayResult,
 } from '../domain/schedule.types.ts'
-
-const DAY_DATE_UNIQUE = 'schedule_days_event_id_date_unique'
-const DAY_DATE_TAKEN = 'The event already has a day on this date'
-
-/**
- * The event's name and its São Paulo start and end dates.
- *
- * `starts_at`/`ends_at` are plain `timestamp` columns read as UTC instants, so
- * an event ending at 23:00 on a Sunday is already Monday in UTC. Reading them in
- * São Paulo is what keeps that Sunday the last day.
- */
-function toScheduleEvent(event: EventModel): ScheduleEvent {
-  return {
-    name: event.name,
-    startDate: event.startsAt ? toEventDate(event.startsAt) : null,
-    endDate: event.endsAt ? toEventDate(event.endsAt) : null,
-  }
-}
-
-/** Refuses a day date outside the event's São Paulo dates, or any date when it has none. */
-function assertDateInEvent(event: EventModel, date: string): void {
-  const { startDate, endDate } = toScheduleEvent(event)
-
-  if (!startDate || !endDate) {
-    throw new AppError('The current event has no dates set', AppErrorCode.Validation)
-  }
-
-  // `YYYY-MM-DD` strings compare as days.
-  if (date < startDate || date > endDate) {
-    throw new AppError('The date is outside the event dates', AppErrorCode.Validation)
-  }
-}
-
-/**
- * Runs a write that sets a day's date, turning the `unique(event_id, date)`
- * violation into the same 409 the read gives. The constraint is what catches
- * two admins taking the same date at once.
- */
-async function withDayDateUnique<T>(write: () => Promise<T>): Promise<T> {
-  try {
-    return await write()
-  } catch (error) {
-    if (isUniqueViolation(error, DAY_DATE_UNIQUE)) {
-      throw new AppError(DAY_DATE_TAKEN, AppErrorCode.Conflict)
-    }
-    throw error
-  }
-}
 
 /**
  * The single entry point for schedule (Cronograma) reads and writes.
