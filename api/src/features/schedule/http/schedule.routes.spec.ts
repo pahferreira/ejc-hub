@@ -51,6 +51,7 @@ describe('schedule routes', () => {
     scheduleApp.getSchedule.mockResolvedValue({
       event: { name: 'EJC 2026', startDate: '2026-04-03', endDate: '2026-04-05' },
       myTeamInstanceId: TEAM_ID,
+      viewerRole: 'member',
       days: [{ id: DAY_ID, date: '2026-04-03', activityCount: 2 }],
     })
     scheduleApp.createDay.mockResolvedValue({ dayId: DAY_ID, date: '2026-04-03' })
@@ -96,6 +97,7 @@ describe('schedule routes', () => {
       expect(response.json()).toEqual({
         event: { name: 'EJC 2026', startDate: '2026-04-03', endDate: '2026-04-05' },
         myTeamInstanceId: TEAM_ID,
+        viewerRole: 'member',
         days: [{ id: DAY_ID, date: '2026-04-03', activityCount: 2 }],
       })
     })

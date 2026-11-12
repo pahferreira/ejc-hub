@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  defaultDayTab,
-  groupActivitiesByPeriod,
-  isMyTeamActivity,
-  scheduleViewerRole,
-} from './scheduleTimeline'
+import { defaultDayId, groupActivitiesByPeriod, isMyTeamActivity } from './scheduleTimeline'
 import type { ScheduleActivity } from '../../services/schedule/schedule.types'
 
 function activity(id: string, plannedStartsAt: string): ScheduleActivity {
@@ -26,33 +21,33 @@ const DAYS = [
   { id: 'day-sun', date: '2026-04-05' },
 ]
 
-describe('defaultDayTab', () => {
+describe('defaultDayId', () => {
   it("opens on today's day during the event", () => {
     // 10:00 São Paulo on Saturday.
-    expect(defaultDayTab(DAYS, new Date('2026-04-04T13:00:00Z'))).toBe('day-sat')
+    expect(defaultDayId(DAYS, new Date('2026-04-04T13:00:00Z'))).toBe('day-sat')
   })
 
   it('reads today on the São Paulo clock, not UTC', () => {
     // 22:30 São Paulo on Saturday is already Sunday in UTC.
-    expect(defaultDayTab(DAYS, new Date('2026-04-05T01:30:00Z'))).toBe('day-sat')
+    expect(defaultDayId(DAYS, new Date('2026-04-05T01:30:00Z'))).toBe('day-sat')
   })
 
   it('opens on the first day before the event', () => {
-    expect(defaultDayTab(DAYS, new Date('2026-03-20T12:00:00Z'))).toBe('day-fri')
+    expect(defaultDayId(DAYS, new Date('2026-03-20T12:00:00Z'))).toBe('day-fri')
   })
 
   it('opens on the first day after the event', () => {
-    expect(defaultDayTab(DAYS, new Date('2026-04-10T12:00:00Z'))).toBe('day-fri')
+    expect(defaultDayId(DAYS, new Date('2026-04-10T12:00:00Z'))).toBe('day-fri')
   })
 
   it('opens on the first day when today has no day planned', () => {
     const days = [DAYS[0], DAYS[2]]
 
-    expect(defaultDayTab(days, new Date('2026-04-04T13:00:00Z'))).toBe('day-fri')
+    expect(defaultDayId(days, new Date('2026-04-04T13:00:00Z'))).toBe('day-fri')
   })
 
   it('has no tab when no days are planned', () => {
-    expect(defaultDayTab([], new Date('2026-04-04T13:00:00Z'))).toBeNull()
+    expect(defaultDayId([], new Date('2026-04-04T13:00:00Z'))).toBeNull()
   })
 })
 
@@ -124,19 +119,5 @@ describe('isMyTeamActivity', () => {
 
   it('is never the team of a user on no team', () => {
     expect(isMyTeamActivity(shared, null)).toBe(false)
-  })
-})
-
-describe('scheduleViewerRole', () => {
-  it('is coordinator for a coordinator, admin or not', () => {
-    expect(scheduleViewerRole('coordinator')).toBe('coordinator')
-  })
-
-  it('is member for a member, admin or not', () => {
-    expect(scheduleViewerRole('member')).toBe('member')
-  })
-
-  it('is admin for someone on no team', () => {
-    expect(scheduleViewerRole(null)).toBe('admin')
   })
 })

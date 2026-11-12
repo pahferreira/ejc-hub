@@ -129,22 +129,27 @@ export class Schedule {
   }
 
   /**
-   * The team the viewer is on in the current event, or null for an admin who is
-   * on none. Anyone else gets a 403: being on a team is data the token cannot
+   * The viewer's team in the current event and the role they read the
+   * Cronograma in, both from their one membership. The team role wins: an admin
+   * who is on a team reads it as that team does. An admin on no team gets a null
+   * team. Anyone else gets a 403: being on a team is data the token cannot
    * express, so the route lets every signed-in caller through and this decides.
    */
-  async #resolveViewerTeam(viewer: ScheduleViewer, eventId: string): Promise<string | null> {
+  async #resolveViewerTeam(
+    viewer: ScheduleViewer,
+    eventId: string
+  ): Promise<Pick<ScheduleReadModel, 'myTeamInstanceId' | 'viewerRole'>> {
     const user = await this.#userRepository.getUser(viewer.authId)
     const membership = user
       ? await this.#teamMembershipRepository.findMembershipByUserAndEvent(user.id, eventId)
       : undefined
 
     if (membership) {
-      return membership.teamInstanceId
+      return { myTeamInstanceId: membership.teamInstanceId, viewerRole: membership.type }
     }
 
     if (hasPermission(viewer.permissions, SchedulePermissions.Read)) {
-      return null
+      return { myTeamInstanceId: null, viewerRole: 'admin' }
     }
 
     throw new AppError(
@@ -155,11 +160,12 @@ export class Schedule {
 
   /**
    * The current event's days, earliest date first, each with its activities,
-   * plus the viewer's own team so the Cronograma can highlight its activities.
+   * plus the viewer's own team so the Cronograma can highlight its activities,
+   * and the role they read it in.
    */
   async getSchedule(viewer: ScheduleViewer): Promise<ScheduleReadModel> {
     return this.#withCurrentEvent(async (event) => {
-      const myTeamInstanceId = await this.#resolveViewerTeam(viewer, event.id)
+      const viewerTeam = await this.#resolveViewerTeam(viewer, event.id)
 
       const [days, activities, teamRows] = await Promise.all([
         this.#scheduleDayRepository.listDaysByEvent(event.id),
@@ -199,7 +205,7 @@ export class Schedule {
 
       return {
         event: toScheduleEvent(event),
-        myTeamInstanceId,
+        ...viewerTeam,
         days: days.map((day) => ({
           id: day.id,
           date: day.date,

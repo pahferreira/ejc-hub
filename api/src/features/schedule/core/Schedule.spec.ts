@@ -398,28 +398,32 @@ describe('Schedule', () => {
       await expectAppError(schedule.getSchedule(ADMIN), AppErrorCode.NoCurrentEvent)
     })
 
-    it('lets in an admin who is not on a team, with no team to highlight', async () => {
+    it('lets in an admin who is not on a team, as admin with no team to highlight', async () => {
       const model = await schedule.getSchedule(ADMIN)
 
       expect(model.myTeamInstanceId).toBeNull()
+      expect(model.viewerRole).toBe('admin')
     })
 
     it('lets in a member of the current event, with their team to highlight', async () => {
       const model = await schedule.getSchedule(MEMBER)
 
       expect(model.myTeamInstanceId).toBe('team-cozinha')
+      expect(model.viewerRole).toBe('member')
     })
 
     it('lets in a coordinator of the current event, with their team to highlight', async () => {
       const model = await schedule.getSchedule(COORDINATOR)
 
       expect(model.myTeamInstanceId).toBe('team-liturgia')
+      expect(model.viewerRole).toBe('coordinator')
     })
 
-    it("highlights an admin's own team when the admin is also on one", async () => {
+    it("reads an admin who is also on a team in that team's role", async () => {
       const model = await schedule.getSchedule({ ...MEMBER, permissions: ADMIN.permissions })
 
       expect(model.myTeamInstanceId).toBe('team-cozinha')
+      expect(model.viewerRole).toBe('member')
     })
 
     it('refuses someone neither on a current-event team nor an admin', async () => {

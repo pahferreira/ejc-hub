@@ -22,6 +22,7 @@ import {
   SubscriptionPermissions,
   TeamInstancePermissions,
   TeamTemplatePermissions,
+  type Permission,
 } from '../../../../common/permissions'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import { FeatureFlag, type FeatureFlagValue } from '../../hooks/useFeatureFlag/feature-flags'
@@ -49,7 +50,7 @@ export type SidebarNavItem = {
    * permission: a page open to every team and to the admins, who may be on none.
    * Use instead of `permission` and `requiresTeamMembership`, which both must hold.
    */
-  teamMembershipOrPermission?: string
+  teamMembershipOrPermission?: Permission
   /**
    * Only shown when this feature flag is enabled. Not a permission, so it's
    * filtered at render time against the feature-flag state.

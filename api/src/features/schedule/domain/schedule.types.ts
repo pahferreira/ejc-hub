@@ -45,8 +45,12 @@ export type ScheduleReadModel = {
   event: ScheduleEvent
   /** The viewer's team in the current event, or null (an admin on no team). */
   myTeamInstanceId: string | null
+  /** The role the viewer reads it in: their team role, or admin when on no team. */
+  viewerRole: ScheduleViewerRole
   days: ScheduleDay[]
 }
+
+export type ScheduleViewerRole = 'admin' | 'coordinator' | 'member'
 
 /** Who is reading the schedule: their Auth0 subject and the token's permissions. */
 export type ScheduleViewer = {

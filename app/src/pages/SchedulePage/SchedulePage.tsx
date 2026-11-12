@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react'
-import { isAxiosError } from 'axios'
 import { usePostHog } from '@posthog/react'
 import { FiCalendar } from 'react-icons/fi'
 import { ScheduleDayCard } from '../../components/ScheduleDayCard/ScheduleDayCard'
 import { ScheduleTimelineRow } from '../../components/ScheduleTimelineRow/ScheduleTimelineRow'
 import { useScheduleQuery } from '../../services/schedule/useScheduleQuery'
-import { isNoCurrentEventError } from '../../services/schedule/schedule.api'
-import { useCurrentEventSubscriptionStatusQuery } from '../../services/events/useCurrentEventSubscriptionStatusQuery'
+import {
+  isNoCurrentEventError,
+  isScheduleForbiddenError,
+} from '../../services/schedule/schedule.api'
 import { pluralize } from '../../utils/pluralize/pluralize'
 import {
-  defaultDayTab,
+  defaultDayId,
   groupActivitiesByPeriod,
-  scheduleViewerRole,
 } from '../../utils/scheduleTimeline/scheduleTimeline'
 
 const SCHEDULE_VIEWED_EVENT = 'schedule_viewed'
@@ -31,7 +31,7 @@ function errorMessage(error: unknown): string {
     return 'Nenhum encontro atual definido.'
   }
 
-  if (isAxiosError(error) && error.response?.status === 403) {
+  if (isScheduleForbiddenError(error)) {
     return 'O cronograma é exclusivo para as equipes do encontro atual.'
   }
 
@@ -44,29 +44,24 @@ function errorMessage(error: unknown): string {
  * the day's activities grouped into Manhã, Tarde and Noite and the viewer's
  * team's rows highlighted.
  *
- * The selected tab is held by id and falls back to `defaultDayTab`, so the page
+ * The selected tab is held by id and falls back to `defaultDayId`, so the page
  * opens on the right day without an effect to set it once the data arrives.
  */
 export function SchedulePage() {
   const scheduleQuery = useScheduleQuery()
-  const subscriptionStatus = useCurrentEventSubscriptionStatusQuery()
   const posthog = usePostHog()
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null)
 
   const days = scheduleQuery.data?.days ?? []
   const selectedDay =
     days.find((day) => day.id === selectedDayId) ??
-    days.find((day) => day.id === defaultDayTab(days, new Date()))
-  // Only once the membership has loaded: a failed request must not report a
-  // team member as `admin`.
-  const role = subscriptionStatus.data
-    ? scheduleViewerRole(subscriptionStatus.data.myMembershipType)
-    : null
+    days.find((day) => day.id === defaultDayId(days, new Date()))
+  const role = scheduleQuery.data?.viewerRole
 
   const selectedDate = selectedDay?.date
 
-  // Fired whenever a day's tab is shown: on opening and on every switch. Waits
-  // for the membership so the role is never reported before it is known.
+  // Fired whenever a day's tab is shown: on opening and on every switch. The
+  // role comes with the schedule, so it is known whenever a day is.
   useEffect(() => {
     if (selectedDate && role) {
       posthog.capture(SCHEDULE_VIEWED_EVENT, { day: selectedDate, role })
