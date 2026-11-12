@@ -7,6 +7,7 @@ Issues and specs for this repo live as GitHub issues in `pahferreira/ejc-hub`, a
 ## Conventions
 
 - **Create an issue**: `gh issue create --title "..." --body "..."` (a heredoc for multi-line bodies), then add the URL it prints to the board by the project's number: `gh project item-add 7 --owner pahferreira --url <issue-url>`. Every issue goes on the board (lands in **Backlog**). The number survives a rename of the project; `--project "<title>"` does not.
+- **Tech debt**: label `maintenance`, and link it as a sub-issue of the **Tech Debts** epic #273 (`gh api --method POST repos/pahferreira/ejc-hub/issues/273/sub_issues -F sub_issue_id=<db-id>`, where `<db-id>` is `gh api repos/pahferreira/ejc-hub/issues/<n> --jq .id`).
 - **Read an issue**: `gh issue view <number> --json title,body,labels,comments,projectItems`. Plain `--comments` prints only the comments, never the body, and prints nothing at all on an issue without comments.
 - **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
 - **Comment on an issue**: `gh issue comment <number> --body "..."`

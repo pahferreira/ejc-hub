@@ -24,7 +24,8 @@ The rules a review checks a change against. ESLint already enforces `prefer-cons
 - **Props:** destructure in the signature only to give a prop a default value, and never for an optional `boolean` prop: `false`, `undefined` and `null` already behave the same.
 - **Forms:** a custom hook named `use<Form Intention>Form.ts` (e.g. `useSubscriptionForm.ts`) owns the form, its values, validation and submit. A form with more than two sections splits each section into its own component and file, sharing the form through a React Context whose Provider sits in the form's parent component; the sections reach the form through the custom hook.
 - **API calls:** one `use<Action><Thing>Mutation.ts` / `use<Thing>Query.ts` per API call under `src/services/<area>/`. Mutations invalidate the area's query keys on success. Hooks sharing that shape is the convention.
-- **Tests:** Vitest for pure helpers and hooks; stories with `play` functions for component behaviour.
+- **Tests:** Vitest for pure helpers. A hook keeps its logic in a pure function exported from the hook's file, and its spec tests that function (`useTeamBuildingDraft`, `useSelectedScheduleDay`). Stories with `play` functions cover component behaviour.
+- **Analytics:** PostHog event names are kebab-case (`schedule-viewed`, `action-member-requested`), declared as a constant beside the `capture` call. An issue that writes one in snake_case is converted, not followed.
 
 ## Common
 
