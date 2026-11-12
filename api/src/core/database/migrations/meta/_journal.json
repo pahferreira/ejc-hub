@@ -358,6 +358,13 @@
       "when": 1793293051310,
       "tag": "0050_schedule",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1794513398040,
+      "tag": "0051_schedule_all_teams",
+      "breakpoints": true
     }
   ]
 }

@@ -12,6 +12,7 @@ const VALID: ScheduleActivityFormValues = {
   teamInstanceIds: ['t1'],
   guestName: '',
   adminsResponsible: false,
+  allTeams: false,
 }
 
 /** The first error message per field, or `{}` when the values pass. */
@@ -40,6 +41,10 @@ describe('scheduleActivityFormSchema', () => {
 
   it('accepts the admins alone as the responsible', () => {
     expect(fieldErrors({ ...VALID, teamInstanceIds: [], adminsResponsible: true })).toEqual({})
+  })
+
+  it('accepts all teams alone as the responsible', () => {
+    expect(fieldErrors({ ...VALID, teamInstanceIds: [], allTeams: true })).toEqual({})
   })
 
   it('asks for a responsible when there are no teams, no guest and no admins', () => {

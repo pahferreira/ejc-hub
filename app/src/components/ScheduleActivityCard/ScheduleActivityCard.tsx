@@ -30,7 +30,10 @@ function Chip(props: { children: React.ReactNode }) {
 export function ScheduleActivityCard(props: ScheduleActivityCardProps) {
   const { activity } = props
   const hasResponsible =
-    activity.teams.length > 0 || activity.adminsResponsible || activity.guestName
+    activity.allTeams ||
+    activity.teams.length > 0 ||
+    activity.adminsResponsible ||
+    activity.guestName
 
   return (
     <article className="group relative flex gap-1 md:gap-4 rounded-xl border border-tertiary bg-white p-4 shadow-sm">
@@ -51,22 +54,27 @@ export function ScheduleActivityCard(props: ScheduleActivityCardProps) {
 
         {hasResponsible && (
           <div className="flex flex-wrap gap-1.5">
-            {activity.teams.length > 0 && (
-              <TruncatedPillList
-                items={activity.teams}
-                itemNoun="equipes"
-                getItemKey={(team) => team.teamInstanceId}
-                renderItem={(team) => (
-                  <Chip>
-                    <span
-                      aria-hidden
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: teamColorHex(team.colorToken) }}
-                    />
-                    {team.teamName}
-                  </Chip>
-                )}
-              />
+            {/* Neutral, with no color dot, so it isn't read as one specific team. */}
+            {activity.allTeams ? (
+              <Chip>Todas as equipes</Chip>
+            ) : (
+              activity.teams.length > 0 && (
+                <TruncatedPillList
+                  items={activity.teams}
+                  itemNoun="equipes"
+                  getItemKey={(team) => team.teamInstanceId}
+                  renderItem={(team) => (
+                    <Chip>
+                      <span
+                        aria-hidden
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: teamColorHex(team.colorToken) }}
+                      />
+                      {team.teamName}
+                    </Chip>
+                  )}
+                />
+              )
             )}
             {activity.adminsResponsible && (
               <div className="flex flex-wrap gap-1.5">

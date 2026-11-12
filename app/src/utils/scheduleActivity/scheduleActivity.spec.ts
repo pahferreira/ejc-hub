@@ -25,6 +25,7 @@ function activity(overrides: Partial<ScheduleActivity> = {}): ScheduleActivity {
     place: 'Salão',
     guestName: null,
     adminsResponsible: false,
+    allTeams: false,
     teams: [],
     ...overrides,
   }
@@ -141,6 +142,7 @@ describe('buildActivityBody', () => {
       teamInstanceIds: ['team-a'],
       guestName: '  ',
       adminsResponsible: true,
+      allTeams: false,
     })
 
     expect(body).toEqual({
@@ -152,6 +154,7 @@ describe('buildActivityBody', () => {
       teamInstanceIds: ['team-a'],
       guestName: null,
       adminsResponsible: true,
+      allTeams: false,
     })
   })
 
@@ -164,6 +167,7 @@ describe('buildActivityBody', () => {
       teamInstanceIds: [],
       guestName: '  Padre João  ',
       adminsResponsible: false,
+      allTeams: false,
     })
 
     expect(body.guestName).toBe('Padre João')
@@ -227,6 +231,7 @@ describe('activityFormValues', () => {
       place: 'Capela',
       guestName: 'Padre João',
       adminsResponsible: true,
+      allTeams: false,
       teams: [
         { teamInstanceId: 't1', teamName: 'Liturgia', teamKey: 'liturgia', colorToken: 'blue' },
         { teamInstanceId: 't2', teamName: 'Música', teamKey: 'musica', colorToken: 'red' },
@@ -241,6 +246,7 @@ describe('activityFormValues', () => {
       teamInstanceIds: ['t1', 't2'],
       guestName: 'Padre João',
       adminsResponsible: true,
+      allTeams: false,
     })
   })
 

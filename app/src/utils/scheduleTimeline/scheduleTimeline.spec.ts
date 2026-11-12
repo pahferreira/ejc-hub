@@ -11,6 +11,7 @@ function activity(id: string, plannedStartsAt: string): ScheduleActivity {
     place: 'Salão',
     guestName: null,
     adminsResponsible: false,
+    allTeams: false,
     teams: [],
   }
 }

@@ -170,6 +170,7 @@ export function activityFormValues(activity: ScheduleActivity): ScheduleActivity
     teamInstanceIds: activity.teams.map((team) => team.teamInstanceId),
     guestName: activity.guestName ?? '',
     adminsResponsible: activity.adminsResponsible,
+    allTeams: activity.allTeams,
   }
 }
 
@@ -194,5 +195,6 @@ export function buildActivityBody(
     teamInstanceIds: values.teamInstanceIds,
     guestName: guestName === '' ? null : guestName,
     adminsResponsible: values.adminsResponsible,
+    allTeams: values.allTeams,
   }
 }

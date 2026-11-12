@@ -1,0 +1,1 @@
+ALTER TABLE "schedule_activities" ADD COLUMN "all_teams" boolean DEFAULT false NOT NULL;

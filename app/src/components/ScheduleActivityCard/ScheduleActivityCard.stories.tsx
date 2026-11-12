@@ -15,6 +15,7 @@ const meta = {
       place: 'Salão paroquial',
       guestName: null,
       adminsResponsible: false,
+      allTeams: false,
       teams: [
         { teamInstanceId: 't1', teamName: 'Acolhida', teamKey: 'acolhida', colorToken: 'rose' },
       ],
@@ -51,6 +52,7 @@ export const AllResponsible: Story = {
       place: 'Auditório',
       guestName: 'Padre João',
       adminsResponsible: true,
+      allTeams: false,
       teams: [
         { teamInstanceId: 't1', teamName: 'Liturgia', teamKey: 'liturgia', colorToken: 'violet' },
         { teamInstanceId: 't2', teamName: 'Música', teamKey: 'musica', colorToken: 'sky' },
@@ -77,6 +79,7 @@ export const CrossesMidnight: Story = {
       place: 'Capela',
       guestName: null,
       adminsResponsible: true,
+      allTeams: false,
       teams: [],
     },
   },
@@ -118,6 +121,7 @@ export const ManyTeams: Story = {
       place: 'Auditório',
       guestName: 'Padre João',
       adminsResponsible: true,
+      allTeams: false,
       teams: TWELVE_TEAMS,
     },
   },
@@ -138,5 +142,29 @@ export const ManyTeams: Story = {
     // `TruncatedPillList` stories).
     await waitFor(() => expect(screen.getByText('Ordem')).toBeVisible())
     await expect(screen.getByText('Recepção')).toBeVisible()
+  },
+}
+
+/** Every team of the event: one neutral "Todas as equipes" chip, with no color dot. */
+export const AllTeams: Story = {
+  args: {
+    activity: {
+      id: 'activity-5',
+      title: 'Plenária',
+      plannedStartsAt: '2026-04-04T12:00:00Z',
+      durationMinutes: 60,
+      place: 'Salão paroquial',
+      guestName: null,
+      adminsResponsible: false,
+      allTeams: true,
+      teams: [],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const chip = canvas.getByText('Todas as equipes')
+
+    await expect(chip).toBeInTheDocument()
+    await expect(chip.querySelector('[aria-hidden]')).toBeNull()
   },
 }

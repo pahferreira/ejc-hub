@@ -33,6 +33,7 @@ const ACTIVITY_BODY = {
   teamInstanceIds: [TEAM_ID],
   guestName: null,
   adminsResponsible: false,
+  allTeams: false,
 }
 
 const ADMIN = authHeader({
@@ -192,6 +193,7 @@ describe('schedule routes', () => {
         teamInstanceIds: [TEAM_ID],
         guestName: null,
         adminsResponsible: false,
+        allTeams: false,
       })
     })
 
@@ -215,7 +217,22 @@ describe('schedule routes', () => {
           teamInstanceIds: [],
           guestName: null,
           adminsResponsible: false,
+          allTeams: false,
         })
+      )
+    })
+
+    it('hands the core an all-teams activity with no team ids', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/schedule/activities',
+        headers: ADMIN,
+        payload: { ...ACTIVITY_BODY, teamInstanceIds: [], allTeams: true },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(scheduleApp.createActivity).toHaveBeenCalledWith(
+        expect.objectContaining({ teamInstanceIds: [], allTeams: true })
       )
     })
 
@@ -238,6 +255,7 @@ describe('schedule routes', () => {
       ['no title', { ...ACTIVITY_BODY, title: '' }],
       ['no place', { ...ACTIVITY_BODY, place: '' }],
       ['a day id that is not a uuid', { ...ACTIVITY_BODY, dayId: 'not-a-uuid' }],
+      ['all teams together with picked teams', { ...ACTIVITY_BODY, allTeams: true }],
     ])('answers 400 for %s', async (_label, payload) => {
       const response = await server.inject({
         method: 'POST',
@@ -360,6 +378,7 @@ describe('schedule routes', () => {
         teamInstanceIds: [TEAM_ID],
         guestName: null,
         adminsResponsible: false,
+        allTeams: false,
       })
     })
 

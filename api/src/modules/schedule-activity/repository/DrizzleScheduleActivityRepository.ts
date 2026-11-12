@@ -33,6 +33,7 @@ class DrizzleScheduleActivityRepository implements ScheduleActivityRepository {
         place: input.place,
         guestName: input.guestName,
         adminsResponsible: input.adminsResponsible,
+        allTeams: input.allTeams,
       })
       .returning()
 

@@ -190,6 +190,7 @@ function buildActivityRepositories(initial: StoredActivity[] = []) {
         place: input.place,
         guestName: input.guestName,
         adminsResponsible: input.adminsResponsible,
+        allTeams: input.allTeams,
         createdAt: new Date(),
         updatedAt: new Date(),
         teams: [],
@@ -301,6 +302,7 @@ function storedActivity(
     place: 'Salão',
     guestName: null,
     adminsResponsible: false,
+    allTeams: false,
     createdAt: new Date(),
     updatedAt: new Date(),
     teams: [],
@@ -574,6 +576,7 @@ describe('Schedule', () => {
       teamInstanceIds: [],
       guestName: null,
       adminsResponsible: true,
+      allTeams: false,
       ...overrides,
     })
   }
@@ -670,6 +673,28 @@ describe('Schedule', () => {
       )
     })
 
+    it('adds an all-teams activity with nobody else responsible, shown with no team list', async () => {
+      schedule = buildActivitySchedule({ teamIds: ['team-a', 'team-b'] })
+
+      await addActivity(schedule, { title: 'Plenária', allTeams: true, adminsResponsible: false })
+
+      const model = await schedule.getSchedule(ADMIN)
+      const day = model.days.find((candidate) => candidate.id === 'day-fri')
+
+      expect(day?.activities[0]).toMatchObject({ title: 'Plenária', allTeams: true, teams: [] })
+    })
+
+    it('shows an activity with picked teams as not all teams', async () => {
+      schedule = buildActivitySchedule({ teamIds: ['team-a'] })
+
+      await addActivity(schedule, { teamInstanceIds: ['team-a'], adminsResponsible: false })
+
+      const model = await schedule.getSchedule(ADMIN)
+      const day = model.days.find((candidate) => candidate.id === 'day-fri')
+
+      expect(day?.activities[0].allTeams).toBe(false)
+    })
+
     it('refuses a team that belongs to another event', async () => {
       schedule = buildActivitySchedule({ teamIds: ['team-a'] })
 
@@ -707,6 +732,7 @@ describe('Schedule', () => {
         teamInstanceIds: [],
         guestName: null,
         adminsResponsible: true,
+        allTeams: false,
         ...overrides,
       })
     }

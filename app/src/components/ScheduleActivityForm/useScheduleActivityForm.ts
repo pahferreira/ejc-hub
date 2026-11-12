@@ -28,6 +28,7 @@ function initialValues(startTime: string, durationMinutes: number): ScheduleActi
     teamInstanceIds: [],
     guestName: '',
     adminsResponsible: false,
+    allTeams: false,
   }
 }
 

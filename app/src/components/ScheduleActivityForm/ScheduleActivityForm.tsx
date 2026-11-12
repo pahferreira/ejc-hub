@@ -37,7 +37,7 @@ export type ScheduleActivityFormProps = {
 /**
  * The inline "NOVA ATIVIDADE" card, or "EDITAR ATIVIDADE" in place of the card
  * it edits. Not a drawer: it sits in the day's list where the activity lands. A live "Termina às" tracks the start and
- * duration; the responsible box groups teams, a guest and the admins toggle.
+ * duration; the responsible box groups teams, a guest, the admins toggle and the all-teams toggle.
  */
 export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
   const { values, onChange } = props
@@ -111,6 +111,7 @@ export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
               onChange({ teamInstanceIds: selected.map((option) => option.value) })
             }
             placeholder="Buscar equipes..."
+            disabled={values.allTeams}
           />
 
           <Input
@@ -125,6 +126,14 @@ export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
           label="Administração conduz esta atividade"
           checked={values.adminsResponsible}
           onChange={(adminsResponsible) => onChange({ adminsResponsible })}
+        />
+
+        {/* Checking or unchecking it empties the picked teams: the wildcard never
+            sits beside a hand-picked list, and unchecking starts a fresh selection. */}
+        <Checkbox
+          label="Todas as equipes participam"
+          checked={values.allTeams}
+          onChange={(allTeams) => onChange({ allTeams, teamInstanceIds: [] })}
         />
 
         {props.fieldErrors?.responsible && (
