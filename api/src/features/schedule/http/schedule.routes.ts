@@ -1,13 +1,12 @@
-import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { z } from 'zod/v4'
 import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
-import { extractUserInformationFromToken } from '../../../shared/extract-user-info-from-token.ts'
+import { callerOrUnauthorized } from '../../../shared/caller-or-unauthorized.ts'
 import { SchedulePermissions } from '../../../../../common/permissions/permissions.types.ts'
 import { scheduleApp } from '../application/schedule-app.ts'
-import type { ScheduleActivityPlan, ScheduleViewer } from '../domain/schedule.types.ts'
+import type { ScheduleActivityPlan } from '../domain/schedule.types.ts'
 import {
   createScheduleActivityBodySchema,
   createScheduleDayBodySchema,
@@ -32,29 +31,6 @@ function toActivityPlan(body: z.infer<typeof scheduleActivityBodySchema>): Sched
   }
 }
 
-/**
- * The caller as the schedule read needs them, or a 401 already sent.
- *
- * Whether they may read is decided by `Schedule` from their permissions and
- * their team membership, so both travel with the call.
- */
-function viewerOrUnauthorized(request: FastifyRequest, reply: FastifyReply): ScheduleViewer | null {
-  const token = request.getToken()
-
-  if (!token) {
-    void reply.code(HttpStatus.Unauthorized).send({
-      error: 'Unauthorized',
-      message: 'Authentication required',
-    })
-
-    return null
-  }
-
-  const { authId, permissions } = extractUserInformationFromToken(token)
-
-  return { authId, permissions }
-}
-
 export function scheduleRoutes(server: FastifyServerInstance) {
   return () => {
     // Authentication only. Admins (`schedule:read`) and anyone on a team in the
@@ -67,13 +43,13 @@ export function scheduleRoutes(server: FastifyServerInstance) {
       },
       async (request, reply) => {
         try {
-          const viewer = viewerOrUnauthorized(request, reply)
+          const caller = callerOrUnauthorized(request, reply)
 
-          if (!viewer) {
+          if (!caller) {
             return reply
           }
 
-          const readModel = await scheduleApp.getSchedule(viewer)
+          const readModel = await scheduleApp.getSchedule(caller)
 
           return reply.code(HttpStatus.Ok).send(readModel)
         } catch (error) {
