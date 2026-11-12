@@ -172,6 +172,21 @@ describe('buildActivityBody', () => {
 
     expect(body.guestName).toBe('Padre João')
   })
+
+  it('sends an all-teams activity with no team ids', () => {
+    const body = buildActivityBody('day-fri', '2026-04-03', {
+      title: 'Plenária',
+      startTime: '20:00',
+      durationMinutes: 60,
+      place: 'Auditório',
+      teamInstanceIds: [],
+      guestName: '',
+      adminsResponsible: false,
+      allTeams: true,
+    })
+
+    expect(body).toMatchObject({ teamInstanceIds: [], allTeams: true })
+  })
 })
 
 describe('activityGaps', () => {
@@ -252,5 +267,21 @@ describe('activityFormValues', () => {
 
   it('reads no guest as an empty field', () => {
     expect(activityFormValues(activity({ guestName: null })).guestName).toBe('')
+  })
+
+  it('opens an all-teams activity with the all-teams box checked and no teams picked', () => {
+    const values = activityFormValues(activity({ allTeams: true, teams: [] }))
+
+    expect(values).toMatchObject({ allTeams: true, teamInstanceIds: [] })
+  })
+
+  it('round-trips an all-teams activity back into the same body', () => {
+    const values = activityFormValues(activity({ allTeams: true, teams: [] }))
+
+    expect(buildActivityBody('day-fri', '2026-04-03', values)).toMatchObject({
+      plannedStartsAt: '2026-04-03T21:00:00.000Z',
+      teamInstanceIds: [],
+      allTeams: true,
+    })
   })
 })

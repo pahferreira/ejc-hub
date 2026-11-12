@@ -781,6 +781,50 @@ describe('Schedule', () => {
       expect(saturday?.activities[0].teams.map((team) => team.teamInstanceId)).toEqual(['team-c'])
     })
 
+    it('turns an activity with picked teams into an all-teams one with no team list', async () => {
+      schedule = buildActivitySchedule({
+        teamIds: ['team-a', 'team-b'],
+        initialActivities: [
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            teams: [
+              { activityId: 'a1', teamInstanceId: 'team-a', teamName: 'A', teamKey: 'team-a' },
+              { activityId: 'a1', teamInstanceId: 'team-b', teamName: 'B', teamKey: 'team-b' },
+            ],
+          }),
+        ],
+      })
+
+      await editActivity(schedule, 'a1', {
+        teamInstanceIds: [],
+        adminsResponsible: false,
+        allTeams: true,
+      })
+
+      const model = await schedule.getSchedule(ADMIN)
+      const day = model.days.find((candidate) => candidate.id === 'day-fri')
+
+      expect(day?.activities[0]).toMatchObject({ id: 'a1', allTeams: true, teams: [] })
+    })
+
+    it('turns an all-teams activity back into one with picked teams', async () => {
+      schedule = buildActivitySchedule({
+        teamIds: ['team-a', 'team-b'],
+        initialActivities: [storedActivity('a1', 'day-fri', FRI_18H, 30, { allTeams: true })],
+      })
+
+      await editActivity(schedule, 'a1', {
+        teamInstanceIds: ['team-b'],
+        adminsResponsible: false,
+        allTeams: false,
+      })
+
+      const model = await schedule.getSchedule(ADMIN)
+      const activity = model.days.find((candidate) => candidate.id === 'day-fri')?.activities[0]
+
+      expect(activity?.allTeams).toBe(false)
+      expect(activity?.teams.map((team) => team.teamInstanceId)).toEqual(['team-b'])
+    })
+
     it('allows an edit that keeps the activity in its own slot', async () => {
       schedule = buildActivitySchedule({
         initialActivities: [storedActivity('a1', 'day-fri', FRI_18H, 30)],

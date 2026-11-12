@@ -382,6 +382,36 @@ describe('schedule routes', () => {
       })
     })
 
+    it('hands the core an edit to all teams with no team ids', async () => {
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: ADMIN,
+        payload: { ...ACTIVITY_BODY, teamInstanceIds: [], allTeams: true },
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(scheduleApp.updateActivity).toHaveBeenCalledWith(
+        ACTIVITY_ID,
+        expect.objectContaining({ teamInstanceIds: [], allTeams: true })
+      )
+    })
+
+    it('hands the core an edit back to picked teams', async () => {
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: ADMIN,
+        payload: { ...ACTIVITY_BODY, teamInstanceIds: [TEAM_ID], allTeams: false },
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(scheduleApp.updateActivity).toHaveBeenCalledWith(
+        ACTIVITY_ID,
+        expect.objectContaining({ teamInstanceIds: [TEAM_ID], allTeams: false })
+      )
+    })
+
     it('refuses a caller without schedule:update', async () => {
       const response = await server.inject({
         method: 'PATCH',
@@ -402,6 +432,11 @@ describe('schedule routes', () => {
       ],
       ['no title', `/schedule/activities/${ACTIVITY_ID}`, { ...ACTIVITY_BODY, title: '' }],
       ['an activity id that is not a uuid', '/schedule/activities/not-a-uuid', ACTIVITY_BODY],
+      [
+        'all teams together with picked teams',
+        `/schedule/activities/${ACTIVITY_ID}`,
+        { ...ACTIVITY_BODY, allTeams: true },
+      ],
     ])('answers 400 for %s', async (_label, url, payload) => {
       const response = await server.inject({ method: 'PATCH', url, headers: ADMIN, payload })
 
