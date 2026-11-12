@@ -695,6 +695,15 @@ describe('Schedule', () => {
       expect(day?.activities[0].allTeams).toBe(false)
     })
 
+    it('refuses all teams together with picked teams', async () => {
+      schedule = buildActivitySchedule({ teamIds: ['team-a'] })
+
+      await expectAppError(
+        addActivity(schedule, { teamInstanceIds: ['team-a'], allTeams: true }),
+        AppErrorCode.Validation
+      )
+    })
+
     it('refuses a team that belongs to another event', async () => {
       schedule = buildActivitySchedule({ teamIds: ['team-a'] })
 
@@ -859,6 +868,18 @@ describe('Schedule', () => {
 
       await expectAppError(
         editActivity(schedule, 'a1', { teamInstanceIds: ['team-other'] }),
+        AppErrorCode.Validation
+      )
+    })
+
+    it('refuses an edit to all teams that keeps picked teams', async () => {
+      schedule = buildActivitySchedule({
+        teamIds: ['team-a'],
+        initialActivities: [storedActivity('a1', 'day-fri', FRI_18H, 30)],
+      })
+
+      await expectAppError(
+        editActivity(schedule, 'a1', { teamInstanceIds: ['team-a'], allTeams: true }),
         AppErrorCode.Validation
       )
     })

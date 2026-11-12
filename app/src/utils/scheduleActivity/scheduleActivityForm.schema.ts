@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { hasSomeoneResponsible } from './scheduleActivity'
 
 const TIME_PATTERN = /^\d{1,2}:\d{2}$/
 
@@ -30,10 +31,12 @@ export const scheduleActivityFormSchema = z
   })
   .refine(
     (values) =>
-      values.teamInstanceIds.length > 0 ||
-      values.allTeams ||
-      values.guestName.trim() !== '' ||
-      values.adminsResponsible,
+      hasSomeoneResponsible({
+        teamCount: values.teamInstanceIds.length,
+        allTeams: values.allTeams,
+        guestName: values.guestName,
+        adminsResponsible: values.adminsResponsible,
+      }),
     {
       message: 'Escolha ao menos um responsável',
       path: ['teamInstanceIds'],

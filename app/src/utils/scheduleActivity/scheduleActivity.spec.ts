@@ -8,6 +8,7 @@ import {
   endTimeLabel,
   formatDaySummary,
   formatDuration,
+  hasSomeoneResponsible,
   suggestedNextStart,
   summarizeDay,
 } from './scheduleActivity'
@@ -283,5 +284,26 @@ describe('activityFormValues', () => {
       teamInstanceIds: [],
       allTeams: true,
     })
+  })
+})
+
+describe('hasSomeoneResponsible', () => {
+  const NOBODY = { teamCount: 0, allTeams: false, guestName: null, adminsResponsible: false }
+
+  it.each([
+    ['a picked team', { teamCount: 1 }],
+    ['all teams', { allTeams: true }],
+    ['a guest', { guestName: 'Pe. João' }],
+    ['the admins', { adminsResponsible: true }],
+  ])('is true with %s', (_label, overrides) => {
+    expect(hasSomeoneResponsible({ ...NOBODY, ...overrides })).toBe(true)
+  })
+
+  it('is false with nobody', () => {
+    expect(hasSomeoneResponsible(NOBODY)).toBe(false)
+  })
+
+  it('does not count a blank guest name', () => {
+    expect(hasSomeoneResponsible({ ...NOBODY, guestName: '   ' })).toBe(false)
   })
 })

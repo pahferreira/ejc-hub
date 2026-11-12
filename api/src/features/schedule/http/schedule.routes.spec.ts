@@ -236,6 +236,21 @@ describe('schedule routes', () => {
       )
     })
 
+    it('answers 400 when the core refuses all teams together with picked teams', async () => {
+      scheduleApp.createActivity.mockRejectedValue(
+        new AppError('All teams cannot be combined with picked teams', AppErrorCode.Validation)
+      )
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/schedule/activities',
+        headers: ADMIN,
+        payload: { ...ACTIVITY_BODY, allTeams: true },
+      })
+
+      expect(response.statusCode).toBe(400)
+    })
+
     it('refuses a caller without schedule:create', async () => {
       const response = await server.inject({
         method: 'POST',
@@ -255,7 +270,6 @@ describe('schedule routes', () => {
       ['no title', { ...ACTIVITY_BODY, title: '' }],
       ['no place', { ...ACTIVITY_BODY, place: '' }],
       ['a day id that is not a uuid', { ...ACTIVITY_BODY, dayId: 'not-a-uuid' }],
-      ['all teams together with picked teams', { ...ACTIVITY_BODY, allTeams: true }],
     ])('answers 400 for %s', async (_label, payload) => {
       const response = await server.inject({
         method: 'POST',
@@ -412,6 +426,21 @@ describe('schedule routes', () => {
       )
     })
 
+    it('answers 400 when the core refuses all teams together with picked teams', async () => {
+      scheduleApp.updateActivity.mockRejectedValue(
+        new AppError('All teams cannot be combined with picked teams', AppErrorCode.Validation)
+      )
+
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: ADMIN,
+        payload: { ...ACTIVITY_BODY, allTeams: true },
+      })
+
+      expect(response.statusCode).toBe(400)
+    })
+
     it('refuses a caller without schedule:update', async () => {
       const response = await server.inject({
         method: 'PATCH',
@@ -432,11 +461,6 @@ describe('schedule routes', () => {
       ],
       ['no title', `/schedule/activities/${ACTIVITY_ID}`, { ...ACTIVITY_BODY, title: '' }],
       ['an activity id that is not a uuid', '/schedule/activities/not-a-uuid', ACTIVITY_BODY],
-      [
-        'all teams together with picked teams',
-        `/schedule/activities/${ACTIVITY_ID}`,
-        { ...ACTIVITY_BODY, allTeams: true },
-      ],
     ])('answers 400 for %s', async (_label, url, payload) => {
       const response = await server.inject({ method: 'PATCH', url, headers: ADMIN, payload })
 

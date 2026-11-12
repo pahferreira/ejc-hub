@@ -30,6 +30,12 @@ export type TruncatedPillListProps<T> = ItemRendering<T> & {
   itemNoun?: string
   /** What stands in for an empty list. */
   emptyLabel?: string
+  /**
+   * Drops the list's own wrapping box so its pills flow inline in the parent's
+   * flex row, sharing its gap, with whatever follows them (the schedule card's
+   * other chips).
+   */
+  inline?: boolean
 }
 
 const DEFAULT_MAX_VISIBLE = 4
@@ -74,7 +80,7 @@ export function TruncatedPillList<T>(props: TruncatedPillListProps<T>) {
   const hidden = props.items.slice(maxVisible)
 
   return (
-    <div className="flex flex-wrap items-center gap-1">
+    <div className={props.inline ? 'contents' : 'flex flex-wrap items-center gap-1'}>
       {visible.map((item) => (
         <Fragment key={getItemKey(item)}>{renderItem(item)}</Fragment>
       ))}
