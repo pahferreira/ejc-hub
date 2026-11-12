@@ -1,0 +1,1 @@
+node scripts/hooks/sync-deps.mjs ORIG_HEAD HEAD
