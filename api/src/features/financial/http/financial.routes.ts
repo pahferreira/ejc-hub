@@ -3,7 +3,7 @@ import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
-import { extractUserInformationFromToken } from '../../../shared/extract-user-info-from-token.ts'
+import { callerOrUnauthorized } from '../../../shared/caller-or-unauthorized.ts'
 import { financialApp } from '../application/financial.ts'
 import { EventFeePermissions } from '../../../../../common/permissions/permissions.types.ts'
 import {
@@ -32,17 +32,13 @@ async function handleConfirmation(
   reply: FastifyReply,
   confirm: (actorAuthId: string) => Promise<unknown>
 ) {
-  const token = request.getToken()
+  const caller = callerOrUnauthorized(request, reply)
 
-  if (!token) {
-    return reply.code(HttpStatus.Unauthorized).send({
-      error: 'Unauthorized',
-      message: 'Authentication required',
-    })
+  if (!caller) {
+    return reply
   }
 
-  const { authId } = extractUserInformationFromToken(token)
-  const result = await confirm(authId)
+  const result = await confirm(caller.authId)
 
   return reply.code(HttpStatus.Ok).send({ result })
 }

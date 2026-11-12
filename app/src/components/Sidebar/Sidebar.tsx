@@ -3,11 +3,11 @@ import { useAuthentication } from '../../hooks/useAuthentication'
 import { useCurrentUserQuery } from '../../services/users/useCurrentUserQuery'
 import { useCurrentEventSubscriptionStatusQuery } from '../../services/events/useCurrentEventSubscriptionStatusQuery'
 import { useFeatureFlag } from '../../hooks/useFeatureFlag/useFeatureFlag'
-import { hasPermission } from '../../../../common/permissions'
 import { SidebarContent } from './SidebarContent'
 import type { SidebarNavProps } from './SidebarContent'
 import { MobileSidebar } from './MobileSidebar'
 import { sidebarNavGroups } from './sidebarNav'
+import { visibleNavGroups } from './sidebarAccess'
 import { MOBILE_MEDIA_QUERY } from '../../constants/breakpoints'
 
 const STORAGE_KEY = 'ejc-sidebar-collapsed'
@@ -77,34 +77,11 @@ export function Sidebar(props: SidebarProps) {
     })
   }
 
-  const filteredGroups = sidebarNavGroups
-    .map((group) => ({
-      ...group,
-      items: group.items.filter((item) => {
-        if (item.permission && !hasPermission(permissions, item.permission)) {
-          return false
-        }
-        if (item.requiresTeamMembership && !hasTeam) {
-          return false
-        }
-        if (item.requiresCoordinator && !isCoordinator) {
-          return false
-        }
-        if (item.featureFlag && !isFeatureEnabled(item.featureFlag, false)) {
-          return false
-        }
-        if (item.featureFlagByMembership) {
-          const flag = isCoordinator
-            ? item.featureFlagByMembership.coordinator
-            : item.featureFlagByMembership.member
-          if (!isFeatureEnabled(flag, false)) {
-            return false
-          }
-        }
-        return true
-      }),
-    }))
-    .filter((group) => group.items.length > 0)
+  const filteredGroups = visibleNavGroups(
+    sidebarNavGroups,
+    { permissions, hasTeam, isCoordinator },
+    (flag) => isFeatureEnabled(flag, false)
+  )
 
   const navProps: SidebarNavProps = {
     groups: filteredGroups,

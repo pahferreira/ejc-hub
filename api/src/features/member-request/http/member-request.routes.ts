@@ -3,7 +3,7 @@ import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
-import { extractUserInformationFromToken } from '../../../shared/extract-user-info-from-token.ts'
+import { callerOrUnauthorized } from '../../../shared/caller-or-unauthorized.ts'
 import { MemberRequestPermissions } from '../../../../../common/permissions/permissions.types.ts'
 import { memberRequestApp } from '../application/member-request-app.ts'
 import {
@@ -28,27 +28,6 @@ const ADMIN_REQUEST_WRITE_PERMISSIONS = [
   MemberRequestPermissions.Update,
 ]
 
-/**
- * The caller's Auth0 subject, or a 401 already sent.
- *
- * Every coordinator route needs it: the team they may act on is derived from
- * the caller rather than passed in, so there is nothing to do without it.
- */
-function actorAuthIdOrUnauthorized(request: FastifyRequest, reply: FastifyReply): string | null {
-  const token = request.getToken()
-
-  if (!token) {
-    void reply.code(HttpStatus.Unauthorized).send({
-      error: 'Unauthorized',
-      message: 'Authentication required',
-    })
-
-    return null
-  }
-
-  return extractUserInformationFromToken(token).authId
-}
-
 // Every acting route resolves the caller the same way and reports the same
 // `{ result }` shape; only what it does with the auth id differs. The reads
 // below send their payload unwrapped, matching the other list endpoints.
@@ -58,13 +37,13 @@ async function handleAction(
   status: number,
   act: (actorAuthId: string) => Promise<unknown>
 ) {
-  const authId = actorAuthIdOrUnauthorized(request, reply)
+  const caller = callerOrUnauthorized(request, reply)
 
-  if (!authId) {
+  if (!caller) {
     return reply
   }
 
-  const result = await act(authId)
+  const result = await act(caller.authId)
 
   return reply.code(status).send({ result })
 }
@@ -106,15 +85,15 @@ export function memberRequestRoutes(server: FastifyServerInstance) {
       },
       async (request, reply) => {
         try {
-          const authId = actorAuthIdOrUnauthorized(request, reply)
+          const caller = callerOrUnauthorized(request, reply)
 
-          if (!authId) {
+          if (!caller) {
             return reply
           }
 
           const { name, skills, experience, preference, page, pageSize } = request.query
           const candidates = await memberRequestApp.listRequestableCandidates(
-            authId,
+            caller.authId,
             { name, skills, experience, preference },
             { page, pageSize }
           )
@@ -134,14 +113,17 @@ export function memberRequestRoutes(server: FastifyServerInstance) {
       },
       async (request, reply) => {
         try {
-          const authId = actorAuthIdOrUnauthorized(request, reply)
+          const caller = callerOrUnauthorized(request, reply)
 
-          if (!authId) {
+          if (!caller) {
             return reply
           }
 
           const { name, status } = request.query
-          const requests = await memberRequestApp.listMyTeamRequests(authId, { name, status })
+          const requests = await memberRequestApp.listMyTeamRequests(caller.authId, {
+            name,
+            status,
+          })
 
           return reply.code(HttpStatus.Ok).send(requests)
         } catch (error) {

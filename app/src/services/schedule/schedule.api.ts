@@ -22,6 +22,15 @@ export function isNoCurrentEventError(error: unknown): boolean {
   return isAxiosError(error) && (error as ApiError).response?.data?.code === NO_CURRENT_EVENT_CODE
 }
 
+/**
+ * Whether a failed schedule read means the caller is neither on a team in the
+ * current event nor an admin, which the page explains rather than showing the
+ * generic "could not load".
+ */
+export function isScheduleForbiddenError(error: unknown): boolean {
+  return apiErrorStatus(error) === 403
+}
+
 /** The current event's days, earliest first. */
 async function getSchedule() {
   const response = await api.get<ScheduleReadModel>('/schedule')

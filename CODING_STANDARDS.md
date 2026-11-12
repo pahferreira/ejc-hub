@@ -13,7 +13,7 @@ The rules a review checks a change against. ESLint already enforces `prefer-cons
 ## API
 
 - **Layers:** follow `api/docs/architecture.md`, "Modules vs Features". Anything that maps to a database table is a module, whatever the number of features that use it.
-- **Endpoints:** follow the `create-endpoint` skill (`.claude/skills/create-endpoint.md`): Zod (`zod/v4`) schemas in `<feature>.schema.ts`, routes in `<feature>.routes.ts` behind `authGuard` with the route's permission, and `fastifyErrorHandler` around the handler.
+- **Endpoints:** follow the `create-endpoint` skill (`.claude/skills/create-endpoint/SKILL.md`): Zod (`zod/v4`) schemas in `<feature>.schema.ts`, routes in `<feature>.routes.ts` behind `authGuard` with the route's permission (or `authGuard` alone plus `callerOrUnauthorized` when the core decides access), and `fastifyErrorHandler` around the handler.
 - **Business rules:** in the feature's core class (`core/<Feature>.ts`), thrown as `AppError` with an `AppErrorCode`. A helper in `helpers/` is pure: data in, data out, never an `AppError`, a repository or a transaction (ESLint enforces it). Schemas check only the shape.
 - **Transactions:** a core method may read and run its checks before `runInTransaction`; the transaction makes the writes all-or-nothing. A race between the read and the write is the database constraints' job (unique, FK). A race no constraint catches is accepted and named in a comment (`Accepted race: …`).
 - **Tests:** the core's rules in `core/<Feature>.spec.ts`; a route's permissions and error mapping (403, 404, …) in `http/<feature>.routes.spec.ts`. A helper in `helpers/` gets its own `.spec.ts` only for behaviour the class's spec can't reach. Helper specs that predate this rule stay while their helper exists.
@@ -24,7 +24,8 @@ The rules a review checks a change against. ESLint already enforces `prefer-cons
 - **Props:** destructure in the signature only to give a prop a default value, and never for an optional `boolean` prop: `false`, `undefined` and `null` already behave the same.
 - **Forms:** a custom hook named `use<Form Intention>Form.ts` (e.g. `useSubscriptionForm.ts`) owns the form, its values, validation and submit. A form with more than two sections splits each section into its own component and file, sharing the form through a React Context whose Provider sits in the form's parent component; the sections reach the form through the custom hook.
 - **API calls:** one `use<Action><Thing>Mutation.ts` / `use<Thing>Query.ts` per API call under `src/services/<area>/`. Mutations invalidate the area's query keys on success. Hooks sharing that shape is the convention.
-- **Tests:** Vitest for pure helpers and hooks; stories with `play` functions for component behaviour.
+- **Tests:** Vitest for pure helpers. A hook keeps its logic in a pure function exported from the hook's file, and its spec tests that function (`useTeamBuildingDraft`, `useSelectedScheduleDay`). Stories with `play` functions cover component behaviour.
+- **Analytics:** PostHog event names are kebab-case (`schedule-viewed`, `action-member-requested`), declared as a constant beside the `capture` call. An issue that writes one in snake_case is converted, not followed.
 
 ## Common
 

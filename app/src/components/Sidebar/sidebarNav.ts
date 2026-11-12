@@ -25,25 +25,23 @@ import {
 } from '../../../../common/permissions'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import { FeatureFlag, type FeatureFlagValue } from '../../hooks/useFeatureFlag/feature-flags'
+import {
+  coordinators,
+  teamMembers,
+  teamMembersOrWithPermission,
+  withPermission,
+  type NavAccessRule,
+} from './sidebarAccess'
 
 export type SidebarNavItem = {
   label: string
   path: string
   icon: IconType
-  permission?: string
   /**
-   * Only shown to users who belong to a team in the current event. Not a
-   * permission (no permission models "has a membership"), so it's filtered at
-   * render time against the caller's team-membership state.
+   * Who may see it, from `sidebarAccess`: a permission, a current-event
+   * membership, or both combined. Leave unset for everyone.
    */
-  requiresTeamMembership?: boolean
-  /**
-   * Only shown to coordinators of a team in the current event. Not a permission
-   * for the same reason `requiresTeamMembership` is not: coordinating is a
-   * `team_memberships` row, not a role grant, so it is filtered at render time
-   * against the caller's membership type.
-   */
-  requiresCoordinator?: boolean
+  visibleTo?: NavAccessRule
   /**
    * Only shown when this feature flag is enabled. Not a permission, so it's
    * filtered at render time against the feature-flag state.
@@ -78,6 +76,15 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         path: ROUTE_PATHS.HOME,
         icon: FiHome,
       },
+      {
+        label: 'Cronograma',
+        path: ROUTE_PATHS.SCHEDULE,
+        icon: FiClock,
+        visibleTo: teamMembersOrWithPermission(SchedulePermissions.Read),
+        featureFlag: FeatureFlag.Schedule,
+        // `SCHEDULE_PLANNING` sits below this path and has a nav entry of its own.
+        end: true,
+      },
     ],
   },
   {
@@ -87,19 +94,19 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         label: 'Inscrições',
         path: ROUTE_PATHS.SUBSCRIPTIONS,
         icon: FiList,
-        permission: SubscriptionPermissions.Read,
+        visibleTo: withPermission(SubscriptionPermissions.Read),
       },
       {
         label: 'Equipes',
         path: ROUTE_PATHS.TEAMS,
         icon: FiUsers,
-        permission: TeamInstancePermissions.Read,
+        visibleTo: withPermission(TeamInstancePermissions.Read),
       },
       {
         label: 'Montagem',
         path: ROUTE_PATHS.TEAMS_TEAM_BUILDING,
         icon: FiGrid,
-        permission: TeamInstancePermissions.Read,
+        visibleTo: withPermission(TeamInstancePermissions.Read),
       },
       {
         // "Aprovar Solicitações", not the page's own H1 "Solicitações de
@@ -109,7 +116,7 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         label: 'Aprovar Solicitações',
         path: ROUTE_PATHS.MEMBER_REQUESTS,
         icon: FiInbox,
-        permission: MemberRequestPermissions.Read,
+        visibleTo: withPermission(MemberRequestPermissions.Read),
         featureFlag: FeatureFlag.AdminMemberRequests,
       },
     ],
@@ -121,14 +128,14 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         label: 'Taxa por Equipe',
         path: ROUTE_PATHS.EVENT_FEE,
         icon: FiDollarSign,
-        permission: EventFeePermissions.Read,
+        visibleTo: withPermission(EventFeePermissions.Read),
         end: true,
       },
       {
         label: 'Taxa por Membro',
         path: ROUTE_PATHS.EVENT_FEE_MEMBERS,
         icon: FiUserCheck,
-        permission: EventFeePermissions.Read,
+        visibleTo: withPermission(EventFeePermissions.Read),
       },
       {
         label: 'Camisetas',
@@ -149,7 +156,7 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         label: 'Minha Equipe',
         path: ROUTE_PATHS.MY_TEAM,
         icon: FiUser,
-        requiresTeamMembership: true,
+        visibleTo: teamMembers,
         // `MY_TEAM_FEE` sits below this path and has a nav entry of its own, so
         // without this both light up while a coordinator is on the fee page.
         end: true,
@@ -158,20 +165,20 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         label: 'Taxa de Inscrição',
         path: ROUTE_PATHS.MY_TEAM_FEE,
         icon: FiDollarSign,
-        requiresCoordinator: true,
+        visibleTo: coordinators,
       },
       {
         label: 'Solicitar Membros',
         path: ROUTE_PATHS.MY_TEAM_REQUEST_MEMBERS,
         icon: FiUserPlus,
-        requiresCoordinator: true,
+        visibleTo: coordinators,
         featureFlag: FeatureFlag.CoordinatorMemberRequests,
       },
       {
         label: 'Minhas Solicitações',
         path: ROUTE_PATHS.MY_TEAM_MY_REQUESTS,
         icon: FiInbox,
-        requiresCoordinator: true,
+        visibleTo: coordinators,
         featureFlag: FeatureFlag.CoordinatorMemberRequests,
       },
       {
@@ -179,7 +186,7 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         path: ROUTE_PATHS.MY_TEAM_MEETINGS,
         icon: FiCalendar,
         // Everyone on a team: coordinators get the board, members their own history.
-        requiresTeamMembership: true,
+        visibleTo: teamMembers,
         featureFlagByMembership: {
           coordinator: FeatureFlag.CoordinatorAttendance,
           member: FeatureFlag.AttendanceVisibility,
@@ -194,19 +201,19 @@ export const sidebarNavGroups: SidebarNavGroup[] = [
         label: 'Encontros',
         path: ROUTE_PATHS.EVENTS,
         icon: FiCalendar,
-        permission: EventPermissions.Read,
+        visibleTo: withPermission(EventPermissions.Read),
       },
       {
         label: 'Modelos de Equipe',
         path: ROUTE_PATHS.TEAM_TEMPLATES,
         icon: FiLayers,
-        permission: TeamTemplatePermissions.Read,
+        visibleTo: withPermission(TeamTemplatePermissions.Read),
       },
       {
         label: 'Planejar Cronograma',
         path: ROUTE_PATHS.SCHEDULE_PLANNING,
         icon: FiClock,
-        permission: SchedulePermissions.Update,
+        visibleTo: withPermission(SchedulePermissions.Update),
         featureFlag: FeatureFlag.Schedule,
       },
     ],

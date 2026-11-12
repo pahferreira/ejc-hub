@@ -22,6 +22,7 @@ import { MyTeamRequestsPage } from '../../pages/MyTeamRequestsPage'
 import { MyTeamMeetingsPage } from '../../pages/MyTeamMeetingsPage'
 import { MemberRequestsQueuePage } from '../../pages/MemberRequestsQueuePage'
 import { SchedulePlanningPage } from '../../pages/SchedulePlanningPage'
+import { SchedulePage } from '../../pages/SchedulePage'
 import { Placeholder } from '../../pages/Placeholder/Placeholder'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import { FeatureFlag, type FeatureFlagValue } from '../useFeatureFlag/feature-flags'
@@ -171,6 +172,15 @@ export const routes: Route[] = [
     // `financials-event-fee:update` — a treasurer's assistant may legitimately
     // see who owes without being able to settle it.
     permission: EventFeePermissions.Read,
+  },
+  {
+    path: ROUTE_PATHS.SCHEDULE,
+    name: 'Cronograma',
+    component: SchedulePage,
+    // No `permission`: anyone on a current-event team may read it, which the
+    // route table cannot know without waiting on a request (see
+    // `MY_TEAM_MEETINGS`). The API decides and answers 403; the page says so.
+    featureFlag: FeatureFlag.Schedule,
   },
   {
     path: ROUTE_PATHS.SCHEDULE_PLANNING,

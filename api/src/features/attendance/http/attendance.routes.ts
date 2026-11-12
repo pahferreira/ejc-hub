@@ -1,9 +1,8 @@
-import type { FastifyReply, FastifyRequest } from 'fastify'
 import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
-import { extractUserInformationFromToken } from '../../../shared/extract-user-info-from-token.ts'
+import { callerOrUnauthorized } from '../../../shared/caller-or-unauthorized.ts'
 import { AttendancePermissions } from '../../../../../common/permissions/permissions.types.ts'
 import { attendanceApp } from '../application/attendance-app.ts'
 import {
@@ -12,27 +11,6 @@ import {
   teamAttendanceParamsSchema,
   updateMeetingBodySchema,
 } from './attendance.schema.ts'
-
-/**
- * The caller's Auth0 subject, or a 401 already sent.
- *
- * The coordinator's team is derived from the caller rather than passed in, so
- * there is nothing to do without it.
- */
-function actorAuthIdOrUnauthorized(request: FastifyRequest, reply: FastifyReply): string | null {
-  const token = request.getToken()
-
-  if (!token) {
-    void reply.code(HttpStatus.Unauthorized).send({
-      error: 'Unauthorized',
-      message: 'Authentication required',
-    })
-
-    return null
-  }
-
-  return extractUserInformationFromToken(token).authId
-}
 
 export function attendanceRoutes(server: FastifyServerInstance) {
   return () => {
@@ -46,13 +24,13 @@ export function attendanceRoutes(server: FastifyServerInstance) {
       },
       async (request, reply) => {
         try {
-          const authId = actorAuthIdOrUnauthorized(request, reply)
+          const caller = callerOrUnauthorized(request, reply)
 
-          if (!authId) {
+          if (!caller) {
             return reply
           }
 
-          const readModel = await attendanceApp.getMyTeamReadModel(authId)
+          const readModel = await attendanceApp.getMyTeamReadModel(caller.authId)
 
           return reply.code(HttpStatus.Ok).send(readModel)
         } catch (error) {
@@ -71,13 +49,13 @@ export function attendanceRoutes(server: FastifyServerInstance) {
       },
       async (request, reply) => {
         try {
-          const authId = actorAuthIdOrUnauthorized(request, reply)
+          const caller = callerOrUnauthorized(request, reply)
 
-          if (!authId) {
+          if (!caller) {
             return reply
           }
 
-          const readModel = await attendanceApp.getMyReadModel(authId)
+          const readModel = await attendanceApp.getMyReadModel(caller.authId)
 
           return reply.code(HttpStatus.Ok).send(readModel)
         } catch (error) {
@@ -115,13 +93,13 @@ export function attendanceRoutes(server: FastifyServerInstance) {
       },
       async (request, reply) => {
         try {
-          const authId = actorAuthIdOrUnauthorized(request, reply)
+          const caller = callerOrUnauthorized(request, reply)
 
-          if (!authId) {
+          if (!caller) {
             return reply
           }
 
-          const result = await attendanceApp.registerMeeting(authId, request.body)
+          const result = await attendanceApp.registerMeeting(caller.authId, request.body)
 
           return reply.code(HttpStatus.Created).send({ result })
         } catch (error) {
@@ -140,14 +118,14 @@ export function attendanceRoutes(server: FastifyServerInstance) {
       },
       async (request, reply) => {
         try {
-          const authId = actorAuthIdOrUnauthorized(request, reply)
+          const caller = callerOrUnauthorized(request, reply)
 
-          if (!authId) {
+          if (!caller) {
             return reply
           }
 
           const result = await attendanceApp.updateMeeting(
-            authId,
+            caller.authId,
             request.params.meetingId,
             request.body
           )
@@ -167,13 +145,13 @@ export function attendanceRoutes(server: FastifyServerInstance) {
       },
       async (request, reply) => {
         try {
-          const authId = actorAuthIdOrUnauthorized(request, reply)
+          const caller = callerOrUnauthorized(request, reply)
 
-          if (!authId) {
+          if (!caller) {
             return reply
           }
 
-          const result = await attendanceApp.deleteMeeting(authId, request.params.meetingId)
+          const result = await attendanceApp.deleteMeeting(caller.authId, request.params.meetingId)
 
           return reply.code(HttpStatus.Ok).send({ result })
         } catch (error) {

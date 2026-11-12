@@ -3,6 +3,7 @@ import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
+import { callerOrUnauthorized } from '../../../shared/caller-or-unauthorized.ts'
 import { SchedulePermissions } from '../../../../../common/permissions/permissions.types.ts'
 import { scheduleApp } from '../application/schedule-app.ts'
 import type { ScheduleActivityPlan } from '../domain/schedule.types.ts'
@@ -32,16 +33,23 @@ function toActivityPlan(body: z.infer<typeof scheduleActivityBodySchema>): Sched
 
 export function scheduleRoutes(server: FastifyServerInstance) {
   return () => {
-    // Admins only for now. The Cronograma read view opens it to anyone on a
-    // team in the current event, which the core will decide from the data.
+    // Authentication only. Admins (`schedule:read`) and anyone on a team in the
+    // current event may read; the token cannot express membership, so
+    // `Schedule` decides and answers 403 for everyone else.
     server.get(
       '/schedule',
       {
-        preHandler: authGuard(server, { permissions: [SchedulePermissions.Read] }),
+        preHandler: authGuard(server),
       },
       async (request, reply) => {
         try {
-          const readModel = await scheduleApp.getSchedule()
+          const caller = callerOrUnauthorized(request, reply)
+
+          if (!caller) {
+            return reply
+          }
+
+          const readModel = await scheduleApp.getSchedule(caller)
 
           return reply.code(HttpStatus.Ok).send(readModel)
         } catch (error) {
