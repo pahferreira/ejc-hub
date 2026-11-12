@@ -5,6 +5,7 @@ import {
   activityStartTime,
   formatDuration,
 } from '../../utils/scheduleActivity/scheduleActivity'
+import { TruncatedPillList } from '../TruncatedPillList/TruncatedPillList'
 import { teamColorHex } from './teamColorHex'
 
 export type ScheduleActivityCardProps = {
@@ -50,16 +51,23 @@ export function ScheduleActivityCard(props: ScheduleActivityCardProps) {
 
         {hasResponsible && (
           <div className="flex flex-wrap gap-1.5">
-            {activity.teams.map((team) => (
-              <Chip key={team.teamInstanceId}>
-                <span
-                  aria-hidden
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: teamColorHex(team.colorToken) }}
-                />
-                {team.teamName}
-              </Chip>
-            ))}
+            {activity.teams.length > 0 && (
+              <TruncatedPillList
+                items={activity.teams}
+                itemNoun="equipes"
+                getItemKey={(team) => team.teamInstanceId}
+                renderItem={(team) => (
+                  <Chip>
+                    <span
+                      aria-hidden
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: teamColorHex(team.colorToken) }}
+                    />
+                    {team.teamName}
+                  </Chip>
+                )}
+              />
+            )}
             {activity.adminsResponsible && (
               <div className="flex flex-wrap gap-1.5">
                 <Chip>
