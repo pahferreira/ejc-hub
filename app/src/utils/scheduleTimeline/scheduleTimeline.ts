@@ -46,13 +46,13 @@ export function groupActivitiesByPeriod(
   })).filter((group) => group.activities.length > 0)
 }
 
-/** Whether the user's team is among those responsible for an activity. */
+/** Whether the user's team is among those responsible for an activity; every team is, when it's an all-teams one. */
 export function isMyTeamActivity(
-  activity: Pick<ScheduleActivity, 'teams'>,
+  activity: Pick<ScheduleActivity, 'teams' | 'allTeams'>,
   myTeamInstanceId: string | null
 ): boolean {
   return (
     myTeamInstanceId !== null &&
-    activity.teams.some((team) => team.teamInstanceId === myTeamInstanceId)
+    (activity.allTeams || activity.teams.some((team) => team.teamInstanceId === myTeamInstanceId))
   )
 }
