@@ -1,5 +1,3 @@
-import { useEffect, useState } from 'react'
-import { usePostHog } from '@posthog/react'
 import { FiCalendar } from 'react-icons/fi'
 import { ScheduleDayCard } from '../../components/ScheduleDayCard/ScheduleDayCard'
 import { ScheduleTimelineRow } from '../../components/ScheduleTimelineRow/ScheduleTimelineRow'
@@ -9,12 +7,9 @@ import {
   isScheduleForbiddenError,
 } from '../../services/schedule/schedule.api'
 import { pluralize } from '../../utils/pluralize/pluralize'
-import {
-  defaultDayId,
-  groupActivitiesByPeriod,
-} from '../../utils/scheduleTimeline/scheduleTimeline'
-
-const SCHEDULE_VIEWED_EVENT = 'schedule_viewed'
+import { groupActivitiesByPeriod } from '../../utils/scheduleTimeline/scheduleTimeline'
+import { useSelectedScheduleDay } from './useSelectedScheduleDay'
+import { useScheduleViewedTracking } from './useScheduleViewedTracking'
 
 function PageMessage(props: { message: string; tone?: 'error' }) {
   return (
@@ -43,30 +38,13 @@ function errorMessage(error: unknown): string {
  * and for the admins. One tab per day, opening on today during the event, with
  * the day's activities grouped into Manhã, Tarde and Noite and the viewer's
  * team's rows highlighted.
- *
- * The selected tab is held by id and falls back to `defaultDayId`, so the page
- * opens on the right day without an effect to set it once the data arrives.
  */
 export function SchedulePage() {
   const scheduleQuery = useScheduleQuery()
-  const posthog = usePostHog()
-  const [selectedDayId, setSelectedDayId] = useState<string | null>(null)
-
   const days = scheduleQuery.data?.days ?? []
-  const selectedDay =
-    days.find((day) => day.id === selectedDayId) ??
-    days.find((day) => day.id === defaultDayId(days, new Date()))
-  const role = scheduleQuery.data?.viewerRole
+  const { selectedDay, selectDay } = useSelectedScheduleDay(days)
 
-  const selectedDate = selectedDay?.date
-
-  // Fired whenever a day's tab is shown: on opening and on every switch. The
-  // role comes with the schedule, so it is known whenever a day is.
-  useEffect(() => {
-    if (selectedDate && role) {
-      posthog.capture(SCHEDULE_VIEWED_EVENT, { day: selectedDate, role })
-    }
-  }, [posthog, selectedDate, role])
+  useScheduleViewedTracking(selectedDay?.date, scheduleQuery.data?.viewerRole)
 
   if (scheduleQuery.isLoading) {
     return <PageMessage message="Carregando cronograma..." />
@@ -95,7 +73,7 @@ export function SchedulePage() {
                   dayNumber={index + 1}
                   date={day.date}
                   isSelected={day.id === selectedDay.id}
-                  onSelect={() => setSelectedDayId(day.id)}
+                  onSelect={() => selectDay(day.id)}
                 />
               ))}
             </div>
