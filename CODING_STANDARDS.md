@@ -14,7 +14,7 @@ The rules a review checks a change against. ESLint already enforces `prefer-cons
 
 - **Layers:** follow `api/docs/architecture.md`, "Modules vs Features". Anything that maps to a database table is a module, whatever the number of features that use it.
 - **Endpoints:** follow the `create-endpoint` skill (`.claude/skills/create-endpoint.md`): Zod (`zod/v4`) schemas in `<feature>.schema.ts`, routes in `<feature>.routes.ts` behind `authGuard` with the route's permission, and `fastifyErrorHandler` around the handler.
-- **Business rules:** in the feature's core class (`core/<Feature>.ts`), thrown as `AppError` with an `AppErrorCode`. A helper in `helpers/` is pure: data in, data out, never an `AppError`, a repository or a transaction (ESLint enforces it; two team-building helpers are exempt until #378). Schemas check only the shape.
+- **Business rules:** in the feature's core class (`core/<Feature>.ts`), thrown as `AppError` with an `AppErrorCode`. A helper in `helpers/` is pure: data in, data out, never an `AppError`, a repository or a transaction (ESLint enforces it). Schemas check only the shape.
 - **Transactions:** a core method may read and run its checks before `runInTransaction`; the transaction makes the writes all-or-nothing. A race between the read and the write is the database constraints' job (unique, FK). A race no constraint catches is accepted and named in a comment (`Accepted race: …`).
 - **Tests:** the core's rules in `core/<Feature>.spec.ts`; a route's permissions and error mapping (403, 404, …) in `http/<feature>.routes.spec.ts`. A helper in `helpers/` gets its own `.spec.ts` only for behaviour the class's spec can't reach. Helper specs that predate this rule stay while their helper exists.
 

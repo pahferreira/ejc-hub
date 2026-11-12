@@ -1,4 +1,4 @@
-import { AppError } from '../../../shared/AppError.ts'
+import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import { comparePeopleByNickname } from '../../../shared/compare-people-by-nickname.ts'
 import { runInTransaction, type DbExecutor } from '../../../core/database/client.ts'
 import type { EventModel } from '../../../core/database/schemas/index.ts'
@@ -8,12 +8,13 @@ import type { SubscriptionRepository } from '../../../modules/subscription/domai
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { MemberRequestRepository } from '../../../modules/member-request/domain/MemberRequestRepository.ts'
 import { mapSubscriptionToPerson } from '../../event/helpers/subscription-to-person.ts'
-import { listTeamCandidates } from '../helpers/list-team-candidates.ts'
-import { placeMembers } from '../helpers/place-members.ts'
+import { toEventOccupancy } from '../helpers/event-occupancy.ts'
+import type { TeamPlacement } from './TeamPlacement.ts'
 import {
   COMPLETED_STATUS,
   UNASSIGNED_STATUS,
   WAITING_LIST_STATUS,
+  type AddMembersResult,
   type AssignmentChange,
   type CandidateListResult,
   type CandidateRole,
@@ -32,19 +33,22 @@ export class TeamBuilding {
   #subscriptionRepository: SubscriptionRepository
   #eventRepository: EventRepository
   #memberRequestRepository: MemberRequestRepository
+  #teamPlacement: TeamPlacement
 
   constructor(
     teamInstanceRepo: TeamInstanceRepository,
     teamMembershipRepo: TeamMembershipRepository,
     subscriptionRepo: SubscriptionRepository,
     eventRepo: EventRepository,
-    memberRequestRepo: MemberRequestRepository
+    memberRequestRepo: MemberRequestRepository,
+    teamPlacement: TeamPlacement
   ) {
     this.#teamInstanceRepository = teamInstanceRepo
     this.#teamMembershipRepository = teamMembershipRepo
     this.#subscriptionRepository = subscriptionRepo
     this.#eventRepository = eventRepo
     this.#memberRequestRepository = memberRequestRepo
+    this.#teamPlacement = teamPlacement
   }
 
   // Resolves the current event once per call and hands it to `fn`. The id is a
@@ -178,31 +182,13 @@ export class TeamBuilding {
     await this.#withCurrentEvent(async (event) => {
       const instances = await this.#teamInstanceRepository.listTeamInstancesWithDetails(event.id)
       const instanceIds = new Set(instances.map((instance) => instance.id))
-      const membershipUserIdsByTeam =
-        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds])
-      const coordinatorIdsByTeam =
+      const { memberTeamsByUser, coordinatedTeamByUser } = toEventOccupancy(
+        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds([...instanceIds]),
         await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds([...instanceIds])
+      )
       const instanceNameById = new Map(
         instances.map((instance) => [instance.id, instance.templateName])
       )
-
-      const currentTeamsByUser = new Map<string, string[]>()
-      for (const [teamInstanceId, userIds] of membershipUserIdsByTeam) {
-        for (const userId of userIds) {
-          const teams = currentTeamsByUser.get(userId) ?? []
-          teams.push(teamInstanceId)
-          currentTeamsByUser.set(userId, teams)
-        }
-      }
-
-      // Which team, if any, each user coordinates in this event. A user holds at
-      // most one membership per event, so a single team id per user is enough.
-      const coordinatedTeamByUser = new Map<string, string>()
-      for (const [teamInstanceId, userIds] of coordinatorIdsByTeam) {
-        for (const userId of userIds) {
-          coordinatedTeamByUser.set(userId, teamInstanceId)
-        }
-      }
 
       // Validate every change and resolve subscriptions before touching the DB so
       // a bad change aborts the whole batch cleanly.
@@ -210,7 +196,8 @@ export class TeamBuilding {
         changes.map(async (change) => {
           if (change.target.kind === 'team' && !instanceIds.has(change.target.teamInstanceId)) {
             throw new AppError(
-              `Team instance ${change.target.teamInstanceId} does not belong to the current event`
+              `Team instance ${change.target.teamInstanceId} does not belong to the current event`,
+              AppErrorCode.NotFound
             )
           }
 
@@ -233,7 +220,8 @@ export class TeamBuilding {
 
           if (!subscription) {
             throw new AppError(
-              `No subscription found for user ${change.userId} in the current event`
+              `No subscription found for user ${change.userId} in the current event`,
+              AppErrorCode.NotFound
             )
           }
 
@@ -244,7 +232,7 @@ export class TeamBuilding {
       await runInTransaction(async (tx) => {
         for (const { change, subscription } of resolved) {
           // Clear any existing event membership(s) so the move is a clean reassign.
-          for (const teamInstanceId of currentTeamsByUser.get(change.userId) ?? []) {
+          for (const teamInstanceId of memberTeamsByUser.get(change.userId) ?? []) {
             await this.#teamMembershipRepository.deleteByMemberAndTeam(
               teamInstanceId,
               change.userId,
@@ -309,7 +297,7 @@ export class TeamBuilding {
   /**
    * Who may be picked for this team.
    *
-   * The rules themselves live in `listTeamCandidates`, which the coordinator's
+   * The rules themselves live in `TeamPlacement.listCandidates`, which the coordinator's
    * "Solicitar Membros" list also reads — one answer to "who is available in
    * this event", not one per screen.
    */
@@ -318,44 +306,28 @@ export class TeamBuilding {
     role: CandidateRole = 'coordinator'
   ): Promise<CandidateListResult> {
     return this.#withCurrentEvent((event) =>
-      listTeamCandidates(
-        {
-          teamInstanceRepository: this.#teamInstanceRepository,
-          teamMembershipRepository: this.#teamMembershipRepository,
-          subscriptionRepository: this.#subscriptionRepository,
-        },
-        { eventId: event.id, teamInstanceId, role }
-      )
+      this.#teamPlacement.listCandidates({ eventId: event.id, teamInstanceId, role })
     )
   }
 
   /**
    * Adds a batch of members to a single team instance atomically.
    *
-   * The write sequence itself lives in `placeMembers`, which approving a member
+   * The write sequence itself lives in `TeamPlacement.place`, which approving a member
    * request also calls. One implementation of the membership write path, so the
    * outdating that must follow every placement cannot be forgotten by one of
    * them — see the plan's Phase D.
    *
-   * Resolves to the ids of the member requests this placement made
-   * unanswerable. `executor` lets a caller run it inside a transaction it
-   * already owns.
+   * Resolves to the member requests this placement made unanswerable.
+   * `executor` lets a caller run it inside a transaction it already owns.
    */
   async addMembers(
     teamInstanceId: string,
     userIds: string[],
     executor?: DbExecutor
-  ): Promise<string[]> {
+  ): Promise<AddMembersResult> {
     return this.#withCurrentEvent((event) =>
-      placeMembers(
-        {
-          teamInstanceRepository: this.#teamInstanceRepository,
-          teamMembershipRepository: this.#teamMembershipRepository,
-          subscriptionRepository: this.#subscriptionRepository,
-          memberRequestRepository: this.#memberRequestRepository,
-        },
-        { eventId: event.id, teamInstanceId, userIds, executor }
-      )
+      this.#teamPlacement.place({ eventId: event.id, teamInstanceId, userIds, executor })
     )
   }
 
@@ -368,7 +340,10 @@ export class TeamBuilding {
       const targetInstance = instances.find((i) => i.id === teamInstanceId)
 
       if (!targetInstance) {
-        throw new AppError(`Team instance ${teamInstanceId} does not belong to the current event`)
+        throw new AppError(
+          `Team instance ${teamInstanceId} does not belong to the current event`,
+          AppErrorCode.NotFound
+        )
       }
 
       // Dedupe while preserving order, then enforce the template's max.
@@ -395,33 +370,23 @@ export class TeamBuilding {
         instances.map((instance) => [instance.id, instance.templateName])
       )
 
-      const membershipUserIdsByTeam =
-        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds(instanceIds)
-      const memberTeamByUser = new Map<string, string>()
-      for (const [tid, userIds] of membershipUserIdsByTeam) {
-        for (const userId of userIds) memberTeamByUser.set(userId, tid)
-      }
-
-      const coordinatorIdsByTeam =
+      const { memberTeamsByUser, coordinatedTeamByUser } = toEventOccupancy(
+        await this.#teamMembershipRepository.listMemberUserIdsByTeamInstanceIds(instanceIds),
         await this.#teamMembershipRepository.listCoordinatorIdsByTeamInstanceIds(instanceIds)
-      const otherTeamCoordinatedByUser = new Map<string, string>()
-      for (const [tid, userIds] of coordinatorIdsByTeam) {
-        if (tid === teamInstanceId) continue
-        for (const userId of userIds) otherTeamCoordinatedByUser.set(userId, tid)
-      }
+      )
 
       // Each userId must have a subscription in the current event. Resolve them
       // up front so a bad entry aborts before we open the transaction.
       const subscriptions = await Promise.all(
         deduped.map(async (userId) => {
-          const memberTeamId = memberTeamByUser.get(userId)
+          const [memberTeamId] = memberTeamsByUser.get(userId) ?? []
           if (memberTeamId) {
             const teamName = instanceNameById.get(memberTeamId) ?? memberTeamId
             throw new AppError(`User ${userId} is already a member of ${teamName}`)
           }
 
-          const coordinatedTeamId = otherTeamCoordinatedByUser.get(userId)
-          if (coordinatedTeamId) {
+          const coordinatedTeamId = coordinatedTeamByUser.get(userId)
+          if (coordinatedTeamId && coordinatedTeamId !== teamInstanceId) {
             const teamName = instanceNameById.get(coordinatedTeamId) ?? coordinatedTeamId
             throw new AppError(`User ${userId} already coordinates ${teamName}`)
           }
@@ -431,7 +396,10 @@ export class TeamBuilding {
             event.id
           )
           if (!subscription) {
-            throw new AppError(`No subscription found for user ${userId} in the current event`)
+            throw new AppError(
+              `No subscription found for user ${userId} in the current event`,
+              AppErrorCode.NotFound
+            )
           }
           return subscription
         })

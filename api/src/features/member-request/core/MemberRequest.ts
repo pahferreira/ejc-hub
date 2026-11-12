@@ -15,8 +15,7 @@ import {
   MemberRequestStatus,
   type SettableRequestStatus,
 } from '../../../modules/member-request/domain/member-request-status.ts'
-import { listTeamCandidates } from '../../team-building/helpers/list-team-candidates.ts'
-import { placeMembers } from '../../team-building/helpers/place-members.ts'
+import type { TeamPlacement } from '../../team-building/core/TeamPlacement.ts'
 import type {
   CancelRequestResult,
   CreateRequestsResult,
@@ -83,6 +82,7 @@ export class MemberRequest {
   #teamInstanceRepository: TeamInstanceRepository
   #teamMembershipRepository: TeamMembershipRepository
   #userRepository: UserRepository
+  #teamPlacement: TeamPlacement
 
   constructor(
     memberRequestRepo: MemberRequestRepository,
@@ -90,7 +90,8 @@ export class MemberRequest {
     subscriptionRepo: SubscriptionRepository,
     teamInstanceRepo: TeamInstanceRepository,
     teamMembershipRepo: TeamMembershipRepository,
-    userRepo: UserRepository
+    userRepo: UserRepository,
+    teamPlacement: TeamPlacement
   ) {
     this.#memberRequestRepository = memberRequestRepo
     this.#eventRepository = eventRepo
@@ -98,23 +99,7 @@ export class MemberRequest {
     this.#teamInstanceRepository = teamInstanceRepo
     this.#teamMembershipRepository = teamMembershipRepo
     this.#userRepository = userRepo
-  }
-
-  /**
-   * The repositories the shared placement path needs.
-   *
-   * Approving a request places someone on a team, which is the *same* write
-   * sequence the team-building board runs — `placeMembers` is the single
-   * implementation of it, and this feature hands it the repositories it already
-   * holds rather than importing team building's wired application object.
-   */
-  #placementDeps() {
-    return {
-      teamInstanceRepository: this.#teamInstanceRepository,
-      teamMembershipRepository: this.#teamMembershipRepository,
-      subscriptionRepository: this.#subscriptionRepository,
-      memberRequestRepository: this.#memberRequestRepository,
-    }
+    this.#teamPlacement = teamPlacement
   }
 
   // Resolves the current event once per call and hands it to `fn`. The id is a
@@ -174,20 +159,17 @@ export class MemberRequest {
    * The one place that decides who is listed.
    *
    * Today: only people with no membership in the event, because
-   * `listTeamCandidates(…, 'member')` excludes them — so `assigned` never renders
+   * `TeamPlacement.listCandidates` with `role: 'member'` excludes them — so `assigned` never renders
    * and `assignedUserIds` is always empty. Widening this method (returning
    * placed subscribers, with their ids in that set) is the whole of the
    * "show already-placed people too" change — see the plan's G.2.
    */
   async #listEligibleSubscribers(eventId: string, teamInstanceId: string) {
-    const result = await listTeamCandidates(
-      {
-        teamInstanceRepository: this.#teamInstanceRepository,
-        teamMembershipRepository: this.#teamMembershipRepository,
-        subscriptionRepository: this.#subscriptionRepository,
-      },
-      { eventId, teamInstanceId, role: 'member' }
-    )
+    const result = await this.#teamPlacement.listCandidates({
+      eventId,
+      teamInstanceId,
+      role: 'member',
+    })
 
     return { candidates: result.candidates, assignedUserIds: new Set<string>() }
   }
@@ -668,7 +650,7 @@ export class MemberRequest {
       }
 
       try {
-        const supersededRequestIds = await runInTransaction(async (tx) => {
+        const { supersededRequestIds } = await runInTransaction(async (tx) => {
           // ORDER IS LOAD-BEARING, and nothing about the code makes it visible.
           //
           // `addMembers` outdates open requests scoped to `status = 'pending'`.
@@ -691,7 +673,7 @@ export class MemberRequest {
           // outdates the person's other open requests — the ids of which are
           // this approval's `supersededRequestIds`. The same call the board
           // makes, so there is one membership write path, not two.
-          return placeMembers(this.#placementDeps(), {
+          return this.#teamPlacement.place({
             eventId: event.id,
             teamInstanceId: target.teamInstanceId,
             userIds: [target.user.userId],

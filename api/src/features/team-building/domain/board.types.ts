@@ -99,3 +99,8 @@ export type CandidateListResult = {
   currentCoordinators: string[]
   candidates: Candidate[]
 }
+
+export type AddMembersResult = {
+  /** The member requests the placement made unanswerable. */
+  supersededRequestIds: string[]
+}
