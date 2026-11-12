@@ -56,6 +56,17 @@ export function ScheduleActivityCard(props: ScheduleActivityCardProps) {
 
         {hasResponsible && (
           <div className="flex flex-wrap items-center gap-1.5">
+            {activity.adminsResponsible && (
+              <Chip>
+                <span
+                  aria-hidden
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: teamColorHex('coord-geral') }}
+                />
+                Coord. Geral
+              </Chip>
+            )}
+            {activity.guestName && <Chip>Convidado: {activity.guestName}</Chip>}
             {/* Neutral, with no color dot, so it isn't read as one specific team. */}
             {activity.allTeams ? (
               <Chip>Todas as equipes</Chip>
@@ -79,17 +90,6 @@ export function ScheduleActivityCard(props: ScheduleActivityCardProps) {
                 />
               )
             )}
-            {activity.adminsResponsible && (
-              <Chip>
-                <span
-                  aria-hidden
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: teamColorHex('coord-geral') }}
-                />
-                Coord. Geral
-              </Chip>
-            )}
-            {activity.guestName && <Chip>Convidado: {activity.guestName}</Chip>}
           </div>
         )}
       </div>

@@ -102,7 +102,7 @@ export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
         <legend className="px-1 text-xs font-semibold text-gray-500">
           Responsáveis · uma ou mais opções
         </legend>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col items-center gap-2 md:flex-row">
           <MultiSelector
             label="Equipes"
             options={props.teamOptions}
@@ -122,19 +122,20 @@ export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
           />
         </div>
 
-        <Checkbox
-          label="Administração conduz esta atividade"
-          checked={values.adminsResponsible}
-          onChange={(adminsResponsible) => onChange({ adminsResponsible })}
-        />
-
-        {/* Checking or unchecking it empties the picked teams: the wildcard never
+        <div className="flex flex-col gap-2">
+          <Checkbox
+            label="Administração conduz esta atividade"
+            checked={values.adminsResponsible}
+            onChange={(adminsResponsible) => onChange({ adminsResponsible })}
+          />
+          {/* Checking or unchecking it empties the picked teams: the wildcard never
             sits beside a hand-picked list, and unchecking starts a fresh selection. */}
-        <Checkbox
-          label="Todas as equipes participam"
-          checked={values.allTeams}
-          onChange={(allTeams) => onChange({ allTeams, teamInstanceIds: [] })}
-        />
+          <Checkbox
+            label="Todas as equipes participam"
+            checked={values.allTeams}
+            onChange={(allTeams) => onChange({ allTeams, teamInstanceIds: [] })}
+          />
+        </div>
 
         {props.fieldErrors?.responsible && (
           <p className="m-0 text-sm text-destructive">{props.fieldErrors.responsible}</p>
