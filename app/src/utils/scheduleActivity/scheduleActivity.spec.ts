@@ -8,6 +8,7 @@ import {
   endTimeLabel,
   formatDaySummary,
   formatDuration,
+  hasSomeoneResponsible,
   suggestedNextStart,
   summarizeDay,
 } from './scheduleActivity'
@@ -25,6 +26,7 @@ function activity(overrides: Partial<ScheduleActivity> = {}): ScheduleActivity {
     place: 'Salão',
     guestName: null,
     adminsResponsible: false,
+    allTeams: false,
     teams: [],
     ...overrides,
   }
@@ -141,6 +143,7 @@ describe('buildActivityBody', () => {
       teamInstanceIds: ['team-a'],
       guestName: '  ',
       adminsResponsible: true,
+      allTeams: false,
     })
 
     expect(body).toEqual({
@@ -152,6 +155,7 @@ describe('buildActivityBody', () => {
       teamInstanceIds: ['team-a'],
       guestName: null,
       adminsResponsible: true,
+      allTeams: false,
     })
   })
 
@@ -164,9 +168,25 @@ describe('buildActivityBody', () => {
       teamInstanceIds: [],
       guestName: '  Padre João  ',
       adminsResponsible: false,
+      allTeams: false,
     })
 
     expect(body.guestName).toBe('Padre João')
+  })
+
+  it('sends an all-teams activity with no team ids', () => {
+    const body = buildActivityBody('day-fri', '2026-04-03', {
+      title: 'Plenária',
+      startTime: '20:00',
+      durationMinutes: 60,
+      place: 'Auditório',
+      teamInstanceIds: [],
+      guestName: '',
+      adminsResponsible: false,
+      allTeams: true,
+    })
+
+    expect(body).toMatchObject({ teamInstanceIds: [], allTeams: true })
   })
 })
 
@@ -227,6 +247,7 @@ describe('activityFormValues', () => {
       place: 'Capela',
       guestName: 'Padre João',
       adminsResponsible: true,
+      allTeams: false,
       teams: [
         { teamInstanceId: 't1', teamName: 'Liturgia', teamKey: 'liturgia', colorToken: 'blue' },
         { teamInstanceId: 't2', teamName: 'Música', teamKey: 'musica', colorToken: 'red' },
@@ -241,10 +262,48 @@ describe('activityFormValues', () => {
       teamInstanceIds: ['t1', 't2'],
       guestName: 'Padre João',
       adminsResponsible: true,
+      allTeams: false,
     })
   })
 
   it('reads no guest as an empty field', () => {
     expect(activityFormValues(activity({ guestName: null })).guestName).toBe('')
+  })
+
+  it('opens an all-teams activity with the all-teams box checked and no teams picked', () => {
+    const values = activityFormValues(activity({ allTeams: true, teams: [] }))
+
+    expect(values).toMatchObject({ allTeams: true, teamInstanceIds: [] })
+  })
+
+  it('round-trips an all-teams activity back into the same body', () => {
+    const values = activityFormValues(activity({ allTeams: true, teams: [] }))
+
+    expect(buildActivityBody('day-fri', '2026-04-03', values)).toMatchObject({
+      plannedStartsAt: '2026-04-03T21:00:00.000Z',
+      teamInstanceIds: [],
+      allTeams: true,
+    })
+  })
+})
+
+describe('hasSomeoneResponsible', () => {
+  const NOBODY = { teamCount: 0, allTeams: false, guestName: null, adminsResponsible: false }
+
+  it.each([
+    ['a picked team', { teamCount: 1 }],
+    ['all teams', { allTeams: true }],
+    ['a guest', { guestName: 'Pe. João' }],
+    ['the admins', { adminsResponsible: true }],
+  ])('is true with %s', (_label, overrides) => {
+    expect(hasSomeoneResponsible({ ...NOBODY, ...overrides })).toBe(true)
+  })
+
+  it('is false with nobody', () => {
+    expect(hasSomeoneResponsible(NOBODY)).toBe(false)
+  })
+
+  it('does not count a blank guest name', () => {
+    expect(hasSomeoneResponsible({ ...NOBODY, guestName: '   ' })).toBe(false)
   })
 })

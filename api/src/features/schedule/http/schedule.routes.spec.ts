@@ -33,6 +33,7 @@ const ACTIVITY_BODY = {
   teamInstanceIds: [TEAM_ID],
   guestName: null,
   adminsResponsible: false,
+  allTeams: false,
 }
 
 const ADMIN = authHeader({
@@ -192,6 +193,7 @@ describe('schedule routes', () => {
         teamInstanceIds: [TEAM_ID],
         guestName: null,
         adminsResponsible: false,
+        allTeams: false,
       })
     })
 
@@ -215,8 +217,38 @@ describe('schedule routes', () => {
           teamInstanceIds: [],
           guestName: null,
           adminsResponsible: false,
+          allTeams: false,
         })
       )
+    })
+
+    it('hands the core an all-teams activity with no team ids', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/schedule/activities',
+        headers: ADMIN,
+        payload: { ...ACTIVITY_BODY, teamInstanceIds: [], allTeams: true },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(scheduleApp.createActivity).toHaveBeenCalledWith(
+        expect.objectContaining({ teamInstanceIds: [], allTeams: true })
+      )
+    })
+
+    it('answers 400 when the core refuses all teams together with picked teams', async () => {
+      scheduleApp.createActivity.mockRejectedValue(
+        new AppError('All teams cannot be combined with picked teams', AppErrorCode.Validation)
+      )
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/schedule/activities',
+        headers: ADMIN,
+        payload: { ...ACTIVITY_BODY, allTeams: true },
+      })
+
+      expect(response.statusCode).toBe(400)
     })
 
     it('refuses a caller without schedule:create', async () => {
@@ -360,7 +392,53 @@ describe('schedule routes', () => {
         teamInstanceIds: [TEAM_ID],
         guestName: null,
         adminsResponsible: false,
+        allTeams: false,
       })
+    })
+
+    it('hands the core an edit to all teams with no team ids', async () => {
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: ADMIN,
+        payload: { ...ACTIVITY_BODY, teamInstanceIds: [], allTeams: true },
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(scheduleApp.updateActivity).toHaveBeenCalledWith(
+        ACTIVITY_ID,
+        expect.objectContaining({ teamInstanceIds: [], allTeams: true })
+      )
+    })
+
+    it('hands the core an edit back to picked teams', async () => {
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: ADMIN,
+        payload: { ...ACTIVITY_BODY, teamInstanceIds: [TEAM_ID], allTeams: false },
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(scheduleApp.updateActivity).toHaveBeenCalledWith(
+        ACTIVITY_ID,
+        expect.objectContaining({ teamInstanceIds: [TEAM_ID], allTeams: false })
+      )
+    })
+
+    it('answers 400 when the core refuses all teams together with picked teams', async () => {
+      scheduleApp.updateActivity.mockRejectedValue(
+        new AppError('All teams cannot be combined with picked teams', AppErrorCode.Validation)
+      )
+
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: ADMIN,
+        payload: { ...ACTIVITY_BODY, allTeams: true },
+      })
+
+      expect(response.statusCode).toBe(400)
     })
 
     it('refuses a caller without schedule:update', async () => {

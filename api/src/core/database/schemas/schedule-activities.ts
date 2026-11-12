@@ -28,6 +28,9 @@ export const scheduleActivities = pgTable(
     place: text('place').notNull(),
     guestName: text('guest_name'),
     adminsResponsible: boolean('admins_responsible').notNull().default(false),
+    // Every team of the event, as a live wildcard: such an activity has no
+    // schedule_activity_teams rows, so a team added later is covered too.
+    allTeams: boolean('all_teams').notNull().default(false),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },

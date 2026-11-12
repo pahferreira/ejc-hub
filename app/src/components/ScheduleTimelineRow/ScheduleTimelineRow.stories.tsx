@@ -15,6 +15,7 @@ const meta = {
       place: 'Salão paroquial',
       guestName: 'Pe. João',
       adminsResponsible: false,
+      allTeams: false,
       teams: [
         {
           teamInstanceId: 't-liturgia',
@@ -63,6 +64,7 @@ export const MyTeam: Story = {
       place: 'Refeitório',
       guestName: null,
       adminsResponsible: false,
+      allTeams: false,
       teams: [
         {
           teamInstanceId: 't-cozinha',
@@ -99,6 +101,7 @@ export const AdminsResponsible: Story = {
       place: 'Igreja',
       guestName: null,
       adminsResponsible: true,
+      allTeams: false,
       teams: [],
     },
   },

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { hasSomeoneResponsible } from './scheduleActivity'
 
 const TIME_PATTERN = /^\d{1,2}:\d{2}$/
 
@@ -6,11 +7,13 @@ const responsibleSchema = z.object({
   teamInstanceIds: z.array(z.string()),
   guestName: z.string(),
   adminsResponsible: z.boolean(),
+  /** Every team of the event. The form clears `teamInstanceIds` when it's checked. */
+  allTeams: z.boolean(),
 })
 
 /**
  * The shape checks the inline "NOVA ATIVIDADE" form runs before it submits,
- * plus "someone responsible" (a team, a guest or the admins), mirroring the
+ * plus "someone responsible" (a team, all teams, a guest or the admins), mirroring the
  * API. Planning rules that need the day's other activities (overlaps…) stay on
  * the API.
  *
@@ -28,9 +31,12 @@ export const scheduleActivityFormSchema = z
   })
   .refine(
     (values) =>
-      values.teamInstanceIds.length > 0 ||
-      values.guestName.trim() !== '' ||
-      values.adminsResponsible,
+      hasSomeoneResponsible({
+        teamCount: values.teamInstanceIds.length,
+        allTeams: values.allTeams,
+        guestName: values.guestName,
+        adminsResponsible: values.adminsResponsible,
+      }),
     {
       message: 'Escolha ao menos um responsável',
       path: ['teamInstanceIds'],

@@ -11,6 +11,7 @@ export type InsertScheduleActivityInput = {
   place: string
   guestName: string | null
   adminsResponsible: boolean
+  allTeams: boolean
 }
 
 export type UpdatePlannedStartInput = {

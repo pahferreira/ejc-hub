@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent, within } from 'storybook/test'
+import { expect, fn, screen, userEvent, waitFor, within } from 'storybook/test'
 import { ScheduleActivityCard } from './ScheduleActivityCard'
 
 const meta = {
@@ -15,6 +15,7 @@ const meta = {
       place: 'Salão paroquial',
       guestName: null,
       adminsResponsible: false,
+      allTeams: false,
       teams: [
         { teamInstanceId: 't1', teamName: 'Acolhida', teamKey: 'acolhida', colorToken: 'rose' },
       ],
@@ -51,6 +52,7 @@ export const AllResponsible: Story = {
       place: 'Auditório',
       guestName: 'Padre João',
       adminsResponsible: true,
+      allTeams: false,
       teams: [
         { teamInstanceId: 't1', teamName: 'Liturgia', teamKey: 'liturgia', colorToken: 'violet' },
         { teamInstanceId: 't2', teamName: 'Música', teamKey: 'musica', colorToken: 'sky' },
@@ -77,6 +79,7 @@ export const CrossesMidnight: Story = {
       place: 'Capela',
       guestName: null,
       adminsResponsible: true,
+      allTeams: false,
       teams: [],
     },
   },
@@ -85,5 +88,83 @@ export const CrossesMidnight: Story = {
 
     await expect(canvas.getByText('23:00')).toBeInTheDocument()
     await expect(canvas.getByText('00:30')).toBeInTheDocument()
+  },
+}
+
+const TWELVE_TEAMS = [
+  { teamInstanceId: 't1', teamName: 'Acolhida', teamKey: 'acolhida', colorToken: 'rose' },
+  { teamInstanceId: 't2', teamName: 'Liturgia', teamKey: 'liturgia', colorToken: 'violet' },
+  { teamInstanceId: 't3', teamName: 'Música', teamKey: 'musica', colorToken: 'sky' },
+  { teamInstanceId: 't4', teamName: 'Cozinha', teamKey: 'cozinha', colorToken: 'amber' },
+  { teamInstanceId: 't5', teamName: 'Ordem', teamKey: 'ordem', colorToken: 'emerald' },
+  { teamInstanceId: 't6', teamName: 'Lanche', teamKey: 'lanche', colorToken: 'orange' },
+  { teamInstanceId: 't7', teamName: 'Secretaria', teamKey: 'secretaria', colorToken: 'teal' },
+  { teamInstanceId: 't8', teamName: 'Sala', teamKey: 'sala', colorToken: 'indigo' },
+  { teamInstanceId: 't9', teamName: 'Compras', teamKey: 'compras', colorToken: 'lime' },
+  { teamInstanceId: 't10', teamName: 'Teatro', teamKey: 'teatro', colorToken: 'pink' },
+  { teamInstanceId: 't11', teamName: 'Vigília', teamKey: 'vigilia', colorToken: 'rose' },
+  { teamInstanceId: 't12', teamName: 'Recepção', teamKey: 'recepcao', colorToken: 'sky' },
+]
+
+/**
+ * Twelve hand-picked teams: four chips inline, eight behind "+8". The admins
+ * and guest chips sit outside the truncated list, so they never fold away. The
+ * popover is portalled out of the canvas, so it is asserted against `screen`.
+ */
+export const ManyTeams: Story = {
+  args: {
+    activity: {
+      id: 'activity-4',
+      title: 'Plenária de abertura',
+      plannedStartsAt: '2026-04-03T22:00:00Z',
+      durationMinutes: 60,
+      place: 'Auditório',
+      guestName: 'Padre João',
+      adminsResponsible: true,
+      allTeams: false,
+      teams: TWELVE_TEAMS,
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByText('Cozinha')).toBeVisible()
+    await expect(canvas.queryByText('Ordem')).not.toBeInTheDocument()
+    await expect(canvas.getByText('Coord. Geral')).toBeVisible()
+    await expect(canvas.getByText('Convidado: Padre João')).toBeVisible()
+
+    const trigger = canvas.getByRole('button', { name: 'mais 8 equipes' })
+    await expect(trigger).toHaveTextContent('+8')
+
+    await userEvent.click(trigger)
+
+    // `waitFor`: the panel opens through an opacity transition (see the
+    // `TruncatedPillList` stories).
+    await waitFor(() => expect(screen.getByText('Ordem')).toBeVisible())
+    await expect(screen.getByText('Recepção')).toBeVisible()
+  },
+}
+
+/** Every team of the event: one neutral "Todas as equipes" chip, with no color dot. */
+export const AllTeams: Story = {
+  args: {
+    activity: {
+      id: 'activity-5',
+      title: 'Plenária',
+      plannedStartsAt: '2026-04-04T12:00:00Z',
+      durationMinutes: 60,
+      place: 'Salão paroquial',
+      guestName: null,
+      adminsResponsible: false,
+      allTeams: true,
+      teams: [],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const chip = canvas.getByText('Todas as equipes')
+
+    await expect(chip).toBeInTheDocument()
+    await expect(chip.querySelector('[aria-hidden]')).toBeNull()
   },
 }

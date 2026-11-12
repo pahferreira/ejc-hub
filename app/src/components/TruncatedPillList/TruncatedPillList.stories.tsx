@@ -2,14 +2,18 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, screen, userEvent, waitFor, within } from 'storybook/test'
 import { TruncatedPillList } from './TruncatedPillList'
 
+// The component is generic; the args-driven stories below all use strings, the
+// default case. `WithRenderItem` renders its own object items.
+const StringPillList = TruncatedPillList<string>
+
 const meta = {
   title: 'UI/TruncatedPillList',
-  component: TruncatedPillList,
+  component: StringPillList,
   parameters: {
     layout: 'padded',
   },
   tags: ['autodocs'],
-} satisfies Meta<typeof TruncatedPillList>
+} satisfies Meta<typeof StringPillList>
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -109,6 +113,51 @@ export const CustomMaxVisible: Story = {
     const canvas = within(canvasElement)
 
     await expect(canvas.getByRole('button', { name: 'mais 7 habilidades' })).toBeVisible()
+  },
+}
+
+const TEAMS = [
+  { id: 't1', name: 'Acolhida', color: '#e11d48' },
+  { id: 't2', name: 'Liturgia', color: '#7c3aed' },
+  { id: 't3', name: 'Música', color: '#0284c7' },
+  { id: 't4', name: 'Cozinha', color: '#d97706' },
+  { id: 't5', name: 'Ordem', color: '#059669' },
+  { id: 't6', name: 'Lanche', color: '#ea580c' },
+]
+
+/**
+ * Object items drawn through `renderItem` (a colored dot beside the name) and
+ * keyed through `getItemKey`. The hidden ones render the same way in the
+ * popover.
+ */
+export const WithRenderItem: StoryObj = {
+  render: () => (
+    <TruncatedPillList
+      items={TEAMS}
+      itemNoun="equipes"
+      getItemKey={(team) => team.id}
+      renderItem={(team) => (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-tertiary px-2.5 py-0.5 text-xs font-medium text-dark-brown">
+          <span
+            aria-hidden
+            className="h-2 w-2 rounded-full"
+            style={{ backgroundColor: team.color }}
+          />
+          {team.name}
+        </span>
+      )}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByText('Cozinha')).toBeVisible()
+    await expect(canvas.queryByText('Ordem')).not.toBeInTheDocument()
+
+    await userEvent.click(canvas.getByRole('button', { name: 'mais 2 equipes' }))
+
+    await waitFor(() => expect(screen.getByText('Ordem')).toBeVisible())
+    await expect(screen.getByText('Lanche')).toBeVisible()
   },
 }
 

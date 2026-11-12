@@ -23,7 +23,8 @@ export const scheduleDayParamsSchema = z.object({
 /**
  * An activity's fields, sent whole both when adding and when editing one. The
  * shape is checked here; whether it fits the day (start in range, no overlap,
- * someone responsible, teams of the event) is the core's.
+ * someone responsible, all teams never with picked teams, teams of the event)
+ * is the core's.
  */
 export const scheduleActivityBodySchema = z.object({
   dayId: z.uuid(),
@@ -34,6 +35,7 @@ export const scheduleActivityBodySchema = z.object({
   teamInstanceIds: z.array(z.uuid()).default([]),
   guestName: z.string().trim().min(1).nullish(),
   adminsResponsible: z.boolean().default(false),
+  allTeams: z.boolean().default(false),
 })
 
 /** Adding an activity. */

@@ -18,6 +18,7 @@ const INITIAL: ScheduleActivityFormValues = {
   teamInstanceIds: [],
   guestName: '',
   adminsResponsible: false,
+  allTeams: false,
 }
 
 /** Holds the form's values so typing works in the story. */
@@ -117,5 +118,35 @@ export const Edit: Story = {
 
     await userEvent.click(canvas.getByRole('button', { name: 'Salvar alterações' }))
     await expect(args.onSubmit).toHaveBeenCalledOnce()
+  },
+}
+
+/**
+ * "Todas as equipes participam": checking it clears the picked teams and
+ * disables the selector; unchecking it leaves the selector empty.
+ */
+export const AllTeams: Story = {
+  args: {
+    initial: {
+      title: 'Plenária',
+      place: 'Salão',
+      startTime: '09:00',
+      teamInstanceIds: ['t1', 't2'],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    const teamSelector = canvas.getByRole('button', { name: '2 selected' })
+    const allTeams = canvas.getByLabelText('Todas as equipes participam')
+
+    await userEvent.click(allTeams)
+    await expect(allTeams).toBeChecked()
+    await expect(teamSelector).toBeDisabled()
+    await expect(teamSelector).toHaveTextContent('Buscar equipes...')
+
+    await userEvent.click(allTeams)
+    await expect(allTeams).not.toBeChecked()
+    await expect(teamSelector).toBeEnabled()
+    await expect(teamSelector).toHaveTextContent('Buscar equipes...')
   },
 }

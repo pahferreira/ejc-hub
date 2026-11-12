@@ -198,6 +198,7 @@ export class Schedule {
           place: activity.place,
           guestName: activity.guestName,
           adminsResponsible: activity.adminsResponsible,
+          allTeams: activity.allTeams,
           teams: teamsByActivity.get(activity.id) ?? [],
         })
         activitiesByDay.set(activity.dayId, dayActivities)
@@ -240,7 +241,8 @@ export class Schedule {
    *
    * - the day must belong to the current event;
    * - the start must be at or after the day's São Paulo 00:00;
-   * - someone must be responsible (a team, a guest or the admins);
+   * - all teams never comes with picked teams;
+   * - someone must be responsible (a team, all teams, a guest or the admins);
    * - every team must belong to the current event;
    * - the activity must not overlap another on any day (touching edges are fine).
    *
@@ -269,7 +271,13 @@ export class Schedule {
 
     const hasTeams = input.teamInstanceIds.length > 0
 
-    if (!hasTeams && !input.guestName && !input.adminsResponsible) {
+    // `allTeams` is a live wildcard over every team of the event, so picked
+    // teams with it are a contradiction, refused rather than resolved.
+    if (input.allTeams && hasTeams) {
+      throw new AppError('All teams cannot be combined with picked teams', AppErrorCode.Validation)
+    }
+
+    if (!hasTeams && !input.allTeams && !input.guestName && !input.adminsResponsible) {
       throw new AppError('The activity needs someone responsible', AppErrorCode.Validation)
     }
 
@@ -309,6 +317,7 @@ export class Schedule {
       place: input.place,
       guestName: input.guestName,
       adminsResponsible: input.adminsResponsible,
+      allTeams: input.allTeams,
     }
   }
 

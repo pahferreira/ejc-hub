@@ -4,7 +4,9 @@ import {
   activityEndTime,
   activityStartTime,
   formatDuration,
+  hasSomeoneResponsible,
 } from '../../utils/scheduleActivity/scheduleActivity'
+import { TruncatedPillList } from '../TruncatedPillList/TruncatedPillList'
 import { teamColorHex } from './teamColorHex'
 
 export type ScheduleActivityCardProps = {
@@ -28,8 +30,12 @@ function Chip(props: { children: React.ReactNode }) {
  */
 export function ScheduleActivityCard(props: ScheduleActivityCardProps) {
   const { activity } = props
-  const hasResponsible =
-    activity.teams.length > 0 || activity.adminsResponsible || activity.guestName
+  const hasResponsible = hasSomeoneResponsible({
+    teamCount: activity.teams.length,
+    allTeams: activity.allTeams,
+    guestName: activity.guestName,
+    adminsResponsible: activity.adminsResponsible,
+  })
 
   return (
     <article className="group relative flex gap-1 md:gap-4 rounded-xl border border-tertiary bg-white p-4 shadow-sm">
@@ -49,30 +55,41 @@ export function ScheduleActivityCard(props: ScheduleActivityCardProps) {
         </p>
 
         {hasResponsible && (
-          <div className="flex flex-wrap gap-1.5">
-            {activity.teams.map((team) => (
-              <Chip key={team.teamInstanceId}>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {activity.adminsResponsible && (
+              <Chip>
                 <span
                   aria-hidden
                   className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: teamColorHex(team.colorToken) }}
+                  style={{ backgroundColor: teamColorHex('coord-geral') }}
                 />
-                {team.teamName}
+                Coord. Geral
               </Chip>
-            ))}
-            {activity.adminsResponsible && (
-              <div className="flex flex-wrap gap-1.5">
-                <Chip>
-                  <span
-                    aria-hidden
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: teamColorHex('coord-geral') }}
-                  />
-                  Coord. Geral
-                </Chip>
-              </div>
             )}
             {activity.guestName && <Chip>Convidado: {activity.guestName}</Chip>}
+            {/* Neutral, with no color dot, so it isn't read as one specific team. */}
+            {activity.allTeams ? (
+              <Chip>Todas as equipes</Chip>
+            ) : (
+              activity.teams.length > 0 && (
+                <TruncatedPillList
+                  inline
+                  items={activity.teams}
+                  itemNoun="equipes"
+                  getItemKey={(team) => team.teamInstanceId}
+                  renderItem={(team) => (
+                    <Chip>
+                      <span
+                        aria-hidden
+                        className="h-2 w-2 rounded-full"
+                        style={{ backgroundColor: teamColorHex(team.colorToken) }}
+                      />
+                      {team.teamName}
+                    </Chip>
+                  )}
+                />
+              )
+            )}
           </div>
         )}
       </div>

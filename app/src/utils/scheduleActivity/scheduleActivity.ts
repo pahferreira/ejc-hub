@@ -12,6 +12,27 @@ export const DEFAULT_ACTIVITY_DURATION = 30
 
 export type { ScheduleActivityFormValues }
 
+/** Who an activity can be on: the fields the "someone responsible" rule reads. */
+export type ActivityResponsible = {
+  teamCount: number
+  allTeams: boolean
+  guestName: string | null
+  adminsResponsible: boolean
+}
+
+/**
+ * Whether an activity has someone responsible: a team, all teams, a guest or
+ * the admins. A blank guest name counts as none. The API checks the same rule.
+ */
+export function hasSomeoneResponsible(responsible: ActivityResponsible): boolean {
+  return (
+    responsible.teamCount > 0 ||
+    responsible.allTeams ||
+    (responsible.guestName ?? '').trim() !== '' ||
+    responsible.adminsResponsible
+  )
+}
+
 /** The end instant of an activity: its start plus its duration. */
 function endInstant(activity: Pick<ScheduleActivity, 'plannedStartsAt' | 'durationMinutes'>): Date {
   return new Date(
@@ -170,6 +191,7 @@ export function activityFormValues(activity: ScheduleActivity): ScheduleActivity
     teamInstanceIds: activity.teams.map((team) => team.teamInstanceId),
     guestName: activity.guestName ?? '',
     adminsResponsible: activity.adminsResponsible,
+    allTeams: activity.allTeams,
   }
 }
 
@@ -194,5 +216,6 @@ export function buildActivityBody(
     teamInstanceIds: values.teamInstanceIds,
     guestName: guestName === '' ? null : guestName,
     adminsResponsible: values.adminsResponsible,
+    allTeams: values.allTeams,
   }
 }

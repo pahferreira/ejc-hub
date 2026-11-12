@@ -26,6 +26,8 @@ export type ScheduleActivity = {
   place: string
   guestName: string | null
   adminsResponsible: boolean
+  /** Every team of the event, as a live wildcard. `teams` is then empty. */
+  allTeams: boolean
   teams: ScheduleActivityTeam[]
 }
 
@@ -83,6 +85,8 @@ export type ScheduleActivityBody = {
   teamInstanceIds: string[]
   guestName: string | null
   adminsResponsible: boolean
+  /** Every team of the event. Never sent with `teamInstanceIds`. */
+  allTeams: boolean
 }
 
 export type CreateScheduleActivityResult = {

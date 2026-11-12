@@ -78,6 +78,19 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
         )}
       >
         <div className="flex flex-wrap items-center gap-1.5">
+          {activity.adminsResponsible && (
+            <Chip colorHex={teamColorHex('coord-geral')}>Coord. Geral</Chip>
+          )}
+          {activity.allTeams && (
+            <Chip isMyTeam colorHex="all-teams">
+              Todas as equipes
+            </Chip>
+          )}
+          {activity.guestName && (
+            <Chip plain colorHex={teamColorHex('coord-geral')}>
+              Convidado: {activity.guestName}
+            </Chip>
+          )}
           {activity.teams.map((team) => (
             <span key={team.teamInstanceId} className="inline-flex items-center gap-1.5">
               <Chip
@@ -88,14 +101,6 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
               </Chip>
             </span>
           ))}
-          {activity.adminsResponsible && (
-            <Chip colorHex={teamColorHex('coord-geral')}>Coord. Geral</Chip>
-          )}
-          {activity.guestName && (
-            <Chip plain colorHex={teamColorHex('coord-geral')}>
-              Convidado: {activity.guestName}
-            </Chip>
-          )}
         </div>
 
         <p className="m-0 text-base font-semibold text-dark-brown">{activity.title}</p>

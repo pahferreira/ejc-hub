@@ -23,6 +23,7 @@ const ACTIVITIES: ScheduleActivity[] = [
     place: 'Refeitório',
     guestName: null,
     adminsResponsible: true,
+    allTeams: false,
     teams: [],
   },
   {
@@ -33,6 +34,7 @@ const ACTIVITIES: ScheduleActivity[] = [
     place: 'Salão',
     guestName: 'Padre João',
     adminsResponsible: false,
+    allTeams: false,
     teams: [
       { teamInstanceId: 't1', teamName: 'Liturgia', teamKey: 'liturgia', colorToken: 'blue' },
     ],
@@ -52,6 +54,7 @@ const EMPTY_VALUES: ScheduleActivityFormValues = {
   teamInstanceIds: [],
   guestName: '',
   adminsResponsible: false,
+  allTeams: false,
 }
 
 /**

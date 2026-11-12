@@ -28,6 +28,7 @@ function toActivityPlan(body: z.infer<typeof scheduleActivityBodySchema>): Sched
     teamInstanceIds: body.teamInstanceIds,
     guestName: body.guestName ?? null,
     adminsResponsible: body.adminsResponsible,
+    allTeams: body.allTeams,
   }
 }
 

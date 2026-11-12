@@ -11,6 +11,7 @@ function activity(id: string, plannedStartsAt: string): ScheduleActivity {
     place: 'Salão',
     guestName: null,
     adminsResponsible: false,
+    allTeams: false,
     teams: [],
   }
 }
@@ -119,5 +120,17 @@ describe('isMyTeamActivity', () => {
 
   it('is never the team of a user on no team', () => {
     expect(isMyTeamActivity(shared, null)).toBe(false)
+  })
+
+  describe('when every team is responsible', () => {
+    const plenary = { ...activity('plenary', '2026-04-03T21:00:00Z'), allTeams: true }
+
+    it("is the team's of any user on a team", () => {
+      expect(isMyTeamActivity(plenary, 'team-musica')).toBe(true)
+    })
+
+    it('is not the team of a user on no team', () => {
+      expect(isMyTeamActivity(plenary, null)).toBe(false)
+    })
   })
 })
