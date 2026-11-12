@@ -46,7 +46,8 @@ export const Default: Story = {
     await expect(canvas.getByText('18:00')).toBeVisible()
     await expect(canvas.getByText('45 min')).toBeVisible()
     await expect(canvas.getByText('até 18:45')).toBeVisible()
-    await expect(canvas.getByText('Salão paroquial · Convidado: Pe. João')).toBeVisible()
+    await expect(canvas.getByText('Salão paroquial')).toBeVisible()
+    await expect(canvas.getByText('Convidado: Pe. João')).toBeVisible()
     await expect(canvas.queryByText('Sua equipe')).not.toBeInTheDocument()
   },
 }
@@ -81,12 +82,12 @@ export const MyTeam: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByText('Sua equipe')).toBeVisible()
+    await expect(canvas.getByText('Cozinha')).toHaveClass('bg-primary')
     await expect(canvas.getByRole('article', { name: 'Jantar' })).toHaveClass('border-l-primary')
   },
 }
 
-/** The admins are responsible: an "Administração" chip. */
+/** The admins are responsible: an "Coord. Geral" chip. */
 export const AdminsResponsible: Story = {
   args: {
     myTeamInstanceId: null,
@@ -104,6 +105,6 @@ export const AdminsResponsible: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByText('Administração')).toBeVisible()
+    await expect(canvas.getByText('Coord. Geral')).toBeVisible()
   },
 }

@@ -17,14 +17,28 @@ export type ScheduleTimelineRowProps = {
   myTeamInstanceId: string | null
 }
 
-function Chip(props: { children: React.ReactNode; colorHex: string }) {
+function Chip(props: {
+  children: React.ReactNode
+  colorHex: string
+  isMyTeam?: boolean
+  plain?: boolean
+}) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-tertiary bg-tertiary-background px-2.5 py-0.5 text-xs font-medium text-dark-brown">
-      <span
-        aria-hidden
-        className="h-2 w-2 rounded-full"
-        style={{ backgroundColor: props.colorHex }}
-      />
+    <span
+      className={clsx(
+        'inline-flex items-center gap-1.5 rounded-full border  px-2.5 py-0.5 text-xs font-medium',
+        props.isMyTeam
+          ? 'bg-primary border-dark-brown text-white'
+          : 'bg-tertiary-background border-tertiary text-dark-brown'
+      )}
+    >
+      {!props.plain && (
+        <span
+          aria-hidden
+          className="h-2 w-2 rounded-full"
+          style={{ backgroundColor: props.isMyTeam ? 'white' : props.colorHex }}
+        />
+      )}
       {props.children}
     </span>
   )
@@ -39,10 +53,6 @@ function Chip(props: { children: React.ReactNode; colorHex: string }) {
 export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
   const { activity } = props
   const isMyTeam = isMyTeamActivity(activity, props.myTeamInstanceId)
-  const details = [
-    activity.place,
-    activity.guestName ? `Convidado: ${activity.guestName}` : null,
-  ].filter(Boolean)
 
   return (
     <li className="flex gap-4">
@@ -70,21 +80,28 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
         <div className="flex flex-wrap items-center gap-1.5">
           {activity.teams.map((team) => (
             <span key={team.teamInstanceId} className="inline-flex items-center gap-1.5">
-              <Chip colorHex={teamColorHex(team.colorToken)}>{team.teamName}</Chip>
-              {team.teamInstanceId === props.myTeamInstanceId && (
-                <span className="text-xs font-bold text-primary">Sua equipe</span>
-              )}
+              <Chip
+                isMyTeam={team.teamInstanceId === props.myTeamInstanceId}
+                colorHex={teamColorHex(team.colorToken)}
+              >
+                {team.teamName}
+              </Chip>
             </span>
           ))}
           {activity.adminsResponsible && (
-            <Chip colorHex={teamColorHex('coord-geral')}>Administração</Chip>
+            <Chip colorHex={teamColorHex('coord-geral')}>Coord. Geral</Chip>
+          )}
+          {activity.guestName && (
+            <Chip plain colorHex={teamColorHex('coord-geral')}>
+              Convidado: {activity.guestName}
+            </Chip>
           )}
         </div>
 
         <p className="m-0 text-base font-semibold text-dark-brown">{activity.title}</p>
 
         <p className="m-0 flex flex-wrap items-center justify-between gap-2 text-sm text-gray-600">
-          <span>{details.join(' · ')}</span>
+          <span>{activity.place}</span>
           <span className="text-xs text-gray-500">até {activityEndTime(activity)}</span>
         </p>
       </article>
