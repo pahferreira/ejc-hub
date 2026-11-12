@@ -2,10 +2,10 @@ import { useEffect } from 'react'
 import { usePostHog } from '@posthog/react'
 import type { ScheduleViewerRole } from '../../services/schedule/schedule.types'
 
-const SCHEDULE_VIEWED_EVENT = 'schedule_viewed'
+const SCHEDULE_VIEWED_EVENT = 'schedule-viewed'
 
 /**
- * Reports `schedule_viewed` whenever a day's tab is shown: on opening and on
+ * Reports `schedule-viewed` whenever a day's tab is shown: on opening and on
  * every switch. Nothing is reported until both are known, which is once the
  * schedule has loaded with at least one day.
  */
