@@ -9,6 +9,13 @@ import tseslint from 'typescript-eslint'
 import prettier from 'eslint-plugin-prettier'
 import { globalIgnores } from 'eslint/config'
 
+// São Paulo clock maths lives in common/schedule/ (CODING_STANDARDS.md, "Event-clock
+// maths"). Reading wall-clock parts outside it is the tell, so the primitive stays internal.
+const EVENT_CLOCK_IMPORT_PATTERN = {
+  group: ['**/common/schedule/eventZoneParts*'],
+  message: 'São Paulo clock maths lives in common/schedule/: add a helper there.',
+}
+
 const PROPS_IN_SIGNATURE_MESSAGE =
   'Read props as `props.name`. Destructure in the signature only to give a prop a default value.'
 
@@ -50,6 +57,7 @@ export default tseslint.config(
           'error',
           {
             patterns: [
+              EVENT_CLOCK_IMPORT_PATTERN,
               {
                 group: ['react-hook-form', '@hookform/*'],
                 allowTypeImports: true,
@@ -64,7 +72,10 @@ export default tseslint.config(
     {
       files: ['**/use*Form.ts', '**/use*Form/**'],
       rules: {
-        '@typescript-eslint/no-restricted-imports': 'off',
+        '@typescript-eslint/no-restricted-imports': [
+          'error',
+          { patterns: [EVENT_CLOCK_IMPORT_PATTERN] },
+        ],
       },
     },
   ],

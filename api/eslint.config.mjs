@@ -15,6 +15,13 @@ const compat = new FlatCompat({
   allConfig: js.configs.all,
 })
 
+// São Paulo clock maths lives in common/schedule/ (CODING_STANDARDS.md, "Event-clock
+// maths"). Reading wall-clock parts outside it is the tell, so the primitive stays internal.
+const EVENT_CLOCK_IMPORT_PATTERN = {
+  group: ['**/common/schedule/eventZoneParts*'],
+  message: 'São Paulo clock maths lives in common/schedule/: add a helper there.',
+}
+
 export default defineConfig([
   {
     extends: compat.extends(
@@ -46,6 +53,7 @@ export default defineConfig([
       '@typescript-eslint/no-misused-promises': 'error',
       'prefer-const': 'error',
       '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
+      'no-restricted-imports': ['error', { patterns: [EVENT_CLOCK_IMPORT_PATTERN] }],
     },
   },
   {
@@ -85,6 +93,7 @@ export default defineConfig([
         'error',
         {
           patterns: [
+            EVENT_CLOCK_IMPORT_PATTERN,
             {
               group: [
                 '**/shared/AppError*',
