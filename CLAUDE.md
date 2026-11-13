@@ -13,7 +13,7 @@ EJC Hub - A event management application for managing events, teams, subscriptio
 
 ## Coding standards
 
-Reviews check code against `CODING_STANDARDS.md` at the repo root.
+Specs, tickets and reviews follow `CODING_STANDARDS.md` at the repo root.
 
 ## Git Hooks
 
