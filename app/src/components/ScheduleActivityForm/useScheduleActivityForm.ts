@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
+import { usePostHog } from '@posthog/react'
 import { useCreateScheduleActivityMutation } from '../../services/schedule/useCreateScheduleActivityMutation'
 import { useUpdateScheduleActivityMutation } from '../../services/schedule/useUpdateScheduleActivityMutation'
 import type { ScheduleActivity } from '../../services/schedule/schedule.types'
@@ -17,6 +18,9 @@ import {
   type ScheduleActivityFormValues,
 } from '../../utils/scheduleActivity/scheduleActivityForm.schema'
 import type { ScheduleActivityFieldErrors } from './ScheduleActivityForm'
+
+/** The PostHog event for a new activity (edits aren't tracked). */
+const ACTIVITY_CREATED_EVENT = 'action-schedule-activity-created'
 
 /** The form's values when it first opens: everything empty, the given start and duration. */
 function initialValues(startTime: string, durationMinutes: number): ScheduleActivityFormValues {
@@ -56,6 +60,7 @@ export type ScheduleActivityFormPlacement =
  * render inline.
  */
 export function useScheduleActivityForm(day: { id: string; date: string } | null) {
+  const posthog = usePostHog()
   const createMutation = useCreateScheduleActivityMutation()
   const updateMutation = useUpdateScheduleActivityMutation()
 
@@ -129,6 +134,13 @@ export function useScheduleActivityForm(day: { id: string; date: string } | null
         toast.success('Atividade atualizada!', { position: 'top-center' })
       } else {
         await createMutation.mutateAsync(body)
+        posthog.capture(ACTIVITY_CREATED_EVENT, {
+          placement: placement.kind,
+          teamCount: values.teamInstanceIds.length,
+          allTeams: values.allTeams,
+          hasGuest: values.guestName.trim() !== '',
+          adminsResponsible: values.adminsResponsible,
+        })
         toast.success('Atividade adicionada!', { position: 'top-center' })
       }
       setPlacement(null)
