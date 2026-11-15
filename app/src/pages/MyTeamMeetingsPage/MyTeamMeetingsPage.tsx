@@ -12,6 +12,7 @@ import { FeatureFlag } from '../../hooks/useFeatureFlag/feature-flags'
 import { MemberAttendanceHistory } from '../../components/MemberAttendanceHistory/MemberAttendanceHistory'
 import { StatusCard } from '../../components/StatusCard/StatusCard'
 import { justifiedStat, teamAverageStat } from '../../components/AttendanceRate/attendanceStats'
+import { BAND_LABELS } from '../../components/AttendanceRate/attendanceRate'
 import type { CoordinatorAttendanceReadModel } from '../../services/attendance/attendance.types'
 
 function AttendanceStats(props: { model: CoordinatorAttendanceReadModel }) {
@@ -42,14 +43,14 @@ function AttendanceStats(props: { model: CoordinatorAttendanceReadModel }) {
         description={justified.description}
       />
       <StatusCard
-        title="Em risco"
+        title={BAND_LABELS.risky}
         value={model.bandCounts.risky}
         variant="pending"
         icon={<FiAlertTriangle size="24px" />}
         description="50–74% de presença"
       />
       <StatusCard
-        title="Precisa substituir"
+        title={BAND_LABELS['needs-replacement']}
         value={model.bandCounts['needs-replacement']}
         variant="error"
         description="abaixo de 50%"
