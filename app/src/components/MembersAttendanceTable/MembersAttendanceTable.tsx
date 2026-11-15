@@ -41,8 +41,8 @@ function MemberIdentity(props: { member: AttendanceRosterMember; firstMeetingHel
  * The Membros table: each team member with their rate and Situação.
  *
  * Pessoa and Presença are sortable; the default is Pessoa ascending, the order
- * /my-team lists the same people in. Situação shows a Boa / Em risco / Precisa
- * substituir badge, or nothing for the two edge states.
+ * /my-team lists the same people in. Situação shows an Em dia / Pode melhorar /
+ * Precisa de atenção badge, or nothing for the two edge states.
  */
 export function MembersAttendanceTable(props: MembersAttendanceTableProps) {
   const [sortKey, setSortKey] = useState<MemberSortKey>('pessoa')

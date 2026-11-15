@@ -44,10 +44,10 @@ describe('bandToTextClass', () => {
 
 describe('bandToBadge', () => {
   it('labels the three judged bands', () => {
-    expect(bandToBadge('good')).toEqual({ label: 'Boa', variant: 'success' })
-    expect(bandToBadge('risky')).toEqual({ label: 'Em risco', variant: 'warning' })
+    expect(bandToBadge('good')).toEqual({ label: 'Em dia', variant: 'success' })
+    expect(bandToBadge('risky')).toEqual({ label: 'Pode melhorar', variant: 'warning' })
     expect(bandToBadge('needs-replacement')).toEqual({
-      label: 'Precisa substituir',
+      label: 'Precisa de atenção',
       variant: 'error',
     })
   })

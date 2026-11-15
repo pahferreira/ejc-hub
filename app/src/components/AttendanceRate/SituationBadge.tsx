@@ -7,7 +7,7 @@ export type SituationBadgeProps = {
 }
 
 /**
- * The Boa / Em risco / Precisa substituir badge, or nothing for the two edge
+ * The Em dia / Pode melhorar / Precisa de atenção badge, or nothing for the two edge
  * states (`insufficient-data`, `no-meetings`), matching the Membros table's
  * Situação column.
  */

@@ -32,12 +32,22 @@ export function bandToTextClass(band: AttendanceBand): string {
   return TONE_TEXT_CLASSES[bandToMeterTone(band)]
 }
 
+/** The bands that get a judgement; the two edge states get none. */
+type JudgedBand = Extract<AttendanceBand, 'good' | 'risky' | 'needs-replacement'>
+
+/** The one place a band's wording lives: badges and stat cards both read it. */
+export const BAND_LABELS: Record<JudgedBand, string> = {
+  good: 'Em dia',
+  risky: 'Pode melhorar',
+  'needs-replacement': 'Precisa de atenção',
+}
+
 export type BandBadge = { label: string; variant: BadgeVariant }
 
 const BAND_BADGES: Partial<Record<AttendanceBand, BandBadge>> = {
-  good: { label: 'Boa', variant: 'success' },
-  risky: { label: 'Em risco', variant: 'warning' },
-  'needs-replacement': { label: 'Precisa substituir', variant: 'error' },
+  good: { label: BAND_LABELS.good, variant: 'success' },
+  risky: { label: BAND_LABELS.risky, variant: 'warning' },
+  'needs-replacement': { label: BAND_LABELS['needs-replacement'], variant: 'error' },
 }
 
 /**
