@@ -252,19 +252,75 @@ describe('computeDayForecast', () => {
     expect(forecast.driftMinutes).toBe(15)
   })
 
-  it('starts each day at zero drift, whatever the day before ended at', () => {
-    const lateDay = computeDayForecast(
-      { activities: [done(planned('a', '21:00', 60), '21:30', '22:30')] },
-      at('23:00')
-    )
-    expect(lateDay.driftMinutes).toBe(30)
-
+  it('starts each day at zero drift, even when the day before ran late past midnight', () => {
     const nextDate = '2026-11-15'
-    const nextDay = computeDayForecast(
-      { activities: [{ ...planned('b', '08:00', 60), plannedStartsAt: at('08:00', nextDate) }] },
-      at('07:00', nextDate)
+    // Saturday's closing activity, planned 22:30-23:30, ran to 00:30 Sunday.
+    const saturday = computeDayForecast(
+      {
+        activities: [
+          done(planned('a', '21:00', 60), '21:00', '22:30'),
+          {
+            ...done(planned('b', '22:30', 60), '22:30', '00:30'),
+            actualEndsAt: at('00:30', nextDate),
+          },
+        ],
+      },
+      at('00:30', nextDate)
     )
-    expect(nextDay.activities[0].forecastStartsAt).toEqual(at('08:00', nextDate))
-    expect(nextDay.driftMinutes).toBe(0)
+    expect(saturday.driftMinutes).toBe(60)
+
+    // Sunday is computed on its own: its first activity is not pushed by Saturday's hour.
+    const sunday = computeDayForecast(
+      {
+        activities: [
+          { ...planned('c', '07:00', 60), plannedStartsAt: at('07:00', nextDate) },
+          { ...planned('d', '08:00', 30), plannedStartsAt: at('08:00', nextDate) },
+        ],
+      },
+      at('06:30', nextDate)
+    )
+    expect(sunday.activities.map((activity) => activity.forecastStartsAt)).toEqual([
+      at('07:00', nextDate),
+      at('08:00', nextDate),
+    ])
+    expect(sunday.driftMinutes).toBe(0)
+  })
+
+  it('ends a trimmed running activity at now once it overruns its trimmed length', () => {
+    const forecast = computeDayForecast(
+      {
+        activities: [
+          running(trimmed(planned('a', '08:00', 60), 40), '08:00'),
+          planned('b', '09:00', 30),
+        ],
+      },
+      at('08:50')
+    )
+
+    expect(times(forecast.activities)).toEqual([
+      ['a', '08:00', '08:50'],
+      ['b', '08:50', '09:20'],
+    ])
+    expect(forecast.driftMinutes).toBe(-10)
+  })
+
+  it('keeps the planned gaps when the day is running early', () => {
+    const forecast = computeDayForecast(
+      {
+        activities: [
+          done(planned('a', '08:00', 30), '08:00', '08:20'),
+          planned('b', '09:00', 30),
+          planned('c', '11:00', 30),
+        ],
+      },
+      at('08:20')
+    )
+
+    expect(times(forecast.activities)).toEqual([
+      ['a', '08:00', '08:20'],
+      ['b', '08:50', '09:20'],
+      ['c', '10:50', '11:20'],
+    ])
+    expect(forecast.driftMinutes).toBe(-10)
   })
 })
