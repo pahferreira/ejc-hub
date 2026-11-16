@@ -20,11 +20,11 @@ describe('hasPermission', () => {
   })
 
   it('checks the running schedule permissions by their Auth0 strings', () => {
-    const coordinator: Permission[] = ['schedule-note:create', 'schedule-note:read']
+    const notePermissions: Permission[] = ['schedule-note:create', 'schedule-note:read']
 
-    expect(hasPermission(coordinator, ScheduleNotePermissions.Read)).toBe(true)
-    expect(hasPermission(coordinator, ScheduleNotePermissions.Create)).toBe(true)
-    expect(hasPermission(coordinator, SchedulePermissions.Control)).toBe(false)
+    expect(hasPermission(notePermissions, ScheduleNotePermissions.Read)).toBe(true)
+    expect(hasPermission(notePermissions, ScheduleNotePermissions.Create)).toBe(true)
+    expect(hasPermission(notePermissions, SchedulePermissions.Control)).toBe(false)
     expect(hasPermission(['schedule:control'], SchedulePermissions.Control)).toBe(true)
   })
 })

@@ -16,8 +16,6 @@ export type ForecastActivity = {
   | { status: 'done'; actualStartsAt: Date; actualEndsAt: Date }
 )
 
-export type ForecastActivityStatus = ForecastActivity['status']
-
 /** One day's activities. Order does not matter; the forecast sorts by planned start. */
 export type ForecastDay<T extends ForecastActivity = ForecastActivity> = {
   activities: T[]

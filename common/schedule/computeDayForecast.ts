@@ -13,6 +13,7 @@ const addMinutes = (instant: Date, minutes: number): Date =>
 /** Forecast start and end of one activity, given the drift carried into it. */
 const forecastTimes = (activity: ForecastActivity, driftMs: number, now: Date) => {
   const effectiveMinutes = activity.adjustedDurationMinutes ?? activity.durationMinutes
+  const driftedStartsAt = new Date(activity.plannedStartsAt.getTime() + driftMs)
   switch (activity.status) {
     case 'done':
       return { forecastStartsAt: activity.actualStartsAt, forecastEndsAt: activity.actualEndsAt }
@@ -23,14 +24,13 @@ const forecastTimes = (activity: ForecastActivity, driftMs: number, now: Date) =
         forecastEndsAt: new Date(Math.max(endsAt.getTime(), now.getTime())),
       }
     }
-    case 'skipped': {
-      const startsAt = new Date(activity.plannedStartsAt.getTime() + driftMs)
-      return { forecastStartsAt: startsAt, forecastEndsAt: startsAt }
-    }
-    case 'planned': {
-      const forecastStartsAt = new Date(activity.plannedStartsAt.getTime() + driftMs)
-      return { forecastStartsAt, forecastEndsAt: addMinutes(forecastStartsAt, effectiveMinutes) }
-    }
+    case 'skipped':
+      return { forecastStartsAt: driftedStartsAt, forecastEndsAt: driftedStartsAt }
+    case 'planned':
+      return {
+        forecastStartsAt: driftedStartsAt,
+        forecastEndsAt: addMinutes(driftedStartsAt, effectiveMinutes),
+      }
   }
 }
 
@@ -58,9 +58,10 @@ export const computeDayForecast = <T extends ForecastActivity>(
   )
 
   let driftMs = 0
-  let driftIntoNextMs: number | null = null
+  let driftBeforeNextPlannedMs: number | null = null
   const activities: ForecastedActivity<T>[] = ordered.map((activity) => {
-    if (activity.status === 'planned' && driftIntoNextMs === null) driftIntoNextMs = driftMs
+    if (activity.status === 'planned' && driftBeforeNextPlannedMs === null)
+      driftBeforeNextPlannedMs = driftMs
     const times = forecastTimes(activity, driftMs, now)
     const plannedEndsAt = addMinutes(activity.plannedStartsAt, activity.durationMinutes)
     driftMs = times.forecastEndsAt.getTime() - plannedEndsAt.getTime()
@@ -69,7 +70,7 @@ export const computeDayForecast = <T extends ForecastActivity>(
 
   return {
     activities,
-    driftMinutes: (driftIntoNextMs ?? driftMs) / MINUTE_MS,
+    driftMinutes: (driftBeforeNextPlannedMs ?? driftMs) / MINUTE_MS,
     running: activities.find((activity) => activity.status === 'running') ?? null,
     next: activities.find((activity) => activity.status === 'planned') ?? null,
   }
