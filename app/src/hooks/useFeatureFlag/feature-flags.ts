@@ -30,6 +30,12 @@ export const FeatureFlag = {
    * Phase 1 (Schedule Planning) is usable end to end.
    */
   Schedule: 'schedule-visibility',
+  /**
+   * The Running Schedule (Phase 2): live forecast, Atraso and controls on
+   * `/schedule`. Off by default; without it `/schedule` stays the Phase 1
+   * read view.
+   */
+  ScheduleLive: 'schedule-live',
 } as const
 
 export type FeatureFlagValue = (typeof FeatureFlag)[keyof typeof FeatureFlag]

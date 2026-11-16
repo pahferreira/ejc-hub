@@ -1,4 +1,6 @@
 export * from './schedule.constants.ts'
+export * from './schedule.types.ts'
+export * from './computeDayForecast.ts'
 export * from './toEventInstant.ts'
 export * from './toEventTime.ts'
 export * from './toEventDate.ts'
