@@ -59,6 +59,13 @@ export const SchedulePermissions = {
   Read: 'schedule:read',
   Update: 'schedule:update',
   Delete: 'schedule:delete',
+  /** Run the day live: start, finish, skip and adjust activities. */
+  Control: 'schedule:control',
+} as const
+
+export const ScheduleNotePermissions = {
+  Create: 'schedule-note:create',
+  Read: 'schedule-note:read',
 } as const
 
 export const UserPermissions = {
@@ -77,4 +84,5 @@ export type Permission =
   | (typeof MemberRequestPermissions)[keyof typeof MemberRequestPermissions]
   | (typeof AttendancePermissions)[keyof typeof AttendancePermissions]
   | (typeof SchedulePermissions)[keyof typeof SchedulePermissions]
+  | (typeof ScheduleNotePermissions)[keyof typeof ScheduleNotePermissions]
   | (typeof UserPermissions)[keyof typeof UserPermissions]

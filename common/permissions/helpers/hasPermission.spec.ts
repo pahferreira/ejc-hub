@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { hasPermission } from './hasPermission'
+import { ScheduleNotePermissions, SchedulePermissions, type Permission } from '../permissions.types'
 
 describe('hasPermission', () => {
   it('should return true if user has the required permission', () => {
@@ -16,5 +17,14 @@ describe('hasPermission', () => {
 
     const result = hasPermission(userPermissions, requiredPermission)
     expect(result).toBe(false)
+  })
+
+  it('checks the running schedule permissions by their Auth0 strings', () => {
+    const coordinator: Permission[] = ['schedule-note:create', 'schedule-note:read']
+
+    expect(hasPermission(coordinator, ScheduleNotePermissions.Read)).toBe(true)
+    expect(hasPermission(coordinator, ScheduleNotePermissions.Create)).toBe(true)
+    expect(hasPermission(coordinator, SchedulePermissions.Control)).toBe(false)
+    expect(hasPermission(['schedule:control'], SchedulePermissions.Control)).toBe(true)
   })
 })
