@@ -78,10 +78,15 @@ export function SchedulePage() {
   }
 
   const { event, myTeamInstanceId } = scheduleQuery.data
-  // The top slot and Iniciar follow the selected day: activities start in
-  // order within their day.
-  const running = isLive && selectedDay ? runningActivity(selectedDay.activities) : null
+  // One activity runs per event, so the running one shows whichever day is
+  // selected (a night activity can run past midnight into the next day's tab).
+  // Iniciar follows the selected day: activities start in order within their day.
+  const eventActivities = days.flatMap((day) => day.activities)
+  const running = isLive ? runningActivity(eventActivities) : null
   const next = isLive && selectedDay ? nextPlannedActivity(selectedDay.activities) : null
+  const nextAfterRunning = running
+    ? nextPlannedActivity(eventActivities.slice(eventActivities.indexOf(running) + 1))
+    : null
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
@@ -114,7 +119,7 @@ export function SchedulePage() {
               <div className="mt-8">
                 <ScheduleHappeningNowCard
                   activity={running}
-                  next={next}
+                  next={nextAfterRunning}
                   myTeamInstanceId={myTeamInstanceId}
                   onFinish={canControl ? () => controls.finish(running) : undefined}
                   isControlPending={controls.isPending}

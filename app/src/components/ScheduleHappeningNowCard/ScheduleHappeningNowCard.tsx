@@ -7,7 +7,7 @@ import { ScheduleActivityChips } from '../ScheduleActivityChips/ScheduleActivity
 export type ScheduleHappeningNowCardProps = {
   /** The running activity. */
   activity: ScheduleActivity
-  /** The day's next planned activity, or null when it is the last. */
+  /** The event's next planned activity after it, or null when it is the last. */
   next: ScheduleActivity | null
   myTeamInstanceId: string | null
   /** Finishes the activity. Left out for anyone who cannot control the clock. */
