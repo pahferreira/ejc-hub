@@ -20,14 +20,16 @@ export const updateScheduleDayBodySchema = z.object({
  * A start on a whole minute. A day move rebuilds each start from its São Paulo
  * clock time (`HH:mm`), so a start with seconds would lose them when its day
  * moves.
+ *
+ * Checked on the string, not a `Date`: a `Date` drops digits past the
+ * millisecond, so `…:00.0009Z` would pass and be trimmed. Offsets are whole
+ * minutes, so the clock seconds are the instant's seconds.
  */
-const wholeMinuteInstantSchema = z.iso.datetime({ offset: true }).refine(
-  (value) => {
-    const instant = new Date(value)
-    return instant.getUTCSeconds() === 0 && instant.getUTCMilliseconds() === 0
-  },
-  { message: 'Expected a start on a whole minute' }
-)
+const WHOLE_MINUTE_TIME = /T\d{2}:\d{2}(:00(\.0+)?)?(Z|[+-])/
+
+const wholeMinuteInstantSchema = z.iso
+  .datetime({ offset: true })
+  .regex(WHOLE_MINUTE_TIME, { message: 'Expected a start on a whole minute' })
 
 export const scheduleDayParamsSchema = z.object({
   dayId: z.uuid(),

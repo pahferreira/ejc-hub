@@ -200,6 +200,7 @@ describe('schedule routes', () => {
     it.each([
       ['with zero milliseconds, as the app sends it', '2026-04-03T21:00:00.000Z'],
       ['with a São Paulo offset', '2026-04-03T18:00:00-03:00'],
+      ['without seconds', '2026-04-03T21:00Z'],
     ])('accepts a whole-minute start %s', async (_label, plannedStartsAt) => {
       const response = await server.inject({
         method: 'POST',
@@ -286,6 +287,10 @@ describe('schedule routes', () => {
       [
         'a start with milliseconds',
         { ...ACTIVITY_BODY, plannedStartsAt: '2026-04-03T21:00:00.500Z' },
+      ],
+      [
+        'a start with digits past the millisecond',
+        { ...ACTIVITY_BODY, plannedStartsAt: '2026-04-03T21:00:00.0009Z' },
       ],
       ['a duration of zero', { ...ACTIVITY_BODY, durationMinutes: 0 }],
       ['a negative duration', { ...ACTIVITY_BODY, durationMinutes: -15 }],
