@@ -197,6 +197,23 @@ describe('schedule routes', () => {
       })
     })
 
+    it.each([
+      ['with zero milliseconds, as the app sends it', '2026-04-03T21:00:00.000Z'],
+      ['with a São Paulo offset', '2026-04-03T18:00:00-03:00'],
+    ])('accepts a whole-minute start %s', async (_label, plannedStartsAt) => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/schedule/activities',
+        headers: ADMIN,
+        payload: { ...ACTIVITY_BODY, plannedStartsAt },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(scheduleApp.createActivity).toHaveBeenCalledWith(
+        expect.objectContaining({ plannedStartsAt })
+      )
+    })
+
     it('defaults the optional fields when they are omitted', async () => {
       const response = await server.inject({
         method: 'POST',
@@ -265,6 +282,11 @@ describe('schedule routes', () => {
 
     it.each([
       ['a start that is not an ISO instant', { ...ACTIVITY_BODY, plannedStartsAt: '2026-04-03' }],
+      ['a start with seconds', { ...ACTIVITY_BODY, plannedStartsAt: '2026-04-03T21:00:30Z' }],
+      [
+        'a start with milliseconds',
+        { ...ACTIVITY_BODY, plannedStartsAt: '2026-04-03T21:00:00.500Z' },
+      ],
       ['a duration of zero', { ...ACTIVITY_BODY, durationMinutes: 0 }],
       ['a negative duration', { ...ACTIVITY_BODY, durationMinutes: -15 }],
       ['no title', { ...ACTIVITY_BODY, title: '' }],
@@ -460,6 +482,11 @@ describe('schedule routes', () => {
         { ...ACTIVITY_BODY, durationMinutes: 0 },
       ],
       ['no title', `/schedule/activities/${ACTIVITY_ID}`, { ...ACTIVITY_BODY, title: '' }],
+      [
+        'a start with seconds',
+        `/schedule/activities/${ACTIVITY_ID}`,
+        { ...ACTIVITY_BODY, plannedStartsAt: '2026-04-03T21:00:30Z' },
+      ],
       ['an activity id that is not a uuid', '/schedule/activities/not-a-uuid', ACTIVITY_BODY],
     ])('answers 400 for %s', async (_label, url, payload) => {
       const response = await server.inject({ method: 'PATCH', url, headers: ADMIN, payload })

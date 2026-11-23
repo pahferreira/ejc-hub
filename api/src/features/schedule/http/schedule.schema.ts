@@ -16,6 +16,19 @@ export const updateScheduleDayBodySchema = z.object({
   date: z.iso.date(),
 })
 
+/**
+ * A start on a whole minute. A day move rebuilds each start from its São Paulo
+ * clock time (`HH:mm`), so a start with seconds would lose them when its day
+ * moves.
+ */
+const wholeMinuteInstantSchema = z.iso.datetime({ offset: true }).refine(
+  (value) => {
+    const instant = new Date(value)
+    return instant.getUTCSeconds() === 0 && instant.getUTCMilliseconds() === 0
+  },
+  { message: 'Expected a start on a whole minute' }
+)
+
 export const scheduleDayParamsSchema = z.object({
   dayId: z.uuid(),
 })
@@ -29,7 +42,7 @@ export const scheduleDayParamsSchema = z.object({
 export const scheduleActivityBodySchema = z.object({
   dayId: z.uuid(),
   title: z.string().trim().min(1),
-  plannedStartsAt: z.iso.datetime({ offset: true }),
+  plannedStartsAt: wholeMinuteInstantSchema,
   durationMinutes: z.number().int().positive(),
   place: z.string().trim().min(1),
   teamInstanceIds: z.array(z.uuid()).default([]),
