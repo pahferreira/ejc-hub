@@ -9,6 +9,8 @@ const scheduleApp = vi.hoisted(() => ({
   deleteActivity: vi.fn(),
   updateDay: vi.fn(),
   deleteDay: vi.fn(),
+  startActivity: vi.fn(),
+  finishActivity: vi.fn(),
 }))
 
 vi.mock('../application/schedule-app.ts', () => ({ scheduleApp }))
@@ -61,6 +63,11 @@ describe('schedule routes', () => {
     scheduleApp.deleteDay.mockResolvedValue({ dayId: DAY_ID })
     scheduleApp.updateActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
     scheduleApp.deleteActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
+    scheduleApp.startActivity.mockResolvedValue({
+      activityId: ACTIVITY_ID,
+      finishedActivityId: null,
+    })
+    scheduleApp.finishActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
 
     server = await buildRouteTestServer(scheduleRoutes)
   })
@@ -79,6 +86,8 @@ describe('schedule routes', () => {
       ['DELETE', `/schedule/days/${DAY_ID}`, {}],
       ['PATCH', `/schedule/activities/${ACTIVITY_ID}`, ACTIVITY_BODY],
       ['DELETE', `/schedule/activities/${ACTIVITY_ID}`, {}],
+      ['POST', `/schedule/activities/${ACTIVITY_ID}/start`, { expectedStatus: 'planned' }],
+      ['POST', `/schedule/activities/${ACTIVITY_ID}/finish`, { expectedStatus: 'running' }],
     ] as const)('answers %s %s with 401 without a token', async (method, url, payload) => {
       const response = await server.inject({ method, url, payload })
 
@@ -552,6 +561,79 @@ describe('schedule routes', () => {
       })
 
       expect(response.statusCode).toBe(404)
+    })
+  })
+
+  describe.each([
+    ['start', 'startActivity', 'planned'],
+    ['finish', 'finishActivity', 'running'],
+  ] as const)('POST /schedule/activities/:activityId/%s', (action, method, expectedStatus) => {
+    const url = `/schedule/activities/${ACTIVITY_ID}/${action}`
+    const CONTROLLER = authHeader({
+      sub: 'auth0|controller',
+      permissions: [SchedulePermissions.Control],
+    })
+
+    it(`hands the core the expected status and the caller with schedule:control`, async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url,
+        headers: CONTROLLER,
+        payload: { expectedStatus },
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(scheduleApp[method]).toHaveBeenCalledWith(ACTIVITY_ID, {
+        expectedStatus,
+        controllerAuthId: 'auth0|controller',
+      })
+    })
+
+    it('refuses a caller without schedule:control', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url,
+        headers: ADMIN,
+        payload: { expectedStatus },
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(scheduleApp[method]).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      ['no expected status', url, {}],
+      ['an unknown expected status', url, { expectedStatus: 'paused' }],
+      [
+        'an activity id that is not a uuid',
+        `/schedule/activities/not-a-uuid/${action}`,
+        { expectedStatus },
+      ],
+    ])('answers 400 for %s', async (_label, requestUrl, payload) => {
+      const response = await server.inject({
+        method: 'POST',
+        url: requestUrl,
+        headers: CONTROLLER,
+        payload,
+      })
+
+      expect(response.statusCode).toBe(400)
+      expect(scheduleApp[method]).not.toHaveBeenCalled()
+    })
+
+    it('answers 409 when the core reports the schedule changed', async () => {
+      scheduleApp[method].mockRejectedValue(
+        new AppError('The schedule changed since it was read', AppErrorCode.Conflict)
+      )
+
+      const response = await server.inject({
+        method: 'POST',
+        url,
+        headers: CONTROLLER,
+        payload: { expectedStatus },
+      })
+
+      expect(response.statusCode).toBe(409)
     })
   })
 

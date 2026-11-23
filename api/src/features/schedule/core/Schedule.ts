@@ -27,10 +27,14 @@ import type {
   CreateScheduleDayResult,
   DeleteScheduleActivityResult,
   DeleteScheduleDayResult,
+  FinishScheduleActivityInput,
+  FinishScheduleActivityResult,
   ScheduleActivity,
   ScheduleActivityPlan,
   ScheduleReadModel,
   ScheduleViewer,
+  StartScheduleActivityInput,
+  StartScheduleActivityResult,
   UpdateScheduleActivityInput,
   UpdateScheduleActivityResult,
   UpdateScheduleDayInput,
@@ -39,6 +43,8 @@ import type {
 
 const DAY_DATE_UNIQUE = 'schedule_days_event_id_date_unique'
 const DAY_DATE_TAKEN = 'The event already has a day on this date'
+const ONE_RUNNING_UNIQUE = 'schedule_activities_one_running_per_event_idx'
+const SCHEDULE_CHANGED = 'The schedule changed since it was read'
 
 /**
  * The single entry point for schedule (Cronograma) reads and writes.
@@ -200,6 +206,11 @@ export class Schedule {
           adminsResponsible: activity.adminsResponsible,
           allTeams: activity.allTeams,
           teams: teamsByActivity.get(activity.id) ?? [],
+          status: activity.status,
+          actualStartedAt: activity.actualStartedAt?.toISOString() ?? null,
+          actualEndedAt: activity.actualEndedAt?.toISOString() ?? null,
+          adjustedDurationMinutes: activity.adjustedDurationMinutes,
+          effectiveDurationMinutes: activity.adjustedDurationMinutes ?? activity.durationMinutes,
         })
         activitiesByDay.set(activity.dayId, dayActivities)
       }
@@ -213,6 +224,7 @@ export class Schedule {
           activityCount: day.activityCount,
           activities: activitiesByDay.get(day.id) ?? [],
         })),
+        serverNow: new Date().toISOString(),
       }
     })
   }
@@ -482,6 +494,147 @@ export class Schedule {
       }
 
       return { dayId }
+    })
+  }
+
+  /**
+   * The acting admin's user id, for `controlled_by`. Auth0 hands us a `sub`,
+   * so it is resolved here; an admin with no user row is refused.
+   */
+  async #resolveControllerId(controllerAuthId: string): Promise<string> {
+    const user = await this.#userRepository.getUser(controllerAuthId)
+
+    if (!user) {
+      throw new AppError('Only a registered user can run the schedule', AppErrorCode.Forbidden)
+    }
+
+    return user.id
+  }
+
+  /**
+   * Starts the next planned activity of its day: the first `planned` one by
+   * planned start. Whatever is running in the event finishes at the same
+   * instant, in the same transaction, so one tap moves the day along.
+   *
+   * A stored status other than `expectedStatus` is a 409: another admin acted
+   * first. A start that is out of order, or of an activity that isn't planned,
+   * is a 400. The status-guarded writes and the one-running index catch a race
+   * between the read and the writes as the same 409.
+   */
+  async startActivity(
+    activityId: string,
+    input: StartScheduleActivityInput
+  ): Promise<StartScheduleActivityResult> {
+    return this.#withCurrentEvent(async (event) => {
+      const activities = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
+      const activity = activities.find((candidate) => candidate.id === activityId)
+
+      if (!activity) {
+        throw new AppError('Schedule activity not found', AppErrorCode.NotFound)
+      }
+
+      if (activity.status !== input.expectedStatus) {
+        throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
+      }
+
+      if (activity.status !== 'planned') {
+        throw new AppError('Only a planned activity can start', AppErrorCode.Validation)
+      }
+
+      // The repository orders by planned start, so the first planned one of the day is next.
+      const next = activities.find(
+        (candidate) => candidate.dayId === activity.dayId && candidate.status === 'planned'
+      )
+
+      if (next?.id !== activity.id) {
+        throw new AppError(
+          "Only the day's next planned activity can start",
+          AppErrorCode.Validation
+        )
+      }
+
+      const controlledBy = await this.#resolveControllerId(input.controllerAuthId)
+      const running = activities.find((candidate) => candidate.status === 'running')
+      const now = new Date()
+
+      try {
+        await runInTransaction(async (tx) => {
+          if (running) {
+            const finished = await this.#scheduleActivityRepository.transitionActivity(
+              running.id,
+              event.id,
+              'running',
+              { status: 'done', actualEndedAt: now, controlledBy },
+              tx
+            )
+
+            if (!finished) {
+              throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
+            }
+          }
+
+          const started = await this.#scheduleActivityRepository.transitionActivity(
+            activity.id,
+            event.id,
+            'planned',
+            { status: 'running', actualStartedAt: now, controlledBy },
+            tx
+          )
+
+          if (!started) {
+            throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
+          }
+        })
+      } catch (error) {
+        // Another admin started an activity since the read.
+        if (isUniqueViolation(error, ONE_RUNNING_UNIQUE)) {
+          throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
+        }
+        throw error
+      }
+
+      return { activityId: activity.id, finishedActivityId: running?.id ?? null }
+    })
+  }
+
+  /**
+   * Finishes the running activity. It doesn't start the next one, so the
+   * admins can take a break before it. Same 409 and 400 rules as a start.
+   */
+  async finishActivity(
+    activityId: string,
+    input: FinishScheduleActivityInput
+  ): Promise<FinishScheduleActivityResult> {
+    return this.#withCurrentEvent(async (event) => {
+      const activity = await this.#scheduleActivityRepository.findActivityById(activityId, event.id)
+
+      if (!activity) {
+        throw new AppError('Schedule activity not found', AppErrorCode.NotFound)
+      }
+
+      if (activity.status !== input.expectedStatus) {
+        throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
+      }
+
+      if (activity.status !== 'running') {
+        throw new AppError('Only a running activity can finish', AppErrorCode.Validation)
+      }
+
+      const controlledBy = await this.#resolveControllerId(input.controllerAuthId)
+
+      const finished = await this.#scheduleActivityRepository.transitionActivity(
+        activity.id,
+        event.id,
+        'running',
+        { status: 'done', actualEndedAt: new Date(), controlledBy }
+      )
+
+      // Finished by another admin since the read.
+      if (!finished) {
+        throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
+      }
+
+      return { activityId: activity.id }
     })
   }
 }

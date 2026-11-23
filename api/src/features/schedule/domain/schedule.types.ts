@@ -16,6 +16,9 @@ export type ScheduleActivityTeam = {
   colorToken: string
 }
 
+/** Where an activity stands while the event runs. */
+export type ScheduleActivityStatus = 'planned' | 'running' | 'done' | 'skipped'
+
 /** One activity on a day, as the Cronograma shows it. */
 export type ScheduleActivity = {
   id: string
@@ -30,6 +33,14 @@ export type ScheduleActivity = {
   allTeams: boolean
   /** The teams responsible, in the order the API returns them. */
   teams: ScheduleActivityTeam[]
+  status: ScheduleActivityStatus
+  /** ISO instants of what really happened, or null until it does. */
+  actualStartedAt: string | null
+  actualEndedAt: string | null
+  /** A trim set during the event, or null. */
+  adjustedDurationMinutes: number | null
+  /** `adjustedDurationMinutes ?? durationMinutes`: the length the forecast uses. */
+  effectiveDurationMinutes: number
 }
 
 /** One schedule day: a date of the current event, with its activities. */
@@ -50,6 +61,8 @@ export type ScheduleReadModel = {
   /** The role the viewer reads it in: their team role, or admin when on no team. */
   viewerRole: ScheduleViewerRole
   days: ScheduleDay[]
+  /** The server's clock as an ISO instant, so devices can correct their own. */
+  serverNow: string
 }
 
 export type ScheduleViewerRole = 'admin' | 'coordinator' | 'member'
@@ -116,5 +129,31 @@ export type UpdateScheduleActivityResult = {
 }
 
 export type DeleteScheduleActivityResult = {
+  activityId: string
+}
+
+/**
+ * A control request on an activity's clock: the status the admin saw, and who
+ * they are. A stored status other than `expectedStatus` is a conflict.
+ */
+type ScheduleActivityControlInput = {
+  expectedStatus: ScheduleActivityStatus
+  /** The acting admin's Auth0 subject. */
+  controllerAuthId: string
+}
+
+/** Starting the day's next planned activity. */
+export type StartScheduleActivityInput = ScheduleActivityControlInput
+
+export type StartScheduleActivityResult = {
+  activityId: string
+  /** The activity that was running and the start finished, or null. */
+  finishedActivityId: string | null
+}
+
+/** Finishing the running activity. */
+export type FinishScheduleActivityInput = ScheduleActivityControlInput
+
+export type FinishScheduleActivityResult = {
   activityId: string
 }

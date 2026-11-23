@@ -62,3 +62,11 @@ export const updateScheduleActivityBodySchema = scheduleActivityBodySchema
 export const scheduleActivityParamsSchema = z.object({
   activityId: z.uuid(),
 })
+
+/**
+ * A control request on an activity's clock: the status the admin's screen
+ * shows. Whether it still matches, and whether the move is allowed, is the core's.
+ */
+export const scheduleActivityControlBodySchema = z.object({
+  expectedStatus: z.enum(['planned', 'running', 'done', 'skipped']),
+})
