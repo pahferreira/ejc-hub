@@ -149,7 +149,7 @@ export const Running: Story = {
   },
 }
 
-/** Live, a done activity: muted, "CONCLUÍDO", and its actual times (18:05 until 18:52). */
+/** Live, a done activity: muted, "CONCLUÍDO", its actual times (18:05 until 18:52) and the 47 minutes it took. */
 export const Done: Story = {
   args: {
     live: true,
@@ -166,6 +166,8 @@ export const Done: Story = {
     await expect(canvas.getByText('CONCLUÍDO')).toBeVisible()
     await expect(canvas.getByText('18:05')).toBeVisible()
     await expect(canvas.getByText('até 18:52')).toBeVisible()
+    await expect(canvas.getByText('47 min')).toBeVisible()
+    await expect(canvas.queryByText('45 min')).not.toBeInTheDocument()
     await expect(canvas.queryByRole('button')).not.toBeInTheDocument()
   },
 }
@@ -201,5 +203,61 @@ export const RunningForMembers: Story = {
 
     await expect(canvas.getByText('● ACONTECENDO AGORA')).toBeVisible()
     await expect(canvas.queryByRole('button')).not.toBeInTheDocument()
+  },
+}
+
+/** Live, a planned activity pushed by the day's delay: its Previsão, the planned start struck through, and "PREVISTO +19 min". */
+export const Late: Story = {
+  args: {
+    live: true,
+    forecast: {
+      forecastStartsAt: new Date('2026-04-03T21:19:00Z'),
+      forecastEndsAt: new Date('2026-04-03T22:04:00Z'),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByText('18:19')).toBeVisible()
+    await expect(canvas.getByLabelText('Horário planejado')).toHaveTextContent('18:00')
+    await expect(canvas.getByText('PREVISTO +19 min')).toBeVisible()
+    await expect(canvas.getByText('até 19:04')).toBeVisible()
+    await expect(canvas.getByTestId('timeline-dot')).toHaveClass('border-red')
+  },
+}
+
+/** Live, a planned activity pulled earlier by an early finish: "PREVISTO -10 min". */
+export const Early: Story = {
+  args: {
+    live: true,
+    forecast: {
+      forecastStartsAt: new Date('2026-04-03T20:50:00Z'),
+      forecastEndsAt: new Date('2026-04-03T21:35:00Z'),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByText('17:50')).toBeVisible()
+    await expect(canvas.getByText('PREVISTO -10 min')).toBeVisible()
+    await expect(canvas.getByTestId('timeline-dot')).toHaveClass('border-blue')
+  },
+}
+
+/** Live, a planned activity on time: no struck-through time and no chip. */
+export const OnTime: Story = {
+  args: {
+    live: true,
+    forecast: {
+      forecastStartsAt: new Date('2026-04-03T21:00:00Z'),
+      forecastEndsAt: new Date('2026-04-03T21:45:00Z'),
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.queryByLabelText('Horário planejado')).not.toBeInTheDocument()
+    await expect(canvas.queryByText(/PREVISTO/)).not.toBeInTheDocument()
+    await expect(canvas.getByTestId('timeline-dot')).toHaveClass('border-green')
   },
 }
