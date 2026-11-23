@@ -25,6 +25,11 @@ const ACTIVITIES: ScheduleActivity[] = [
     adminsResponsible: true,
     allTeams: false,
     teams: [],
+    status: 'planned',
+    actualStartedAt: null,
+    actualEndedAt: null,
+    adjustedDurationMinutes: null,
+    effectiveDurationMinutes: 60,
   },
   {
     id: 'palestra',
@@ -38,6 +43,11 @@ const ACTIVITIES: ScheduleActivity[] = [
     teams: [
       { teamInstanceId: 't1', teamName: 'Liturgia', teamKey: 'liturgia', colorToken: 'blue' },
     ],
+    status: 'planned',
+    actualStartedAt: null,
+    actualEndedAt: null,
+    adjustedDurationMinutes: null,
+    effectiveDurationMinutes: 45,
   },
 ]
 

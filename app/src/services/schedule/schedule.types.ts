@@ -16,6 +16,9 @@ export type ScheduleActivityTeam = {
   colorToken: string
 }
 
+/** Where an activity stands while the event runs. */
+export type ScheduleActivityStatus = 'planned' | 'running' | 'done' | 'skipped'
+
 /** One activity on a day, as the Cronograma shows it. */
 export type ScheduleActivity = {
   id: string
@@ -29,6 +32,14 @@ export type ScheduleActivity = {
   /** Every team of the event, as a live wildcard. `teams` is then empty. */
   allTeams: boolean
   teams: ScheduleActivityTeam[]
+  status: ScheduleActivityStatus
+  /** ISO instants of what really happened, or null until it does. */
+  actualStartedAt: string | null
+  actualEndedAt: string | null
+  /** A trim set during the event, or null. */
+  adjustedDurationMinutes: number | null
+  /** `adjustedDurationMinutes ?? durationMinutes`. */
+  effectiveDurationMinutes: number
 }
 
 /** One schedule day: a São Paulo date of the current event, with its activities. */
@@ -49,6 +60,8 @@ export type ScheduleReadModel = {
   /** The role the caller reads it in: their team role, or admin when on no team. */
   viewerRole: ScheduleViewerRole
   days: ScheduleDay[]
+  /** The server's clock as an ISO instant. */
+  serverNow: string
 }
 
 export type ScheduleViewerRole = 'admin' | 'coordinator' | 'member'
@@ -94,6 +107,24 @@ export type CreateScheduleActivityResult = {
 }
 
 export type UpdateScheduleActivityResult = {
+  activityId: string
+}
+
+/**
+ * The body of every clock control (start, finish): the status the screen shows.
+ * The API answers 409 when it no longer matches.
+ */
+export type ScheduleActivityControlBody = {
+  expectedStatus: ScheduleActivityStatus
+}
+
+export type StartScheduleActivityResult = {
+  activityId: string
+  /** The activity the start finished, or null when nothing was running. */
+  finishedActivityId: string | null
+}
+
+export type FinishScheduleActivityResult = {
   activityId: string
 }
 

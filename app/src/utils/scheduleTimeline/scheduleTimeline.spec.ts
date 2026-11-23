@@ -13,6 +13,11 @@ function activity(id: string, plannedStartsAt: string): ScheduleActivity {
     adminsResponsible: false,
     allTeams: false,
     teams: [],
+    status: 'planned',
+    actualStartedAt: null,
+    actualEndedAt: null,
+    adjustedDurationMinutes: null,
+    effectiveDurationMinutes: 30,
   }
 }
 

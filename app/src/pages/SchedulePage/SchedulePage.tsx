@@ -1,13 +1,26 @@
 import { FiCalendar } from 'react-icons/fi'
+import { hasPermission, SchedulePermissions } from '../../../../common/permissions'
 import { ScheduleDayCard } from '../../components/ScheduleDayCard/ScheduleDayCard'
+import { ScheduleHappeningNowCard } from '../../components/ScheduleHappeningNowCard/ScheduleHappeningNowCard'
+import { ScheduleNextActivityCard } from '../../components/ScheduleNextActivityCard/ScheduleNextActivityCard'
 import { ScheduleTimelineRow } from '../../components/ScheduleTimelineRow/ScheduleTimelineRow'
+import { useAuthentication } from '../../hooks/useAuthentication'
+import { FeatureFlag } from '../../hooks/useFeatureFlag/feature-flags'
+import { useFeatureFlag } from '../../hooks/useFeatureFlag/useFeatureFlag'
 import { useScheduleQuery } from '../../services/schedule/useScheduleQuery'
 import {
   isNoCurrentEventError,
   isScheduleForbiddenError,
 } from '../../services/schedule/schedule.api'
 import { pluralize } from '../../utils/pluralize/pluralize'
+import {
+  activityControls,
+  doneActivityCount,
+  nextPlannedActivity,
+  runningActivity,
+} from '../../utils/scheduleLive/scheduleLive'
 import { groupActivitiesByPeriod } from '../../utils/scheduleTimeline/scheduleTimeline'
+import { useScheduleControls } from './useScheduleControls'
 import { useSelectedScheduleDay } from './useSelectedScheduleDay'
 import { useScheduleViewedTracking } from './useScheduleViewedTracking'
 
@@ -34,15 +47,25 @@ function errorMessage(error: unknown): string {
 }
 
 /**
- * "Cronograma": the current event's schedule, read-only, for everyone on a team
- * and for the admins. One tab per day, opening on today during the event, with
- * the day's activities grouped into Manhã, Tarde and Noite and the viewer's
- * team's rows highlighted.
+ * "Cronograma": the current event's schedule for everyone on a team and for
+ * the admins. One tab per day, opening on today during the event, with the
+ * day's activities grouped into Manhã, Tarde and Noite and the viewer's team's
+ * rows highlighted.
+ *
+ * Behind `ScheduleLive`, the Running Schedule: a top slot with the running
+ * activity (or the next one when nothing runs), each row's status, the days'
+ * "Concluído n/m", and the clock controls for whoever holds `schedule:control`.
  */
 export function SchedulePage() {
   const scheduleQuery = useScheduleQuery()
   const days = scheduleQuery.data?.days ?? []
   const { selectedDay, selectDay } = useSelectedScheduleDay(days)
+  const { permissions } = useAuthentication()
+  const { isFeatureEnabled } = useFeatureFlag()
+  const controls = useScheduleControls()
+
+  const isLive = isFeatureEnabled(FeatureFlag.ScheduleLive, false)
+  const canControl = isLive && hasPermission(permissions, SchedulePermissions.Control)
 
   useScheduleViewedTracking(selectedDay?.date, scheduleQuery.data?.viewerRole)
 
@@ -55,6 +78,10 @@ export function SchedulePage() {
   }
 
   const { event, myTeamInstanceId } = scheduleQuery.data
+  // The top slot and Iniciar follow the selected day: activities start in
+  // order within their day.
+  const running = isLive && selectedDay ? runningActivity(selectedDay.activities) : null
+  const next = isLive && selectedDay ? nextPlannedActivity(selectedDay.activities) : null
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
@@ -74,9 +101,36 @@ export function SchedulePage() {
                   date={day.date}
                   isSelected={day.id === selectedDay.id}
                   onSelect={() => selectDay(day.id)}
+                  progress={
+                    isLive
+                      ? { done: doneActivityCount(day.activities), total: day.activities.length }
+                      : undefined
+                  }
                 />
               ))}
             </div>
+
+            {running && (
+              <div className="mt-8">
+                <ScheduleHappeningNowCard
+                  activity={running}
+                  next={next}
+                  myTeamInstanceId={myTeamInstanceId}
+                  onFinish={canControl ? () => controls.finish(running) : undefined}
+                  isControlPending={controls.isPending}
+                />
+              </div>
+            )}
+            {!running && next && (
+              <div className="mt-8">
+                <ScheduleNextActivityCard
+                  activity={next}
+                  myTeamInstanceId={myTeamInstanceId}
+                  onStart={canControl ? () => controls.start(next) : undefined}
+                  isControlPending={controls.isPending}
+                />
+              </div>
+            )}
 
             <section role="tabpanel" className="mt-8">
               <h2 className="m-0 text-xl font-semibold text-dark-brown">Linha do tempo</h2>
@@ -99,6 +153,11 @@ export function SchedulePage() {
                         key={activity.id}
                         activity={activity}
                         myTeamInstanceId={myTeamInstanceId}
+                        live={isLive}
+                        controls={activityControls(activity, next?.id ?? null, canControl)}
+                        onStart={() => controls.start(activity)}
+                        onFinish={() => controls.finish(activity)}
+                        isControlPending={controls.isPending}
                       />
                     ))}
                   </ol>

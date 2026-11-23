@@ -1,12 +1,15 @@
 import clsx from 'clsx'
+import { toEventTime } from '../../../../common/schedule/toEventTime'
 import type { ScheduleActivity } from '../../services/schedule/schedule.types'
 import {
   activityEndTime,
   activityStartTime,
   formatDuration,
 } from '../../utils/scheduleActivity/scheduleActivity'
+import type { ActivityControls } from '../../utils/scheduleLive/scheduleLive'
 import { isMyTeamActivity } from '../../utils/scheduleTimeline/scheduleTimeline'
-import { teamColorHex } from '../ScheduleActivityCard/teamColorHex'
+import { Button } from '../Button/Button'
+import { ScheduleActivityChips } from '../ScheduleActivityChips/ScheduleActivityChips'
 
 export type ScheduleTimelineRowProps = {
   activity: ScheduleActivity
@@ -15,33 +18,36 @@ export type ScheduleTimelineRowProps = {
    * the row gets the accent border and its chip the "Sua equipe" label.
    */
   myTeamInstanceId: string | null
+  /**
+   * The Running Schedule (`ScheduleLive`): the status chips, done rows muted
+   * with their actual times, and the running row's filled dot. Without it the
+   * row is the Phase 1 plan.
+   */
+  live?: boolean
+  /** The clock controls to show, from `activityControls`. None when left out. */
+  controls?: ActivityControls
+  onStart?: () => void
+  onFinish?: () => void
+  /** A control request is in flight: the buttons are disabled. */
+  isControlPending?: boolean
 }
 
-function Chip(props: {
-  children: React.ReactNode
-  colorHex: string
-  isMyTeam?: boolean
-  plain?: boolean
-}) {
+function StatusChip(props: { children: React.ReactNode; tone: 'running' | 'done' }) {
   return (
     <span
       className={clsx(
-        'inline-flex items-center gap-1.5 rounded-full border  px-2.5 py-0.5 text-xs font-medium',
-        props.isMyTeam
-          ? 'bg-primary border-dark-brown text-white'
-          : 'bg-tertiary-background border-tertiary text-dark-brown'
+        'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wide',
+        props.tone === 'running' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'
       )}
     >
-      {!props.plain && (
-        <span
-          aria-hidden
-          className="h-2 w-2 rounded-full"
-          style={{ backgroundColor: props.isMyTeam ? 'white' : props.colorHex }}
-        />
-      )}
       {props.children}
     </span>
   )
+}
+
+/** The `HH:mm` of an ISO instant on the São Paulo clock. */
+function eventTime(instant: string): string {
+  return toEventTime(new Date(instant))
 }
 
 /**
@@ -49,17 +55,28 @@ function Chip(props: {
  * left of a vertical timeline, then the responsible chips, the title, and
  * "place · Convidado: name". The viewer's team's rows get an accent left
  * border and a "Sua equipe" label beside their team's chip.
+ *
+ * Live, a done row is muted under a "CONCLUÍDO" chip and shows its actual
+ * times; the running row gets "● ACONTECENDO AGORA" and a filled dot. The
+ * controls given show as "▶ Iniciar" and "✓ Concluir".
  */
 export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
   const { activity } = props
   const isMyTeam = isMyTeamActivity(activity, props.myTeamInstanceId)
+  const isDone = props.live && activity.status === 'done'
+  const isRunning = props.live && activity.status === 'running'
+
+  const startTime =
+    isDone && activity.actualStartedAt
+      ? eventTime(activity.actualStartedAt)
+      : activityStartTime(activity)
+  const endTime =
+    isDone && activity.actualEndedAt ? eventTime(activity.actualEndedAt) : activityEndTime(activity)
 
   return (
-    <li className="flex gap-4">
+    <li className={clsx('flex gap-4', isDone && 'opacity-60')}>
       <div className="flex w-16 shrink-0 flex-col items-end pt-3 text-right">
-        <span className="text-base font-bold leading-tight text-dark-brown">
-          {activityStartTime(activity)}
-        </span>
+        <span className="text-base font-bold leading-tight text-dark-brown">{startTime}</span>
         <span className="text-xs font-semibold text-primary">
           {formatDuration(activity.durationMinutes)}
         </span>
@@ -67,48 +84,56 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
 
       <div aria-hidden className="relative flex w-3 shrink-0 justify-center">
         <span className="absolute inset-y-0 w-px bg-tertiary" />
-        <span className="relative mt-4 h-3 w-3 rounded-full border-2 border-primary bg-white" />
+        <span
+          data-testid="timeline-dot"
+          className={clsx(
+            'relative mt-4 h-3 w-3 rounded-full border-2 border-primary',
+            isRunning ? 'bg-primary' : 'bg-white'
+          )}
+        />
       </div>
 
       <article
         aria-label={activity.title}
         className={clsx(
           'mb-3 flex min-w-0 flex-1 flex-col gap-2 rounded-xl border border-tertiary bg-white p-4 shadow-sm',
-          isMyTeam && 'border-l-4 border-l-primary'
+          isMyTeam && 'border-l-4 border-l-primary',
+          isRunning && 'border-2 border-primary'
         )}
       >
-        <div className="flex flex-wrap items-center gap-1.5">
-          {activity.adminsResponsible && (
-            <Chip colorHex={teamColorHex('coord-geral')}>Coord. Geral</Chip>
-          )}
-          {activity.allTeams && (
-            <Chip isMyTeam colorHex="all-teams">
-              Todas as equipes
-            </Chip>
-          )}
-          {activity.guestName && (
-            <Chip plain colorHex={teamColorHex('coord-geral')}>
-              Convidado: {activity.guestName}
-            </Chip>
-          )}
-          {activity.teams.map((team) => (
-            <span key={team.teamInstanceId} className="inline-flex items-center gap-1.5">
-              <Chip
-                isMyTeam={team.teamInstanceId === props.myTeamInstanceId}
-                colorHex={teamColorHex(team.colorToken)}
-              >
-                {team.teamName}
-              </Chip>
-            </span>
-          ))}
-        </div>
+        {(isRunning || isDone) && (
+          <div>
+            {isRunning ? (
+              <StatusChip tone="running">● ACONTECENDO AGORA</StatusChip>
+            ) : (
+              <StatusChip tone="done">CONCLUÍDO</StatusChip>
+            )}
+          </div>
+        )}
+
+        <ScheduleActivityChips activity={activity} myTeamInstanceId={props.myTeamInstanceId} />
 
         <p className="m-0 text-base font-semibold text-dark-brown">{activity.title}</p>
 
         <p className="m-0 flex flex-wrap items-center justify-between gap-2 text-sm text-gray-600">
           <span>{activity.place}</span>
-          <span className="text-xs text-gray-500">até {activityEndTime(activity)}</span>
+          <span className="text-xs text-gray-500">até {endTime}</span>
         </p>
+
+        {(props.controls?.start || props.controls?.finish) && (
+          <div className="flex justify-end">
+            {props.controls.start && (
+              <Button size="small" onClick={props.onStart} disabled={props.isControlPending}>
+                ▶ Iniciar
+              </Button>
+            )}
+            {props.controls.finish && (
+              <Button size="small" onClick={props.onFinish} disabled={props.isControlPending}>
+                ✓ Concluir
+              </Button>
+            )}
+          </div>
+        )}
       </article>
     </li>
   )

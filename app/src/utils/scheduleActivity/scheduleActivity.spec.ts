@@ -28,6 +28,11 @@ function activity(overrides: Partial<ScheduleActivity> = {}): ScheduleActivity {
     adminsResponsible: false,
     allTeams: false,
     teams: [],
+    status: 'planned',
+    actualStartedAt: null,
+    actualEndedAt: null,
+    adjustedDurationMinutes: null,
+    effectiveDurationMinutes: 30,
     ...overrides,
   }
 }
@@ -252,6 +257,11 @@ describe('activityFormValues', () => {
         { teamInstanceId: 't1', teamName: 'Liturgia', teamKey: 'liturgia', colorToken: 'blue' },
         { teamInstanceId: 't2', teamName: 'Música', teamKey: 'musica', colorToken: 'red' },
       ],
+      status: 'planned',
+      actualStartedAt: null,
+      actualEndedAt: null,
+      adjustedDurationMinutes: null,
+      effectiveDurationMinutes: 50,
     })
 
     expect(activityFormValues(card)).toEqual({
