@@ -262,6 +262,20 @@ describe('Financial.getCurrentEventTeamsOverview', () => {
     expect(overview.currency).toBe('BRL')
   })
 
+  it('keeps what paid members paid and bills the rest at the new fee after a fee change', async () => {
+    // Four paid R$ 50 before the fee went to R$ 60, then one more paid R$ 60.
+    // The aggregate sums the amounts stamped on each paid row.
+    const { financial } = makeFinancial(
+      [buildTeam({ total: 10, paid: 5, exempt: 1, collectedCents: 4 * 5_000 + 6_000 })],
+      { id: 'event-1', feeAmountCents: 6_000, feeCurrency: 'BRL' }
+    )
+
+    const overview = await financial.getCurrentEventTeamsOverview()
+
+    expect(overview.collectedCents).toBe(26_000)
+    expect(overview.expectedCents).toBe(9 * 6_000)
+  })
+
   it('rounds the global percentage', async () => {
     const { financial } = makeFinancial([buildTeam({ total: 119, paid: 88 })])
 
