@@ -29,6 +29,15 @@ export const Secondary = {
   },
 } satisfies StoryObj<typeof Button>
 
+export const SmallOutline = {
+  args: {
+    children: '↶ Desfazer',
+    disabled: false,
+    variant: 'outline',
+    size: 'small',
+  },
+} satisfies StoryObj<typeof Button>
+
 export const Destructive = {
   args: {
     children: 'Cancelar Inscrição',

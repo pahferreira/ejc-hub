@@ -28,16 +28,21 @@ export type ScheduleTimelineRowProps = {
   controls?: ActivityControls
   onStart?: () => void
   onFinish?: () => void
+  onSkip?: () => void
+  /** Undoes the activity's last start, finish or skip, whichever its status shows. */
+  onUndo?: () => void
   /** A control request is in flight: the buttons are disabled. */
   isControlPending?: boolean
 }
 
-function StatusChip(props: { children: React.ReactNode; tone: 'running' | 'done' }) {
+function StatusChip(props: { children: React.ReactNode; tone: 'running' | 'done' | 'skipped' }) {
   return (
     <span
       className={clsx(
         'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold tracking-wide',
-        props.tone === 'running' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-700'
+        props.tone === 'running' && 'bg-primary text-white',
+        props.tone === 'done' && 'bg-gray-200 text-gray-700',
+        props.tone === 'skipped' && 'border border-dashed border-gray-400 text-gray-500'
       )}
     >
       {props.children}
@@ -57,14 +62,19 @@ function eventTime(instant: string): string {
  * border and a "Sua equipe" label beside their team's chip.
  *
  * Live, a done row is muted under a "CONCLUÍDO" chip and shows its actual
- * times; the running row gets "● ACONTECENDO AGORA" and a filled dot. The
- * controls given show as "▶ Iniciar" and "✓ Concluir".
+ * times; the running row gets "● ACONTECENDO AGORA" and a filled dot. A
+ * skipped row gets a dashed card and dot, a "PULADA" chip and a struck-through,
+ * muted title. The controls given show as "▶ Iniciar", "⏭ Pular", "✓ Concluir",
+ * "Desfazer início", "↻ Reabrir" and "↶ Desfazer"; the rest are hidden.
  */
 export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
   const { activity } = props
   const isMyTeam = isMyTeamActivity(activity, props.myTeamInstanceId)
   const isDone = props.live && activity.status === 'done'
   const isRunning = props.live && activity.status === 'running'
+  const isSkipped = props.live && activity.status === 'skipped'
+  const controls = props.controls
+  const hasControls = controls && Object.values(controls).some(Boolean)
 
   const startTime =
     isDone && activity.actualStartedAt
@@ -87,8 +97,9 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
         <span
           data-testid="timeline-dot"
           className={clsx(
-            'relative mt-4 h-3 w-3 rounded-full border-2 border-primary',
-            isRunning ? 'bg-primary' : 'bg-white'
+            'relative mt-4 h-3 w-3 rounded-full border-2',
+            isRunning ? 'bg-primary' : 'bg-white',
+            isSkipped ? 'border-dashed border-gray-400' : 'border-primary'
           )}
         />
       </div>
@@ -98,36 +109,87 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
         className={clsx(
           'mb-3 flex min-w-0 flex-1 flex-col gap-2 rounded-xl border border-tertiary bg-white p-4 shadow-sm',
           isMyTeam && 'border-l-4 border-l-primary',
-          isRunning && 'border-2 border-primary'
+          isRunning && 'border-2 border-primary',
+          isSkipped && 'border-dashed text-gray-500'
         )}
       >
-        {(isRunning || isDone) && (
+        {(isRunning || isDone || isSkipped) && (
           <div>
-            {isRunning ? (
-              <StatusChip tone="running">● ACONTECENDO AGORA</StatusChip>
-            ) : (
-              <StatusChip tone="done">CONCLUÍDO</StatusChip>
-            )}
+            {isRunning && <StatusChip tone="running">● ACONTECENDO AGORA</StatusChip>}
+            {isDone && <StatusChip tone="done">CONCLUÍDO</StatusChip>}
+            {isSkipped && <StatusChip tone="skipped">PULADA</StatusChip>}
           </div>
         )}
 
         <ScheduleActivityChips activity={activity} myTeamInstanceId={props.myTeamInstanceId} />
 
-        <p className="m-0 text-base font-semibold text-dark-brown">{activity.title}</p>
+        <p
+          className={clsx(
+            'm-0 text-base font-semibold',
+            isSkipped ? 'text-gray-500 line-through' : 'text-dark-brown'
+          )}
+        >
+          {activity.title}
+        </p>
 
-        <p className="m-0 flex flex-wrap items-center justify-between gap-2 text-sm text-gray-600">
+        <p
+          className={clsx(
+            'm-0 flex flex-wrap items-center justify-between gap-2 text-sm',
+            isSkipped ? 'text-gray-500' : 'text-gray-600'
+          )}
+        >
           <span>{activity.place}</span>
           <span className="text-xs text-gray-500">até {endTime}</span>
         </p>
 
-        {(props.controls?.start || props.controls?.finish) && (
-          <div className="flex justify-end">
-            {props.controls.start && (
+        {hasControls && (
+          <div className="flex flex-wrap justify-end gap-2">
+            {controls.undoStart && (
+              <Button
+                size="small"
+                variant="outline"
+                onClick={props.onUndo}
+                disabled={props.isControlPending}
+              >
+                Desfazer início
+              </Button>
+            )}
+            {controls.reopen && (
+              <Button
+                size="small"
+                variant="outline"
+                onClick={props.onUndo}
+                disabled={props.isControlPending}
+              >
+                ↻ Reabrir
+              </Button>
+            )}
+            {controls.undoSkip && (
+              <Button
+                size="small"
+                variant="outline"
+                onClick={props.onUndo}
+                disabled={props.isControlPending}
+              >
+                ↶ Desfazer
+              </Button>
+            )}
+            {controls.skip && (
+              <Button
+                size="small"
+                variant="outline"
+                onClick={props.onSkip}
+                disabled={props.isControlPending}
+              >
+                ⏭ Pular
+              </Button>
+            )}
+            {controls.start && (
               <Button size="small" onClick={props.onStart} disabled={props.isControlPending}>
                 ▶ Iniciar
               </Button>
             )}
-            {props.controls.finish && (
+            {controls.finish && (
               <Button size="small" onClick={props.onFinish} disabled={props.isControlPending}>
                 ✓ Concluir
               </Button>

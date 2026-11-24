@@ -5,7 +5,7 @@ type ButtonProps = {
   children: ReactNode
   disabled?: boolean
   onClick?: () => void
-  variant?: 'primary' | 'secondary' | 'destructive' | 'text'
+  variant?: 'primary' | 'secondary' | 'outline' | 'destructive' | 'text'
   ariaLabel?: string
   size?: 'regular' | 'small'
 }
@@ -13,6 +13,7 @@ type ButtonProps = {
 const foregroundVariant = {
   primary: 'bg-primary text-white',
   secondary: 'bg-secondary/60 text-dark-brown',
+  outline: 'bg-white text-dark-brown',
   destructive: 'bg-destructive text-white',
   text: 'bg-transparent text-primary font-bold hover:bg-secondary/20 transition duration-300',
 }

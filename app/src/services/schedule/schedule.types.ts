@@ -111,7 +111,8 @@ export type UpdateScheduleActivityResult = {
 }
 
 /**
- * The body of every clock control (start, finish): the status the screen shows.
+ * The body of every clock control (start, finish, skip, undo): the status the
+ * screen shows.
  * The API answers 409 when it no longer matches.
  */
 export type ScheduleActivityControlBody = {
@@ -126,6 +127,16 @@ export type StartScheduleActivityResult = {
 
 export type FinishScheduleActivityResult = {
   activityId: string
+}
+
+export type SkipScheduleActivityResult = {
+  activityId: string
+}
+
+export type UndoScheduleActivityResult = {
+  activityId: string
+  /** The status the activity went back to. */
+  status: ScheduleActivityStatus
 }
 
 export const scheduleQueryKeys = {

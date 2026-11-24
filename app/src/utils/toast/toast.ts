@@ -10,6 +10,10 @@ const toastConfig: ToasterProps = {
 type Success = {
   message: string
   callback?: () => void
+  /** A button on the success toast, such as "Desfazer". */
+  action?: { label: string; onClick: () => void }
+  /** How long the success toast stays, in ms, when not the default. */
+  duration?: number
 }
 
 export function toastPromise(pendingPromise: Promise<unknown>, success?: Success) {
@@ -18,7 +22,11 @@ export function toastPromise(pendingPromise: Promise<unknown>, success?: Success
     loading: 'Aguarde...',
     success: () => {
       success?.callback?.()
-      return success?.message || 'Sucesso!'
+      return {
+        message: success?.message || 'Sucesso!',
+        action: success?.action,
+        duration: success?.duration ?? TOAST_DURATION,
+      }
     },
     error: (error) => error.message,
   })

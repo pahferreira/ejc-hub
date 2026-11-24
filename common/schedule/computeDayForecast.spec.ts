@@ -194,6 +194,24 @@ describe('computeDayForecast', () => {
     expect(forecast.next?.id).toBe('c')
   })
 
+  it('pushes later activities back again once a skip is undone', () => {
+    const day = (middle: ForecastActivity) => ({
+      activities: [
+        done(planned('a', '08:00', 60), '08:00', '09:00'),
+        middle,
+        planned('c', '09:30', 30),
+      ],
+    })
+    const b = planned('b', '09:00', 30)
+
+    const whileSkipped = computeDayForecast(day(skipped(b)), at('09:00'))
+    const afterUndo = computeDayForecast(day(b), at('09:00'))
+
+    expect(times(whileSkipped.activities)[2]).toEqual(['c', '09:00', '09:30'])
+    expect(times(afterUndo.activities)[2]).toEqual(['c', '09:30', '10:00'])
+    expect(afterUndo.next?.id).toBe('b')
+  })
+
   it('pulls the activities after a trimmed upcoming one earlier, without touching the current drift', () => {
     const forecast = computeDayForecast(
       {

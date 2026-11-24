@@ -9,7 +9,9 @@ import type {
   FinishScheduleActivityResult,
   ScheduleActivityControlBody,
   ScheduleReadModel,
+  SkipScheduleActivityResult,
   StartScheduleActivityResult,
+  UndoScheduleActivityResult,
   UpdateScheduleActivityResult,
   UpdateScheduleDayBody,
   UpdateScheduleDayResult,
@@ -174,15 +176,10 @@ async function deleteDay(dayId: string) {
  * A clock control refused because another admin acted first: the screen was
  * stale. The page refetches and shows its message.
  */
-export class ScheduleChangedError extends Error {
+class ScheduleChangedError extends Error {
   constructor() {
     super('O cronograma mudou')
   }
-}
-
-/** Whether a failed clock control means the schedule changed under the admin. */
-export function isScheduleChangedError(error: unknown): boolean {
-  return error instanceof ScheduleChangedError
 }
 
 /** A failed clock control as the toast shows it: 409 is "O cronograma mudou". */
@@ -218,6 +215,34 @@ async function finishActivity(input: { activityId: string; body: ScheduleActivit
   }
 }
 
+/** Skips a planned activity: it takes no time and the day moves earlier. */
+async function skipActivity(input: { activityId: string; body: ScheduleActivityControlBody }) {
+  try {
+    const response = await api.post<{ result: SkipScheduleActivityResult }>(
+      `/schedule/activities/${input.activityId}/skip`,
+      input.body
+    )
+
+    return response.data.result
+  } catch (error: unknown) {
+    throw toControlError(error, 'Não foi possível pular a atividade.')
+  }
+}
+
+/** Undoes an activity's last start, finish or skip, named by the status the screen shows. */
+async function undoActivity(input: { activityId: string; body: ScheduleActivityControlBody }) {
+  try {
+    const response = await api.post<{ result: UndoScheduleActivityResult }>(
+      `/schedule/activities/${input.activityId}/undo`,
+      input.body
+    )
+
+    return response.data.result
+  } catch (error: unknown) {
+    throw toControlError(error, 'Não foi possível desfazer.')
+  }
+}
+
 export const scheduleApi = {
   getSchedule,
   createDay,
@@ -228,4 +253,6 @@ export const scheduleApi = {
   deleteDay,
   startActivity,
   finishActivity,
+  skipActivity,
+  undoActivity,
 }

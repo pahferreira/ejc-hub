@@ -17,6 +17,7 @@ import {
   activityControls,
   doneActivityCount,
   nextPlannedActivity,
+  reopenableActivity,
   runningActivity,
 } from '../../utils/scheduleLive/scheduleLive'
 import { groupActivitiesByPeriod } from '../../utils/scheduleTimeline/scheduleTimeline'
@@ -54,7 +55,8 @@ function errorMessage(error: unknown): string {
  *
  * Behind `ScheduleLive`, the Running Schedule: a top slot with the running
  * activity (or the next one when nothing runs), each row's status, the days'
- * "Concluído n/m", and the clock controls for whoever holds `schedule:control`.
+ * "Concluído n/m", and the clock controls (start, finish, skip and their undo)
+ * for whoever holds `schedule:control`.
  */
 export function SchedulePage() {
   const scheduleQuery = useScheduleQuery()
@@ -84,6 +86,12 @@ export function SchedulePage() {
   const eventActivities = days.flatMap((day) => day.activities)
   const running = isLive ? runningActivity(eventActivities) : null
   const next = isLive && selectedDay ? nextPlannedActivity(selectedDay.activities) : null
+  const reopenable = canControl ? reopenableActivity(eventActivities) : null
+  const controlContext = {
+    nextPlannedId: next?.id ?? null,
+    reopenableId: reopenable?.id ?? null,
+    dayActivities: selectedDay?.activities ?? [],
+  }
   const nextAfterRunning = running
     ? nextPlannedActivity(eventActivities.slice(eventActivities.indexOf(running) + 1))
     : null
@@ -122,6 +130,7 @@ export function SchedulePage() {
                   next={nextAfterRunning}
                   myTeamInstanceId={myTeamInstanceId}
                   onFinish={canControl ? () => controls.finish(running) : undefined}
+                  onUndoStart={canControl ? () => controls.undo(running) : undefined}
                   isControlPending={controls.isPending}
                 />
               </div>
@@ -132,6 +141,12 @@ export function SchedulePage() {
                   activity={next}
                   myTeamInstanceId={myTeamInstanceId}
                   onStart={canControl ? () => controls.start(next) : undefined}
+                  onSkip={canControl ? () => controls.skip(next) : undefined}
+                  reopen={
+                    reopenable
+                      ? { title: reopenable.title, onReopen: () => controls.undo(reopenable) }
+                      : undefined
+                  }
                   isControlPending={controls.isPending}
                 />
               </div>
@@ -159,9 +174,11 @@ export function SchedulePage() {
                         activity={activity}
                         myTeamInstanceId={myTeamInstanceId}
                         live={isLive}
-                        controls={activityControls(activity, next?.id ?? null, canControl)}
+                        controls={activityControls(activity, controlContext, canControl)}
                         onStart={() => controls.start(activity)}
                         onFinish={() => controls.finish(activity)}
+                        onSkip={() => controls.skip(activity)}
+                        onUndo={() => controls.undo(activity)}
                         isControlPending={controls.isPending}
                       />
                     ))}

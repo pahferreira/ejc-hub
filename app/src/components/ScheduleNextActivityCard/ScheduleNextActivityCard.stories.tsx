@@ -49,13 +49,31 @@ export const Default: Story = {
   },
 }
 
-/** An admin starts the next activity. */
+/** An admin starts or skips the next activity. Nothing has finished: no Reabrir. */
 export const Admin: Story = {
-  args: { onStart: fn() },
+  args: { onStart: fn(), onSkip: fn() },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
 
+    await expect(canvas.queryByText(/Reabrir/)).not.toBeInTheDocument()
     await userEvent.click(canvas.getByRole('button', { name: '▶ Iniciar agora' }))
     await expect(args.onStart).toHaveBeenCalled()
+    await userEvent.click(canvas.getByRole('button', { name: '⏭ Pular' }))
+    await expect(args.onSkip).toHaveBeenCalled()
+  },
+}
+
+/** Nothing runs and an activity finished: the admin can reopen it from here. */
+export const AdminWithReopen: Story = {
+  args: {
+    onStart: fn(),
+    onSkip: fn(),
+    reopen: { title: 'Abertura', onReopen: fn() },
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: '↻ Reabrir Abertura' }))
+    await expect(args.reopen?.onReopen).toHaveBeenCalled()
   },
 }

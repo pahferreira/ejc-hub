@@ -9,13 +9,21 @@ export type ScheduleNextActivityCardProps = {
   myTeamInstanceId: string | null
   /** Starts the activity. Left out for anyone who cannot control the clock. */
   onStart?: () => void
+  /** Skips the activity. Left out for anyone who cannot control the clock. */
+  onSkip?: () => void
+  /**
+   * The most recently finished activity, which may reopen since nothing runs,
+   * and how. Left out when there is none, or for anyone who cannot control the clock.
+   */
+  reopen?: { title: string; onReopen: () => void }
   isControlPending?: boolean
 }
 
 /**
  * The Cronograma's top slot when nothing runs: a dashed "PRÓXIMA ATIVIDADE"
  * card with the title, its planned start, "place · Convidado: name", the team
- * chips and the admin's "▶ Iniciar agora".
+ * chips, a "↻ Reabrir {title}" link for the last finished activity, and the
+ * admin's "▶ Iniciar agora" and "⏭ Pular".
  */
 export function ScheduleNextActivityCard(props: ScheduleNextActivityCardProps) {
   const { activity } = props
@@ -43,11 +51,31 @@ export function ScheduleNextActivityCard(props: ScheduleNextActivityCardProps) {
         withoutGuest
       />
 
-      {props.onStart && (
+      {props.reopen && (
         <div>
-          <Button onClick={props.onStart} disabled={props.isControlPending}>
-            ▶ Iniciar agora
-          </Button>
+          <button
+            type="button"
+            onClick={props.reopen.onReopen}
+            disabled={props.isControlPending}
+            className="cursor-pointer text-sm font-semibold text-dark-brown underline disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            ↻ Reabrir {props.reopen.title}
+          </button>
+        </div>
+      )}
+
+      {(props.onStart || props.onSkip) && (
+        <div className="flex flex-wrap gap-2">
+          {props.onStart && (
+            <Button onClick={props.onStart} disabled={props.isControlPending}>
+              ▶ Iniciar agora
+            </Button>
+          )}
+          {props.onSkip && (
+            <Button variant="outline" onClick={props.onSkip} disabled={props.isControlPending}>
+              ⏭ Pular
+            </Button>
+          )}
         </div>
       )}
     </section>

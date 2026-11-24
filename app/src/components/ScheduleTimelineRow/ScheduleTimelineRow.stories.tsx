@@ -2,6 +2,15 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { ScheduleTimelineRow } from './ScheduleTimelineRow'
 
+const NO_CONTROLS = {
+  start: false,
+  finish: false,
+  skip: false,
+  undoStart: false,
+  reopen: false,
+  undoSkip: false,
+}
+
 const meta = {
   title: 'Schedule/ScheduleTimelineRow',
   component: ScheduleTimelineRow,
@@ -127,12 +136,13 @@ export const AdminsResponsible: Story = {
   },
 }
 
-/** Live, the running activity: the chip, a filled dot, and an admin's "✓ Concluir". */
+/** Live, the running activity: the chip, a filled dot, and an admin's "✓ Concluir" and "Desfazer início". */
 export const Running: Story = {
   args: {
     live: true,
-    controls: { start: false, finish: true },
+    controls: { ...NO_CONTROLS, finish: true, undoStart: true },
     onFinish: fn(),
+    onUndo: fn(),
     activity: {
       ...meta.args.activity,
       status: 'running',
@@ -146,6 +156,8 @@ export const Running: Story = {
     await expect(canvas.getByTestId('timeline-dot')).toHaveClass('bg-primary')
     await userEvent.click(canvas.getByRole('button', { name: '✓ Concluir' }))
     await expect(args.onFinish).toHaveBeenCalled()
+    await userEvent.click(canvas.getByRole('button', { name: 'Desfazer início' }))
+    await expect(args.onUndo).toHaveBeenCalled()
   },
 }
 
@@ -170,12 +182,13 @@ export const Done: Story = {
   },
 }
 
-/** Live, the day's next planned activity, for an admin: "▶ Iniciar". */
+/** Live, the day's next planned activity, for an admin: "▶ Iniciar" and "⏭ Pular". */
 export const NextPlanned: Story = {
   args: {
     live: true,
-    controls: { start: true, finish: false },
+    controls: { ...NO_CONTROLS, start: true, skip: true },
     onStart: fn(),
+    onSkip: fn(),
   },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
@@ -183,6 +196,79 @@ export const NextPlanned: Story = {
     await expect(canvas.queryByText('CONCLUÍDO')).not.toBeInTheDocument()
     await userEvent.click(canvas.getByRole('button', { name: '▶ Iniciar' }))
     await expect(args.onStart).toHaveBeenCalled()
+    await userEvent.click(canvas.getByRole('button', { name: '⏭ Pular' }))
+    await expect(args.onSkip).toHaveBeenCalled()
+  },
+}
+
+/** Live, a later planned activity, for an admin: "⏭ Pular" only. */
+export const LaterPlanned: Story = {
+  args: {
+    live: true,
+    controls: { ...NO_CONTROLS, skip: true },
+    onSkip: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByRole('button', { name: '⏭ Pular' })).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: '▶ Iniciar' })).not.toBeInTheDocument()
+  },
+}
+
+/** Live, the most recently finished activity while nothing runs: an admin's "↻ Reabrir". */
+export const DoneReopenable: Story = {
+  args: {
+    live: true,
+    controls: { ...NO_CONTROLS, reopen: true },
+    onUndo: fn(),
+    activity: {
+      ...meta.args.activity,
+      status: 'done',
+      actualStartedAt: '2026-04-03T21:05:00Z',
+      actualEndedAt: '2026-04-03T21:52:00Z',
+    },
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: '↻ Reabrir' }))
+    await expect(args.onUndo).toHaveBeenCalled()
+  },
+}
+
+/** Live, a skipped activity: dashed card and dot, "PULADA", a struck-through title. */
+export const Skipped: Story = {
+  args: {
+    live: true,
+    activity: { ...meta.args.activity, status: 'skipped' },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByText('PULADA')).toBeVisible()
+    await expect(canvas.getByText('Palestra: O amor de Deus')).toHaveClass('line-through')
+    await expect(canvas.getByRole('article', { name: 'Palestra: O amor de Deus' })).toHaveClass(
+      'border-dashed'
+    )
+    await expect(canvas.getByTestId('timeline-dot')).toHaveClass('border-dashed')
+    await expect(canvas.queryByRole('button')).not.toBeInTheDocument()
+  },
+}
+
+/** Live, a skipped activity nothing later has overtaken, for an admin: "↶ Desfazer". */
+export const SkippedUndoable: Story = {
+  args: {
+    live: true,
+    controls: { ...NO_CONTROLS, undoSkip: true },
+    onUndo: fn(),
+    activity: { ...meta.args.activity, status: 'skipped' },
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: '↶ Desfazer' }))
+    await expect(args.onUndo).toHaveBeenCalled()
   },
 }
 
