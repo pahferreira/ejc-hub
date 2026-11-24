@@ -142,3 +142,8 @@ export type UndoScheduleActivityResult = {
 export const scheduleQueryKeys = {
   all: ['schedule'] as const,
 }
+
+export const scheduleMutationKeys = {
+  /** Every clock control (start, finish, skip, undo), so "is one in flight?" can be asked. */
+  control: ['schedule', 'control'] as const,
+}

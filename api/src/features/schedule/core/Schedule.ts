@@ -708,7 +708,7 @@ export class Schedule {
         if (activities.some((candidate) => candidate.status === 'running')) {
           throw new AppError(
             'A finished activity cannot reopen while another one runs',
-            AppErrorCode.Validation
+            AppErrorCode.ScheduleReopenWhileRunning
           )
         }
 
@@ -719,7 +719,7 @@ export class Schedule {
         if (activity.actualEndedAt?.getTime() !== latestEnd) {
           throw new AppError(
             'Only the most recently finished activity can reopen',
-            AppErrorCode.Validation
+            AppErrorCode.ScheduleReopenNotLatest
           )
         }
 
@@ -739,7 +739,7 @@ export class Schedule {
         ) {
           throw new AppError(
             'A skip cannot be undone once a later activity of the day has started',
-            AppErrorCode.Validation
+            AppErrorCode.ScheduleUndoSkipAfterLaterStart
           )
         }
 
@@ -747,14 +747,18 @@ export class Schedule {
       }
 
       case 'planned':
-        throw new AppError('A planned activity has nothing to undo', AppErrorCode.Validation)
+        throw new AppError(
+          'A planned activity has nothing to undo',
+          AppErrorCode.ScheduleNothingToUndo
+        )
     }
   }
 
   /**
    * Undoes the last step of an activity's clock, one step only: it is not a
    * history, and it doesn't revert trims, edits or notes. `#undoTransition`
-   * holds the rules. Same 409 rules as a start; a refused undo is a 400.
+   * holds the rules. Same 409 rules as a start; a refused undo is a 400 whose
+   * code names the rule, so the app can say why.
    */
   async undoActivity(
     activityId: string,

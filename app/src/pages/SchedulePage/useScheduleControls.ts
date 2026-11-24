@@ -1,11 +1,14 @@
+import { useQueryClient } from '@tanstack/react-query'
 import type {
   ScheduleActivity,
   ScheduleActivityStatus,
 } from '../../services/schedule/schedule.types'
+import { scheduleMutationKeys } from '../../services/schedule/schedule.types'
 import { useFinishScheduleActivityMutation } from '../../services/schedule/useFinishScheduleActivityMutation'
 import { useSkipScheduleActivityMutation } from '../../services/schedule/useSkipScheduleActivityMutation'
 import { useStartScheduleActivityMutation } from '../../services/schedule/useStartScheduleActivityMutation'
 import { useUndoScheduleActivityMutation } from '../../services/schedule/useUndoScheduleActivityMutation'
+import type { ToastAction } from '../../utils/toast/toast'
 import { toastPromise } from '../../utils/toast/toast'
 
 type ControlledActivity = Pick<ScheduleActivity, 'id' | 'status'>
@@ -22,12 +25,33 @@ const UNDONE_MESSAGES: Record<ScheduleActivityStatus, string> = {
 }
 
 /**
+ * The toast's "Desfazer". Like the buttons, it does nothing while a clock
+ * control is in flight; the toast then stays open so it can be tapped again.
+ * `isControlPending` is read at click time, since the toast outlives renders.
+ */
+export function undoToastAction(undo: () => void, isControlPending: () => boolean): ToastAction {
+  return {
+    label: 'Desfazer',
+    onClick: (event) => {
+      if (isControlPending()) {
+        event.preventDefault()
+        return
+      }
+
+      undo()
+    },
+  }
+}
+
+/**
  * The admin's clock controls on the Cronograma. Each sends the status the
  * screen shows; the outcome shows as a toast, and a 409 reads "O cronograma
  * mudou" while the mutation refetches. A start, finish or skip toast offers
- * "Desfazer" for about 8 s, which sends the same undo as the buttons.
+ * "Desfazer" for about 8 s, which sends the same undo as the buttons and, like
+ * them, waits out any control in flight.
  */
 export function useScheduleControls() {
+  const queryClient = useQueryClient()
   const startMutation = useStartScheduleActivityMutation()
   const finishMutation = useFinishScheduleActivityMutation()
   const skipMutation = useSkipScheduleActivityMutation()
@@ -45,7 +69,10 @@ export function useScheduleControls() {
   // The success toast of an action that left the activity in `status`.
   const undoable = (activityId: string, status: ScheduleActivityStatus, message: string) => ({
     message,
-    action: { label: 'Desfazer', onClick: () => undo({ id: activityId, status }) },
+    action: undoToastAction(
+      () => undo({ id: activityId, status }),
+      () => queryClient.isMutating({ mutationKey: scheduleMutationKeys.control }) > 0
+    ),
     duration: UNDO_TOAST_DURATION,
   })
 

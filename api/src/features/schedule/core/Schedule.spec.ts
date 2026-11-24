@@ -1665,7 +1665,7 @@ describe('Schedule', () => {
             expectedStatus: 'done',
             controllerAuthId: CONTROLLER_AUTH_ID,
           }),
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleReopenNotLatest
         )
         expect(await stored('a1')).toMatchObject({ status: 'done' })
       })
@@ -1688,7 +1688,7 @@ describe('Schedule', () => {
             expectedStatus: 'done',
             controllerAuthId: CONTROLLER_AUTH_ID,
           }),
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleReopenWhileRunning
         )
       })
 
@@ -1768,7 +1768,7 @@ describe('Schedule', () => {
               expectedStatus: 'skipped',
               controllerAuthId: CONTROLLER_AUTH_ID,
             }),
-            AppErrorCode.Validation
+            AppErrorCode.ScheduleUndoSkipAfterLaterStart
           )
           expect(await stored('a2')).toMatchObject({ status: 'skipped' })
         }
@@ -1782,7 +1782,7 @@ describe('Schedule', () => {
             expectedStatus: 'planned',
             controllerAuthId: CONTROLLER_AUTH_ID,
           }),
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleNothingToUndo
         )
       })
 

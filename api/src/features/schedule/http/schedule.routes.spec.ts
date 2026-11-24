@@ -648,6 +648,10 @@ describe('schedule routes', () => {
   describe('AppError codes', () => {
     it.each([
       [AppErrorCode.Validation, 400],
+      [AppErrorCode.ScheduleNothingToUndo, 400],
+      [AppErrorCode.ScheduleReopenNotLatest, 400],
+      [AppErrorCode.ScheduleReopenWhileRunning, 400],
+      [AppErrorCode.ScheduleUndoSkipAfterLaterStart, 400],
       [AppErrorCode.NotFound, 404],
       [AppErrorCode.Conflict, 409],
       [AppErrorCode.NoCurrentEvent, 422],

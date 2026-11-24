@@ -172,19 +172,39 @@ async function deleteDay(dayId: string) {
   }
 }
 
-/**
- * A clock control refused because another admin acted first: the screen was
- * stale. The page refetches and shows its message.
- */
-class ScheduleChangedError extends Error {
-  constructor() {
-    super('O cronograma mudou')
-  }
+/** Another admin acted first: the screen was stale. The page refetches. */
+const SCHEDULE_CHANGED_MESSAGE = 'O cronograma mudou'
+
+/** Why the API refused an undo, by its error code, as the toast says it. */
+const undoRefusalMessageByCode: Record<string, string> = {
+  schedule_nothing_to_undo: 'Esta atividade não tem nada para desfazer.',
+  schedule_reopen_not_latest: 'Só a última atividade concluída pode ser reaberta.',
+  schedule_reopen_while_running: 'Conclua a atividade em andamento antes de reabrir outra.',
+  schedule_undo_skip_after_later_start:
+    'Uma atividade seguinte do dia já começou, então o pulo não pode ser desfeito.',
 }
 
-/** A failed clock control as the toast shows it: 409 is "O cronograma mudou". */
+/**
+ * The toast message of a failed clock control, from the API's status and
+ * code: a 409 is "O cronograma mudou", an undo refusal says which rule
+ * refused it, and anything else is the control's own fallback.
+ */
+export function controlErrorMessage(
+  failure: { status: number; code: string },
+  fallback: string
+): string {
+  if (failure.status === 409) {
+    return SCHEDULE_CHANGED_MESSAGE
+  }
+
+  return undoRefusalMessageByCode[failure.code] ?? fallback
+}
+
+/** A failed clock control as the toast shows it. */
 function toControlError(error: unknown, fallback: string): Error {
-  return apiErrorStatus(error) === 409 ? new ScheduleChangedError() : new Error(fallback)
+  return new Error(
+    controlErrorMessage({ status: apiErrorStatus(error), code: apiErrorCode(error) }, fallback)
+  )
 }
 
 /** Starts the day's next planned activity, finishing the running one. */

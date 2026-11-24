@@ -7,11 +7,20 @@ const toastConfig: ToasterProps = {
   position: 'top-center',
 }
 
+/**
+ * A button on a toast. Clicking it closes the toast unless `onClick` calls
+ * `event.preventDefault()`.
+ */
+export type ToastAction = {
+  label: string
+  onClick: (event: { preventDefault: () => void }) => void
+}
+
 type Success = {
   message: string
   callback?: () => void
   /** A button on the success toast, such as "Desfazer". */
-  action?: { label: string; onClick: () => void }
+  action?: ToastAction
   /** How long the success toast stays, in ms, when not the default. */
   duration?: number
 }

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { scheduleApi } from './schedule.api'
-import { scheduleQueryKeys } from './schedule.types'
+import { scheduleMutationKeys, scheduleQueryKeys } from './schedule.types'
 
 /**
  * Skips an activity, then refetches the schedule. A refusal refetches too: a 409
@@ -12,6 +12,7 @@ export function useSkipScheduleActivityMutation() {
   const queryClient = useQueryClient()
 
   return useMutation({
+    mutationKey: scheduleMutationKeys.control,
     mutationFn: scheduleApi.skipActivity,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: scheduleQueryKeys.all }),
     onError: () => queryClient.invalidateQueries({ queryKey: scheduleQueryKeys.all }),
