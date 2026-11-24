@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 import { MultiSelector, type Option } from './MultiSelector'
 
 const meta = {
@@ -92,5 +92,61 @@ export const Disabled: Story = {
 
     // Verify onChange was not called (button is disabled)
     expect(args.onChange).not.toHaveBeenCalled()
+  },
+}
+
+// A short `overflow-auto` box with the field at its bottom, like the schedule
+// form at the end of `main` (#371). The list has to escape the box.
+export const InsideScrollContainer: Story = {
+  render: (args) => (
+    <div style={{ height: '120px', overflow: 'auto' }}>
+      <div style={{ paddingTop: '40px' }}>
+        <MultiSelectorWrapper {...args} />
+      </div>
+    </div>
+  ),
+  args: {
+    options: sampleOptions,
+    selected: [],
+    label: 'Equipes',
+    placeholder: 'Select frameworks...',
+    onChange: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body)
+    await userEvent.click(screen.getByRole('button', { name: /select frameworks/i }))
+
+    const listbox = await screen.findByRole('listbox')
+    const rect = listbox.getBoundingClientRect()
+    const bottomEdge = canvasElement.ownerDocument.elementFromPoint(
+      rect.left + rect.width / 2,
+      rect.bottom - 4
+    )
+    await expect(listbox.contains(bottomEdge)).toBe(true)
+  },
+}
+
+// Pinned to the bottom of the viewport: no room below, so the list opens upward.
+export const AtViewportBottom: Story = {
+  render: (args) => (
+    <div style={{ position: 'fixed', bottom: '8px', left: '8px' }}>
+      <MultiSelectorWrapper {...args} />
+    </div>
+  ),
+  args: {
+    options: sampleOptions,
+    selected: [],
+    placeholder: 'Select frameworks...',
+    onChange: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body)
+    const button = screen.getByRole('button', { name: /select frameworks/i })
+    await userEvent.click(button)
+
+    const listbox = await screen.findByRole('listbox')
+    await expect(listbox.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+      button.getBoundingClientRect().top
+    )
   },
 }

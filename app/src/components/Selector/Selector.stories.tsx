@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { fn } from 'storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 import { Selector, type Option } from './Selector'
 
 const meta = {
@@ -72,5 +72,34 @@ export const Disabled: Story = {
     label: 'Status (Disabled)',
     disabled: true,
     onChange: fn(),
+  },
+}
+
+// A short `overflow-auto` box with the field at its bottom, like a selector at
+// the end of `main` or a Drawer body (#371). The list has to escape the box.
+export const InsideScrollContainer: Story = {
+  render: (args) => (
+    <div style={{ height: '120px', overflow: 'auto' }}>
+      <div style={{ paddingTop: '40px' }}>
+        <SelectorWrapper {...args} />
+      </div>
+    </div>
+  ),
+  args: {
+    options: sampleOptions,
+    placeholder: 'Select a status...',
+    onChange: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body)
+    await userEvent.click(screen.getByRole('button', { name: /select a status/i }))
+
+    const listbox = await screen.findByRole('listbox')
+    const rect = listbox.getBoundingClientRect()
+    const bottomEdge = canvasElement.ownerDocument.elementFromPoint(
+      rect.left + rect.width / 2,
+      rect.bottom - 4
+    )
+    await expect(listbox.contains(bottomEdge)).toBe(true)
   },
 }

@@ -1,11 +1,4 @@
-import { Fragment } from 'react'
-import {
-  Listbox,
-  ListboxButton,
-  ListboxOption,
-  ListboxOptions,
-  Transition,
-} from '@headlessui/react'
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react'
 import { FiCheck, FiChevronDown } from 'react-icons/fi'
 
 export type Option = {
@@ -43,29 +36,31 @@ export function Selector(props: SelectorProps) {
                 }`}
               />
             </ListboxButton>
-            <Transition
-              as={Fragment}
-              leave="transition ease-in duration-100"
-              leaveFrom="opacity-100"
-              leaveTo="opacity-0"
+            {/*
+              `anchor` portals the list out of the page, so a scrolling parent
+              (`main`, a Drawer body) can't clip it, and flips it upward when
+              there's no room below.
+            */}
+            <ListboxOptions
+              transition
+              anchor={{ to: 'bottom start', gap: 4 }}
+              className="z-10 w-(--button-width) max-h-60 overflow-auto rounded-lg border border-primary bg-white p-1 shadow-lg transition duration-100 ease-in focus:outline-none data-[leave]:data-[closed]:opacity-0"
             >
-              <ListboxOptions className="absolute z-10 mt-1 w-full max-h-60 overflow-auto rounded-lg border border-primary bg-white p-1 shadow-lg focus:outline-none">
-                {props.options.map((option) => (
-                  <ListboxOption
-                    key={option.value}
-                    value={option}
-                    className="relative cursor-pointer select-none rounded-md px-3 py-2.5 text-sm text-dark-brown transition-colors hover:bg-tertiary"
-                  >
-                    {({ selected }) => (
-                      <div className="flex items-center justify-between">
-                        <span>{option.label}</span>
-                        {selected && <FiCheck className="h-4 w-4 text-primary" />}
-                      </div>
-                    )}
-                  </ListboxOption>
-                ))}
-              </ListboxOptions>
-            </Transition>
+              {props.options.map((option) => (
+                <ListboxOption
+                  key={option.value}
+                  value={option}
+                  className="relative cursor-pointer select-none rounded-md px-3 py-2.5 text-sm text-dark-brown transition-colors hover:bg-tertiary"
+                >
+                  {({ selected }) => (
+                    <div className="flex items-center justify-between">
+                      <span>{option.label}</span>
+                      {selected && <FiCheck className="h-4 w-4 text-primary" />}
+                    </div>
+                  )}
+                </ListboxOption>
+              ))}
+            </ListboxOptions>
           </div>
         )}
       </Listbox>
