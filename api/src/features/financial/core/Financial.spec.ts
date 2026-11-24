@@ -248,11 +248,14 @@ describe('Financial.getCurrentEventTeamsOverview', () => {
   })
 
   it('bills the event fee only to the members who owe it', async () => {
-    const { financial } = makeFinancial([buildTeam({ total: 10, paid: 4, exempt: 3 })], {
-      id: 'event-1',
-      feeAmountCents: 5_000,
-      feeCurrency: 'BRL',
-    })
+    const { financial } = makeFinancial(
+      [buildTeam({ total: 10, paid: 4, exempt: 3, collectedCents: 4 * 5_000 })],
+      {
+        id: 'event-1',
+        feeAmountCents: 5_000,
+        feeCurrency: 'BRL',
+      }
+    )
 
     const overview = await financial.getCurrentEventTeamsOverview()
 
@@ -272,8 +275,9 @@ describe('Financial.getCurrentEventTeamsOverview', () => {
 
     const overview = await financial.getCurrentEventTeamsOverview()
 
+    // Paid members count at what they paid, the four still owing at R$ 60.
     expect(overview.collectedCents).toBe(26_000)
-    expect(overview.expectedCents).toBe(9 * 6_000)
+    expect(overview.expectedCents).toBe(26_000 + 4 * 6_000)
   })
 
   it('rounds the global percentage', async () => {
