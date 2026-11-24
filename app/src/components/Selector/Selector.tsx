@@ -39,12 +39,15 @@ export function Selector(props: SelectorProps) {
             {/*
               `anchor` portals the list out of the page, so a scrolling parent
               (`main`, a Drawer body) can't clip it, and flips it upward when
-              there's no room below.
+              there's no room below. Anchoring sets an inline `max-height`,
+              so the cap goes in `--anchor-max-height`. `z-60` keeps it above
+              the sticky header, popovers and the fixed bulk-selection bar;
+              modals and drawers close it, since it closes on outside click.
             */}
             <ListboxOptions
               transition
               anchor={{ to: 'bottom start', gap: 4 }}
-              className="z-10 w-(--button-width) max-h-60 overflow-auto rounded-lg border border-primary bg-white p-1 shadow-lg transition duration-100 ease-in focus:outline-none data-[leave]:data-[closed]:opacity-0"
+              className="z-60 w-(--button-width) overflow-auto [--anchor-max-height:15rem] rounded-lg border border-primary bg-white p-1 shadow-lg transition duration-100 ease-in focus:outline-none data-[leave]:data-[closed]:opacity-0"
             >
               {props.options.map((option) => (
                 <ListboxOption

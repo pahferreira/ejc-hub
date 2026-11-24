@@ -150,3 +150,72 @@ export const AtViewportBottom: Story = {
     )
   },
 }
+
+const longOptions: Option[] = Array.from({ length: 20 }, (_, index) => ({
+  label: `Equipe ${index + 1}`,
+  value: `team-${index + 1}`,
+}))
+
+// Anchoring sets an inline `max-height` from the space left in the viewport,
+// which overrides a `max-h-*` class: a long list must still stop at 15rem.
+export const LongList: Story = {
+  render: (args) => <MultiSelectorWrapper {...args} />,
+  args: {
+    options: longOptions,
+    selected: [],
+    placeholder: 'Select teams...',
+    onChange: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body)
+    await userEvent.click(screen.getByRole('button', { name: /select teams/i }))
+
+    const listbox = await screen.findByRole('listbox')
+    await expect(listbox.getBoundingClientRect().height).toBeCloseTo(240, 0)
+  },
+}
+
+// A fixed `z-50` bar right under the field, like `FeeBulkSelectionBar`: the
+// list has to open on top of it, not underneath.
+export const AboveFixedBar: Story = {
+  parameters: { layout: 'padded' },
+  render: (args) => (
+    <div>
+      <MultiSelectorWrapper {...args} />
+      <div
+        style={{
+          position: 'fixed',
+          top: '96px',
+          right: 0,
+          bottom: 0,
+          left: 0,
+          zIndex: 50,
+          background: '#3e2723',
+        }}
+      />
+    </div>
+  ),
+  args: {
+    options: sampleOptions,
+    selected: [],
+    placeholder: 'Select frameworks...',
+    onChange: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body)
+    await userEvent.click(screen.getByRole('button', { name: /select frameworks/i }))
+
+    const listbox = await screen.findByRole('listbox')
+    // While open, Headless UI marks the rest of the page `inert`, which hit
+    // testing skips. Clear it so `elementFromPoint` reports what paints on top.
+    canvasElement.ownerDocument
+      .querySelectorAll<HTMLElement>('[inert]')
+      .forEach((element) => (element.inert = false))
+    const rect = listbox.getBoundingClientRect()
+    const bottomEdge = canvasElement.ownerDocument.elementFromPoint(
+      rect.left + rect.width / 2,
+      rect.bottom - 4
+    )
+    await expect(listbox.contains(bottomEdge)).toBe(true)
+  },
+}
