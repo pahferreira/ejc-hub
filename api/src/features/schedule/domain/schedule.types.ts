@@ -157,3 +157,22 @@ export type FinishScheduleActivityInput = ScheduleActivityControlInput
 export type FinishScheduleActivityResult = {
   activityId: string
 }
+
+/** Skipping a planned activity: it takes no time in the forecast. */
+export type SkipScheduleActivityInput = ScheduleActivityControlInput
+
+export type SkipScheduleActivityResult = {
+  activityId: string
+}
+
+/**
+ * Undoing the last step of an activity's clock. `expectedStatus` names the
+ * step: running is undone to planned, done to running, skipped to planned.
+ */
+export type UndoScheduleActivityInput = ScheduleActivityControlInput
+
+export type UndoScheduleActivityResult = {
+  activityId: string
+  /** The status the activity went back to. */
+  status: ScheduleActivityStatus
+}

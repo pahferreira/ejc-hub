@@ -1474,6 +1474,370 @@ describe('Schedule', () => {
       })
     })
 
+    describe('skipActivity', () => {
+      it('skips any planned activity, not only the next one, and records who skipped it', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30),
+          storedActivity('a2', 'day-fri', FRI_1830, 30),
+        ])
+
+        const result = await schedule.skipActivity('a2', {
+          expectedStatus: 'planned',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(result).toEqual({ activityId: 'a2' })
+        expect(await stored('a2')).toMatchObject({
+          status: 'skipped',
+          actualStartedAt: null,
+          actualEndedAt: null,
+          controlledBy: 'user-controller',
+        })
+        expect(await stored('a1')).toMatchObject({ status: 'planned' })
+      })
+
+      it.each(['running', 'done', 'skipped'] as const)(
+        'refuses to skip an activity that is %s',
+        async (status) => {
+          schedule = buildClockSchedule([
+            storedActivity('a1', 'day-fri', FRI_18H, 30, {
+              status,
+              actualStartedAt: status === 'skipped' ? null : new Date(FRI_18H),
+              actualEndedAt: status === 'done' ? new Date(FRI_1830) : null,
+            }),
+          ])
+
+          await expectAppError(
+            schedule.skipActivity('a1', {
+              expectedStatus: status,
+              controllerAuthId: CONTROLLER_AUTH_ID,
+            }),
+            AppErrorCode.Validation
+          )
+        }
+      )
+
+      it('answers a conflict when the stored status is not the expected one', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, { status: 'skipped' }),
+        ])
+
+        await expectAppError(
+          schedule.skipActivity('a1', {
+            expectedStatus: 'planned',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.Conflict
+        )
+      })
+
+      it('answers a conflict when another admin moved it since the read', async () => {
+        schedule = buildClockSchedule([storedActivity('a1', 'day-fri', FRI_18H, 30)])
+        activityRepository.transitionActivity = () => Promise.resolve(undefined)
+
+        await expectAppError(
+          schedule.skipActivity('a1', {
+            expectedStatus: 'planned',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.Conflict
+        )
+      })
+
+      it('answers not found for an activity of another event', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('old', 'day-fri', FRI_18H, 30, { eventId: 'past-event' }),
+        ])
+
+        await expectAppError(
+          schedule.skipActivity('old', {
+            expectedStatus: 'planned',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.NotFound
+        )
+      })
+    })
+
+    describe('undoActivity', () => {
+      const FRI_1820 = '2026-04-03T21:20:00Z'
+
+      it('undoes a start back to planned, clearing the actual start', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'running',
+            actualStartedAt: new Date(FRI_18H),
+          }),
+        ])
+
+        const result = await schedule.undoActivity('a1', {
+          expectedStatus: 'running',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(result).toEqual({ activityId: 'a1', status: 'planned' })
+        expect(await stored('a1')).toMatchObject({
+          status: 'planned',
+          actualStartedAt: null,
+          actualEndedAt: null,
+          controlledBy: 'user-controller',
+        })
+      })
+
+      it('leaves the activity the start finished as done, and it reopens afterwards', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'running',
+            actualStartedAt: new Date(FRI_18H),
+          }),
+          storedActivity('a2', 'day-fri', FRI_1830, 30),
+        ])
+        await schedule.startActivity('a2', {
+          expectedStatus: 'planned',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        await schedule.undoActivity('a2', {
+          expectedStatus: 'running',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(await stored('a2')).toMatchObject({ status: 'planned', actualStartedAt: null })
+        expect(await stored('a1')).toMatchObject({ status: 'done', actualEndedAt: NOW })
+
+        const reopened = await schedule.undoActivity('a1', {
+          expectedStatus: 'done',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(reopened).toEqual({ activityId: 'a1', status: 'running' })
+        expect(await stored('a1')).toMatchObject({
+          status: 'running',
+          actualStartedAt: new Date(FRI_18H),
+          actualEndedAt: null,
+        })
+      })
+
+      it('reopens the most recently finished activity from its original start', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_18H),
+            actualEndedAt: new Date(FRI_1820),
+          }),
+          storedActivity('a2', 'day-fri', FRI_1830, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_1830),
+            actualEndedAt: new Date(FRI_19H),
+          }),
+        ])
+
+        const result = await schedule.undoActivity('a2', {
+          expectedStatus: 'done',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(result).toEqual({ activityId: 'a2', status: 'running' })
+        expect(await stored('a2')).toMatchObject({
+          status: 'running',
+          actualStartedAt: new Date(FRI_1830),
+          actualEndedAt: null,
+          controlledBy: 'user-controller',
+        })
+      })
+
+      it('refuses to reopen an activity that is not the most recently finished', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_18H),
+            actualEndedAt: new Date(FRI_1820),
+          }),
+          storedActivity('a2', 'day-fri', FRI_1830, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_1830),
+            actualEndedAt: new Date(FRI_19H),
+          }),
+        ])
+
+        await expectAppError(
+          schedule.undoActivity('a1', {
+            expectedStatus: 'done',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.Validation
+        )
+        expect(await stored('a1')).toMatchObject({ status: 'done' })
+      })
+
+      it('refuses to reopen a finished activity while another one runs', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_18H),
+            actualEndedAt: new Date(FRI_1830),
+          }),
+          storedActivity('s1', 'day-sat', SAT_09H, 30, {
+            status: 'running',
+            actualStartedAt: new Date(SAT_09H),
+          }),
+        ])
+
+        await expectAppError(
+          schedule.undoActivity('a1', {
+            expectedStatus: 'done',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.Validation
+        )
+      })
+
+      it('answers a conflict when another admin starts an activity as it reopens', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_18H),
+            actualEndedAt: new Date(FRI_1830),
+          }),
+        ])
+        activityRepository.transitionActivity = () =>
+          Promise.reject(
+            Object.assign(new Error('duplicate key'), {
+              code: '23505',
+              constraint: 'schedule_activities_one_running_per_event_idx',
+            })
+          )
+
+        await expectAppError(
+          schedule.undoActivity('a1', {
+            expectedStatus: 'done',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.Conflict
+        )
+      })
+
+      it('undoes a skip back to planned while no later activity of the day has started', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_18H),
+            actualEndedAt: new Date(FRI_1820),
+          }),
+          storedActivity('a2', 'day-fri', FRI_1830, 30, { status: 'skipped' }),
+          storedActivity('a3', 'day-fri', FRI_19H, 30, { status: 'skipped' }),
+          // Another day's activities don't count.
+          storedActivity('s1', 'day-sat', SAT_09H, 30, {
+            status: 'running',
+            actualStartedAt: new Date(SAT_09H),
+          }),
+        ])
+
+        const result = await schedule.undoActivity('a2', {
+          expectedStatus: 'skipped',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(result).toEqual({ activityId: 'a2', status: 'planned' })
+        expect(await stored('a2')).toMatchObject({
+          status: 'planned',
+          controlledBy: 'user-controller',
+        })
+      })
+
+      it.each([
+        ['running', { status: 'running', actualStartedAt: new Date(FRI_19H) }],
+        [
+          'done',
+          {
+            status: 'done',
+            actualStartedAt: new Date(FRI_19H),
+            actualEndedAt: new Date('2026-04-03T22:30:00Z'),
+          },
+        ],
+      ] as const)(
+        'refuses to undo a skip once a later activity of the day is %s',
+        async (_label, later) => {
+          schedule = buildClockSchedule([
+            storedActivity('a2', 'day-fri', FRI_1830, 30, { status: 'skipped' }),
+            storedActivity('a3', 'day-fri', FRI_19H, 30, later),
+          ])
+
+          await expectAppError(
+            schedule.undoActivity('a2', {
+              expectedStatus: 'skipped',
+              controllerAuthId: CONTROLLER_AUTH_ID,
+            }),
+            AppErrorCode.Validation
+          )
+          expect(await stored('a2')).toMatchObject({ status: 'skipped' })
+        }
+      )
+
+      it('refuses to undo a planned activity', async () => {
+        schedule = buildClockSchedule([storedActivity('a1', 'day-fri', FRI_18H, 30)])
+
+        await expectAppError(
+          schedule.undoActivity('a1', {
+            expectedStatus: 'planned',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.Validation
+        )
+      })
+
+      it('answers a conflict when the stored status is not the expected one', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_18H),
+            actualEndedAt: new Date(FRI_1830),
+          }),
+        ])
+
+        await expectAppError(
+          schedule.undoActivity('a1', {
+            expectedStatus: 'running',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.Conflict
+        )
+        expect(await stored('a1')).toMatchObject({ status: 'done' })
+      })
+
+      it('answers a conflict when another admin moved it since the read', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, { status: 'skipped' }),
+        ])
+        activityRepository.transitionActivity = () => Promise.resolve(undefined)
+
+        await expectAppError(
+          schedule.undoActivity('a1', {
+            expectedStatus: 'skipped',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.Conflict
+        )
+      })
+
+      it('answers not found for an activity of another event', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('old', 'day-fri', FRI_18H, 30, {
+            eventId: 'past-event',
+            status: 'skipped',
+          }),
+        ])
+
+        await expectAppError(
+          schedule.undoActivity('old', {
+            expectedStatus: 'skipped',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.NotFound
+        )
+      })
+    })
+
     describe('getSchedule', () => {
       it('answers each activity status, actual times and effective duration, and the server clock', async () => {
         schedule = buildClockSchedule([

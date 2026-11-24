@@ -11,6 +11,8 @@ const scheduleApp = vi.hoisted(() => ({
   deleteDay: vi.fn(),
   startActivity: vi.fn(),
   finishActivity: vi.fn(),
+  skipActivity: vi.fn(),
+  undoActivity: vi.fn(),
 }))
 
 vi.mock('../application/schedule-app.ts', () => ({ scheduleApp }))
@@ -68,6 +70,8 @@ describe('schedule routes', () => {
       finishedActivityId: null,
     })
     scheduleApp.finishActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
+    scheduleApp.skipActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
+    scheduleApp.undoActivity.mockResolvedValue({ activityId: ACTIVITY_ID, status: 'planned' })
 
     server = await buildRouteTestServer(scheduleRoutes)
   })
@@ -88,6 +92,8 @@ describe('schedule routes', () => {
       ['DELETE', `/schedule/activities/${ACTIVITY_ID}`, {}],
       ['POST', `/schedule/activities/${ACTIVITY_ID}/start`, { expectedStatus: 'planned' }],
       ['POST', `/schedule/activities/${ACTIVITY_ID}/finish`, { expectedStatus: 'running' }],
+      ['POST', `/schedule/activities/${ACTIVITY_ID}/skip`, { expectedStatus: 'planned' }],
+      ['POST', `/schedule/activities/${ACTIVITY_ID}/undo`, { expectedStatus: 'running' }],
     ] as const)('answers %s %s with 401 without a token', async (method, url, payload) => {
       const response = await server.inject({ method, url, payload })
 
@@ -567,6 +573,8 @@ describe('schedule routes', () => {
   describe.each([
     ['start', 'startActivity', 'planned'],
     ['finish', 'finishActivity', 'running'],
+    ['skip', 'skipActivity', 'planned'],
+    ['undo', 'undoActivity', 'skipped'],
   ] as const)('POST /schedule/activities/:activityId/%s', (action, method, expectedStatus) => {
     const url = `/schedule/activities/${ACTIVITY_ID}/${action}`
     const CONTROLLER = authHeader({

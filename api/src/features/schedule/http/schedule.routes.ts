@@ -216,5 +216,57 @@ export function scheduleRoutes(server: FastifyServerInstance) {
         }
       }
     )
+
+    server.post(
+      '/schedule/activities/:activityId/skip',
+      {
+        schema: { params: scheduleActivityParamsSchema, body: scheduleActivityControlBodySchema },
+        preHandler: authGuard(server, { permissions: [SchedulePermissions.Control] }),
+      },
+      async (request, reply) => {
+        try {
+          const caller = callerOrUnauthorized(request, reply)
+
+          if (!caller) {
+            return reply
+          }
+
+          const result = await scheduleApp.skipActivity(request.params.activityId, {
+            expectedStatus: request.body.expectedStatus,
+            controllerAuthId: caller.authId,
+          })
+
+          return reply.code(HttpStatus.Ok).send({ result })
+        } catch (error) {
+          fastifyErrorHandler(request, reply, error)
+        }
+      }
+    )
+
+    server.post(
+      '/schedule/activities/:activityId/undo',
+      {
+        schema: { params: scheduleActivityParamsSchema, body: scheduleActivityControlBodySchema },
+        preHandler: authGuard(server, { permissions: [SchedulePermissions.Control] }),
+      },
+      async (request, reply) => {
+        try {
+          const caller = callerOrUnauthorized(request, reply)
+
+          if (!caller) {
+            return reply
+          }
+
+          const result = await scheduleApp.undoActivity(request.params.activityId, {
+            expectedStatus: request.body.expectedStatus,
+            controllerAuthId: caller.authId,
+          })
+
+          return reply.code(HttpStatus.Ok).send({ result })
+        } catch (error) {
+          fastifyErrorHandler(request, reply, error)
+        }
+      }
+    )
   }
 }
