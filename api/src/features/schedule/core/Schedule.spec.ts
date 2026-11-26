@@ -1575,7 +1575,7 @@ describe('Schedule', () => {
 
         await expectAppError(
           schedule.updateActivityLive('a1', live('done', fields)),
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleActualStartNotBeforeEnd
         )
         expect(await stored('a1')).toMatchObject({ actualStartedAt: new Date(FRI_18H) })
       })
@@ -1588,7 +1588,7 @@ describe('Schedule', () => {
             'a2',
             live('running', { actualStartedAt: '2026-04-03T21:45:00Z' })
           ),
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleActualStartInFuture
         )
       })
 
@@ -1600,7 +1600,7 @@ describe('Schedule', () => {
             'a1',
             live('done', { actualEndedAt: '2026-04-03T21:35:00Z' })
           ),
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleActualTimesOverlap
         )
         expect(await stored('a1')).toMatchObject({ actualEndedAt: new Date(FRI_1830) })
       })
@@ -1613,9 +1613,46 @@ describe('Schedule', () => {
             'a2',
             live('running', { actualStartedAt: '2026-04-03T21:20:00Z' })
           ),
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleActualTimesOverlap
         )
         expect(await stored('a2')).toMatchObject({ actualStartedAt: new Date(FRI_1832) })
+      })
+
+      it("refuses a done activity's end corrected into the future", async () => {
+        schedule = dayInProgress()
+
+        await expectAppError(
+          schedule.updateActivityLive(
+            'a1',
+            live('done', { actualEndedAt: '2026-04-03T21:41:00Z' })
+          ),
+          AppErrorCode.ScheduleActualEndInFuture
+        )
+        expect(await stored('a1')).toMatchObject({ actualEndedAt: new Date(FRI_1830) })
+      })
+
+      it('corrects a done activity across midnight: 23:55 to 00:05', async () => {
+        vi.setSystemTime(new Date('2026-04-04T04:00:00Z'))
+        schedule = buildClockSchedule([
+          storedActivity('late', 'day-fri', '2026-04-04T02:30:00Z', 30, {
+            status: 'done',
+            actualStartedAt: new Date('2026-04-04T02:30:00Z'),
+            actualEndedAt: new Date('2026-04-04T03:00:00Z'),
+          }),
+        ])
+
+        await schedule.updateActivityLive(
+          'late',
+          live('done', {
+            actualStartedAt: '2026-04-04T02:55:00Z',
+            actualEndedAt: '2026-04-04T03:05:00Z',
+          })
+        )
+
+        expect(await stored('late')).toMatchObject({
+          actualStartedAt: new Date('2026-04-04T02:55:00Z'),
+          actualEndedAt: new Date('2026-04-04T03:05:00Z'),
+        })
       })
 
       it('allows times that only touch a neighbour', async () => {
@@ -1639,7 +1676,7 @@ describe('Schedule', () => {
 
         await expectAppError(
           schedule.updateActivityLive(id, live(status, fields)),
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleActualTimeNotAllowed
         )
       })
 
@@ -1672,7 +1709,7 @@ describe('Schedule', () => {
 
         await expectAppError(
           schedule.updateActivityLive('a3', live('planned', { adjustedDurationMinutes: minutes })),
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleTrimNotPositive
         )
         expect(await stored('a3')).toMatchObject({ adjustedDurationMinutes: null })
       })
@@ -1688,7 +1725,7 @@ describe('Schedule', () => {
 
         await expectAppError(
           schedule.updateActivityLive('a1', live(status, { adjustedDurationMinutes: 20 })),
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleTrimNotAllowed
         )
       })
 
@@ -1697,7 +1734,7 @@ describe('Schedule', () => {
 
         await expectAppError(
           schedule.updateActivityLive('a1', live('done', {})),
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleNothingToChange
         )
       })
 

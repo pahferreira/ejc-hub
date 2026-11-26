@@ -20,6 +20,17 @@ export const AppErrorCode = {
   // The request would duplicate something that must be unique (a second
   // schedule day on one date). Answers 409.
   Conflict: 'conflict',
+  // A live correction of a schedule activity (`PATCH /schedule/activities/:id/live`)
+  // broke one of its rules. Each answers 400 with its own code, so the app can
+  // say which rule in pt-BR.
+  ScheduleNothingToChange: 'schedule_nothing_to_change',
+  ScheduleActualTimeNotAllowed: 'schedule_actual_time_not_allowed',
+  ScheduleTrimNotAllowed: 'schedule_trim_not_allowed',
+  ScheduleTrimNotPositive: 'schedule_trim_not_positive',
+  ScheduleActualStartNotBeforeEnd: 'schedule_actual_start_not_before_end',
+  ScheduleActualStartInFuture: 'schedule_actual_start_in_future',
+  ScheduleActualEndInFuture: 'schedule_actual_end_in_future',
+  ScheduleActualTimesOverlap: 'schedule_actual_times_overlap',
   // There is no current event to scope the request to. The app maps this code
   // to its own pt-BR message.
   NoCurrentEvent: 'no_current_event',

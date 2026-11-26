@@ -718,10 +718,17 @@ describe('schedule routes', () => {
       expect(scheduleApp.updateActivityLive).not.toHaveBeenCalled()
     })
 
-    it('answers 400 when the core refuses the times', async () => {
-      scheduleApp.updateActivityLive.mockRejectedValue(
-        new AppError('The actual start must be before the end', AppErrorCode.Validation)
-      )
+    it.each([
+      AppErrorCode.ScheduleNothingToChange,
+      AppErrorCode.ScheduleActualTimeNotAllowed,
+      AppErrorCode.ScheduleTrimNotAllowed,
+      AppErrorCode.ScheduleTrimNotPositive,
+      AppErrorCode.ScheduleActualStartNotBeforeEnd,
+      AppErrorCode.ScheduleActualStartInFuture,
+      AppErrorCode.ScheduleActualEndInFuture,
+      AppErrorCode.ScheduleActualTimesOverlap,
+    ])('answers 400 with the code when the core refuses with %s', async (code) => {
+      scheduleApp.updateActivityLive.mockRejectedValue(new AppError('Refused', code))
 
       const response = await server.inject({
         method: 'PATCH',
@@ -731,6 +738,7 @@ describe('schedule routes', () => {
       })
 
       expect(response.statusCode).toBe(400)
+      expect(response.json()).toMatchObject({ code })
     })
 
     it('answers 409 when the core reports the schedule changed', async () => {

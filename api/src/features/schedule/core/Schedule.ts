@@ -647,12 +647,13 @@ export class Schedule {
    * - The actual start can be set on a running or done activity, the actual end
    *   only on a done one: the others have no such time to correct.
    * - The trim must be greater than zero, on a planned or running activity.
-   * - The start must be before the end. A running activity's end is now, so its
-   *   start can't move into the future.
+   * - The start must be before the end, and neither can be in the future: a
+   *   running activity's end is now, so its start can't move past it.
    * - The corrected interval must not overlap another activity's actual one
    *   (touching edges are fine).
    *
-   * A stored status other than `expectedStatus` is a 409, like the clock
+   * Each refusal is a 400 with its own `AppErrorCode`, so the app can name the
+   * rule. A stored status other than `expectedStatus` is a 409, like the clock
    * controls. The write is guarded by that status, so a race reads the same.
    */
   async updateActivityLive(
@@ -675,7 +676,7 @@ export class Schedule {
       const changesTimes = actualStartedAt !== undefined || actualEndedAt !== undefined
 
       if (!changesTimes && adjustedDurationMinutes === undefined) {
-        throw new AppError('Nothing to change', AppErrorCode.Validation)
+        throw new AppError('Nothing to change', AppErrorCode.ScheduleNothingToChange)
       }
 
       if (
@@ -685,24 +686,30 @@ export class Schedule {
       ) {
         throw new AppError(
           'Only a running or done activity has an actual start',
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleActualTimeNotAllowed
         )
       }
 
       if (actualEndedAt !== undefined && activity.status !== 'done') {
-        throw new AppError('Only a done activity has an actual end', AppErrorCode.Validation)
+        throw new AppError(
+          'Only a done activity has an actual end',
+          AppErrorCode.ScheduleActualTimeNotAllowed
+        )
       }
 
       if (adjustedDurationMinutes !== undefined) {
         if (activity.status !== 'planned' && activity.status !== 'running') {
           throw new AppError(
             'Only a planned or running activity can be trimmed',
-            AppErrorCode.Validation
+            AppErrorCode.ScheduleTrimNotAllowed
           )
         }
 
         if (adjustedDurationMinutes !== null && adjustedDurationMinutes <= 0) {
-          throw new AppError('The trim must be greater than zero', AppErrorCode.Validation)
+          throw new AppError(
+            'The trim must be greater than zero',
+            AppErrorCode.ScheduleTrimNotPositive
+          )
         }
       }
 
@@ -720,8 +727,26 @@ export class Schedule {
           now
         )
 
+        if (end !== undefined && end > now) {
+          throw new AppError(
+            'The actual end cannot be in the future',
+            AppErrorCode.ScheduleActualEndInFuture
+          )
+        }
+
+        // A running activity's interval ends now, so a start past it is in the future.
+        if (activity.status === 'running' && start !== undefined && start >= now) {
+          throw new AppError(
+            'The actual start cannot be in the future',
+            AppErrorCode.ScheduleActualStartInFuture
+          )
+        }
+
         if (!corrected || corrected.start >= corrected.end) {
-          throw new AppError('The actual start must be before the end', AppErrorCode.Validation)
+          throw new AppError(
+            'The actual start must be before the end',
+            AppErrorCode.ScheduleActualStartNotBeforeEnd
+          )
         }
 
         // Checked against every other activity that ran, across days, so a
@@ -736,7 +761,10 @@ export class Schedule {
         })
 
         if (overlaps) {
-          throw new AppError("The actual times overlap another activity's", AppErrorCode.Validation)
+          throw new AppError(
+            "The actual times overlap another activity's",
+            AppErrorCode.ScheduleActualTimesOverlap
+          )
         }
       }
 
