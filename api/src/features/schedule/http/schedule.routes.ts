@@ -4,13 +4,17 @@ import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
 import { callerOrUnauthorized } from '../../../shared/caller-or-unauthorized.ts'
-import { SchedulePermissions } from '../../../../../common/permissions/permissions.types.ts'
+import {
+  ScheduleNotePermissions,
+  SchedulePermissions,
+} from '../../../../../common/permissions/permissions.types.ts'
 import { scheduleApp } from '../application/schedule-app.ts'
 import type { ScheduleActivityPlan } from '../domain/schedule.types.ts'
 import {
   scheduleActivityControlBodySchema,
   createScheduleActivityBodySchema,
   createScheduleDayBodySchema,
+  createScheduleNoteBodySchema,
   scheduleActivityBodySchema,
   scheduleActivityParamsSchema,
   scheduleDayParamsSchema,
@@ -211,6 +215,35 @@ export function scheduleRoutes(server: FastifyServerInstance) {
           })
 
           return reply.code(HttpStatus.Ok).send({ result })
+        } catch (error) {
+          fastifyErrorHandler(request, reply, error)
+        }
+      }
+    )
+
+    // Who writes, and as what (admin or coordinator), is the core's: it needs the
+    // caller's team membership, which the token cannot express.
+    server.post(
+      '/schedule/activities/:activityId/notes',
+      {
+        schema: { params: scheduleActivityParamsSchema, body: createScheduleNoteBodySchema },
+        preHandler: authGuard(server, { permissions: [ScheduleNotePermissions.Create] }),
+      },
+      async (request, reply) => {
+        try {
+          const caller = callerOrUnauthorized(request, reply)
+
+          if (!caller) {
+            return reply
+          }
+
+          const result = await scheduleApp.createNote(request.params.activityId, {
+            authorAuthId: caller.authId,
+            permissions: caller.permissions,
+            body: request.body.body,
+          })
+
+          return reply.code(HttpStatus.Created).send({ result })
         } catch (error) {
           fastifyErrorHandler(request, reply, error)
         }

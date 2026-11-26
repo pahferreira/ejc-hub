@@ -41,6 +41,8 @@ export type ScheduleActivity = {
   adjustedDurationMinutes: number | null
   /** `adjustedDurationMinutes ?? durationMinutes`: the length the forecast uses. */
   effectiveDurationMinutes: number
+  /** The Observações this viewer may read, oldest first. */
+  notes: ScheduleActivityNote[]
 }
 
 /** One schedule day: a date of the current event, with its activities. */
@@ -155,5 +157,34 @@ export type StartScheduleActivityResult = {
 export type FinishScheduleActivityInput = ScheduleActivityControlInput
 
 export type FinishScheduleActivityResult = {
+  activityId: string
+}
+
+/** The role a note was written in: it decides who reads the note. */
+export type ScheduleNoteAuthorRole = 'admin' | 'coordinator'
+
+/** One Observação on an activity, as the viewer may read it. */
+export type ScheduleActivityNote = {
+  id: string
+  body: string
+  /** The author's nickname, or the first word of their name. */
+  authorName: string
+  authorRole: ScheduleNoteAuthorRole
+  /** An ISO instant. */
+  createdAt: string
+}
+
+/** Leaving a note on an activity of the current event. */
+export type CreateScheduleActivityNoteInput = {
+  /** The author's Auth0 subject. */
+  authorAuthId: string
+  /** The author's token permissions: `schedule:control` writes as an admin. */
+  permissions: string[]
+  /** Up to 500 characters, already trimmed. */
+  body: string
+}
+
+export type CreateScheduleActivityNoteResult = {
+  noteId: string
   activityId: string
 }

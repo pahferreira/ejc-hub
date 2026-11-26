@@ -32,6 +32,11 @@ import type {
   TeamMembershipRepository,
 } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
+import type {
+  InsertScheduleActivityNoteInput,
+  ScheduleActivityNoteRepository,
+  ScheduleActivityNoteRow,
+} from '../../../modules/schedule-activity-note/domain/ScheduleActivityNoteRepository.ts'
 import { SchedulePermissions } from '../../../../../common/permissions/permissions.types.ts'
 
 const EVENT_ID = 'event-1'
@@ -58,6 +63,50 @@ function buildUserRepository(): UserRepository {
 }
 
 /** The current event's memberships, keyed by user id. */
+/**
+ * An in-memory `schedule_activity_notes`. Each author is named after their user
+ * id, with no nickname, and notes come back oldest first like the real query.
+ */
+function buildNoteRepository(): ScheduleActivityNoteRepository & {
+  stored: () => InsertScheduleActivityNoteInput[]
+} {
+  const notes: (InsertScheduleActivityNoteInput & { id: string; createdAt: Date })[] = []
+
+  return {
+    listNotesByEvent: (eventId) =>
+      Promise.resolve(
+        notes
+          .filter((note) => note.eventId === eventId)
+          .map(
+            (note): ScheduleActivityNoteRow => ({
+              id: note.id,
+              activityId: note.activityId,
+              authorRole: note.authorRole,
+              teamInstanceId: note.teamInstanceId,
+              body: note.body,
+              authorName: note.authorId,
+              authorNickname: null,
+              createdAt: note.createdAt,
+            })
+          )
+      ),
+    insertNote: (input) => {
+      const note = { ...input, id: `note-${notes.length + 1}`, createdAt: new Date() }
+      notes.push(note)
+      return Promise.resolve({ ...note, updatedAt: note.createdAt })
+    },
+    stored: () =>
+      notes.map(({ activityId, eventId, authorId, authorRole, teamInstanceId, body }) => ({
+        activityId,
+        eventId,
+        authorId,
+        authorRole,
+        teamInstanceId,
+        body,
+      })),
+  }
+}
+
 function buildTeamMembershipRepository(
   memberships: Record<string, EventMembership> = MEMBERSHIPS
 ): TeamMembershipRepository {
@@ -359,6 +408,8 @@ function buildSchedule(
     activityRepository?: ScheduleActivityRepository
     teamRepository?: ScheduleActivityTeamRepository
     teamInstanceRepository?: TeamInstanceRepository
+    teamMembershipRepository?: TeamMembershipRepository
+    noteRepository?: ScheduleActivityNoteRepository
   } = {}
 ): Schedule {
   const built = buildActivityRepositories()
@@ -369,7 +420,8 @@ function buildSchedule(
     options.teamRepository ?? built.teamRepository,
     options.teamInstanceRepository ?? buildTeamInstanceRepository(),
     buildUserRepository(),
-    buildTeamMembershipRepository()
+    options.teamMembershipRepository ?? buildTeamMembershipRepository(),
+    options.noteRepository ?? buildNoteRepository()
   )
 }
 
@@ -1515,6 +1567,322 @@ describe('Schedule', () => {
           actualEndedAt: null,
           effectiveDurationMinutes: 45,
         })
+      })
+    })
+  })
+
+  describe('Observações', () => {
+    // Runs the clock, so writes as an admin. Not on any team.
+    const CHIEF = {
+      authId: 'auth0|chief',
+      permissions: [SchedulePermissions.Read, SchedulePermissions.Control],
+    }
+    // COORDINATOR coordinates Liturgia and MEMBER is on Cozinha (MEMBERSHIPS);
+    // these fill in the other side of each team.
+    const LITURGIA_MEMBER = { authId: 'auth0|cantor', permissions: [] }
+    const COZINHA_COORDINATOR = { authId: 'auth0|chef', permissions: [] }
+    const LITURGIA = 'team-liturgia'
+    const COZINHA = 'team-cozinha'
+
+    let memberships: Record<string, EventMembership>
+    let noteRepository: ReturnType<typeof buildNoteRepository>
+    let teamRepository: ScheduleActivityTeamRepository
+
+    function buildNotesSchedule(activities: StoredActivity[]) {
+      const built = buildActivityRepositories(activities)
+      teamRepository = built.teamRepository
+      return buildSchedule(
+        buildEventRepository(buildEvent()),
+        buildDayRepository([storedDay('day-fri', '2026-04-03')]),
+        {
+          activityRepository: built.activityRepository,
+          teamRepository: built.teamRepository,
+          teamMembershipRepository: buildTeamMembershipRepository(memberships),
+          noteRepository,
+        }
+      )
+    }
+
+    function team(activityId: string, teamInstanceId: string): ScheduleActivityTeamRow {
+      return { activityId, teamInstanceId, teamName: teamInstanceId, teamKey: teamInstanceId }
+    }
+
+    function activityWith(teams: 'liturgia' | 'none' | 'all') {
+      return storedActivity('act', 'day-fri', '2026-04-03T21:00:00Z', 30, {
+        teams: teams === 'liturgia' ? [team('act', LITURGIA)] : [],
+        allTeams: teams === 'all',
+        guestName: teams === 'none' ? 'Padre João' : null,
+      })
+    }
+
+    async function notesSeenBy(viewer: { authId: string; permissions: string[] }) {
+      const model = await schedule.getSchedule(viewer)
+      const activity = model.days.flatMap((day) => day.activities).find((a) => a.id === 'act')
+      return activity?.notes.map((note) => note.body) ?? []
+    }
+
+    beforeEach(() => {
+      memberships = {
+        ...MEMBERSHIPS,
+        'user-cantor': { id: 'membership-3', teamInstanceId: LITURGIA, type: 'member' },
+        'user-chef': { id: 'membership-4', teamInstanceId: COZINHA, type: 'coordinator' },
+      }
+      noteRepository = buildNoteRepository()
+    })
+
+    describe('createNote', () => {
+      beforeEach(() => {
+        schedule = buildNotesSchedule([activityWith('liturgia')])
+      })
+
+      it('writes as an admin, with no team, for whoever runs the clock', async () => {
+        const result = await schedule.createNote('act', {
+          authorAuthId: CHIEF.authId,
+          permissions: CHIEF.permissions,
+          body: 'Atrasar 5 min',
+        })
+
+        expect(result).toEqual({ noteId: 'note-1', activityId: 'act' })
+        expect(noteRepository.stored()).toEqual([
+          {
+            activityId: 'act',
+            eventId: EVENT_ID,
+            authorId: 'user-chief',
+            authorRole: 'admin',
+            teamInstanceId: null,
+            body: 'Atrasar 5 min',
+          },
+        ])
+      })
+
+      it('writes as a coordinator, keeping their team', async () => {
+        await schedule.createNote('act', {
+          authorAuthId: COORDINATOR.authId,
+          permissions: COORDINATOR.permissions,
+          body: 'Levar os violões',
+        })
+
+        expect(noteRepository.stored()).toEqual([
+          expect.objectContaining({
+            authorId: 'user-coordinator',
+            authorRole: 'coordinator',
+            teamInstanceId: LITURGIA,
+          }),
+        ])
+      })
+
+      it("keeps the coordinator's team at write time when they later move team", async () => {
+        await schedule.createNote('act', {
+          authorAuthId: COORDINATOR.authId,
+          permissions: COORDINATOR.permissions,
+          body: 'Levar os violões',
+        })
+        memberships['user-coordinator'] = {
+          id: 'membership-2',
+          teamInstanceId: COZINHA,
+          type: 'coordinator',
+        }
+
+        expect(await notesSeenBy(LITURGIA_MEMBER)).toEqual(['Levar os violões'])
+        expect(await notesSeenBy(MEMBER)).toEqual([])
+      })
+
+      it('refuses a member, writing nothing', async () => {
+        await expectAppError(
+          schedule.createNote('act', {
+            authorAuthId: MEMBER.authId,
+            permissions: MEMBER.permissions,
+            body: 'Oi',
+          }),
+          AppErrorCode.Forbidden
+        )
+        expect(noteRepository.stored()).toEqual([])
+      })
+
+      it('refuses an admin who does not run the clock and is on no team', async () => {
+        await expectAppError(
+          schedule.createNote('act', {
+            authorAuthId: ADMIN.authId,
+            permissions: ADMIN.permissions,
+            body: 'Oi',
+          }),
+          AppErrorCode.Forbidden
+        )
+      })
+
+      it('refuses someone on no team of the current event', async () => {
+        await expectAppError(
+          schedule.createNote('act', {
+            authorAuthId: OUTSIDER.authId,
+            permissions: OUTSIDER.permissions,
+            body: 'Oi',
+          }),
+          AppErrorCode.Forbidden
+        )
+      })
+
+      it('answers not found for an activity of another event', async () => {
+        await expectAppError(
+          schedule.createNote('missing', {
+            authorAuthId: CHIEF.authId,
+            permissions: CHIEF.permissions,
+            body: 'Oi',
+          }),
+          AppErrorCode.NotFound
+        )
+      })
+
+      it('refuses with no current event', async () => {
+        schedule = buildSchedule(buildEventRepository(undefined), dayRepository, { noteRepository })
+
+        await expectAppError(
+          schedule.createNote('act', {
+            authorAuthId: CHIEF.authId,
+            permissions: CHIEF.permissions,
+            body: 'Oi',
+          }),
+          AppErrorCode.NoCurrentEvent
+        )
+      })
+    })
+
+    describe('getSchedule', () => {
+      const readers = {
+        admin: CHIEF,
+        'Liturgia coordinator': COORDINATOR,
+        'Liturgia member': LITURGIA_MEMBER,
+        'Cozinha coordinator': COZINHA_COORDINATOR,
+        'Cozinha member': MEMBER,
+      }
+      type Reader = keyof typeof readers
+
+      // How the activity's teams stand when the note is read:
+      // - on: Liturgia is the activity's team;
+      // - removed: Liturgia was its team when the note was written, Cozinha is now;
+      // - none: no team (a guest is responsible);
+      // - all: every team, as the live wildcard.
+      type Teams = 'on' | 'removed' | 'none' | 'all'
+
+      async function writeAndRead(author: 'admin' | 'coordinator', teams: Teams) {
+        schedule = buildNotesSchedule([
+          activityWith(teams === 'none' ? 'none' : teams === 'all' ? 'all' : 'liturgia'),
+        ])
+        const writer = author === 'admin' ? CHIEF : COORDINATOR
+        await schedule.createNote('act', {
+          authorAuthId: writer.authId,
+          permissions: writer.permissions,
+          body: 'Nota',
+        })
+
+        if (teams === 'removed') {
+          await teamRepository.replaceTeams('act', [COZINHA], EVENT_ID)
+        }
+
+        const seen: Reader[] = []
+        for (const [name, viewer] of Object.entries(readers)) {
+          if ((await notesSeenBy(viewer)).length > 0) {
+            seen.push(name as Reader)
+          }
+        }
+        return seen
+      }
+
+      it.each<[Teams, Reader[]]>([
+        ['on', ['admin', 'Liturgia coordinator', 'Liturgia member']],
+        ['removed', ['admin', 'Liturgia coordinator', 'Liturgia member']],
+        ['none', ['admin', 'Liturgia coordinator', 'Liturgia member']],
+        ['all', ['admin', 'Liturgia coordinator', 'Liturgia member']],
+      ])(
+        "shows a Liturgia coordinator's note to admins and Liturgia only (activity teams: %s)",
+        async (teams, expected) => {
+          expect(await writeAndRead('coordinator', teams)).toEqual(expected)
+        }
+      )
+
+      it.each<[Teams, Reader[]]>([
+        ['on', ['admin', 'Liturgia coordinator']],
+        ['removed', ['admin', 'Cozinha coordinator']],
+        ['none', ['admin']],
+        ['all', ['admin', 'Liturgia coordinator', 'Cozinha coordinator']],
+      ])(
+        "shows an admin's note to admins and the current teams' coordinators, never members (activity teams: %s)",
+        async (teams, expected) => {
+          expect(await writeAndRead('admin', teams)).toEqual(expected)
+        }
+      )
+
+      it('shows every note to an admin who reads without running the clock', async () => {
+        schedule = buildNotesSchedule([activityWith('none')])
+        await schedule.createNote('act', {
+          authorAuthId: CHIEF.authId,
+          permissions: CHIEF.permissions,
+          body: 'Da coordenação geral',
+        })
+
+        expect(await notesSeenBy(ADMIN)).toEqual(['Da coordenação geral'])
+      })
+
+      it('shows every note to an admin who runs the clock while on a team', async () => {
+        memberships['user-chief'] = { id: 'membership-5', teamInstanceId: COZINHA, type: 'member' }
+        schedule = buildNotesSchedule([activityWith('none')])
+        await schedule.createNote('act', {
+          authorAuthId: COORDINATOR.authId,
+          permissions: COORDINATOR.permissions,
+          body: 'Da Liturgia',
+        })
+        await schedule.createNote('act', {
+          authorAuthId: CHIEF.authId,
+          permissions: CHIEF.permissions,
+          body: 'Da coordenação geral',
+        })
+
+        expect(await notesSeenBy(CHIEF)).toEqual(['Da Liturgia', 'Da coordenação geral'])
+      })
+
+      it('stacks notes oldest first, each with its author, role and time', async () => {
+        vi.useFakeTimers()
+        try {
+          schedule = buildNotesSchedule([activityWith('liturgia')])
+          vi.setSystemTime(new Date('2026-04-03T17:32:00Z'))
+          await schedule.createNote('act', {
+            authorAuthId: COORDINATOR.authId,
+            permissions: COORDINATOR.permissions,
+            body: 'Primeira',
+          })
+          vi.setSystemTime(new Date('2026-04-03T17:40:00Z'))
+          await schedule.createNote('act', {
+            authorAuthId: CHIEF.authId,
+            permissions: CHIEF.permissions,
+            body: 'Segunda',
+          })
+
+          const model = await schedule.getSchedule(CHIEF)
+
+          expect(model.days[0]?.activities[0]?.notes).toEqual([
+            {
+              id: 'note-1',
+              body: 'Primeira',
+              authorName: 'user-coordinator',
+              authorRole: 'coordinator',
+              createdAt: '2026-04-03T17:32:00.000Z',
+            },
+            {
+              id: 'note-2',
+              body: 'Segunda',
+              authorName: 'user-chief',
+              authorRole: 'admin',
+              createdAt: '2026-04-03T17:40:00.000Z',
+            },
+          ])
+        } finally {
+          vi.useRealTimers()
+        }
+      })
+
+      it('answers no notes on an activity nobody wrote on', async () => {
+        schedule = buildNotesSchedule([activityWith('liturgia')])
+
+        expect(await notesSeenBy(CHIEF)).toEqual([])
       })
     })
   })

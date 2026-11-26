@@ -70,3 +70,11 @@ export const scheduleActivityParamsSchema = z.object({
 export const scheduleActivityControlBodySchema = z.object({
   expectedStatus: z.enum(['planned', 'running', 'done', 'skipped']),
 })
+
+/** The longest Observação, in characters. The table's check constraint matches. */
+export const SCHEDULE_NOTE_MAX_LENGTH = 500
+
+/** Leaving a note. Who may write it, and in which role, is the core's. */
+export const createScheduleNoteBodySchema = z.object({
+  body: z.string().trim().min(1).max(SCHEDULE_NOTE_MAX_LENGTH),
+})

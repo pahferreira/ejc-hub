@@ -12,6 +12,8 @@ import type { ScheduleActivityTeamRepository } from '../../../modules/schedule-a
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
 import type { TeamMembershipRepository } from '../../../modules/team-membership/domain/TeamMembershipRepository.ts'
 import type { UserRepository } from '../../../modules/user/domain/UserRepository.ts'
+import type { ScheduleActivityNoteRepository } from '../../../modules/schedule-activity-note/domain/ScheduleActivityNoteRepository.ts'
+import { resolveNickname } from '../../../shared/resolve-nickname.ts'
 import { SchedulePermissions } from '../../../../../common/permissions/permissions.types.ts'
 import { hasPermission } from '../../../../../common/permissions/helpers/hasPermission.ts'
 import { toEventInstant } from '../../../../../common/schedule/toEventInstant.ts'
@@ -20,8 +22,11 @@ import { shiftByEventDays } from '../../../../../common/schedule/shiftByEventDay
 import { teamColorToken } from '../../../../../common/schedule/teamColorToken.ts'
 import { overlapsAny } from '../helpers/activity-interval.ts'
 import { toScheduleEvent } from '../helpers/schedule-event.ts'
+import { canReadNote, type NoteReader } from '../helpers/note-visibility.ts'
 import type {
   CreateScheduleActivityInput,
+  CreateScheduleActivityNoteInput,
+  CreateScheduleActivityNoteResult,
   CreateScheduleActivityResult,
   CreateScheduleDayInput,
   CreateScheduleDayResult,
@@ -30,6 +35,7 @@ import type {
   FinishScheduleActivityInput,
   FinishScheduleActivityResult,
   ScheduleActivity,
+  ScheduleActivityNote,
   ScheduleActivityPlan,
   ScheduleReadModel,
   ScheduleViewer,
@@ -60,6 +66,7 @@ export class Schedule {
   #teamInstanceRepository: TeamInstanceRepository
   #userRepository: UserRepository
   #teamMembershipRepository: TeamMembershipRepository
+  #scheduleActivityNoteRepository: ScheduleActivityNoteRepository
 
   constructor(
     eventRepo: EventRepository,
@@ -68,7 +75,8 @@ export class Schedule {
     scheduleActivityTeamRepo: ScheduleActivityTeamRepository,
     teamInstanceRepo: TeamInstanceRepository,
     userRepo: UserRepository,
-    teamMembershipRepo: TeamMembershipRepository
+    teamMembershipRepo: TeamMembershipRepository,
+    scheduleActivityNoteRepo: ScheduleActivityNoteRepository
   ) {
     this.#eventRepository = eventRepo
     this.#scheduleDayRepository = scheduleDayRepo
@@ -77,6 +85,7 @@ export class Schedule {
     this.#teamInstanceRepository = teamInstanceRepo
     this.#userRepository = userRepo
     this.#teamMembershipRepository = teamMembershipRepo
+    this.#scheduleActivityNoteRepository = scheduleActivityNoteRepo
   }
 
   // Resolves the current event once per call and hands it to `fn`.
@@ -165,6 +174,26 @@ export class Schedule {
   }
 
   /**
+   * Who the viewer reads notes as. Anyone who runs the clock reads as an admin,
+   * even when on a team, so an admin always sees the notes they wrote. Everyone
+   * else reads in the role `#resolveViewerTeam` gave them.
+   */
+  #noteReader(
+    viewer: ScheduleViewer,
+    viewerTeam: Pick<ScheduleReadModel, 'myTeamInstanceId' | 'viewerRole'>
+  ): NoteReader {
+    if (
+      hasPermission(viewer.permissions, SchedulePermissions.Control) ||
+      viewerTeam.viewerRole === 'admin' ||
+      !viewerTeam.myTeamInstanceId
+    ) {
+      return { role: 'admin' }
+    }
+
+    return { role: viewerTeam.viewerRole, teamInstanceId: viewerTeam.myTeamInstanceId }
+  }
+
+  /**
    * The current event's days, earliest date first, each with its activities,
    * plus the viewer's own team so the Cronograma can highlight its activities,
    * and the role they read it in.
@@ -173,10 +202,11 @@ export class Schedule {
     return this.#withCurrentEvent(async (event) => {
       const viewerTeam = await this.#resolveViewerTeam(viewer, event.id)
 
-      const [days, activities, teamRows] = await Promise.all([
+      const [days, activities, teamRows, noteRows] = await Promise.all([
         this.#scheduleDayRepository.listDaysByEvent(event.id),
         this.#scheduleActivityRepository.listActivitiesByEvent(event.id),
         this.#scheduleActivityTeamRepository.listTeamsByEvent(event.id),
+        this.#scheduleActivityNoteRepository.listNotesByEvent(event.id),
       ])
 
       // The teams of each activity, keyed by activity id, each with its circle color.
@@ -190,6 +220,34 @@ export class Schedule {
           colorToken: teamColorToken(row.teamKey),
         })
         teamsByActivity.set(row.activityId, teams)
+      }
+
+      // The notes this viewer reads, keyed by activity id, oldest first (the repo
+      // orders). Admin notes follow the activity's teams as they are now.
+      const reader = this.#noteReader(viewer, viewerTeam)
+      const allTeamsByActivity = new Map(activities.map((a) => [a.id, a.allTeams]))
+      const notesByActivity = new Map<string, ScheduleActivityNote[]>()
+      for (const row of noteRows) {
+        const activityTeams = {
+          allTeams: allTeamsByActivity.get(row.activityId) ?? false,
+          teamInstanceIds: (teamsByActivity.get(row.activityId) ?? []).map(
+            (team) => team.teamInstanceId
+          ),
+        }
+
+        if (!canReadNote(reader, row, activityTeams)) {
+          continue
+        }
+
+        const notes = notesByActivity.get(row.activityId) ?? []
+        notes.push({
+          id: row.id,
+          body: row.body,
+          authorName: resolveNickname(row.authorName, row.authorNickname),
+          authorRole: row.authorRole,
+          createdAt: row.createdAt.toISOString(),
+        })
+        notesByActivity.set(row.activityId, notes)
       }
 
       // The activities of each day, earliest planned start first (the repo orders).
@@ -211,6 +269,7 @@ export class Schedule {
           actualEndedAt: activity.actualEndedAt?.toISOString() ?? null,
           adjustedDurationMinutes: activity.adjustedDurationMinutes,
           effectiveDurationMinutes: activity.adjustedDurationMinutes ?? activity.durationMinutes,
+          notes: notesByActivity.get(activity.id) ?? [],
         })
         activitiesByDay.set(activity.dayId, dayActivities)
       }
@@ -636,5 +695,64 @@ export class Schedule {
 
       return { activityId: activity.id }
     })
+  }
+
+  /**
+   * Leaves a note on one of the current event's activities. Whoever runs the
+   * clock (`schedule:control`) writes as an admin. Anyone else must coordinate a
+   * team in the current event; the note keeps that team, so it still reaches the
+   * same team if the coordinator moves. Members and outsiders are refused.
+   */
+  async createNote(
+    activityId: string,
+    input: CreateScheduleActivityNoteInput
+  ): Promise<CreateScheduleActivityNoteResult> {
+    return this.#withCurrentEvent(async (event) => {
+      const activity = await this.#scheduleActivityRepository.findActivityById(activityId, event.id)
+
+      if (!activity) {
+        throw new AppError('Schedule activity not found', AppErrorCode.NotFound)
+      }
+
+      const user = await this.#userRepository.getUser(input.authorAuthId)
+
+      if (!user) {
+        throw new AppError('Only a registered user can leave a note', AppErrorCode.Forbidden)
+      }
+
+      const author = hasPermission(input.permissions, SchedulePermissions.Control)
+        ? { authorRole: 'admin' as const, teamInstanceId: null }
+        : await this.#resolveCoordinatorAuthor(user.id, event.id)
+
+      const note = await this.#scheduleActivityNoteRepository.insertNote({
+        activityId: activity.id,
+        eventId: event.id,
+        authorId: user.id,
+        body: input.body,
+        ...author,
+      })
+
+      return { noteId: note.id, activityId: activity.id }
+    })
+  }
+
+  /** A coordinator writes for their team in the event; anyone else is refused. */
+  async #resolveCoordinatorAuthor(
+    userId: string,
+    eventId: string
+  ): Promise<{ authorRole: 'coordinator'; teamInstanceId: string }> {
+    const membership = await this.#teamMembershipRepository.findMembershipByUserAndEvent(
+      userId,
+      eventId
+    )
+
+    if (membership?.type !== 'coordinator') {
+      throw new AppError(
+        'Only an admin or a coordinator of the current event can leave a note',
+        AppErrorCode.Forbidden
+      )
+    }
+
+    return { authorRole: 'coordinator', teamInstanceId: membership.teamInstanceId }
   }
 }
