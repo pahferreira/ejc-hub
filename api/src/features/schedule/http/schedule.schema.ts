@@ -67,6 +67,21 @@ export const scheduleActivityParamsSchema = z.object({
  * A control request on an activity's clock: the status the admin's screen
  * shows. Whether it still matches, and whether the move is allowed, is the core's.
  */
+const scheduleActivityStatusSchema = z.enum(['planned', 'running', 'done', 'skipped'])
+
 export const scheduleActivityControlBodySchema = z.object({
-  expectedStatus: z.enum(['planned', 'running', 'done', 'skipped']),
+  expectedStatus: scheduleActivityStatusSchema,
+})
+
+/**
+ * Correcting an activity live: the status the admin's screen shows, its actual
+ * times and its trim, each left out to keep it (a null trim clears it). Shape
+ * only: which fields the status allows, start before end, no overlap and
+ * sending at least one field are the core's.
+ */
+export const scheduleActivityLiveBodySchema = z.object({
+  expectedStatus: scheduleActivityStatusSchema,
+  actualStartedAt: z.iso.datetime({ offset: true }).optional(),
+  actualEndedAt: z.iso.datetime({ offset: true }).optional(),
+  adjustedDurationMinutes: z.number().int().positive().nullable().optional(),
 })

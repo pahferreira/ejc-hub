@@ -18,7 +18,7 @@ import { toEventInstant } from '../../../../../common/schedule/toEventInstant.ts
 import { daysBetween } from '../../../../../common/schedule/daysBetween.ts'
 import { shiftByEventDays } from '../../../../../common/schedule/shiftByEventDays.ts'
 import { teamColorToken } from '../../../../../common/schedule/teamColorToken.ts'
-import { overlapsAny } from '../helpers/activity-interval.ts'
+import { actualInterval, intervalsOverlap, overlapsAny } from '../helpers/activity-interval.ts'
 import { toScheduleEvent } from '../helpers/schedule-event.ts'
 import type {
   CreateScheduleActivityInput,
@@ -36,6 +36,8 @@ import type {
   StartScheduleActivityInput,
   StartScheduleActivityResult,
   UpdateScheduleActivityInput,
+  UpdateScheduleActivityLiveInput,
+  UpdateScheduleActivityLiveResult,
   UpdateScheduleActivityResult,
   UpdateScheduleDayInput,
   UpdateScheduleDayResult,
@@ -631,6 +633,124 @@ export class Schedule {
 
       // Finished by another admin since the read.
       if (!finished) {
+        throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
+      }
+
+      return { activityId: activity.id }
+    })
+  }
+
+  /**
+   * Corrects an activity live: its actual start and end, and its trim
+   * (**Ajuste**), which a null clears. Each field left out is kept.
+   *
+   * - The actual start can be set on a running or done activity, the actual end
+   *   only on a done one: the others have no such time to correct.
+   * - The trim must be greater than zero, on a planned or running activity.
+   * - The start must be before the end. A running activity's end is now, so its
+   *   start can't move into the future.
+   * - The corrected interval must not overlap another activity's actual one
+   *   (touching edges are fine).
+   *
+   * A stored status other than `expectedStatus` is a 409, like the clock
+   * controls. The write is guarded by that status, so a race reads the same.
+   */
+  async updateActivityLive(
+    activityId: string,
+    input: UpdateScheduleActivityLiveInput
+  ): Promise<UpdateScheduleActivityLiveResult> {
+    return this.#withCurrentEvent(async (event) => {
+      const activities = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
+      const activity = activities.find((candidate) => candidate.id === activityId)
+
+      if (!activity) {
+        throw new AppError('Schedule activity not found', AppErrorCode.NotFound)
+      }
+
+      if (activity.status !== input.expectedStatus) {
+        throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
+      }
+
+      const { actualStartedAt, actualEndedAt, adjustedDurationMinutes } = input
+      const changesTimes = actualStartedAt !== undefined || actualEndedAt !== undefined
+
+      if (!changesTimes && adjustedDurationMinutes === undefined) {
+        throw new AppError('Nothing to change', AppErrorCode.Validation)
+      }
+
+      if (
+        actualStartedAt !== undefined &&
+        activity.status !== 'running' &&
+        activity.status !== 'done'
+      ) {
+        throw new AppError(
+          'Only a running or done activity has an actual start',
+          AppErrorCode.Validation
+        )
+      }
+
+      if (actualEndedAt !== undefined && activity.status !== 'done') {
+        throw new AppError('Only a done activity has an actual end', AppErrorCode.Validation)
+      }
+
+      if (adjustedDurationMinutes !== undefined) {
+        if (activity.status !== 'planned' && activity.status !== 'running') {
+          throw new AppError(
+            'Only a planned or running activity can be trimmed',
+            AppErrorCode.Validation
+          )
+        }
+
+        if (adjustedDurationMinutes !== null && adjustedDurationMinutes <= 0) {
+          throw new AppError('The trim must be greater than zero', AppErrorCode.Validation)
+        }
+      }
+
+      const now = new Date()
+      const start = actualStartedAt !== undefined ? new Date(actualStartedAt) : undefined
+      const end = actualEndedAt !== undefined ? new Date(actualEndedAt) : undefined
+
+      if (changesTimes) {
+        const corrected = actualInterval(
+          {
+            status: activity.status,
+            actualStartedAt: start ?? activity.actualStartedAt,
+            actualEndedAt: end ?? activity.actualEndedAt,
+          },
+          now
+        )
+
+        if (!corrected || corrected.start >= corrected.end) {
+          throw new AppError('The actual start must be before the end', AppErrorCode.Validation)
+        }
+
+        // Checked against every other activity that ran, across days, so a
+        // past-midnight one is caught too. Accepted race: another admin moving
+        // a neighbour's times at once passes this read, and no constraint catches it.
+        const overlaps = activities.some((other) => {
+          const interval = other.id === activity.id ? null : actualInterval(other, now)
+          return (
+            interval !== null &&
+            intervalsOverlap(corrected.start, corrected.end, interval.start, interval.end)
+          )
+        })
+
+        if (overlaps) {
+          throw new AppError("The actual times overlap another activity's", AppErrorCode.Validation)
+        }
+      }
+
+      const controlledBy = await this.#resolveControllerId(input.controllerAuthId)
+
+      const updated = await this.#scheduleActivityRepository.updateActivityLive(
+        activity.id,
+        event.id,
+        activity.status,
+        { actualStartedAt: start, actualEndedAt: end, adjustedDurationMinutes, controlledBy }
+      )
+
+      // Its status changed since the read: another admin acted first.
+      if (!updated) {
         throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
       }
 

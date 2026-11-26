@@ -9,6 +9,7 @@ import { scheduleApp } from '../application/schedule-app.ts'
 import type { ScheduleActivityPlan } from '../domain/schedule.types.ts'
 import {
   scheduleActivityControlBodySchema,
+  scheduleActivityLiveBodySchema,
   createScheduleActivityBodySchema,
   createScheduleDayBodySchema,
   scheduleActivityBodySchema,
@@ -207,6 +208,32 @@ export function scheduleRoutes(server: FastifyServerInstance) {
 
           const result = await scheduleApp.finishActivity(request.params.activityId, {
             expectedStatus: request.body.expectedStatus,
+            controllerAuthId: caller.authId,
+          })
+
+          return reply.code(HttpStatus.Ok).send({ result })
+        } catch (error) {
+          fastifyErrorHandler(request, reply, error)
+        }
+      }
+    )
+
+    server.patch(
+      '/schedule/activities/:activityId/live',
+      {
+        schema: { params: scheduleActivityParamsSchema, body: scheduleActivityLiveBodySchema },
+        preHandler: authGuard(server, { permissions: [SchedulePermissions.Control] }),
+      },
+      async (request, reply) => {
+        try {
+          const caller = callerOrUnauthorized(request, reply)
+
+          if (!caller) {
+            return reply
+          }
+
+          const result = await scheduleApp.updateActivityLive(request.params.activityId, {
+            ...request.body,
             controllerAuthId: caller.authId,
           })
 

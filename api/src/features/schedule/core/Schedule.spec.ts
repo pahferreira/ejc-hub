@@ -262,6 +262,22 @@ function buildActivityRepositories(initial: StoredActivity[] = []) {
       Object.assign(activity, transition, { updatedAt: new Date() })
       return Promise.resolve(activity)
     },
+    updateActivityLive: (id, eventId, status, update) => {
+      const activity = activities.find(
+        (candidate) =>
+          candidate.id === id && candidate.eventId === eventId && candidate.status === status
+      )
+      if (!activity) {
+        return Promise.resolve(undefined)
+      }
+      // Like Drizzle's `set`, a field left out keeps its value.
+      for (const [key, value] of Object.entries(update)) {
+        if (value !== undefined) {
+          Object.assign(activity, { [key]: value })
+        }
+      }
+      return Promise.resolve(activity)
+    },
   }
 
   const teamRepository: ScheduleActivityTeamRepository = {
@@ -1469,6 +1485,249 @@ describe('Schedule', () => {
             expectedStatus: 'running',
             controllerAuthId: CONTROLLER_AUTH_ID,
           }),
+          AppErrorCode.NotFound
+        )
+      })
+    })
+
+    describe('updateActivityLive', () => {
+      // Friday 18:00–18:30 done, 18:30–19:00 running since 18:32 (NOW is 18:05
+      // in São Paulo, so these tests move the clock to 18:40).
+      const FRI_1832 = '2026-04-03T21:32:00Z'
+      const FRI_1840 = new Date('2026-04-03T21:40:00Z')
+
+      function dayInProgress() {
+        return buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_18H),
+            actualEndedAt: new Date(FRI_1830),
+          }),
+          storedActivity('a2', 'day-fri', FRI_1830, 30, {
+            status: 'running',
+            actualStartedAt: new Date(FRI_1832),
+          }),
+          storedActivity('a3', 'day-fri', FRI_19H, 60),
+        ])
+      }
+
+      function live(
+        expectedStatus: 'planned' | 'running' | 'done' | 'skipped',
+        fields: {
+          actualStartedAt?: string
+          actualEndedAt?: string
+          adjustedDurationMinutes?: number | null
+        }
+      ) {
+        return { expectedStatus, controllerAuthId: CONTROLLER_AUTH_ID, ...fields }
+      }
+
+      beforeEach(() => {
+        vi.setSystemTime(FRI_1840)
+      })
+
+      it("corrects a done activity's actual times and records who did it", async () => {
+        schedule = dayInProgress()
+
+        const result = await schedule.updateActivityLive(
+          'a1',
+          live('done', {
+            actualStartedAt: '2026-04-03T21:05:00Z',
+            actualEndedAt: '2026-04-03T21:25:00Z',
+          })
+        )
+
+        expect(result).toEqual({ activityId: 'a1' })
+        expect(await stored('a1')).toMatchObject({
+          status: 'done',
+          actualStartedAt: new Date('2026-04-03T21:05:00Z'),
+          actualEndedAt: new Date('2026-04-03T21:25:00Z'),
+          controlledBy: 'user-controller',
+        })
+      })
+
+      it('keeps the actual time left out', async () => {
+        schedule = dayInProgress()
+
+        await schedule.updateActivityLive('a1', live('done', { actualEndedAt: FRI_1830 }))
+
+        expect(await stored('a1')).toMatchObject({ actualStartedAt: new Date(FRI_18H) })
+      })
+
+      it("corrects a running activity's actual start", async () => {
+        schedule = dayInProgress()
+
+        await schedule.updateActivityLive('a2', live('running', { actualStartedAt: FRI_1830 }))
+
+        expect(await stored('a2')).toMatchObject({
+          status: 'running',
+          actualStartedAt: new Date(FRI_1830),
+          actualEndedAt: null,
+        })
+      })
+
+      it.each([
+        ['after its end', { actualStartedAt: '2026-04-03T21:31:00Z' }],
+        ['equal to its end', { actualStartedAt: FRI_1830 }],
+        ['before its new start', { actualStartedAt: FRI_18H, actualEndedAt: FRI_18H }],
+      ])('refuses a done activity whose start is %s', async (_label, fields) => {
+        schedule = dayInProgress()
+
+        await expectAppError(
+          schedule.updateActivityLive('a1', live('done', fields)),
+          AppErrorCode.Validation
+        )
+        expect(await stored('a1')).toMatchObject({ actualStartedAt: new Date(FRI_18H) })
+      })
+
+      it('refuses a running activity whose start moves into the future', async () => {
+        schedule = dayInProgress()
+
+        await expectAppError(
+          schedule.updateActivityLive(
+            'a2',
+            live('running', { actualStartedAt: '2026-04-03T21:45:00Z' })
+          ),
+          AppErrorCode.Validation
+        )
+      })
+
+      it("refuses an end that overlaps the next activity's actual interval", async () => {
+        schedule = dayInProgress()
+
+        await expectAppError(
+          schedule.updateActivityLive(
+            'a1',
+            live('done', { actualEndedAt: '2026-04-03T21:35:00Z' })
+          ),
+          AppErrorCode.Validation
+        )
+        expect(await stored('a1')).toMatchObject({ actualEndedAt: new Date(FRI_1830) })
+      })
+
+      it("refuses a start that overlaps the previous activity's actual interval", async () => {
+        schedule = dayInProgress()
+
+        await expectAppError(
+          schedule.updateActivityLive(
+            'a2',
+            live('running', { actualStartedAt: '2026-04-03T21:20:00Z' })
+          ),
+          AppErrorCode.Validation
+        )
+        expect(await stored('a2')).toMatchObject({ actualStartedAt: new Date(FRI_1832) })
+      })
+
+      it('allows times that only touch a neighbour', async () => {
+        schedule = dayInProgress()
+
+        await schedule.updateActivityLive('a1', live('done', { actualEndedAt: FRI_1832 }))
+
+        expect(await stored('a1')).toMatchObject({ actualEndedAt: new Date(FRI_1832) })
+      })
+
+      it.each([
+        ['an actual start on a planned activity', 'a3', 'planned', { actualStartedAt: FRI_19H }],
+        [
+          'an actual end on a running activity',
+          'a2',
+          'running',
+          { actualEndedAt: FRI_1840.toISOString() },
+        ],
+      ] as const)('refuses %s', async (_label, id, status, fields) => {
+        schedule = dayInProgress()
+
+        await expectAppError(
+          schedule.updateActivityLive(id, live(status, fields)),
+          AppErrorCode.Validation
+        )
+      })
+
+      it.each([
+        ['an upcoming', 'a3', 'planned'],
+        ['the running', 'a2', 'running'],
+      ] as const)('trims %s activity', async (_label, id, status) => {
+        schedule = dayInProgress()
+
+        await schedule.updateActivityLive(id, live(status, { adjustedDurationMinutes: 20 }))
+
+        expect(await stored(id)).toMatchObject({
+          adjustedDurationMinutes: 20,
+          controlledBy: 'user-controller',
+        })
+      })
+
+      it('clears a trim sent as null', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, { adjustedDurationMinutes: 20 }),
+        ])
+
+        await schedule.updateActivityLive('a1', live('planned', { adjustedDurationMinutes: null }))
+
+        expect(await stored('a1')).toMatchObject({ adjustedDurationMinutes: null })
+      })
+
+      it.each([0, -10])('refuses a trim of %i minutes', async (minutes) => {
+        schedule = dayInProgress()
+
+        await expectAppError(
+          schedule.updateActivityLive('a3', live('planned', { adjustedDurationMinutes: minutes })),
+          AppErrorCode.Validation
+        )
+        expect(await stored('a3')).toMatchObject({ adjustedDurationMinutes: null })
+      })
+
+      it.each(['done', 'skipped'] as const)('refuses a trim on a %s activity', async (status) => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status,
+            actualStartedAt: status === 'done' ? new Date(FRI_18H) : null,
+            actualEndedAt: status === 'done' ? new Date(FRI_1830) : null,
+          }),
+        ])
+
+        await expectAppError(
+          schedule.updateActivityLive('a1', live(status, { adjustedDurationMinutes: 20 })),
+          AppErrorCode.Validation
+        )
+      })
+
+      it('refuses a request that changes nothing', async () => {
+        schedule = dayInProgress()
+
+        await expectAppError(
+          schedule.updateActivityLive('a1', live('done', {})),
+          AppErrorCode.Validation
+        )
+      })
+
+      it('answers a conflict when the stored status is not the expected one', async () => {
+        schedule = dayInProgress()
+
+        await expectAppError(
+          schedule.updateActivityLive('a2', live('planned', { adjustedDurationMinutes: 20 })),
+          AppErrorCode.Conflict
+        )
+        expect(await stored('a2')).toMatchObject({ adjustedDurationMinutes: null })
+      })
+
+      it('answers a conflict when another admin changed its status since the read', async () => {
+        schedule = dayInProgress()
+        activityRepository.updateActivityLive = () => Promise.resolve(undefined)
+
+        await expectAppError(
+          schedule.updateActivityLive('a2', live('running', { adjustedDurationMinutes: 20 })),
+          AppErrorCode.Conflict
+        )
+      })
+
+      it('answers not found for an activity of another event', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('old', 'day-fri', FRI_18H, 30, { eventId: 'past-event' }),
+        ])
+
+        await expectAppError(
+          schedule.updateActivityLive('old', live('planned', { adjustedDurationMinutes: 20 })),
           AppErrorCode.NotFound
         )
       })
