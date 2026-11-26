@@ -18,10 +18,7 @@ vi.mock('../application/schedule-app.ts', () => ({ scheduleApp }))
 
 import { scheduleRoutes } from './schedule.routes.ts'
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
-import {
-  ScheduleNotePermissions,
-  SchedulePermissions,
-} from '../../../../../common/permissions/permissions.types.ts'
+import { SchedulePermissions } from '../../../../../common/permissions/permissions.types.ts'
 import type { FastifyServerInstance } from '../../../shared/fastify.types.ts'
 import { authHeader, buildRouteTestServer } from '../../../shared/testing/route-test-server.ts'
 
@@ -93,6 +90,7 @@ describe('schedule routes', () => {
       ['DELETE', `/schedule/activities/${ACTIVITY_ID}`, {}],
       ['POST', `/schedule/activities/${ACTIVITY_ID}/start`, { expectedStatus: 'planned' }],
       ['POST', `/schedule/activities/${ACTIVITY_ID}/finish`, { expectedStatus: 'running' }],
+      ['POST', `/schedule/activities/${ACTIVITY_ID}/notes`, { body: 'Oi' }],
     ] as const)('answers %s %s with 401 without a token', async (method, url, payload) => {
       const response = await server.inject({ method, url, payload })
 
@@ -644,10 +642,8 @@ describe('schedule routes', () => {
 
   describe('POST /schedule/activities/:activityId/notes', () => {
     const url = `/schedule/activities/${ACTIVITY_ID}/notes`
-    const NOTE_WRITER = authHeader({
-      sub: 'auth0|writer',
-      permissions: [ScheduleNotePermissions.Create],
-    })
+    // No permissions: a coordinator's token carries none, and the core decides.
+    const NOTE_WRITER = authHeader({ sub: 'auth0|writer', permissions: [] })
 
     it('hands the core the trimmed body and the caller, and answers 201', async () => {
       const response = await server.inject({
@@ -661,7 +657,7 @@ describe('schedule routes', () => {
       expect(response.json()).toEqual({ result: { noteId: 'note-1', activityId: ACTIVITY_ID } })
       expect(scheduleApp.createNote).toHaveBeenCalledWith(ACTIVITY_ID, {
         authorAuthId: 'auth0|writer',
-        permissions: [ScheduleNotePermissions.Create],
+        permissions: [],
         body: 'Levar os violões',
       })
     })
@@ -677,19 +673,7 @@ describe('schedule routes', () => {
       expect(response.statusCode).toBe(201)
     })
 
-    it('refuses a caller without schedule-note:create', async () => {
-      const response = await server.inject({
-        method: 'POST',
-        url,
-        headers: ADMIN,
-        payload: { body: 'Oi' },
-      })
-
-      expect(response.statusCode).toBe(403)
-      expect(scheduleApp.createNote).not.toHaveBeenCalled()
-    })
-
-    it('answers 403 when the core refuses the author', async () => {
+    it('answers 403 when the core refuses the author (a member or an outsider)', async () => {
       scheduleApp.createNote.mockRejectedValue(
         new AppError('Only an admin or a coordinator can leave a note', AppErrorCode.Forbidden)
       )

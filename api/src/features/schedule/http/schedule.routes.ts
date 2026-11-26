@@ -4,10 +4,7 @@ import { fastifyErrorHandler } from '../../../shared/fastify-error-handler.ts'
 import { HttpStatus } from '../../../shared/http-statuses.ts'
 import { authGuard } from '../../../shared/fastify-auth-guard.ts'
 import { callerOrUnauthorized } from '../../../shared/caller-or-unauthorized.ts'
-import {
-  ScheduleNotePermissions,
-  SchedulePermissions,
-} from '../../../../../common/permissions/permissions.types.ts'
+import { SchedulePermissions } from '../../../../../common/permissions/permissions.types.ts'
 import { scheduleApp } from '../application/schedule-app.ts'
 import type { ScheduleActivityPlan } from '../domain/schedule.types.ts'
 import {
@@ -221,13 +218,15 @@ export function scheduleRoutes(server: FastifyServerInstance) {
       }
     )
 
-    // Who writes, and as what (admin or coordinator), is the core's: it needs the
-    // caller's team membership, which the token cannot express.
+    // Authentication only. Who writes, and as what, is the core's: `schedule:control`
+    // writes as an admin, a coordinator of the current event for their team, and
+    // anyone else gets a 403. Coordinators hold no Auth0 role, so the token cannot
+    // say who they are.
     server.post(
       '/schedule/activities/:activityId/notes',
       {
         schema: { params: scheduleActivityParamsSchema, body: createScheduleNoteBodySchema },
-        preHandler: authGuard(server, { permissions: [ScheduleNotePermissions.Create] }),
+        preHandler: authGuard(server),
       },
       async (request, reply) => {
         try {
