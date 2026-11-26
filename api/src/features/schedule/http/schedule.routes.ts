@@ -8,6 +8,7 @@ import { SchedulePermissions } from '../../../../../common/permissions/permissio
 import { scheduleApp } from '../application/schedule-app.ts'
 import type { ScheduleActivityPlan } from '../domain/schedule.types.ts'
 import {
+  scheduleActivityControlBodySchema,
   createScheduleActivityBodySchema,
   createScheduleDayBodySchema,
   scheduleActivityBodySchema,
@@ -156,6 +157,58 @@ export function scheduleRoutes(server: FastifyServerInstance) {
       async (request, reply) => {
         try {
           const result = await scheduleApp.deleteDay(request.params.dayId)
+
+          return reply.code(HttpStatus.Ok).send({ result })
+        } catch (error) {
+          fastifyErrorHandler(request, reply, error)
+        }
+      }
+    )
+
+    server.post(
+      '/schedule/activities/:activityId/start',
+      {
+        schema: { params: scheduleActivityParamsSchema, body: scheduleActivityControlBodySchema },
+        preHandler: authGuard(server, { permissions: [SchedulePermissions.Control] }),
+      },
+      async (request, reply) => {
+        try {
+          const caller = callerOrUnauthorized(request, reply)
+
+          if (!caller) {
+            return reply
+          }
+
+          const result = await scheduleApp.startActivity(request.params.activityId, {
+            expectedStatus: request.body.expectedStatus,
+            controllerAuthId: caller.authId,
+          })
+
+          return reply.code(HttpStatus.Ok).send({ result })
+        } catch (error) {
+          fastifyErrorHandler(request, reply, error)
+        }
+      }
+    )
+
+    server.post(
+      '/schedule/activities/:activityId/finish',
+      {
+        schema: { params: scheduleActivityParamsSchema, body: scheduleActivityControlBodySchema },
+        preHandler: authGuard(server, { permissions: [SchedulePermissions.Control] }),
+      },
+      async (request, reply) => {
+        try {
+          const caller = callerOrUnauthorized(request, reply)
+
+          if (!caller) {
+            return reply
+          }
+
+          const result = await scheduleApp.finishActivity(request.params.activityId, {
+            expectedStatus: request.body.expectedStatus,
+            controllerAuthId: caller.authId,
+          })
 
           return reply.code(HttpStatus.Ok).send({ result })
         } catch (error) {

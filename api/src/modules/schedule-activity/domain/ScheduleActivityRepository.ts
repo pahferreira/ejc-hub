@@ -19,6 +19,20 @@ export type UpdatePlannedStartInput = {
   plannedStartsAt: Date
 }
 
+/** Where an activity stands while the event runs. */
+export type ScheduleActivityStatus = ScheduleActivityModel['status']
+
+/**
+ * One step of an activity's clock: the status it moves to, the actual times it
+ * sets (left out to keep them) and the admin acting.
+ */
+export type ScheduleActivityTransition = {
+  status: ScheduleActivityStatus
+  actualStartedAt?: Date | null
+  actualEndedAt?: Date | null
+  controlledBy: string
+}
+
 export interface ScheduleActivityRepository {
   /**
    * Every activity of one event across all its days, earliest planned start
@@ -65,4 +79,18 @@ export interface ScheduleActivityRepository {
     updates: UpdatePlannedStartInput[],
     executor?: DbExecutor
   ) => Promise<void>
+
+  /**
+   * Moves one of an event's activities from `from` to the transition's status,
+   * only while it still holds `from`. Returns the updated row, or undefined when
+   * it is missing or no longer in `from` (another admin acted first). Accepts an
+   * executor so a start can finish the running activity in the same transaction.
+   */
+  transitionActivity: (
+    id: string,
+    eventId: string,
+    from: ScheduleActivityStatus,
+    transition: ScheduleActivityTransition,
+    executor?: DbExecutor
+  ) => Promise<ScheduleActivityModel | undefined>
 }

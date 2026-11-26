@@ -12,6 +12,11 @@ export type ScheduleDayCardProps = {
   date: string
   isSelected: boolean
   onSelect: () => void
+  /**
+   * The Running Schedule's "Concluído n/m": the day's done activities out of
+   * all of them. Left out, the card shows no progress.
+   */
+  progress?: { done: number; total: number }
 }
 
 /**
@@ -44,6 +49,16 @@ export function ScheduleDayCard(props: ScheduleDayCardProps) {
       <span className={clsx('text-xs', props.isSelected ? 'text-white/85' : 'text-gray-600')}>
         {formatScheduleLongDate(props.date)}
       </span>
+      {props.progress && (
+        <span
+          className={clsx(
+            'mt-1 text-xs font-semibold',
+            props.isSelected ? 'text-white' : 'text-primary'
+          )}
+        >
+          Concluído {props.progress.done}/{props.progress.total}
+        </span>
+      )}
     </button>
   )
 }

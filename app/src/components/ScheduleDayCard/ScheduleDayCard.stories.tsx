@@ -46,3 +46,11 @@ export const Selected: Story = {
     await expect(canvas.getByRole('tab')).toHaveAttribute('aria-selected', 'true')
   },
 }
+
+/** Live, the day's progress: done activities out of all of them. */
+export const WithProgress: Story = {
+  args: { progress: { done: 3, total: 8 } },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText('Concluído 3/8')).toBeVisible()
+  },
+}

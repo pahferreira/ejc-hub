@@ -237,9 +237,14 @@ There is no `schedules` table: an event's Cronograma _is_ its days.
 | place | text | |
 | guest_name | text | Nullable — someone outside the teams who is responsible |
 | admins_responsible | boolean | Default `false` |
+| status | enum | `planned`, `running`, `done`, `skipped`. Default `planned` |
+| actual_started_at | timestamptz | Nullable — set when the activity starts |
+| actual_ended_at | timestamptz | Nullable — set when the activity finishes |
+| adjusted_duration_minutes | integer | Nullable, `> 0` — a trim set during the event; the forecast uses it over `duration_minutes` |
+| controlled_by | uuid | Nullable, FK → users — the last admin to act on the activity's clock |
 | created_at, updated_at | timestamp | |
 
-_Constraints:_ `FK (day_id, event_id) → schedule_days (id, event_id) ON DELETE CASCADE` · `CHECK (duration_minutes > 0)` · `INDEX (day_id, planned_starts_at)`
+_Constraints:_ `FK (day_id, event_id) → schedule_days (id, event_id) ON DELETE CASCADE` · `CHECK (duration_minutes > 0)` · `CHECK (adjusted_duration_minutes > 0)` · `INDEX (day_id, planned_starts_at)` · `UNIQUE (event_id) WHERE status = 'running'` — one running activity per event
 
 Deleting a day deletes its activities. Existing tables keep `timestamp`, so comparing against `events.starts_at`/`ends_at` needs an explicit conversion.
 

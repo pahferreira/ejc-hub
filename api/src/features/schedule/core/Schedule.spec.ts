@@ -42,6 +42,8 @@ const ADMIN = { authId: 'auth0|admin', permissions: [SchedulePermissions.Read] }
 const MEMBER = { authId: 'auth0|member', permissions: [] }
 const COORDINATOR = { authId: 'auth0|coordinator', permissions: [] }
 const OUTSIDER = { authId: 'auth0|outsider', permissions: [] }
+// The admin running the clock resolves to `user-controller`.
+const CONTROLLER_AUTH_ID = 'auth0|controller'
 
 const MEMBERSHIPS: Record<string, EventMembership> = {
   'user-member': { id: 'membership-1', teamInstanceId: 'team-cozinha', type: 'member' },
@@ -191,6 +193,11 @@ function buildActivityRepositories(initial: StoredActivity[] = []) {
         guestName: input.guestName,
         adminsResponsible: input.adminsResponsible,
         allTeams: input.allTeams,
+        status: 'planned',
+        actualStartedAt: null,
+        actualEndedAt: null,
+        adjustedDurationMinutes: null,
+        controlledBy: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         teams: [],
@@ -229,6 +236,31 @@ function buildActivityRepositories(initial: StoredActivity[] = []) {
         }
       }
       return Promise.resolve()
+    },
+    transitionActivity: (id, eventId, from, transition) => {
+      const activity = activities.find(
+        (candidate) =>
+          candidate.id === id && candidate.eventId === eventId && candidate.status === from
+      )
+      if (!activity) {
+        return Promise.resolve(undefined)
+      }
+      // The partial unique index: one running activity per event.
+      if (
+        transition.status === 'running' &&
+        activities.some(
+          (other) => other !== activity && other.eventId === eventId && other.status === 'running'
+        )
+      ) {
+        return Promise.reject(
+          Object.assign(new Error('duplicate key'), {
+            code: '23505',
+            constraint: 'schedule_activities_one_running_per_event_idx',
+          })
+        )
+      }
+      Object.assign(activity, transition, { updatedAt: new Date() })
+      return Promise.resolve(activity)
     },
   }
 
@@ -303,6 +335,11 @@ function storedActivity(
     guestName: null,
     adminsResponsible: false,
     allTeams: false,
+    status: 'planned',
+    actualStartedAt: null,
+    actualEndedAt: null,
+    adjustedDurationMinutes: null,
+    controlledBy: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     teams: [],
@@ -1131,6 +1168,354 @@ describe('Schedule', () => {
         schedule.updateDay('day-fri', { date: '2026-04-05' }),
         AppErrorCode.NoCurrentEvent
       )
+    })
+  })
+
+  describe('running the clock', () => {
+    // Friday 18:00, 18:30 and 19:00 in São Paulo, then Saturday 09:00.
+    const FRI_19H = '2026-04-03T22:00:00Z'
+    const SAT_09H = '2026-04-04T12:00:00Z'
+    const NOW = new Date('2026-04-03T21:05:00Z')
+
+    let activityRepository: ScheduleActivityRepository
+
+    function buildClockSchedule(initialActivities: StoredActivity[]) {
+      const built = buildActivityRepositories(initialActivities)
+      activityRepository = built.activityRepository
+      return buildSchedule(
+        buildEventRepository(buildEvent()),
+        buildDayRepository([
+          storedDay('day-fri', '2026-04-03'),
+          storedDay('day-sat', '2026-04-04'),
+        ]),
+        { activityRepository: built.activityRepository, teamRepository: built.teamRepository }
+      )
+    }
+
+    async function stored(id: string) {
+      return activityRepository.findActivityById(id, EVENT_ID)
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+      vi.setSystemTime(NOW)
+      return () => {
+        vi.useRealTimers()
+      }
+    })
+
+    describe('startActivity', () => {
+      it("starts the day's first planned activity and records who started it", async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30),
+          storedActivity('a2', 'day-fri', FRI_1830, 30),
+        ])
+
+        const result = await schedule.startActivity('a1', {
+          expectedStatus: 'planned',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(result).toEqual({ activityId: 'a1', finishedActivityId: null })
+        expect(await stored('a1')).toMatchObject({
+          status: 'running',
+          actualStartedAt: NOW,
+          actualEndedAt: null,
+          controlledBy: 'user-controller',
+        })
+      })
+
+      it('finishes the running activity in the same step', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'running',
+            actualStartedAt: new Date(FRI_18H),
+          }),
+          storedActivity('a2', 'day-fri', FRI_1830, 30),
+        ])
+
+        const result = await schedule.startActivity('a2', {
+          expectedStatus: 'planned',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(result).toEqual({ activityId: 'a2', finishedActivityId: 'a1' })
+        expect(await stored('a1')).toMatchObject({
+          status: 'done',
+          actualStartedAt: new Date(FRI_18H),
+          actualEndedAt: NOW,
+          controlledBy: 'user-controller',
+        })
+        expect(await stored('a2')).toMatchObject({ status: 'running', actualStartedAt: NOW })
+      })
+
+      it("finishes another day's running activity too: one runs per event", async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'running',
+            actualStartedAt: new Date(FRI_18H),
+          }),
+          storedActivity('s1', 'day-sat', SAT_09H, 30),
+        ])
+
+        await schedule.startActivity('s1', {
+          expectedStatus: 'planned',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(await stored('a1')).toMatchObject({ status: 'done', actualEndedAt: NOW })
+        expect(await stored('s1')).toMatchObject({ status: 'running' })
+      })
+
+      it('skips past done and skipped activities to find the next planned one', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_18H),
+            actualEndedAt: new Date(FRI_1830),
+          }),
+          storedActivity('a2', 'day-fri', FRI_1830, 30, { status: 'skipped' }),
+          storedActivity('a3', 'day-fri', FRI_19H, 30),
+        ])
+
+        await schedule.startActivity('a3', {
+          expectedStatus: 'planned',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(await stored('a3')).toMatchObject({ status: 'running' })
+      })
+
+      it('refuses an out-of-order start, leaving everything as it was', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30),
+          storedActivity('a2', 'day-fri', FRI_1830, 30),
+        ])
+
+        await expectAppError(
+          schedule.startActivity('a2', {
+            expectedStatus: 'planned',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.Validation
+        )
+        expect(await stored('a2')).toMatchObject({ status: 'planned', actualStartedAt: null })
+      })
+
+      it('answers a conflict when the stored status is not the expected one', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'running',
+            actualStartedAt: new Date(FRI_18H),
+          }),
+        ])
+
+        await expectAppError(
+          schedule.startActivity('a1', {
+            expectedStatus: 'planned',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.Conflict
+        )
+      })
+
+      it.each(['running', 'done', 'skipped'] as const)(
+        'refuses to start an activity that is %s',
+        async (status) => {
+          schedule = buildClockSchedule([
+            storedActivity('a1', 'day-fri', FRI_18H, 30, {
+              status,
+              actualStartedAt: status === 'skipped' ? null : new Date(FRI_18H),
+              actualEndedAt: status === 'done' ? new Date(FRI_1830) : null,
+            }),
+          ])
+
+          await expectAppError(
+            schedule.startActivity('a1', {
+              expectedStatus: status,
+              controllerAuthId: CONTROLLER_AUTH_ID,
+            }),
+            AppErrorCode.Validation
+          )
+        }
+      )
+
+      it('answers a conflict when another admin starts an activity at the same time', async () => {
+        schedule = buildClockSchedule([storedActivity('a1', 'day-fri', FRI_18H, 30)])
+        // The read saw nothing running; the one-running index is what catches the race.
+        const racing = activityRepository.transitionActivity
+        activityRepository.transitionActivity = () =>
+          Promise.reject(
+            Object.assign(new Error('duplicate key'), {
+              code: '23505',
+              constraint: 'schedule_activities_one_running_per_event_idx',
+            })
+          )
+
+        await expectAppError(
+          schedule.startActivity('a1', {
+            expectedStatus: 'planned',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.Conflict
+        )
+        activityRepository.transitionActivity = racing
+      })
+
+      it('answers not found for an activity of another event', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('old', 'day-fri', FRI_18H, 30, { eventId: 'past-event' }),
+        ])
+
+        await expectAppError(
+          schedule.startActivity('old', {
+            expectedStatus: 'planned',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.NotFound
+        )
+      })
+    })
+
+    describe('finishActivity', () => {
+      it('finishes the running activity without starting the next one', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'running',
+            actualStartedAt: new Date(FRI_18H),
+          }),
+          storedActivity('a2', 'day-fri', FRI_1830, 30),
+        ])
+
+        const result = await schedule.finishActivity('a1', {
+          expectedStatus: 'running',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(result).toEqual({ activityId: 'a1' })
+        expect(await stored('a1')).toMatchObject({
+          status: 'done',
+          actualStartedAt: new Date(FRI_18H),
+          actualEndedAt: NOW,
+          controlledBy: 'user-controller',
+        })
+        expect(await stored('a2')).toMatchObject({ status: 'planned' })
+      })
+
+      it.each(['planned', 'done', 'skipped'] as const)(
+        'refuses to finish an activity that is %s',
+        async (status) => {
+          schedule = buildClockSchedule([
+            storedActivity('a1', 'day-fri', FRI_18H, 30, {
+              status,
+              actualStartedAt: status === 'done' ? new Date(FRI_18H) : null,
+              actualEndedAt: status === 'done' ? new Date(FRI_1830) : null,
+            }),
+          ])
+
+          await expectAppError(
+            schedule.finishActivity('a1', {
+              expectedStatus: status,
+              controllerAuthId: CONTROLLER_AUTH_ID,
+            }),
+            AppErrorCode.Validation
+          )
+        }
+      )
+
+      it('answers a conflict when the stored status is not the expected one', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_18H),
+            actualEndedAt: new Date(FRI_1830),
+          }),
+        ])
+
+        await expectAppError(
+          schedule.finishActivity('a1', {
+            expectedStatus: 'running',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.Conflict
+        )
+      })
+
+      it('answers a conflict when another admin finished it since the read', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'running',
+            actualStartedAt: new Date(FRI_18H),
+          }),
+        ])
+        activityRepository.transitionActivity = () => Promise.resolve(undefined)
+
+        await expectAppError(
+          schedule.finishActivity('a1', {
+            expectedStatus: 'running',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.Conflict
+        )
+      })
+
+      it('answers not found for an activity of another event', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('old', 'day-fri', FRI_18H, 30, { eventId: 'past-event' }),
+        ])
+
+        await expectAppError(
+          schedule.finishActivity('old', {
+            expectedStatus: 'running',
+            controllerAuthId: CONTROLLER_AUTH_ID,
+          }),
+          AppErrorCode.NotFound
+        )
+      })
+    })
+
+    describe('getSchedule', () => {
+      it('answers each activity status, actual times and effective duration, and the server clock', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_18H),
+            actualEndedAt: new Date(FRI_1830),
+          }),
+          storedActivity('a2', 'day-fri', FRI_1830, 30, {
+            status: 'running',
+            actualStartedAt: new Date(FRI_1830),
+            adjustedDurationMinutes: 20,
+          }),
+          storedActivity('a3', 'day-fri', FRI_19H, 45),
+        ])
+
+        const model = await schedule.getSchedule(ADMIN)
+        const activities = model.days.find((day) => day.id === 'day-fri')?.activities
+
+        expect(model.serverNow).toBe(NOW.toISOString())
+        expect(activities?.map((activity) => activity.id)).toEqual(['a1', 'a2', 'a3'])
+        expect(activities?.[0]).toMatchObject({
+          status: 'done',
+          actualStartedAt: new Date(FRI_18H).toISOString(),
+          actualEndedAt: new Date(FRI_1830).toISOString(),
+          adjustedDurationMinutes: null,
+          effectiveDurationMinutes: 30,
+        })
+        expect(activities?.[1]).toMatchObject({
+          status: 'running',
+          actualStartedAt: new Date(FRI_1830).toISOString(),
+          actualEndedAt: null,
+          adjustedDurationMinutes: 20,
+          effectiveDurationMinutes: 20,
+        })
+        expect(activities?.[2]).toMatchObject({
+          status: 'planned',
+          actualStartedAt: null,
+          actualEndedAt: null,
+          effectiveDurationMinutes: 45,
+        })
+      })
     })
   })
 })

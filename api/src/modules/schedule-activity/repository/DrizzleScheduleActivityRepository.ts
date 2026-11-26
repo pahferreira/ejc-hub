@@ -4,6 +4,8 @@ import { schema } from '../../../core/database/schemas/index.ts'
 import type {
   InsertScheduleActivityInput,
   ScheduleActivityRepository,
+  ScheduleActivityStatus,
+  ScheduleActivityTransition,
   UpdatePlannedStartInput,
 } from '../domain/ScheduleActivityRepository.ts'
 
@@ -93,6 +95,23 @@ class DrizzleScheduleActivityRepository implements ScheduleActivityRepository {
         .set({ plannedStartsAt: update.plannedStartsAt, updatedAt: new Date() })
         .where(byIdInEvent(update.id, eventId))
     }
+  }
+
+  async transitionActivity(
+    id: string,
+    eventId: string,
+    from: ScheduleActivityStatus,
+    transition: ScheduleActivityTransition,
+    executor: DbExecutor = db
+  ) {
+    // Guarded by the current status, so a stale write changes nothing.
+    const rows = await executor
+      .update(schema.scheduleActivities)
+      .set({ ...transition, updatedAt: new Date() })
+      .where(and(byIdInEvent(id, eventId), eq(schema.scheduleActivities.status, from)))
+      .returning()
+
+    return rows[0]
   }
 }
 
