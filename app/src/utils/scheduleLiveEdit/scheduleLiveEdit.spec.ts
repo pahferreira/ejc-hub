@@ -3,6 +3,8 @@ import type { ScheduleActivity } from '../../services/schedule/schedule.types'
 import {
   buildLiveEditBody,
   canEditLive,
+  LIVE_EDIT_ERROR,
+  liveEditErrorMessage,
   liveEditFields,
   liveEditFormValues,
   validateLiveEdit,
@@ -123,6 +125,45 @@ describe('buildLiveEditBody', () => {
     ).toEqual({ expectedStatus: 'done', actualEndedAt: '2026-04-04T03:10:00.000Z' })
   })
 
+  it('rolls an end earlier than the start on the clock to the next day: 23:55 to 00:05', () => {
+    // 23:50 to 23:59 on the 3rd, corrected to 23:55 – 00:05.
+    const beforeMidnight: LiveActivity = {
+      ...DONE,
+      actualStartedAt: '2026-04-04T02:50:00.000Z',
+      actualEndedAt: '2026-04-04T02:59:00.000Z',
+    }
+
+    expect(
+      buildLiveEditBody(beforeMidnight, {
+        adjustedDuration: '',
+        startTime: '23:55',
+        endTime: '00:05',
+      })
+    ).toEqual({
+      expectedStatus: 'done',
+      actualStartedAt: '2026-04-04T02:55:00.000Z',
+      actualEndedAt: '2026-04-04T03:05:00.000Z',
+    })
+  })
+
+  it('moves a start corrected past midnight to the next day', () => {
+    // Running since 23:50 on the 3rd; it really started at 00:05 on the 4th.
+    const lateRunning: LiveActivity = { ...RUNNING, actualStartedAt: '2026-04-04T02:50:00.000Z' }
+
+    expect(
+      buildLiveEditBody(lateRunning, { adjustedDuration: '', startTime: '00:05', endTime: '' })
+    ).toEqual({ expectedStatus: 'running', actualStartedAt: '2026-04-04T03:05:00.000Z' })
+  })
+
+  it('moves a start corrected back before midnight to the previous day', () => {
+    // Running since 00:02 on the 4th; it really started at 23:58 on the 3rd.
+    const earlyRunning: LiveActivity = { ...RUNNING, actualStartedAt: '2026-04-04T03:02:00.000Z' }
+
+    expect(
+      buildLiveEditBody(earlyRunning, { adjustedDuration: '', startTime: '23:58', endTime: '' })
+    ).toEqual({ expectedStatus: 'running', actualStartedAt: '2026-04-04T02:58:00.000Z' })
+  })
+
   it('sends a new trim, and the start of a running activity when it changed', () => {
     expect(
       buildLiveEditBody(RUNNING, { adjustedDuration: '20', startTime: '18:00', endTime: '' })
@@ -150,5 +191,27 @@ describe('buildLiveEditBody', () => {
     expect(
       buildLiveEditBody(DONE, { adjustedDuration: '20', startTime: '18:02', endTime: '18:31' })
     ).toBeNull()
+  })
+})
+
+describe('liveEditErrorMessage', () => {
+  it.each([
+    ['schedule_actual_start_not_before_end', 'O início real precisa ser antes do fim.'],
+    ['schedule_actual_start_in_future', 'O início real não pode estar no futuro.'],
+    ['schedule_actual_end_in_future', 'O fim real não pode estar no futuro.'],
+    ['schedule_actual_times_overlap', 'Os horários reais se sobrepõem aos de outra atividade.'],
+    ['schedule_trim_not_positive', 'A duração ajustada precisa ser maior que zero.'],
+    [
+      'schedule_trim_not_allowed',
+      'Só uma atividade planejada ou em andamento pode ter a duração ajustada.',
+    ],
+    ['schedule_actual_time_not_allowed', 'Esta atividade não tem esse horário real para corrigir.'],
+    ['schedule_nothing_to_change', 'Nada mudou para salvar.'],
+  ])('names the rule behind %s', (code, message) => {
+    expect(liveEditErrorMessage(code)).toBe(message)
+  })
+
+  it('falls back to a generic line for an unknown code', () => {
+    expect(liveEditErrorMessage('something_else')).toBe(LIVE_EDIT_ERROR)
   })
 })

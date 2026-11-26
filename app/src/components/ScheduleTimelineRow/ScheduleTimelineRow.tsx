@@ -61,7 +61,8 @@ function eventTime(instant: string): string {
  * Live, a done row is muted under a "CONCLUÍDO" chip and shows its actual
  * times; the running row gets "● ACONTECENDO AGORA" and a filled dot. The
  * controls given show as "▶ Iniciar" and "✓ Concluir". A trimmed activity
- * shows its planned duration struck through beside the trimmed one, and the
+ * shows its planned duration struck through beside the trimmed one, and ends
+ * ("até HH:mm") at its trimmed length, and the
  * admin's "✎" opens the live-edit form.
  */
 export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
@@ -74,8 +75,16 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
     isDone && activity.actualStartedAt
       ? eventTime(activity.actualStartedAt)
       : activityStartTime(activity)
+  // Live, a trimmed activity ends at its trimmed length.
   const endTime =
-    isDone && activity.actualEndedAt ? eventTime(activity.actualEndedAt) : activityEndTime(activity)
+    isDone && activity.actualEndedAt
+      ? eventTime(activity.actualEndedAt)
+      : activityEndTime({
+          plannedStartsAt: activity.plannedStartsAt,
+          durationMinutes: props.live
+            ? activity.effectiveDurationMinutes
+            : activity.durationMinutes,
+        })
 
   return (
     <li className={clsx('flex gap-4', isDone && 'opacity-60')}>

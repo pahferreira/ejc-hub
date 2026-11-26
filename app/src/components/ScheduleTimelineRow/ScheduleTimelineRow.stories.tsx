@@ -204,7 +204,10 @@ export const RunningForMembers: Story = {
   },
 }
 
-/** A trimmed upcoming activity: the planned duration struck through, the trimmed one next to it. */
+/**
+ * A trimmed upcoming activity: the planned duration struck through, the trimmed
+ * one next to it, and "até" at the trimmed length.
+ */
 export const Trimmed: Story = {
   args: {
     live: true,
@@ -215,6 +218,7 @@ export const Trimmed: Story = {
 
     await expect(canvas.getByLabelText('Planejada: 45 min').tagName).toBe('S')
     await expect(canvas.getByLabelText('Ajustada: 30 min')).toBeVisible()
+    await expect(canvas.getByText('até 18:30')).toBeVisible()
   },
 }
 

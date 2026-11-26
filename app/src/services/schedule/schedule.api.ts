@@ -1,6 +1,10 @@
 import { isAxiosError } from 'axios'
 import { api } from '../api'
 import type { ApiError } from '../general/error'
+import {
+  LIVE_EDIT_ERROR,
+  liveEditErrorMessage,
+} from '../../utils/scheduleLiveEdit/scheduleLiveEdit'
 import type {
   ScheduleActivityBody,
   CreateScheduleActivityResult,
@@ -220,13 +224,9 @@ async function finishActivity(input: { activityId: string; body: ScheduleActivit
   }
 }
 
-const LIVE_TIMES_REFUSED =
-  'Confira os horários: o início precisa ser antes do fim e não pode se sobrepor ao de outra atividade.'
-const LIVE_TRIM_REFUSED = 'A duração ajustada precisa ser maior que zero.'
-
 /**
  * Corrects an activity's actual times or trims it. A 409 is "O cronograma
- * mudou"; a 400 reads as the rule the fields sent can break.
+ * mudou"; a 400 names the rule it broke, by the API's code.
  */
 async function updateActivityLive(input: {
   activityId: string
@@ -240,13 +240,11 @@ async function updateActivityLive(input: {
 
     return response.data.result
   } catch (error: unknown) {
-    if (apiErrorStatus(error) !== 400) {
-      throw toControlError(error, 'Não foi possível salvar o ajuste.')
+    if (apiErrorStatus(error) === 400) {
+      throw new Error(liveEditErrorMessage(apiErrorCode(error)))
     }
 
-    const sentTimes =
-      input.body.actualStartedAt !== undefined || input.body.actualEndedAt !== undefined
-    throw new Error(sentTimes ? LIVE_TIMES_REFUSED : LIVE_TRIM_REFUSED)
+    throw toControlError(error, LIVE_EDIT_ERROR)
   }
 }
 

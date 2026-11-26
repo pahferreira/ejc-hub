@@ -1,5 +1,5 @@
-import { toEventDate } from '../../../../common/schedule/toEventDate'
-import { toEventInstant } from '../../../../common/schedule/toEventInstant'
+import { nearestEventInstant } from '../../../../common/schedule/nearestEventInstant'
+import { nextEventInstant } from '../../../../common/schedule/nextEventInstant'
 import { toEventTime } from '../../../../common/schedule/toEventTime'
 import type {
   ScheduleActivity,
@@ -89,17 +89,14 @@ export function validateLiveEdit(
 }
 
 /**
- * An `HH:mm` moved onto the São Paulo date of the instant it corrects, so a
- * past-midnight time stays on its own date.
- */
-function correctedInstant(instant: string, time: string): string {
-  return toEventInstant(toEventDate(new Date(instant)), time).toISOString()
-}
-
-/**
  * The request body for the fields the admin changed, or null when nothing
  * changed. A field left as it was isn't sent, so a running start keeps its
  * seconds. An emptied trim is sent as null to clear it.
+ *
+ * The `HH:mm` times become instants on the São Paulo clock, across midnight:
+ * a corrected start lands on the date nearest the one it replaces (23:50 to
+ * 00:05 is the next day), and a corrected end on the first such time after
+ * the start (23:55 to 00:05 ends the next day).
  */
 export function buildLiveEditBody(
   activity: Pick<
@@ -117,13 +114,41 @@ export function buildLiveEditBody(
     body.adjustedDurationMinutes = trim === '' ? null : Number(trim)
   }
 
-  if (fields.start && activity.actualStartedAt && values.startTime !== initial.startTime) {
-    body.actualStartedAt = correctedInstant(activity.actualStartedAt, values.startTime)
+  if (!activity.actualStartedAt) {
+    return Object.keys(body).length > 1 ? body : null
+  }
+
+  let start = new Date(activity.actualStartedAt)
+
+  if (fields.start && values.startTime !== initial.startTime) {
+    start = nearestEventInstant(start, values.startTime)
+    body.actualStartedAt = start.toISOString()
   }
 
   if (fields.end && activity.actualEndedAt && values.endTime !== initial.endTime) {
-    body.actualEndedAt = correctedInstant(activity.actualEndedAt, values.endTime)
+    body.actualEndedAt = nextEventInstant(start, values.endTime).toISOString()
   }
 
   return Object.keys(body).length > 1 ? body : null
+}
+
+/** The pt-BR line for each refusal code of a live correction. */
+const liveEditMessageByCode: Record<string, string> = {
+  schedule_actual_start_not_before_end: 'O início real precisa ser antes do fim.',
+  schedule_actual_start_in_future: 'O início real não pode estar no futuro.',
+  schedule_actual_end_in_future: 'O fim real não pode estar no futuro.',
+  schedule_actual_times_overlap: 'Os horários reais se sobrepõem aos de outra atividade.',
+  schedule_trim_not_positive: 'A duração ajustada precisa ser maior que zero.',
+  schedule_trim_not_allowed:
+    'Só uma atividade planejada ou em andamento pode ter a duração ajustada.',
+  schedule_actual_time_not_allowed: 'Esta atividade não tem esse horário real para corrigir.',
+  schedule_nothing_to_change: 'Nada mudou para salvar.',
+  validation: 'Confira os campos do ajuste.',
+}
+
+export const LIVE_EDIT_ERROR = 'Não foi possível salvar o ajuste.'
+
+/** The message the live-edit form shows for a refused correction, by the API's code. */
+export function liveEditErrorMessage(code: string): string {
+  return liveEditMessageByCode[code] ?? LIVE_EDIT_ERROR
 }
