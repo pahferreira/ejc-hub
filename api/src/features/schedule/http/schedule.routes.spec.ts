@@ -362,6 +362,21 @@ describe('schedule routes', () => {
       expect(response.statusCode).toBe(409)
     })
 
+    it('answers 400 when the core refuses a day with an activity that has started', async () => {
+      scheduleApp.updateDay.mockRejectedValue(
+        new AppError('The day has an activity that is no longer planned', AppErrorCode.Validation)
+      )
+
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/days/${DAY_ID}`,
+        headers: ADMIN,
+        payload: { date: '2026-04-04' },
+      })
+
+      expect(response.statusCode).toBe(400)
+    })
+
     it.each([
       ['a date that is not YYYY-MM-DD', `/schedule/days/${DAY_ID}`, { date: '04/04/2026' }],
       ['no date', `/schedule/days/${DAY_ID}`, {}],
@@ -401,6 +416,20 @@ describe('schedule routes', () => {
       const response = await server.inject({
         method: 'DELETE',
         url: '/schedule/days/not-a-uuid',
+        headers: ADMIN,
+      })
+
+      expect(response.statusCode).toBe(400)
+    })
+
+    it('answers 400 when the core refuses a day with an activity that has started', async () => {
+      scheduleApp.deleteDay.mockRejectedValue(
+        new AppError('The day has an activity that is no longer planned', AppErrorCode.Validation)
+      )
+
+      const response = await server.inject({
+        method: 'DELETE',
+        url: `/schedule/days/${DAY_ID}`,
         headers: ADMIN,
       })
 
@@ -523,6 +552,24 @@ describe('schedule routes', () => {
 
       expect(response.statusCode).toBe(404)
     })
+
+    it('answers 400 when the core refuses a planned start change after the start', async () => {
+      scheduleApp.updateActivity.mockRejectedValue(
+        new AppError(
+          'The planned start and duration are locked once the activity has started',
+          AppErrorCode.Validation
+        )
+      )
+
+      const response = await server.inject({
+        method: 'PATCH',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: ADMIN,
+        payload: ACTIVITY_BODY,
+      })
+
+      expect(response.statusCode).toBe(400)
+    })
   })
 
   describe('DELETE /schedule/activities/:activityId', () => {
@@ -561,6 +608,20 @@ describe('schedule routes', () => {
       })
 
       expect(response.statusCode).toBe(404)
+    })
+
+    it('answers 400 when the core refuses an activity that is not planned', async () => {
+      scheduleApp.deleteActivity.mockRejectedValue(
+        new AppError('Only a planned activity can be deleted', AppErrorCode.Validation)
+      )
+
+      const response = await server.inject({
+        method: 'DELETE',
+        url: `/schedule/activities/${ACTIVITY_ID}`,
+        headers: ADMIN,
+      })
+
+      expect(response.statusCode).toBe(400)
     })
   })
 

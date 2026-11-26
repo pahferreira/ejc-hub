@@ -9,6 +9,9 @@ import {
   formatDaySummary,
   formatDuration,
   hasSomeoneResponsible,
+  isDayLocked,
+  isPlanLocked,
+  planLockHint,
   suggestedNextStart,
   summarizeDay,
 } from './scheduleActivity'
@@ -315,5 +318,40 @@ describe('hasSomeoneResponsible', () => {
 
   it('does not count a blank guest name', () => {
     expect(hasSomeoneResponsible({ ...NOBODY, guestName: '   ' })).toBe(false)
+  })
+})
+
+describe('isPlanLocked', () => {
+  it('leaves a planned activity open to every edit', () => {
+    expect(isPlanLocked(activity())).toBe(false)
+  })
+
+  it.each(['running', 'done', 'skipped'] as const)('locks a %s activity', (status) => {
+    expect(isPlanLocked(activity({ status }))).toBe(true)
+  })
+})
+
+describe('isDayLocked', () => {
+  it('leaves a day of planned activities, or an empty one, unlocked', () => {
+    expect(isDayLocked([activity(), activity({ id: 'activity-2' })])).toBe(false)
+    expect(isDayLocked([])).toBe(false)
+  })
+
+  it('locks a day once any of its activities has left planned', () => {
+    expect(isDayLocked([activity({ status: 'done' }), activity({ id: 'activity-2' })])).toBe(true)
+  })
+})
+
+describe('planLockHint', () => {
+  it('has no hint for a planned activity', () => {
+    expect(planLockHint(activity())).toBeUndefined()
+  })
+
+  it.each([
+    ['running', 'A atividade já começou'],
+    ['done', 'A atividade já começou'],
+    ['skipped', 'A atividade foi pulada'],
+  ] as const)('explains why a %s activity is locked', (status, hint) => {
+    expect(planLockHint(activity({ status }))).toBe(hint)
   })
 })

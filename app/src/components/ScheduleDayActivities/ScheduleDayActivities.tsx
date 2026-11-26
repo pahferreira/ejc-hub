@@ -11,6 +11,8 @@ import {
   activityGaps,
   formatDaySummary,
   formatDuration,
+  isPlanLocked,
+  planLockHint,
   suggestedNextStart,
   summarizeDay,
   type ActivityGap,
@@ -81,6 +83,8 @@ export function ScheduleDayActivities(props: ScheduleDayActivitiesProps) {
     ? activities.find((activity) => activity.id === form.editingActivityId)
     : undefined
   const isOpenAtEnd = placement?.kind === 'end'
+  // A started activity keeps its start and duration and can't be deleted: the API refuses both.
+  const isEditedPlanLocked = editedActivity ? isPlanLocked(editedActivity) : false
 
   const renderForm = () => (
     <ScheduleActivityForm
@@ -93,7 +97,8 @@ export function ScheduleDayActivities(props: ScheduleDayActivitiesProps) {
       onCancel={form.close}
       isSubmitting={form.isSubmitting}
       mode={form.editingActivityId ? 'edit' : 'create'}
-      onDelete={form.editingActivityId ? deletion.ask : undefined}
+      onDelete={form.editingActivityId && !isEditedPlanLocked ? deletion.ask : undefined}
+      planLockHint={editedActivity ? planLockHint(editedActivity) : undefined}
     />
   )
 

@@ -568,6 +568,36 @@ describe('Schedule', () => {
       await expectAppError(schedule.deleteDay('old-day'), AppErrorCode.NotFound)
     })
 
+    it('removes a day whose activities are all planned, with its activities', async () => {
+      schedule = buildActivitySchedule({
+        initialActivities: [
+          storedActivity('a1', 'day-fri', FRI_18H, 30),
+          storedActivity('a2', 'day-sat', SAT_09H, 30, { status: 'done' }),
+        ],
+      })
+
+      await schedule.deleteDay('day-fri')
+
+      expect((await schedule.getSchedule(ADMIN)).days.map((day) => day.id)).toEqual(['day-sat'])
+    })
+
+    it.each(['running', 'done', 'skipped'] as const)(
+      'refuses a day with a %s activity, leaving it in place',
+      async (status) => {
+        schedule = buildActivitySchedule({
+          initialActivities: [
+            storedActivity('a1', 'day-fri', FRI_18H, 30, { status }),
+            storedActivity('a2', 'day-fri', FRI_1830, 30),
+          ],
+        })
+
+        await expectAppError(schedule.deleteDay('day-fri'), AppErrorCode.Validation)
+
+        const model = await schedule.getSchedule(ADMIN)
+        expect(model.days.find((day) => day.id === 'day-fri')?.activities).toHaveLength(2)
+      }
+    )
+
     it('refuses with no current event', async () => {
       schedule = buildSchedule(buildEventRepository(undefined), dayRepository)
 
@@ -579,6 +609,8 @@ describe('Schedule', () => {
   const FRI_18H = '2026-04-03T21:00:00Z'
   const FRI_1830 = '2026-04-03T21:30:00Z'
   const FRI_1815 = '2026-04-03T21:15:00Z'
+  // 09:00 on the São Paulo clock of Saturday 04 April 2026.
+  const SAT_09H = '2026-04-04T12:00:00Z'
 
   function buildActivitySchedule(
     options: {
@@ -966,6 +998,76 @@ describe('Schedule', () => {
       await expectAppError(editActivity(schedule, 'a1'), AppErrorCode.NotFound)
     })
 
+    describe('once the activity has left planned', () => {
+      it.each(['running', 'done', 'skipped'] as const)(
+        'still edits the title, place and who is responsible of a %s activity',
+        async (status) => {
+          schedule = buildActivitySchedule({
+            teamIds: ['team-a'],
+            initialActivities: [storedActivity('a1', 'day-fri', FRI_18H, 30, { status })],
+          })
+
+          await editActivity(schedule, 'a1', {
+            title: 'Abertura oficial',
+            place: 'Capela',
+            teamInstanceIds: ['team-a'],
+            guestName: 'Padre João',
+            adminsResponsible: false,
+          })
+
+          const [activity] = (await schedule.getSchedule(ADMIN)).days[0].activities
+          expect(activity).toMatchObject({
+            title: 'Abertura oficial',
+            place: 'Capela',
+            guestName: 'Padre João',
+            adminsResponsible: false,
+            plannedStartsAt: '2026-04-03T21:00:00.000Z',
+            durationMinutes: 30,
+            status,
+          })
+          expect(activity.teams.map((team) => team.teamInstanceId)).toEqual(['team-a'])
+        }
+      )
+
+      it.each([
+        ['planned start', { plannedStartsAt: FRI_1815 }],
+        ['duration', { durationMinutes: 45 }],
+        ['day', { dayId: 'day-sat', plannedStartsAt: SAT_09H }],
+      ])('refuses a change to its %s, leaving it as it was', async (_field, change) => {
+        schedule = buildActivitySchedule({
+          initialActivities: [
+            storedActivity('a1', 'day-fri', FRI_18H, 30, { status: 'running', title: 'Antes' }),
+          ],
+        })
+
+        await expectAppError(
+          editActivity(schedule, 'a1', { title: 'Depois', ...change }),
+          AppErrorCode.Validation
+        )
+
+        const [activity] = (await schedule.getSchedule(ADMIN)).days[0].activities
+        expect(activity).toMatchObject({
+          title: 'Antes',
+          plannedStartsAt: '2026-04-03T21:00:00.000Z',
+          durationMinutes: 30,
+        })
+      })
+
+      it('still lets a planned activity change its start and duration', async () => {
+        schedule = buildActivitySchedule({
+          initialActivities: [storedActivity('a1', 'day-fri', FRI_18H, 30)],
+        })
+
+        await editActivity(schedule, 'a1', { plannedStartsAt: FRI_1815, durationMinutes: 45 })
+
+        const [activity] = (await schedule.getSchedule(ADMIN)).days[0].activities
+        expect(activity).toMatchObject({
+          plannedStartsAt: '2026-04-03T21:15:00.000Z',
+          durationMinutes: 45,
+        })
+      })
+    })
+
     it('refuses with no current event', async () => {
       schedule = buildSchedule(buildEventRepository(undefined), dayRepository)
 
@@ -1006,6 +1108,20 @@ describe('Schedule', () => {
 
       await expectAppError(schedule.deleteActivity('old'), AppErrorCode.NotFound)
     })
+
+    it.each(['running', 'done', 'skipped'] as const)(
+      'refuses a %s activity, leaving it in place',
+      async (status) => {
+        schedule = buildActivitySchedule({
+          initialActivities: [storedActivity('a1', 'day-fri', FRI_18H, 30, { status })],
+        })
+
+        await expectAppError(schedule.deleteActivity('a1'), AppErrorCode.Validation)
+
+        const model = await schedule.getSchedule(ADMIN)
+        expect(model.days[0].activities.map((activity) => activity.id)).toEqual(['a1'])
+      }
+    )
 
     it('refuses with no current event', async () => {
       schedule = buildSchedule(buildEventRepository(undefined), dayRepository)
@@ -1059,6 +1175,37 @@ describe('Schedule', () => {
         expect(day?.activities[0].plannedStartsAt).toBe('2026-04-03T21:00:00.000Z')
       }
     )
+
+    it.each(['running', 'done', 'skipped'] as const)(
+      'refuses moving a day with a %s activity, leaving it where it was',
+      async (status) => {
+        schedule = buildMoveSchedule([
+          storedActivity('a1', 'day-fri', '2026-04-03T21:00:00Z', 30, { status }),
+          storedActivity('a2', 'day-fri', '2026-04-03T21:30:00Z', 30),
+        ])
+
+        await expectAppError(
+          schedule.updateDay('day-fri', { date: '2026-04-05' }),
+          AppErrorCode.Validation
+        )
+
+        const model = await schedule.getSchedule(ADMIN)
+        const day = model.days.find((candidate) => candidate.id === 'day-fri')
+        expect(day?.date).toBe('2026-04-03')
+        expect(day?.activities[0].plannedStartsAt).toBe('2026-04-03T21:00:00.000Z')
+      }
+    )
+
+    it('moves a day whose activities are all planned while another day has started', async () => {
+      schedule = buildMoveSchedule([
+        storedActivity('a1', 'day-fri', '2026-04-03T21:00:00Z', 30, { status: 'done' }),
+        storedActivity('a2', 'day-sat', '2026-04-04T12:00:00Z', 30),
+      ])
+
+      const result = await schedule.updateDay('day-sat', { date: '2026-04-05' })
+
+      expect(result).toEqual({ dayId: 'day-sat', date: '2026-04-05' })
+    })
 
     it("refuses moving onto another day's date", async () => {
       schedule = buildMoveSchedule()
@@ -1174,7 +1321,6 @@ describe('Schedule', () => {
   describe('running the clock', () => {
     // Friday 18:00, 18:30 and 19:00 in São Paulo, then Saturday 09:00.
     const FRI_19H = '2026-04-03T22:00:00Z'
-    const SAT_09H = '2026-04-04T12:00:00Z'
     const NOW = new Date('2026-04-03T21:05:00Z')
 
     let activityRepository: ScheduleActivityRepository

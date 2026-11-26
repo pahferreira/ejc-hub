@@ -16,6 +16,8 @@ type InputProps = {
   min?: string
   /** Upper bound for `date` and `number` inputs. */
   max?: string
+  /** Shows the value read-only, greyed out. */
+  disabled?: boolean
 }
 
 export function Input(props: InputProps) {
@@ -29,7 +31,7 @@ export function Input(props: InputProps) {
         name={props.name}
         required={props.isRequired}
         className={clsx(
-          'w-full rounded-lg border bg-white px-3 py-2 text-black focus:outline-none',
+          'w-full rounded-lg border bg-white px-3 py-2 text-black focus:outline-none disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500',
           props.error
             ? 'border-destructive placeholder:text-destructive/80 focus:shadow-[1px_1px_1px_1px_var(--destructive)]'
             : 'border-primary focus:border-dark-brown focus:shadow-[1px_1px_1px_1px_var(--dark-brown)] placeholder:text-black/50'
@@ -40,6 +42,7 @@ export function Input(props: InputProps) {
         type={props.type}
         min={props.min}
         max={props.max}
+        disabled={props.disabled}
       />
       {props.error && <p className="text-sm text-destructive">{props.error}</p>}
     </div>
