@@ -591,7 +591,7 @@ describe('Schedule', () => {
           ],
         })
 
-        await expectAppError(schedule.deleteDay('day-fri'), AppErrorCode.Validation)
+        await expectAppError(schedule.deleteDay('day-fri'), AppErrorCode.ScheduleDayLocked)
 
         const model = await schedule.getSchedule(ADMIN)
         expect(model.days.find((day) => day.id === 'day-fri')?.activities).toHaveLength(2)
@@ -1042,7 +1042,7 @@ describe('Schedule', () => {
 
         await expectAppError(
           editActivity(schedule, 'a1', { title: 'Depois', ...change }),
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleActivityLocked
         )
 
         const [activity] = (await schedule.getSchedule(ADMIN)).days[0].activities
@@ -1051,6 +1051,25 @@ describe('Schedule', () => {
           plannedStartsAt: '2026-04-03T21:00:00.000Z',
           durationMinutes: 30,
         })
+      })
+
+      it.each([
+        // 18:15–18:45 lands on a2 (18:30), which a planned edit would answer as an overlap.
+        ['an overlap', { plannedStartsAt: FRI_1815 }],
+        // 23:00 São Paulo on Thursday, before Friday's 00:00.
+        ["a start before the day's 00:00", { plannedStartsAt: '2026-04-03T02:00:00Z' }],
+      ])('answers the lock, not %s, for a started activity', async (_label, change) => {
+        schedule = buildActivitySchedule({
+          initialActivities: [
+            storedActivity('a1', 'day-fri', FRI_18H, 30, { status: 'running' }),
+            storedActivity('a2', 'day-fri', FRI_1830, 30),
+          ],
+        })
+
+        await expectAppError(
+          editActivity(schedule, 'a1', change),
+          AppErrorCode.ScheduleActivityLocked
+        )
       })
 
       it('still lets a planned activity change its start and duration', async () => {
@@ -1116,7 +1135,7 @@ describe('Schedule', () => {
           initialActivities: [storedActivity('a1', 'day-fri', FRI_18H, 30, { status })],
         })
 
-        await expectAppError(schedule.deleteActivity('a1'), AppErrorCode.Validation)
+        await expectAppError(schedule.deleteActivity('a1'), AppErrorCode.ScheduleActivityLocked)
 
         const model = await schedule.getSchedule(ADMIN)
         expect(model.days[0].activities.map((activity) => activity.id)).toEqual(['a1'])
@@ -1186,7 +1205,7 @@ describe('Schedule', () => {
 
         await expectAppError(
           schedule.updateDay('day-fri', { date: '2026-04-05' }),
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleDayLocked
         )
 
         const model = await schedule.getSchedule(ADMIN)
@@ -1195,6 +1214,33 @@ describe('Schedule', () => {
         expect(day?.activities[0].plannedStartsAt).toBe('2026-04-03T21:00:00.000Z')
       }
     )
+
+    it.each([
+      ["another day's date", '2026-04-04'],
+      ['a date outside the event', '2026-04-06'],
+    ])(
+      'answers the lock, not the date rule, for a started day moved onto %s',
+      async (_label, date) => {
+        schedule = buildMoveSchedule([
+          storedActivity('a1', 'day-fri', '2026-04-03T21:00:00Z', 30, { status: 'running' }),
+        ])
+
+        await expectAppError(
+          schedule.updateDay('day-fri', { date }),
+          AppErrorCode.ScheduleDayLocked
+        )
+      }
+    )
+
+    it('keeps a started day on its own date as it is', async () => {
+      schedule = buildMoveSchedule([
+        storedActivity('a1', 'day-fri', '2026-04-03T21:00:00Z', 30, { status: 'done' }),
+      ])
+
+      const result = await schedule.updateDay('day-fri', { date: '2026-04-03' })
+
+      expect(result).toEqual({ dayId: 'day-fri', date: '2026-04-03' })
+    })
 
     it('moves a day whose activities are all planned while another day has started', async () => {
       schedule = buildMoveSchedule([

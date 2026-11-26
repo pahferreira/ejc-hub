@@ -126,7 +126,7 @@ export class Schedule {
     if (activities.some((activity) => activity.dayId === dayId && activity.status !== 'planned')) {
       throw new AppError(
         'The day has an activity that is no longer planned',
-        AppErrorCode.Validation
+        AppErrorCode.ScheduleDayLocked
       )
     }
   }
@@ -387,22 +387,23 @@ export class Schedule {
         throw new AppError('Schedule activity not found', AppErrorCode.NotFound)
       }
 
-      const plan = await this.#checkActivityPlan(event, input, activityId)
-
       // Once started, the plan is the fixed reference the forecast measures
       // against: its day, start and duration stay as they were. Title, place and
-      // who is responsible stay editable.
+      // who is responsible stay editable. Checked before the planning rules, so a
+      // locked change answers the lock, not an overlap or a day-start error.
       if (
         existing.status !== 'planned' &&
-        (plan.dayId !== existing.dayId ||
-          plan.plannedStartsAt.getTime() !== existing.plannedStartsAt.getTime() ||
-          plan.durationMinutes !== existing.durationMinutes)
+        (input.dayId !== existing.dayId ||
+          new Date(input.plannedStartsAt).getTime() !== existing.plannedStartsAt.getTime() ||
+          input.durationMinutes !== existing.durationMinutes)
       ) {
         throw new AppError(
           'The planned start and duration are locked once the activity has started',
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleActivityLocked
         )
       }
+
+      const plan = await this.#checkActivityPlan(event, input, activityId)
 
       // Accepted race: an activity started after this read can still have its
       // planned start or duration changed, and no constraint catches it.
@@ -445,7 +446,10 @@ export class Schedule {
       }
 
       if (activity.status !== 'planned') {
-        throw new AppError('Only a planned activity can be deleted', AppErrorCode.Validation)
+        throw new AppError(
+          'Only a planned activity can be deleted',
+          AppErrorCode.ScheduleActivityLocked
+        )
       }
 
       // Accepted race: an activity started after this read is deleted anyway,
@@ -474,15 +478,22 @@ export class Schedule {
         throw new AppError('Schedule day not found', AppErrorCode.NotFound)
       }
 
-      await this.#assertDayDateAvailable(event, input.date, day.id)
+      // Its own date: nothing moves, so there is nothing to check or write, even
+      // on a day that has started.
+      if (input.date === day.date) {
+        return { dayId: day.id, date: day.date }
+      }
 
-      const shift = daysBetween(day.date, input.date)
       // Accepted race: an activity added to the day after this read stays on the
       // old date, and no constraint catches it.
       const activities = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
 
+      // Checked first, so a started day answers the lock, not a taken or
+      // out-of-event date.
       this.#assertDayAllPlanned(activities, day.id)
+      await this.#assertDayDateAvailable(event, input.date, day.id)
 
+      const shift = daysBetween(day.date, input.date)
       const moved = activities
         .filter((activity) => activity.dayId === day.id)
         .map((activity) => ({

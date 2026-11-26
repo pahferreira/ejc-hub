@@ -364,7 +364,10 @@ describe('schedule routes', () => {
 
     it('answers 400 when the core refuses a day with an activity that has started', async () => {
       scheduleApp.updateDay.mockRejectedValue(
-        new AppError('The day has an activity that is no longer planned', AppErrorCode.Validation)
+        new AppError(
+          'The day has an activity that is no longer planned',
+          AppErrorCode.ScheduleDayLocked
+        )
       )
 
       const response = await server.inject({
@@ -424,7 +427,10 @@ describe('schedule routes', () => {
 
     it('answers 400 when the core refuses a day with an activity that has started', async () => {
       scheduleApp.deleteDay.mockRejectedValue(
-        new AppError('The day has an activity that is no longer planned', AppErrorCode.Validation)
+        new AppError(
+          'The day has an activity that is no longer planned',
+          AppErrorCode.ScheduleDayLocked
+        )
       )
 
       const response = await server.inject({
@@ -557,7 +563,7 @@ describe('schedule routes', () => {
       scheduleApp.updateActivity.mockRejectedValue(
         new AppError(
           'The planned start and duration are locked once the activity has started',
-          AppErrorCode.Validation
+          AppErrorCode.ScheduleActivityLocked
         )
       )
 
@@ -612,7 +618,7 @@ describe('schedule routes', () => {
 
     it('answers 400 when the core refuses an activity that is not planned', async () => {
       scheduleApp.deleteActivity.mockRejectedValue(
-        new AppError('Only a planned activity can be deleted', AppErrorCode.Validation)
+        new AppError('Only a planned activity can be deleted', AppErrorCode.ScheduleActivityLocked)
       )
 
       const response = await server.inject({
@@ -701,6 +707,8 @@ describe('schedule routes', () => {
   describe('AppError codes', () => {
     it.each([
       [AppErrorCode.Validation, 400],
+      [AppErrorCode.ScheduleActivityLocked, 400],
+      [AppErrorCode.ScheduleDayLocked, 400],
       [AppErrorCode.NotFound, 404],
       [AppErrorCode.Conflict, 409],
       [AppErrorCode.NoCurrentEvent, 422],

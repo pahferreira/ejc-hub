@@ -65,7 +65,9 @@ export function SchedulePlanningPage() {
   const days = scheduleQuery.data?.days ?? []
   const selectedDay = days.find((day) => day.id === selectedDayId) ?? days[0]
   const activityForm = useScheduleActivityForm(
-    selectedDay ? { id: selectedDay.id, date: selectedDay.date } : null
+    selectedDay
+      ? { id: selectedDay.id, date: selectedDay.date, activities: selectedDay.activities }
+      : null
   )
   const activityDeletion = useDeleteScheduleActivity(activityForm.close)
 

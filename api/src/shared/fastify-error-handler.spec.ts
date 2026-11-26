@@ -212,6 +212,19 @@ describe('fastifyErrorHandler', () => {
     })
   })
 
+  it.each([AppErrorCode.ScheduleActivityLocked, AppErrorCode.ScheduleDayLocked])(
+    'answers a %s AppError with a 400 and its code',
+    async (code) => {
+      const built = buildServer(new AppError('Locked', code))
+      server = built.server
+
+      const response = await server.inject({ method: 'POST', url: '/boom' })
+
+      expect(response.statusCode).toBe(400)
+      expect(response.json()).toEqual({ message: 'Locked', code })
+    }
+  )
+
   it('answers a conflict AppError with a 409 and its message', async () => {
     const built = buildServer(new AppError('Day already planned', AppErrorCode.Conflict))
     server = built.server

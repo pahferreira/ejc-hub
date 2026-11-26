@@ -20,6 +20,14 @@ export const AppErrorCode = {
   // The request would duplicate something that must be unique (a second
   // schedule day on one date). Answers 409.
   Conflict: 'conflict',
+  // A schedule activity has left `planned` (started, done or skipped), so its
+  // planned day, start and duration are fixed and it can't be deleted. Answers
+  // 400; the app maps it to its own pt-BR message.
+  ScheduleActivityLocked: 'schedule_activity_locked',
+  // A schedule day holds an activity that has left `planned`, so the day can be
+  // neither moved to another date nor deleted. Answers 400; the app maps it to
+  // its own pt-BR message.
+  ScheduleDayLocked: 'schedule_day_locked',
   // There is no current event to scope the request to. The app maps this code
   // to its own pt-BR message.
   NoCurrentEvent: 'no_current_event',
