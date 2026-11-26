@@ -10,6 +10,7 @@ import type { ActivityControls } from '../../utils/scheduleLive/scheduleLive'
 import { isMyTeamActivity } from '../../utils/scheduleTimeline/scheduleTimeline'
 import { Button } from '../Button/Button'
 import { ScheduleActivityChips } from '../ScheduleActivityChips/ScheduleActivityChips'
+import { FaCheck, FaPlay } from 'react-icons/fa'
 
 export type ScheduleTimelineRowProps = {
   activity: ScheduleActivity
@@ -75,7 +76,7 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
 
   return (
     <li className={clsx('flex gap-4', isDone && 'opacity-60')}>
-      <div className="flex w-16 shrink-0 flex-col items-end pt-3 text-right">
+      <div className="flex w-12 lg:w-16 shrink-0 flex-col items-end pt-3 text-right">
         <span className="text-base font-bold leading-tight text-dark-brown">{startTime}</span>
         <span className="text-xs font-semibold text-primary">
           {formatDuration(activity.durationMinutes)}
@@ -102,13 +103,7 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
         )}
       >
         {(isRunning || isDone) && (
-          <div>
-            {isRunning ? (
-              <StatusChip tone="running">● ACONTECENDO AGORA</StatusChip>
-            ) : (
-              <StatusChip tone="done">CONCLUÍDO</StatusChip>
-            )}
-          </div>
+          <div>{isRunning && <StatusChip tone="running">● ACONTECENDO AGORA</StatusChip>}</div>
         )}
 
         <ScheduleActivityChips activity={activity} myTeamInstanceId={props.myTeamInstanceId} />
@@ -124,12 +119,14 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
           <div className="flex justify-end">
             {props.controls.start && (
               <Button size="small" onClick={props.onStart} disabled={props.isControlPending}>
-                ▶ Iniciar
+                <FaPlay size={10} />
+                Iniciar
               </Button>
             )}
             {props.controls.finish && (
               <Button size="small" onClick={props.onFinish} disabled={props.isControlPending}>
-                ✓ Concluir
+                <FaCheck size={10} />
+                Concluir
               </Button>
             )}
           </div>

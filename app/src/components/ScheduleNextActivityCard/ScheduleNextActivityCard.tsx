@@ -1,3 +1,4 @@
+import { FaPlay } from 'react-icons/fa'
 import type { ScheduleActivity } from '../../services/schedule/schedule.types'
 import { activityStartTime } from '../../utils/scheduleActivity/scheduleActivity'
 import { Button } from '../Button/Button'
@@ -23,30 +24,32 @@ export function ScheduleNextActivityCard(props: ScheduleNextActivityCardProps) {
   return (
     <section
       aria-label="Próxima atividade"
-      className="flex flex-col gap-3 rounded-xl border-2 border-dashed border-tertiary bg-white p-5"
+      className="flex flex-col gap-3 lg:flex-row rounded-xl border-2 border-dashed border-tertiary bg-white p-5 justify-between"
     >
-      <span className="text-xs font-bold tracking-wide text-primary">
-        PRÓXIMA ATIVIDADE · {activityStartTime(activity)}
-      </span>
+      <div className="flex flex-col gap-3">
+        <span className="text-xs font-bold tracking-wide text-primary">
+          PRÓXIMA ATIVIDADE · {activityStartTime(activity)}
+        </span>
 
-      <div className="flex flex-col gap-1">
-        <h2 className="m-0 text-2xl font-bold text-dark-brown">{activity.title}</h2>
-        <p className="m-0 text-sm text-gray-600">
-          {activity.place}
-          {activity.guestName && ` · Convidado: ${activity.guestName}`}
-        </p>
+        <div className="flex flex-col gap-1">
+          <h2 className="m-0 text-2xl font-bold text-dark-brown">{activity.title}</h2>
+          <p className="m-0 text-sm text-gray-600">
+            {activity.place}
+            {activity.guestName && ` · Convidado: ${activity.guestName}`}
+          </p>
+        </div>
+
+        <ScheduleActivityChips
+          activity={activity}
+          myTeamInstanceId={props.myTeamInstanceId}
+          withoutGuest
+        />
       </div>
-
-      <ScheduleActivityChips
-        activity={activity}
-        myTeamInstanceId={props.myTeamInstanceId}
-        withoutGuest
-      />
-
       {props.onStart && (
         <div>
           <Button onClick={props.onStart} disabled={props.isControlPending}>
-            ▶ Iniciar agora
+            <FaPlay />
+            Iniciar agora
           </Button>
         </div>
       )}

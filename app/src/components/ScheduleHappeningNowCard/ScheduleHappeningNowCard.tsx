@@ -1,3 +1,4 @@
+import { FaCheck } from 'react-icons/fa'
 import { toEventTime } from '../../../../common/schedule/toEventTime'
 import type { ScheduleActivity } from '../../services/schedule/schedule.types'
 import { activityStartTime } from '../../utils/scheduleActivity/scheduleActivity'
@@ -46,7 +47,8 @@ export function ScheduleHappeningNowCard(props: ScheduleHappeningNowCardProps) {
       {props.onFinish && (
         <div>
           <Button onClick={props.onFinish} disabled={props.isControlPending}>
-            ✓ Marcar como concluída
+            <FaCheck />
+            Marcar como concluída
           </Button>
         </div>
       )}
