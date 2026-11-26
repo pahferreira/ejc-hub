@@ -62,19 +62,28 @@ export function liveEditFormValues(
 }
 
 /**
- * The shape checks the form runs before it submits, on the parts it shows: a
- * trim is empty or a whole number of minutes above zero, and each actual time
- * is an `HH:mm`. Start before end and overlaps stay on the API.
+ * The checks the form runs before it submits, on the parts it shows: a trim
+ * is empty or a whole number of minutes above zero and no longer than the
+ * planned duration (Ajuste only shortens), each actual time is an `HH:mm`,
+ * and an end never shows the start's own `HH:mm` (that would be a day-long
+ * activity). Start before end across the day and overlaps stay on the API.
  */
 export function validateLiveEdit(
   values: LiveEditFormValues,
-  fields: LiveEditFields
+  fields: LiveEditFields,
+  plannedDurationMinutes: number
 ): LiveEditFieldErrors {
   const errors: LiveEditFieldErrors = {}
   const trim = values.adjustedDuration.trim()
 
-  if (fields.trim && trim !== '' && !(Number.isInteger(Number(trim)) && Number(trim) > 0)) {
-    errors.adjustedDuration = 'Informe uma duração maior que zero'
+  if (fields.trim && trim !== '') {
+    const minutes = Number(trim)
+
+    if (!(Number.isInteger(minutes) && minutes > 0)) {
+      errors.adjustedDuration = 'Informe uma duração maior que zero'
+    } else if (minutes > plannedDurationMinutes) {
+      errors.adjustedDuration = 'A duração ajustada não pode passar da planejada'
+    }
   }
 
   if (fields.start && !TIME_PATTERN.test(values.startTime)) {
@@ -83,6 +92,8 @@ export function validateLiveEdit(
 
   if (fields.end && !TIME_PATTERN.test(values.endTime)) {
     errors.endTime = 'Informe um horário'
+  } else if (fields.start && fields.end && values.endTime === values.startTime) {
+    errors.endTime = 'O fim real precisa ser depois do início'
   }
 
   return errors
@@ -139,6 +150,7 @@ const liveEditMessageByCode: Record<string, string> = {
   schedule_actual_end_in_future: 'O fim real não pode estar no futuro.',
   schedule_actual_times_overlap: 'Os horários reais se sobrepõem aos de outra atividade.',
   schedule_trim_not_positive: 'A duração ajustada precisa ser maior que zero.',
+  schedule_trim_exceeds_planned: 'A duração ajustada não pode passar da planejada.',
   schedule_trim_not_allowed:
     'Só uma atividade planejada ou em andamento pode ter a duração ajustada.',
   schedule_actual_time_not_allowed: 'Esta atividade não tem esse horário real para corrigir.',

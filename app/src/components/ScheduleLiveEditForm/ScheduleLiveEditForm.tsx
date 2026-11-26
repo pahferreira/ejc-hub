@@ -28,7 +28,7 @@ export type ScheduleLiveEditFormProps = {
  * The inline "AJUSTAR ATIVIDADE" card, in place of the timeline row it edits,
  * styled after Planejar Cronograma's activity form. Its parts follow the
  * status: "Duração ajustada (min)" for a planned or running activity, with the
- * planned duration for reference and "Remover ajuste"; the actual start for a
+ * planned duration for reference and as its ceiling, and "Remover ajuste"; the actual start for a
  * running or done one, and the actual end for a done one, as São Paulo `HH:mm`.
  */
 export function ScheduleLiveEditForm(props: ScheduleLiveEditFormProps) {
@@ -50,6 +50,7 @@ export function ScheduleLiveEditForm(props: ScheduleLiveEditFormProps) {
             name="adjustedDuration"
             type="number"
             min="1"
+            max={String(props.durationMinutes)}
             placeholder={String(props.durationMinutes)}
             value={values.adjustedDuration}
             onChange={(adjustedDuration) => onChange({ adjustedDuration })}

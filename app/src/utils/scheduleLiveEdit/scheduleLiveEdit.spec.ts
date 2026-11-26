@@ -80,7 +80,11 @@ describe('liveEditFormValues', () => {
 describe('validateLiveEdit', () => {
   it('accepts a whole trim and HH:mm times', () => {
     expect(
-      validateLiveEdit({ adjustedDuration: '20', startTime: '18:00', endTime: '18:30' }, ALL_FIELDS)
+      validateLiveEdit(
+        { adjustedDuration: '20', startTime: '18:00', endTime: '18:30' },
+        ALL_FIELDS,
+        45
+      )
     ).toEqual({})
   })
 
@@ -88,20 +92,55 @@ describe('validateLiveEdit', () => {
     expect(
       validateLiveEdit(
         { adjustedDuration: '', startTime: '', endTime: '' },
-        liveEditFields('planned')
+        liveEditFields('planned'),
+        45
       )
     ).toEqual({})
   })
 
+  it('accepts a trim equal to the planned duration', () => {
+    expect(
+      validateLiveEdit(
+        { adjustedDuration: '45', startTime: '', endTime: '' },
+        liveEditFields('planned'),
+        45
+      )
+    ).toEqual({})
+  })
+
+  it('refuses a trim longer than the planned duration', () => {
+    expect(
+      validateLiveEdit(
+        { adjustedDuration: '46', startTime: '', endTime: '' },
+        liveEditFields('planned'),
+        45
+      )
+    ).toEqual({ adjustedDuration: 'A duração ajustada não pode passar da planejada' })
+  })
+
+  it("refuses an end on the start's own HH:mm: never a day-long activity", () => {
+    expect(
+      validateLiveEdit(
+        { adjustedDuration: '', startTime: '18:00', endTime: '18:00' },
+        liveEditFields('done'),
+        45
+      )
+    ).toEqual({ endTime: 'O fim real precisa ser depois do início' })
+  })
+
   it.each(['0', '-5', '1.5', 'abc'])('refuses a trim of %s', (adjustedDuration) => {
     expect(
-      validateLiveEdit({ adjustedDuration, startTime: '', endTime: '' }, liveEditFields('planned'))
+      validateLiveEdit(
+        { adjustedDuration, startTime: '', endTime: '' },
+        liveEditFields('planned'),
+        45
+      )
     ).toEqual({ adjustedDuration: 'Informe uma duração maior que zero' })
   })
 
   it('refuses a missing or malformed actual time on the parts it shows', () => {
     expect(
-      validateLiveEdit({ adjustedDuration: '', startTime: '', endTime: '25:00' }, ALL_FIELDS)
+      validateLiveEdit({ adjustedDuration: '', startTime: '', endTime: '25:00' }, ALL_FIELDS, 45)
     ).toEqual({ startTime: 'Informe um horário', endTime: 'Informe um horário' })
   })
 })
@@ -164,6 +203,17 @@ describe('buildLiveEditBody', () => {
     ).toEqual({ expectedStatus: 'running', actualStartedAt: '2026-04-04T02:58:00.000Z' })
   })
 
+  it("never rolls an end on the start's own HH:mm to the next day", () => {
+    // Sent on the start's instant, for the API to refuse as not after the start.
+    expect(
+      buildLiveEditBody(DONE, { adjustedDuration: '', startTime: '18:00', endTime: '18:00' })
+    ).toEqual({
+      expectedStatus: 'done',
+      actualStartedAt: '2026-04-03T21:00:00.000Z',
+      actualEndedAt: '2026-04-03T21:00:00.000Z',
+    })
+  })
+
   it('sends a new trim, and the start of a running activity when it changed', () => {
     expect(
       buildLiveEditBody(RUNNING, { adjustedDuration: '20', startTime: '18:00', endTime: '' })
@@ -201,6 +251,7 @@ describe('liveEditErrorMessage', () => {
     ['schedule_actual_end_in_future', 'O fim real não pode estar no futuro.'],
     ['schedule_actual_times_overlap', 'Os horários reais se sobrepõem aos de outra atividade.'],
     ['schedule_trim_not_positive', 'A duração ajustada precisa ser maior que zero.'],
+    ['schedule_trim_exceeds_planned', 'A duração ajustada não pode passar da planejada.'],
     [
       'schedule_trim_not_allowed',
       'Só uma atividade planejada ou em andamento pode ter a duração ajustada.',

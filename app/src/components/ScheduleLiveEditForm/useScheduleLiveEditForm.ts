@@ -67,7 +67,10 @@ export function useScheduleLiveEditForm() {
   const [apiError, setApiError] = useState<string>()
 
   const fields = liveEditFields(activity?.status ?? 'skipped')
-  const fieldErrors: LiveEditFieldErrors = isSubmitted ? validateLiveEdit(values, fields) : {}
+  const plannedDuration = activity?.durationMinutes ?? 0
+  const fieldErrors: LiveEditFieldErrors = isSubmitted
+    ? validateLiveEdit(values, fields, plannedDuration)
+    : {}
 
   const open = (next: ScheduleActivity) => {
     setActivity(next)
@@ -129,7 +132,7 @@ export function useScheduleLiveEditForm() {
 
     setIsSubmitted(true)
 
-    if (Object.keys(validateLiveEdit(values, fields)).length > 0) {
+    if (Object.keys(validateLiveEdit(values, fields, plannedDuration)).length > 0) {
       return
     }
 

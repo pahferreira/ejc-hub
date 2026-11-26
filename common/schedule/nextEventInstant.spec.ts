@@ -15,9 +15,16 @@ describe('nextEventInstant', () => {
     )
   })
 
-  it('rolls the very same time to the next day', () => {
+  it('keeps the very same HH:mm on the same instant, never a day later', () => {
     expect(nextEventInstant(new Date('2026-04-03T21:00:00Z'), '18:00')).toEqual(
-      new Date('2026-04-04T21:00:00Z')
+      new Date('2026-04-03T21:00:00Z')
+    )
+  })
+
+  it('keeps the same HH:mm on its date when the start has seconds', () => {
+    // 18:00:30: the end lands at 18:00:00, before it, not on the next day.
+    expect(nextEventInstant(new Date('2026-04-03T21:00:30Z'), '18:00')).toEqual(
+      new Date('2026-04-03T21:00:00Z')
     )
   })
 })
