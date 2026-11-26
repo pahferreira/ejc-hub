@@ -646,7 +646,8 @@ export class Schedule {
    *
    * - The actual start can be set on a running or done activity, the actual end
    *   only on a done one: the others have no such time to correct.
-   * - The trim must be greater than zero, on a planned or running activity.
+   * - The trim must be greater than zero and no longer than the planned
+   *   duration, on a planned or running activity.
    * - The start must be before the end, and neither can be in the future: a
    *   running activity's end is now, so its start can't move past it.
    * - The corrected interval must not overlap another activity's actual one
@@ -709,6 +710,19 @@ export class Schedule {
           throw new AppError(
             'The trim must be greater than zero',
             AppErrorCode.ScheduleTrimNotPositive
+          )
+        }
+
+        // Ajuste only shortens. Checked here, not by a CHECK constraint: a
+        // planned activity's duration stays editable, and shrinking it below
+        // its trim would turn that edit into a constraint violation.
+        if (
+          adjustedDurationMinutes !== null &&
+          adjustedDurationMinutes > activity.durationMinutes
+        ) {
+          throw new AppError(
+            'The trim cannot be longer than the planned duration',
+            AppErrorCode.ScheduleTrimExceedsPlanned
           )
         }
       }

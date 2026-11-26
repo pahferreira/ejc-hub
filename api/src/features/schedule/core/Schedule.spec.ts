@@ -1714,6 +1714,37 @@ describe('Schedule', () => {
         expect(await stored('a3')).toMatchObject({ adjustedDurationMinutes: null })
       })
 
+      it('refuses a trim longer than the planned duration', async () => {
+        schedule = dayInProgress()
+
+        await expectAppError(
+          schedule.updateActivityLive('a3', live('planned', { adjustedDurationMinutes: 61 })),
+          AppErrorCode.ScheduleTrimExceedsPlanned
+        )
+        expect(await stored('a3')).toMatchObject({ adjustedDurationMinutes: null })
+      })
+
+      it('allows a trim equal to the planned duration', async () => {
+        schedule = dayInProgress()
+
+        await schedule.updateActivityLive('a3', live('planned', { adjustedDurationMinutes: 60 }))
+
+        expect(await stored('a3')).toMatchObject({ adjustedDurationMinutes: 60 })
+      })
+
+      it('refuses an end at the very start: the same HH:mm never makes a day-long activity', async () => {
+        schedule = dayInProgress()
+
+        await expectAppError(
+          schedule.updateActivityLive(
+            'a1',
+            live('done', { actualStartedAt: FRI_18H, actualEndedAt: FRI_18H })
+          ),
+          AppErrorCode.ScheduleActualStartNotBeforeEnd
+        )
+        expect(await stored('a1')).toMatchObject({ actualEndedAt: new Date(FRI_1830) })
+      })
+
       it.each(['done', 'skipped'] as const)('refuses a trim on a %s activity', async (status) => {
         schedule = buildClockSchedule([
           storedActivity('a1', 'day-fri', FRI_18H, 30, {

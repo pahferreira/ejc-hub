@@ -723,6 +723,7 @@ describe('schedule routes', () => {
       AppErrorCode.ScheduleActualTimeNotAllowed,
       AppErrorCode.ScheduleTrimNotAllowed,
       AppErrorCode.ScheduleTrimNotPositive,
+      AppErrorCode.ScheduleTrimExceedsPlanned,
       AppErrorCode.ScheduleActualStartNotBeforeEnd,
       AppErrorCode.ScheduleActualStartInFuture,
       AppErrorCode.ScheduleActualEndInFuture,

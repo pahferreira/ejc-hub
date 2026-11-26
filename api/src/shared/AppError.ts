@@ -27,6 +27,7 @@ export const AppErrorCode = {
   ScheduleActualTimeNotAllowed: 'schedule_actual_time_not_allowed',
   ScheduleTrimNotAllowed: 'schedule_trim_not_allowed',
   ScheduleTrimNotPositive: 'schedule_trim_not_positive',
+  ScheduleTrimExceedsPlanned: 'schedule_trim_exceeds_planned',
   ScheduleActualStartNotBeforeEnd: 'schedule_actual_start_not_before_end',
   ScheduleActualStartInFuture: 'schedule_actual_start_in_future',
   ScheduleActualEndInFuture: 'schedule_actual_end_in_future',

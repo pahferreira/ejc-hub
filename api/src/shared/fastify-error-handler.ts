@@ -37,6 +37,7 @@ const appErrorStatus: Partial<Record<string, number>> = {
   [AppErrorCode.ScheduleActualTimeNotAllowed]: HttpStatus.BadRequest,
   [AppErrorCode.ScheduleTrimNotAllowed]: HttpStatus.BadRequest,
   [AppErrorCode.ScheduleTrimNotPositive]: HttpStatus.BadRequest,
+  [AppErrorCode.ScheduleTrimExceedsPlanned]: HttpStatus.BadRequest,
   [AppErrorCode.ScheduleActualStartNotBeforeEnd]: HttpStatus.BadRequest,
   [AppErrorCode.ScheduleActualStartInFuture]: HttpStatus.BadRequest,
   [AppErrorCode.ScheduleActualEndInFuture]: HttpStatus.BadRequest,
