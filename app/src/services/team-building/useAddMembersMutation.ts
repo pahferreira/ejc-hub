@@ -2,6 +2,7 @@ import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-quer
 import { teamBuildingApi } from './team-building.api'
 import { teamBuildingQueryKeys } from './team-building.types'
 import { teamsOverviewQueryKeys } from '../teams/teams.types'
+import { attendanceQueryKeys } from '../attendance/attendance.types'
 
 type AddMembersVars = {
   teamInstanceId: string
@@ -15,6 +16,7 @@ export function addMembersStaleKeys(teamInstanceId: string): QueryKey[] {
     teamsOverviewQueryKeys.lists,
     teamsOverviewQueryKeys.details,
     teamBuildingQueryKeys.teamCandidates(teamInstanceId),
+    attendanceQueryKeys.team(teamInstanceId),
   ]
 }
 
