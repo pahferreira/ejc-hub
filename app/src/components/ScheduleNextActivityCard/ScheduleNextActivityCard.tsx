@@ -16,7 +16,7 @@ export type ScheduleNextActivityCardProps = {
 /**
  * The Cronograma's top slot when nothing runs: a dashed "PRÓXIMA ATIVIDADE"
  * card with the title, its planned start, "place · Convidado: name", the team
- * chips and the admin's "▶ Iniciar agora".
+ * chips and the admin's "Iniciar agora".
  */
 export function ScheduleNextActivityCard(props: ScheduleNextActivityCardProps) {
   const { activity } = props

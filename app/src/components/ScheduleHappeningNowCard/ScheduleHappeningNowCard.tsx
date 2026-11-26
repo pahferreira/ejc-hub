@@ -19,7 +19,7 @@ export type ScheduleHappeningNowCardProps = {
 /**
  * The Cronograma's top slot while an activity runs: "ACONTECENDO AGORA", its
  * title, place and who is responsible, "Previsto HH:mm · Iniciado HH:mm", the
- * admin's "✓ Marcar como concluída", and "Próxima: {title} às HH:mm".
+ * admin's "Marcar como concluída", and "Próxima: {title} às HH:mm".
  */
 export function ScheduleHappeningNowCard(props: ScheduleHappeningNowCardProps) {
   const { activity } = props

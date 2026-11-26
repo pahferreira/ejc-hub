@@ -57,9 +57,9 @@ function eventTime(instant: string): string {
  * "place · Convidado: name". The viewer's team's rows get an accent left
  * border and a "Sua equipe" label beside their team's chip.
  *
- * Live, a done row is muted under a "CONCLUÍDO" chip and shows its actual
+ * Live, a done row is muted and shows its actual
  * times; the running row gets "● ACONTECENDO AGORA" and a filled dot. The
- * controls given show as "▶ Iniciar" and "✓ Concluir".
+ * controls given show as "Iniciar" and "Concluir".
  */
 export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
   const { activity } = props
