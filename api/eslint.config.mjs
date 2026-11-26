@@ -98,6 +98,7 @@ export default defineConfig([
               group: [
                 '**/shared/AppError*',
                 '**/shared/is-unique-violation*',
+                '**/shared/is-foreign-key-violation*',
                 '**/core/database/client*',
               ],
               message:

@@ -1732,6 +1732,56 @@ describe('Schedule', () => {
         )
       })
 
+      it('answers not found when the activity is deleted before the insert', async () => {
+        // The activity FK refuses the insert: Postgres' foreign_key_violation,
+        // wrapped the way Drizzle wraps driver errors.
+        noteRepository.insertNote = () =>
+          Promise.reject(
+            Object.assign(new Error('Failed query'), {
+              cause: Object.assign(new Error('violates foreign key constraint'), {
+                code: '23503',
+                constraint: 'schedule_activity_notes_activity_id_schedule_activities_id_fk',
+              }),
+            })
+          )
+
+        await expectAppError(
+          schedule.createNote('act', {
+            authorAuthId: CHIEF.authId,
+            permissions: CHIEF.permissions,
+            body: 'Oi',
+          }),
+          AppErrorCode.NotFound
+        )
+      })
+
+      it("checks the coordinator's membership and inserts in the same transaction", async () => {
+        const findMembership = vi.fn(() =>
+          Promise.resolve(memberships['user-coordinator'] as EventMembership | undefined)
+        )
+        const insertNote = vi.spyOn(noteRepository, 'insertNote')
+        schedule = buildSchedule(
+          buildEventRepository(buildEvent()),
+          buildDayRepository([storedDay('day-fri', '2026-04-03')]),
+          {
+            ...buildActivityRepositories([activityWith('liturgia')]),
+            teamMembershipRepository: {
+              findMembershipByUserAndEvent: findMembership,
+            } as unknown as TeamMembershipRepository,
+            noteRepository,
+          }
+        )
+
+        await schedule.createNote('act', {
+          authorAuthId: COORDINATOR.authId,
+          permissions: COORDINATOR.permissions,
+          body: 'Levar os violões',
+        })
+
+        expect(findMembership).toHaveBeenCalledWith('user-coordinator', EVENT_ID, { tx: true })
+        expect(insertNote).toHaveBeenCalledWith(expect.anything(), { tx: true })
+      })
+
       it('refuses with no current event', async () => {
         schedule = buildSchedule(buildEventRepository(undefined), dayRepository, { noteRepository })
 

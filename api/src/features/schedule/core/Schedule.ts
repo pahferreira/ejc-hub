@@ -1,6 +1,7 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
-import { runInTransaction } from '../../../core/database/client.ts'
+import { runInTransaction, type DbExecutor } from '../../../core/database/client.ts'
 import { isUniqueViolation } from '../../../shared/is-unique-violation.ts'
+import { isForeignKeyViolation } from '../../../shared/is-foreign-key-violation.ts'
 import type { EventModel } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { ScheduleDayRepository } from '../../../modules/schedule-day/domain/ScheduleDayRepository.ts'
@@ -51,6 +52,7 @@ const DAY_DATE_UNIQUE = 'schedule_days_event_id_date_unique'
 const DAY_DATE_TAKEN = 'The event already has a day on this date'
 const ONE_RUNNING_UNIQUE = 'schedule_activities_one_running_per_event_idx'
 const SCHEDULE_CHANGED = 'The schedule changed since it was read'
+const NOTE_ACTIVITY_FK = 'schedule_activity_notes_activity_id_schedule_activities_id_fk'
 
 /**
  * The single entry point for schedule (Cronograma) reads and writes.
@@ -176,7 +178,9 @@ export class Schedule {
   /**
    * Who the viewer reads notes as. Anyone who runs the clock reads as an admin,
    * even when on a team, so an admin always sees the notes they wrote. Everyone
-   * else reads in the role `#resolveViewerTeam` gave them.
+   * else reads in the role `#resolveViewerTeam` gave them. A team role always
+   * comes with a team; if it ever didn't, the read is refused rather than let
+   * through as an admin.
    */
   #noteReader(
     viewer: ScheduleViewer,
@@ -184,10 +188,13 @@ export class Schedule {
   ): NoteReader {
     if (
       hasPermission(viewer.permissions, SchedulePermissions.Control) ||
-      viewerTeam.viewerRole === 'admin' ||
-      !viewerTeam.myTeamInstanceId
+      viewerTeam.viewerRole === 'admin'
     ) {
       return { role: 'admin' }
+    }
+
+    if (!viewerTeam.myTeamInstanceId) {
+      throw new AppError('A team role without a team cannot read notes', AppErrorCode.Forbidden)
     }
 
     return { role: viewerTeam.viewerRole, teamInstanceId: viewerTeam.myTeamInstanceId }
@@ -701,7 +708,11 @@ export class Schedule {
    * Leaves a note on one of the current event's activities. Whoever runs the
    * clock (`schedule:control`) writes as an admin. Anyone else must coordinate a
    * team in the current event; the note keeps that team, so it still reaches the
-   * same team if the coordinator moves. Members and outsiders are refused.
+   * same team if the coordinator moves. Members and outsiders are refused. The
+   * coordinator check and the insert share one transaction.
+   *
+   * Accepted race: a coordinator removed between the check and the insert still
+   * leaves the note; no constraint ties a note to a live membership.
    */
   async createNote(
     activityId: string,
@@ -720,30 +731,48 @@ export class Schedule {
         throw new AppError('Only a registered user can leave a note', AppErrorCode.Forbidden)
       }
 
-      const author = hasPermission(input.permissions, SchedulePermissions.Control)
-        ? { authorRole: 'admin' as const, teamInstanceId: null }
-        : await this.#resolveCoordinatorAuthor(user.id, event.id)
+      const isAdmin = hasPermission(input.permissions, SchedulePermissions.Control)
 
-      const note = await this.#scheduleActivityNoteRepository.insertNote({
-        activityId: activity.id,
-        eventId: event.id,
-        authorId: user.id,
-        body: input.body,
-        ...author,
-      })
+      try {
+        const note = await runInTransaction(async (tx) => {
+          const author = isAdmin
+            ? { authorRole: 'admin' as const, teamInstanceId: null }
+            : await this.#resolveCoordinatorAuthor(user.id, event.id, tx)
 
-      return { noteId: note.id, activityId: activity.id }
+          return this.#scheduleActivityNoteRepository.insertNote(
+            {
+              activityId: activity.id,
+              eventId: event.id,
+              authorId: user.id,
+              body: input.body,
+              ...author,
+            },
+            tx
+          )
+        })
+
+        return { noteId: note.id, activityId: activity.id }
+      } catch (error) {
+        // Deleted by an admin since the read: the activity FK refuses the insert.
+        if (isForeignKeyViolation(error, NOTE_ACTIVITY_FK)) {
+          throw new AppError('Schedule activity not found', AppErrorCode.NotFound)
+        }
+
+        throw error
+      }
     })
   }
 
   /** A coordinator writes for their team in the event; anyone else is refused. */
   async #resolveCoordinatorAuthor(
     userId: string,
-    eventId: string
+    eventId: string,
+    executor: DbExecutor
   ): Promise<{ authorRole: 'coordinator'; teamInstanceId: string }> {
     const membership = await this.#teamMembershipRepository.findMembershipByUserAndEvent(
       userId,
-      eventId
+      eventId,
+      executor
     )
 
     if (membership?.type !== 'coordinator') {

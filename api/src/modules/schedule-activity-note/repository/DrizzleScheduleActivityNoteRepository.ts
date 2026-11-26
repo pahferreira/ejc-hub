@@ -1,5 +1,5 @@
 import { asc, eq } from 'drizzle-orm'
-import { db } from '../../../core/database/client.ts'
+import { db, type DbExecutor } from '../../../core/database/client.ts'
 import { schema } from '../../../core/database/schemas/index.ts'
 import type {
   InsertScheduleActivityNoteInput,
@@ -25,8 +25,8 @@ class DrizzleScheduleActivityNoteRepository implements ScheduleActivityNoteRepos
       .orderBy(asc(schema.scheduleActivityNotes.createdAt), asc(schema.scheduleActivityNotes.id))
   }
 
-  async insertNote(input: InsertScheduleActivityNoteInput) {
-    const rows = await db
+  async insertNote(input: InsertScheduleActivityNoteInput, executor: DbExecutor = db) {
+    const rows = await executor
       .insert(schema.scheduleActivityNotes)
       .values({
         activityId: input.activityId,

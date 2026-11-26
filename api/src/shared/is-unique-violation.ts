@@ -1,5 +1,5 @@
 /**
- * Postgres' `unique_violation`. The one error code this codebase reads.
+ * Postgres' `unique_violation`.
  *
  * @see https://www.postgresql.org/docs/current/errcodes-appendix.html
  */
@@ -45,6 +45,15 @@ function isObject(value: unknown): value is Record<string, unknown> {
  * always `unknown`.
  */
 export function isUniqueViolation(error: unknown, constraint?: string): boolean {
+  return isPostgresViolation(error, UNIQUE_VIOLATION, constraint)
+}
+
+/**
+ * Whether an error, or one of its `cause`s, is a Postgres error with `code`,
+ * optionally of one named constraint. The walk behind `isUniqueViolation` and
+ * `isForeignKeyViolation`.
+ */
+export function isPostgresViolation(error: unknown, code: string, constraint?: string): boolean {
   let current: unknown = error
 
   for (let depth = 0; depth <= MAX_CAUSE_DEPTH; depth += 1) {
@@ -54,8 +63,8 @@ export function isUniqueViolation(error: unknown, constraint?: string): boolean 
 
     const candidate = current as PostgresError
 
-    if (candidate.code === UNIQUE_VIOLATION) {
-      // No constraint asked for means any unique violation counts.
+    if (candidate.code === code) {
+      // No constraint asked for means any violation of that code counts.
       return constraint === undefined || candidate.constraint === constraint
     }
 

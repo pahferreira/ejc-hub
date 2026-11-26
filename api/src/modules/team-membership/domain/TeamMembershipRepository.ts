@@ -69,7 +69,8 @@ export interface TeamMembershipRepository {
    */
   findMembershipByUserAndEvent: (
     userId: string,
-    eventId: string
+    eventId: string,
+    executor?: DbExecutor
   ) => Promise<EventMembership | undefined>
   /** The user ids of a team's coordinators (a flat, unordered peer set). */
   getCoordinatorUserIds: (teamInstanceId: string) => Promise<string[]>
