@@ -1,15 +1,12 @@
 import clsx from 'clsx'
 import { toEventTime } from '../../../../common/schedule/toEventTime'
 import type { ScheduleActivity } from '../../services/schedule/schedule.types'
-import {
-  activityEndTime,
-  activityStartTime,
-  formatDuration,
-} from '../../utils/scheduleActivity/scheduleActivity'
+import { activityEndTime, activityStartTime } from '../../utils/scheduleActivity/scheduleActivity'
 import type { ActivityControls } from '../../utils/scheduleLive/scheduleLive'
 import { isMyTeamActivity } from '../../utils/scheduleTimeline/scheduleTimeline'
 import { Button } from '../Button/Button'
 import { ScheduleActivityChips } from '../ScheduleActivityChips/ScheduleActivityChips'
+import { ScheduleActivityDuration } from '../ScheduleActivityDuration/ScheduleActivityDuration'
 
 export type ScheduleTimelineRowProps = {
   activity: ScheduleActivity
@@ -30,6 +27,11 @@ export type ScheduleTimelineRowProps = {
   onFinish?: () => void
   /** A control request is in flight: the buttons are disabled. */
   isControlPending?: boolean
+  /**
+   * Opens the live-edit form (trim, actual times). Shows the "✎" when given:
+   * only for whoever can control the clock.
+   */
+  onEdit?: () => void
 }
 
 function StatusChip(props: { children: React.ReactNode; tone: 'running' | 'done' }) {
@@ -58,7 +60,9 @@ function eventTime(instant: string): string {
  *
  * Live, a done row is muted under a "CONCLUÍDO" chip and shows its actual
  * times; the running row gets "● ACONTECENDO AGORA" and a filled dot. The
- * controls given show as "▶ Iniciar" and "✓ Concluir".
+ * controls given show as "▶ Iniciar" and "✓ Concluir". A trimmed activity
+ * shows its planned duration struck through beside the trimmed one, and the
+ * admin's "✎" opens the live-edit form.
  */
 export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
   const { activity } = props
@@ -77,9 +81,11 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
     <li className={clsx('flex gap-4', isDone && 'opacity-60')}>
       <div className="flex w-16 shrink-0 flex-col items-end pt-3 text-right">
         <span className="text-base font-bold leading-tight text-dark-brown">{startTime}</span>
-        <span className="text-xs font-semibold text-primary">
-          {formatDuration(activity.durationMinutes)}
-        </span>
+        <ScheduleActivityDuration
+          className="text-xs font-semibold text-primary"
+          durationMinutes={activity.durationMinutes}
+          adjustedDurationMinutes={props.live ? activity.adjustedDurationMinutes : null}
+        />
       </div>
 
       <div aria-hidden className="relative flex w-3 shrink-0 justify-center">
@@ -101,12 +107,21 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
           isRunning && 'border-2 border-primary'
         )}
       >
-        {(isRunning || isDone) && (
-          <div>
-            {isRunning ? (
-              <StatusChip tone="running">● ACONTECENDO AGORA</StatusChip>
-            ) : (
-              <StatusChip tone="done">CONCLUÍDO</StatusChip>
+        {(isRunning || isDone || props.onEdit) && (
+          <div className="flex items-start justify-between gap-2">
+            {isRunning && <StatusChip tone="running">● ACONTECENDO AGORA</StatusChip>}
+            {isDone && <StatusChip tone="done">CONCLUÍDO</StatusChip>}
+            {props.onEdit && (
+              <span className="ml-auto">
+                <Button
+                  variant="text"
+                  size="small"
+                  ariaLabel={`Ajustar ${activity.title}`}
+                  onClick={props.onEdit}
+                >
+                  ✎
+                </Button>
+              </span>
             )}
           </div>
         )}

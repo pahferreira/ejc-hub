@@ -3,6 +3,7 @@ import type { ScheduleActivity } from '../../services/schedule/schedule.types'
 import { activityStartTime } from '../../utils/scheduleActivity/scheduleActivity'
 import { Button } from '../Button/Button'
 import { ScheduleActivityChips } from '../ScheduleActivityChips/ScheduleActivityChips'
+import { ScheduleActivityDuration } from '../ScheduleActivityDuration/ScheduleActivityDuration'
 
 export type ScheduleHappeningNowCardProps = {
   /** The running activity. */
@@ -17,7 +18,8 @@ export type ScheduleHappeningNowCardProps = {
 
 /**
  * The Cronograma's top slot while an activity runs: "ACONTECENDO AGORA", its
- * title, place and who is responsible, "Previsto HH:mm · Iniciado HH:mm", the
+ * title, place and who is responsible, "Previsto HH:mm · Iniciado HH:mm" (plus
+ * the planned and trimmed durations once trimmed), the
  * admin's "✓ Marcar como concluída", and "Próxima: {title} às HH:mm".
  */
 export function ScheduleHappeningNowCard(props: ScheduleHappeningNowCardProps) {
@@ -41,6 +43,15 @@ export function ScheduleHappeningNowCard(props: ScheduleHappeningNowCardProps) {
         Previsto {activityStartTime(activity)}
         {activity.actualStartedAt &&
           ` · Iniciado ${toEventTime(new Date(activity.actualStartedAt))}`}
+        {activity.adjustedDurationMinutes !== null && (
+          <>
+            {' · Duração '}
+            <ScheduleActivityDuration
+              durationMinutes={activity.durationMinutes}
+              adjustedDurationMinutes={activity.adjustedDurationMinutes}
+            />
+          </>
+        )}
       </p>
 
       {props.onFinish && (

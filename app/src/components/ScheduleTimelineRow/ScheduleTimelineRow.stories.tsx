@@ -203,3 +203,38 @@ export const RunningForMembers: Story = {
     await expect(canvas.queryByRole('button')).not.toBeInTheDocument()
   },
 }
+
+/** A trimmed upcoming activity: the planned duration struck through, the trimmed one next to it. */
+export const Trimmed: Story = {
+  args: {
+    live: true,
+    activity: { ...meta.args.activity, adjustedDurationMinutes: 30, effectiveDurationMinutes: 30 },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByLabelText('Planejada: 45 min').tagName).toBe('S')
+    await expect(canvas.getByLabelText('Ajustada: 30 min')).toBeVisible()
+  },
+}
+
+/** An admin's row: the "✎" opens the live-edit form. */
+export const Editable: Story = {
+  args: { live: true, onEdit: fn() },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Ajustar Palestra: O amor de Deus' }))
+    await expect(args.onEdit).toHaveBeenCalled()
+  },
+}
+
+/** Without `onEdit` (members, coordinators): no "✎". */
+export const NotEditable: Story = {
+  args: { live: true },
+  play: async ({ canvasElement }) => {
+    await expect(
+      within(canvasElement).queryByRole('button', { name: /^Ajustar/ })
+    ).not.toBeInTheDocument()
+  },
+}

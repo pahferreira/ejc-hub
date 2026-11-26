@@ -2,6 +2,8 @@ import { FiCalendar } from 'react-icons/fi'
 import { hasPermission, SchedulePermissions } from '../../../../common/permissions'
 import { ScheduleDayCard } from '../../components/ScheduleDayCard/ScheduleDayCard'
 import { ScheduleHappeningNowCard } from '../../components/ScheduleHappeningNowCard/ScheduleHappeningNowCard'
+import { ScheduleLiveEditForm } from '../../components/ScheduleLiveEditForm/ScheduleLiveEditForm'
+import { useScheduleLiveEditForm } from '../../components/ScheduleLiveEditForm/useScheduleLiveEditForm'
 import { ScheduleNextActivityCard } from '../../components/ScheduleNextActivityCard/ScheduleNextActivityCard'
 import { ScheduleTimelineRow } from '../../components/ScheduleTimelineRow/ScheduleTimelineRow'
 import { useAuthentication } from '../../hooks/useAuthentication'
@@ -19,6 +21,7 @@ import {
   nextPlannedActivity,
   runningActivity,
 } from '../../utils/scheduleLive/scheduleLive'
+import { canEditLive } from '../../utils/scheduleLiveEdit/scheduleLiveEdit'
 import { groupActivitiesByPeriod } from '../../utils/scheduleTimeline/scheduleTimeline'
 import { useScheduleControls } from './useScheduleControls'
 import { useSelectedScheduleDay } from './useSelectedScheduleDay'
@@ -54,7 +57,9 @@ function errorMessage(error: unknown): string {
  *
  * Behind `ScheduleLive`, the Running Schedule: a top slot with the running
  * activity (or the next one when nothing runs), each row's status, the days'
- * "Concluído n/m", and the clock controls for whoever holds `schedule:control`.
+ * "Concluído n/m", and the clock controls for whoever holds `schedule:control`,
+ * including the "✎" that opens the live-edit form (trim, actual times) in place
+ * of its row.
  */
 export function SchedulePage() {
   const scheduleQuery = useScheduleQuery()
@@ -63,6 +68,7 @@ export function SchedulePage() {
   const { permissions } = useAuthentication()
   const { isFeatureEnabled } = useFeatureFlag()
   const controls = useScheduleControls()
+  const liveEdit = useScheduleLiveEditForm()
 
   const isLive = isFeatureEnabled(FeatureFlag.ScheduleLive, false)
   const canControl = isLive && hasPermission(permissions, SchedulePermissions.Control)
@@ -153,18 +159,40 @@ export function SchedulePage() {
                     {group.label}
                   </h3>
                   <ol className="m-0 list-none p-0">
-                    {group.activities.map((activity) => (
-                      <ScheduleTimelineRow
-                        key={activity.id}
-                        activity={activity}
-                        myTeamInstanceId={myTeamInstanceId}
-                        live={isLive}
-                        controls={activityControls(activity, next?.id ?? null, canControl)}
-                        onStart={() => controls.start(activity)}
-                        onFinish={() => controls.finish(activity)}
-                        isControlPending={controls.isPending}
-                      />
-                    ))}
+                    {group.activities.map((activity) =>
+                      liveEdit.editingActivityId === activity.id ? (
+                        <li key={activity.id} className="mb-3">
+                          <ScheduleLiveEditForm
+                            title={activity.title}
+                            durationMinutes={activity.durationMinutes}
+                            fields={liveEdit.fields}
+                            values={liveEdit.values}
+                            onChange={liveEdit.change}
+                            fieldErrors={liveEdit.fieldErrors}
+                            error={liveEdit.error}
+                            onSubmit={liveEdit.submit}
+                            onCancel={liveEdit.close}
+                            isSubmitting={liveEdit.isSubmitting}
+                          />
+                        </li>
+                      ) : (
+                        <ScheduleTimelineRow
+                          key={activity.id}
+                          activity={activity}
+                          myTeamInstanceId={myTeamInstanceId}
+                          live={isLive}
+                          controls={activityControls(activity, next?.id ?? null, canControl)}
+                          onStart={() => controls.start(activity)}
+                          onFinish={() => controls.finish(activity)}
+                          isControlPending={controls.isPending}
+                          onEdit={
+                            canControl && canEditLive(activity.status)
+                              ? () => liveEdit.open(activity)
+                              : undefined
+                          }
+                        />
+                      )
+                    )}
                   </ol>
                 </div>
               ))}

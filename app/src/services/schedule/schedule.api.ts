@@ -10,6 +10,8 @@ import type {
   ScheduleActivityControlBody,
   ScheduleReadModel,
   StartScheduleActivityResult,
+  UpdateScheduleActivityLiveBody,
+  UpdateScheduleActivityLiveResult,
   UpdateScheduleActivityResult,
   UpdateScheduleDayBody,
   UpdateScheduleDayResult,
@@ -218,6 +220,36 @@ async function finishActivity(input: { activityId: string; body: ScheduleActivit
   }
 }
 
+const LIVE_TIMES_REFUSED =
+  'Confira os horários: o início precisa ser antes do fim e não pode se sobrepor ao de outra atividade.'
+const LIVE_TRIM_REFUSED = 'A duração ajustada precisa ser maior que zero.'
+
+/**
+ * Corrects an activity's actual times or trims it. A 409 is "O cronograma
+ * mudou"; a 400 reads as the rule the fields sent can break.
+ */
+async function updateActivityLive(input: {
+  activityId: string
+  body: UpdateScheduleActivityLiveBody
+}) {
+  try {
+    const response = await api.patch<{ result: UpdateScheduleActivityLiveResult }>(
+      `/schedule/activities/${input.activityId}/live`,
+      input.body
+    )
+
+    return response.data.result
+  } catch (error: unknown) {
+    if (apiErrorStatus(error) !== 400) {
+      throw toControlError(error, 'Não foi possível salvar o ajuste.')
+    }
+
+    const sentTimes =
+      input.body.actualStartedAt !== undefined || input.body.actualEndedAt !== undefined
+    throw new Error(sentTimes ? LIVE_TIMES_REFUSED : LIVE_TRIM_REFUSED)
+  }
+}
+
 export const scheduleApi = {
   getSchedule,
   createDay,
@@ -228,4 +260,5 @@ export const scheduleApi = {
   deleteDay,
   startActivity,
   finishActivity,
+  updateActivityLive,
 }
