@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { FaCheck } from 'react-icons/fa'
 import { toEventTime } from '../../../../common/schedule/toEventTime'
 import type { ScheduleActivity } from '../../services/schedule/schedule.types'
 import { activityStartTime } from '../../utils/scheduleActivity/scheduleActivity'
@@ -31,7 +32,7 @@ export type ScheduleHappeningNowCardProps = {
  * The Cronograma's top slot while an activity runs: "ACONTECENDO AGORA" with
  * an "● AO VIVO" timer counting down its effective duration, its title, place
  * and who is responsible, "Previsto HH:mm · Iniciado HH:mm", "Decorridos" with
- * a progress bar, the admin's "✓ Marcar como concluída", and "Próxima: {title}
+ * a progress bar, the admin's "Marcar como concluída", and "Próxima: {title}
  * às {Previsão}". Past its duration the timer, "Excedeu em" and a "+N min"
  * chip turn red and grow.
  */
@@ -104,7 +105,8 @@ export function ScheduleHappeningNowCard(props: ScheduleHappeningNowCardProps) {
       {props.onFinish && (
         <div>
           <Button onClick={props.onFinish} disabled={props.isControlPending}>
-            ✓ Marcar como concluída
+            <FaCheck />
+            Marcar como concluída
           </Button>
         </div>
       )}

@@ -22,6 +22,7 @@ function buildRow(
     circleKey: null,
     areas: [],
     preferences: [],
+    weekAvailability: [],
     rowStatus: 'requestable',
     ...overrides,
   }

@@ -12,6 +12,7 @@ const member: RequestMemberRow = {
   circleKey: null,
   areas: ['Comunicação', 'Acolhimento'],
   preferences: [{ teamInstanceId: 't-1', name: 'Liturgia' }],
+  weekAvailability: ['tuesday', 'thursday', 'saturday'],
   rowStatus: 'requestable',
 }
 
@@ -91,6 +92,19 @@ export const NoSlotsLeft: Story = {
     const screen = within(canvasElement.ownerDocument.body)
 
     await expect(screen.getByText('0 vagas restantes')).toBeVisible()
+  },
+}
+
+/** A legacy subscription with no days: the summary simply omits the row. */
+export const NoAvailability: Story = {
+  args: {
+    member: { ...member, weekAvailability: [] },
+  },
+  play: async ({ canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body)
+
+    await expect(screen.getByText('Mari')).toBeVisible()
+    await expect(screen.queryByTitle('Segunda')).not.toBeInTheDocument()
   },
 }
 

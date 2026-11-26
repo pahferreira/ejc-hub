@@ -19,6 +19,7 @@ import { Button } from '../Button/Button'
 import { ScheduleActivityChips } from '../ScheduleActivityChips/ScheduleActivityChips'
 import { ScheduleDriftChip } from '../ScheduleDriftChip/ScheduleDriftChip'
 import { DRIFT_TONE_DOT_CLASSES } from '../ScheduleDriftChip/driftToneClasses'
+import { FaCheck, FaPlay } from 'react-icons/fa'
 
 export type ScheduleTimelineRowProps = {
   activity: ScheduleActivity
@@ -102,12 +103,12 @@ function rowTimes(props: ScheduleTimelineRowProps) {
  * "place · Convidado: name". The viewer's team's rows get an accent left
  * border and a "Sua equipe" label beside their team's chip.
  *
- * Live, a done row is muted under a "CONCLUÍDO" chip and shows its actual
+ * Live, a done row is muted and shows its actual
  * times and how long it really took; the running row gets "● ACONTECENDO
  * AGORA" and a filled dot. A remaining row shows its Previsão, with the
  * planned start struck through and a "PREVISTO" chip when they differ, and
  * its dot is colored on time, late or early. The controls given show as
- * "▶ Iniciar" and "✓ Concluir".
+ * "Iniciar" and "Concluir".
  */
 export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
   const { activity } = props
@@ -123,7 +124,7 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
 
   return (
     <li className={clsx('flex gap-4', isDone && 'opacity-60')}>
-      <div className="flex w-16 shrink-0 flex-col items-end pt-3 text-right">
+      <div className="flex w-12 lg:w-16 shrink-0 flex-col items-end pt-3 text-right">
         <span className="text-base font-bold leading-tight text-dark-brown">{startTime}</span>
         {driftMinutes !== 0 && (
           <s aria-label="Horário planejado" className="text-xs text-gray-500">
@@ -155,10 +156,9 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
           isRunning && 'border-2 border-primary'
         )}
       >
-        {(isRunning || isDone || driftMinutes !== 0) && (
+        {(isRunning || driftMinutes !== 0) && (
           <div className="flex flex-wrap items-center gap-1.5">
             {isRunning && <StatusChip tone="running">● ACONTECENDO AGORA</StatusChip>}
-            {isDone && <StatusChip tone="done">CONCLUÍDO</StatusChip>}
             {tone && driftMinutes !== 0 && (
               <ScheduleDriftChip tone={tone}>
                 PREVISTO {formatDriftMinutes(driftMinutes)}
@@ -180,12 +180,14 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
           <div className="flex justify-end">
             {props.controls.start && (
               <Button size="small" onClick={props.onStart} disabled={props.isControlPending}>
-                ▶ Iniciar
+                <FaPlay size={10} />
+                Iniciar
               </Button>
             )}
             {props.controls.finish && (
               <Button size="small" onClick={props.onFinish} disabled={props.isControlPending}>
-                ✓ Concluir
+                <FaCheck size={10} />
+                Concluir
               </Button>
             )}
           </div>

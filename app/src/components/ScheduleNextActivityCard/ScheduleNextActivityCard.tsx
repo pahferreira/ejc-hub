@@ -1,3 +1,4 @@
+import { FaPlay } from 'react-icons/fa'
 import type { ScheduleActivity } from '../../services/schedule/schedule.types'
 import { activityStartTime } from '../../utils/scheduleActivity/scheduleActivity'
 import {
@@ -30,7 +31,7 @@ export type ScheduleNextActivityCardProps = {
  * Cronograma's top slot when nothing runs, or "PRÓXIMA DA SUA EQUIPE" under
  * it. The title, its planned start, "place · Convidado: name", the team
  * chips, "Começa às {Previsão} — em {time}" with its drift chip, and the
- * admin's "▶ Iniciar agora".
+ * admin's "Iniciar agora".
  */
 export function ScheduleNextActivityCard(props: ScheduleNextActivityCardProps) {
   const { activity } = props
@@ -40,39 +41,41 @@ export function ScheduleNextActivityCard(props: ScheduleNextActivityCardProps) {
   return (
     <section
       aria-label={label}
-      className="flex flex-col gap-3 rounded-xl border-2 border-dashed border-tertiary bg-white p-5"
+      className="flex flex-col gap-3 lg:flex-row rounded-xl border-2 border-dashed border-tertiary bg-white p-5 justify-between"
     >
-      <span className="text-xs font-bold uppercase tracking-wide text-primary">
-        {label} · {activityStartTime(activity)}
-      </span>
+      <div className="flex flex-col gap-3">
+        <span className="text-xs font-bold uppercase tracking-wide text-primary">
+          {label} · {activityStartTime(activity)}
+        </span>
 
-      <div className="flex flex-col gap-1">
-        <h2 className="m-0 text-2xl font-bold text-dark-brown">{activity.title}</h2>
-        <p className="m-0 text-sm text-gray-600">
-          {activity.place}
-          {activity.guestName && ` · Convidado: ${activity.guestName}`}
+        <div className="flex flex-col gap-1">
+          <h2 className="m-0 text-2xl font-bold text-dark-brown">{activity.title}</h2>
+          <p className="m-0 text-sm text-gray-600">
+            {activity.place}
+            {activity.guestName && ` · Convidado: ${activity.guestName}`}
+          </p>
+        </div>
+
+        <ScheduleActivityChips
+          activity={activity}
+          myTeamInstanceId={props.myTeamInstanceId}
+          withoutGuest
+        />
+
+        <p className="m-0 flex flex-wrap items-center gap-2 text-sm font-semibold text-dark-brown">
+          {formatStartsAt(props.forecastStartsAt, props.now)}
+          {driftMinutes !== 0 && (
+            <ScheduleDriftChip tone={driftTone(driftMinutes)}>
+              {formatDriftMinutes(driftMinutes)}
+            </ScheduleDriftChip>
+          )}
         </p>
       </div>
-
-      <ScheduleActivityChips
-        activity={activity}
-        myTeamInstanceId={props.myTeamInstanceId}
-        withoutGuest
-      />
-
-      <p className="m-0 flex flex-wrap items-center gap-2 text-sm font-semibold text-dark-brown">
-        {formatStartsAt(props.forecastStartsAt, props.now)}
-        {driftMinutes !== 0 && (
-          <ScheduleDriftChip tone={driftTone(driftMinutes)}>
-            {formatDriftMinutes(driftMinutes)}
-          </ScheduleDriftChip>
-        )}
-      </p>
-
       {props.onStart && (
         <div>
           <Button onClick={props.onStart} disabled={props.isControlPending}>
-            ▶ Iniciar agora
+            <FaPlay />
+            Iniciar agora
           </Button>
         </div>
       )}
