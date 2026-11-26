@@ -55,7 +55,7 @@ export const Admin: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await userEvent.click(canvas.getByRole('button', { name: '▶ Iniciar agora' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Iniciar agora' }))
     await expect(args.onStart).toHaveBeenCalled()
   },
 }

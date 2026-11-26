@@ -1,3 +1,4 @@
+import { FaCheck } from 'react-icons/fa'
 import { toEventTime } from '../../../../common/schedule/toEventTime'
 import type { ScheduleActivity } from '../../services/schedule/schedule.types'
 import { activityStartTime } from '../../utils/scheduleActivity/scheduleActivity'
@@ -18,7 +19,7 @@ export type ScheduleHappeningNowCardProps = {
 /**
  * The Cronograma's top slot while an activity runs: "ACONTECENDO AGORA", its
  * title, place and who is responsible, "Previsto HH:mm · Iniciado HH:mm", the
- * admin's "✓ Marcar como concluída", and "Próxima: {title} às HH:mm".
+ * admin's "Marcar como concluída", and "Próxima: {title} às HH:mm".
  */
 export function ScheduleHappeningNowCard(props: ScheduleHappeningNowCardProps) {
   const { activity } = props
@@ -46,7 +47,8 @@ export function ScheduleHappeningNowCard(props: ScheduleHappeningNowCardProps) {
       {props.onFinish && (
         <div>
           <Button onClick={props.onFinish} disabled={props.isControlPending}>
-            ✓ Marcar como concluída
+            <FaCheck />
+            Marcar como concluída
           </Button>
         </div>
       )}
