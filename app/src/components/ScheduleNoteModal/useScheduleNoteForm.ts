@@ -22,6 +22,17 @@ export function noteBodyError(body: string): string | undefined {
 }
 
 /**
+ * The modal's activity once the note for `savedId` is saved: closed if it is
+ * still that activity's modal, untouched if another one was opened meanwhile.
+ */
+export function activityAfterSave(
+  current: NotedActivity | null,
+  savedId: string
+): NotedActivity | null {
+  return current?.id === savedId ? null : current
+}
+
+/**
  * The "Nova nota" modal on the Cronograma: which activity it is for, the body,
  * and the save. The error stays hidden until the first submit, so the modal
  * doesn't open on red.
@@ -53,9 +64,10 @@ export function useScheduleNoteForm() {
       return
     }
 
+    const savedId = activity.id
     const pending = createMutation
-      .mutateAsync({ activityId: activity.id, body: { body: body.trim() } })
-      .then(() => setActivity(null))
+      .mutateAsync({ activityId: savedId, body: { body: body.trim() } })
+      .then(() => setActivity((current) => activityAfterSave(current, savedId)))
 
     toastPromise(pending, { message: 'Nota salva!' })
   }

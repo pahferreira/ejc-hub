@@ -24,8 +24,15 @@ export function ScheduleNoteModal(props: ScheduleNoteModalProps) {
   const length = props.body.trim().length
   const isOverLimit = length > SCHEDULE_NOTE_MAX_LENGTH
 
+  // Esc and the backdrop do nothing while saving, so a failed save keeps the text.
+  const closeUnlessSaving = () => {
+    if (!props.isSubmitting) {
+      props.onClose()
+    }
+  }
+
   return (
-    <Modal open={props.open} onClose={props.onClose} title="Nova nota">
+    <Modal open={props.open} onClose={closeUnlessSaving} title="Nova nota">
       <div className="flex flex-col gap-4">
         <p className="m-0 text-sm text-gray-600">
           Para <span className="font-semibold text-dark-brown">{props.activityTitle}</span>. A

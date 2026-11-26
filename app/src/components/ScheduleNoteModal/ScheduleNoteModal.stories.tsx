@@ -62,16 +62,29 @@ export const OverLimit: Story = {
   },
 }
 
-/** Saving: both buttons are disabled. */
+/** Saving: both buttons are disabled, and Esc doesn't close it, so a failed save keeps the text. */
 export const Submitting: Story = {
   args: {
     body: 'Levar os violões.',
     isSubmitting: true,
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
     const screen = within(canvasElement.ownerDocument.body)
 
     await expect(screen.getByRole('button', { name: 'Salvando...' })).toBeDisabled()
     await expect(screen.getByRole('button', { name: 'Cancelar' })).toBeDisabled()
+    await userEvent.keyboard('{Escape}')
+    await expect(args.onClose).not.toHaveBeenCalled()
+  },
+}
+
+/** Not saving: Esc closes it. */
+export const ClosesOnEscape: Story = {
+  play: async ({ args, canvasElement }) => {
+    const screen = within(canvasElement.ownerDocument.body)
+
+    await expect(screen.getByRole('dialog')).toBeVisible()
+    await userEvent.keyboard('{Escape}')
+    await expect(args.onClose).toHaveBeenCalledOnce()
   },
 }
