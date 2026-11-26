@@ -74,7 +74,7 @@ export const Admin: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await userEvent.click(canvas.getByRole('button', { name: '✓ Marcar como concluída' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Marcar como concluída' }))
     await expect(args.onFinish).toHaveBeenCalled()
   },
 }

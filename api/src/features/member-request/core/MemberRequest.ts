@@ -343,6 +343,7 @@ export class MemberRequest {
 
           return acc
         }, []),
+        weekAvailability: candidate.weekAvailability,
         rowStatus: toRowStatus({
           hasMembership: eligible.assignedUserIds.has(candidate.userId),
           hasOpenRequestFromTeam: pendingRequestUserIds.has(candidate.userId),

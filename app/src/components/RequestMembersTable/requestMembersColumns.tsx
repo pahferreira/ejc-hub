@@ -2,6 +2,7 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { ExperienceBadge } from '../ExperienceBadge/ExperienceBadge'
 import { TruncatedPillList } from '../TruncatedPillList/TruncatedPillList'
 import { UserAvatar } from '../UserAvatar/UserAvatar'
+import { WeekAvailability } from '../WeekAvailability/WeekAvailability'
 import { RequestMemberRowAction } from './RequestMemberRowAction'
 import type { ExperienceType } from '../../services/team-building/team-building.types'
 import { TeamAvatar } from '../TeamAvatar/TeamAvatar'
@@ -46,6 +47,8 @@ export type RequestMemberRow = {
   /** Skill-derived labels shown as pills (e.g. ["Comunicação"]). */
   areas: string[]
   preferences: RequestMemberTeamPreference[]
+  /** Weekdays from the signup form (e.g. ["monday", "friday"]); empty when none. */
+  weekAvailability: string[]
   rowStatus: RequestMemberRowStatus
 }
 
@@ -91,6 +94,10 @@ export function createRequestMembersColumns(options: RequestMembersColumnsOption
           ))}
         </div>
       ),
+    }),
+    columnHelper.accessor('weekAvailability', {
+      header: 'Disponibilidade',
+      cell: (info) => <WeekAvailability weekAvailability={info.getValue()} />,
     }),
     columnHelper.accessor('experienceType', {
       header: 'Experiência',

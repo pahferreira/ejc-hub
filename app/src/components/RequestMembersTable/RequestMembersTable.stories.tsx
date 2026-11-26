@@ -12,6 +12,7 @@ function buildRow(overrides: Partial<RequestMemberRow> & Pick<RequestMemberRow, 
     circleKey: null,
     areas: ['Comunicação'],
     preferences: [{ teamInstanceId: 't-1', name: 'Liturgia' }],
+    weekAvailability: ['saturday', 'sunday'],
     rowStatus: 'requestable',
     ...overrides,
   }
@@ -20,9 +21,9 @@ function buildRow(overrides: Partial<RequestMemberRow> & Pick<RequestMemberRow, 
 }
 
 /**
- * One of each `rowStatus`, plus a fourth person with no skills and no
- * preferences — the "—" states — and a fifth with four preferences, to show
- * the avatar stack capping at three.
+ * One of each `rowStatus`, plus a fourth person with no skills, no
+ * preferences and no availability — the empty states — and a fifth with four
+ * preferences, to show the avatar stack capping at three.
  */
 const mixedRows: RequestMemberRow[] = [
   buildRow({
@@ -33,6 +34,7 @@ const mixedRows: RequestMemberRow[] = [
     experienceType: 'newbie',
     circleKey: 'green',
     areas: ['Música', 'Canto'],
+    weekAvailability: ['monday', 'wednesday', 'friday', 'saturday'],
   }),
   buildRow({
     userId: 'u-2',
@@ -63,6 +65,7 @@ const mixedRows: RequestMemberRow[] = [
     rowStatus: 'requestable',
     areas: [],
     preferences: [],
+    weekAvailability: [],
   }),
   buildRow({
     userId: 'u-5',
@@ -93,7 +96,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** One row per `rowStatus`, plus the "no skills / no preferences" and "4+ preferences" edges. */
+/**
+ * One row per `rowStatus`, plus the "no skills / no preferences / no
+ * availability" and "4+ preferences" edges.
+ */
 export const Default: Story = {
   args: {
     rows: mixedRows,
@@ -101,6 +107,7 @@ export const Default: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
+    await expect(canvas.getByRole('columnheader', { name: 'Disponibilidade' })).toBeInTheDocument()
     await expect(canvas.getByRole('button', { name: 'Solicitar Joca' })).toBeEnabled()
     await expect(
       canvas.getByRole('button', { name: 'Solicitação enviada para Bia' })

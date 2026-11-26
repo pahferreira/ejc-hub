@@ -7,6 +7,7 @@ import { Modal } from '../Modal/Modal'
 import { Pill } from '../Pill/Pill'
 import { TextArea } from '../TextArea/TextArea'
 import { UserAvatar } from '../UserAvatar/UserAvatar'
+import { WeekAvailability } from '../WeekAvailability/WeekAvailability'
 import { canSubmitRequest } from './requestMemberForm'
 import type { RequestMemberRow } from '../RequestMembersTable/requestMembersColumns'
 import { MEMBER_REQUEST_MESSAGE_MAX } from '../../../../common/member-requests'
@@ -75,6 +76,9 @@ export function RequestMemberModal(props: RequestMemberModalProps) {
                 />
               </div>
               <span className="text-xs text-secondary-foreground">{props.member.name}</span>
+              <div className="mt-1.5">
+                <WeekAvailability weekAvailability={props.member.weekAvailability} />
+              </div>
             </div>
           </div>
 

@@ -130,7 +130,7 @@ export const AdminsResponsible: Story = {
   },
 }
 
-/** Live, the running activity: the chip, a filled dot, and an admin's "✓ Concluir". */
+/** Live, the running activity: the chip, a filled dot, and an admin's "Concluir". */
 export const Running: Story = {
   args: {
     live: true,
@@ -147,12 +147,12 @@ export const Running: Story = {
 
     await expect(canvas.getByText('● ACONTECENDO AGORA')).toBeVisible()
     await expect(canvas.getByTestId('timeline-dot')).toHaveClass('bg-primary')
-    await userEvent.click(canvas.getByRole('button', { name: '✓ Concluir' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Concluir' }))
     await expect(args.onFinish).toHaveBeenCalled()
   },
 }
 
-/** Live, a done activity: muted, "CONCLUÍDO", and its actual times (18:05 until 18:52). */
+/** Live, a done activity: muted, with its actual times (18:05 until 18:52). */
 export const Done: Story = {
   args: {
     live: true,
@@ -166,14 +166,14 @@ export const Done: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.getByText('CONCLUÍDO')).toBeVisible()
+    await expect(canvas.getByRole('listitem')).toHaveClass('opacity-60')
     await expect(canvas.getByText('18:05')).toBeVisible()
     await expect(canvas.getByText('até 18:52')).toBeVisible()
     await expect(canvas.queryByRole('button')).not.toBeInTheDocument()
   },
 }
 
-/** Live, the day's next planned activity, for an admin: "▶ Iniciar". */
+/** Live, the day's next planned activity, for an admin: "Iniciar". */
 export const NextPlanned: Story = {
   args: {
     live: true,
@@ -183,8 +183,8 @@ export const NextPlanned: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await expect(canvas.queryByText('CONCLUÍDO')).not.toBeInTheDocument()
-    await userEvent.click(canvas.getByRole('button', { name: '▶ Iniciar' }))
+    await expect(canvas.getByRole('listitem')).not.toHaveClass('opacity-60')
+    await userEvent.click(canvas.getByRole('button', { name: 'Iniciar' }))
     await expect(args.onStart).toHaveBeenCalled()
   },
 }

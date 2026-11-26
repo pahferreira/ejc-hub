@@ -408,6 +408,28 @@ describe('MemberRequest.listRequestableCandidates', () => {
     expect(bruno?.preferences).toEqual([{ teamInstanceId: TEAM_A, name: 'Liturgia' }])
   })
 
+  it("carries the days stored on the person's subscription", async () => {
+    const { memberRequest } = makeMemberRequest({
+      subscriptions: [
+        buildSub({ id: 's1', userId: 'u1', availability: ['monday', 'wednesday', 'saturday'] }),
+      ],
+    })
+
+    const result = await memberRequest.listRequestableCandidates(ACTOR_AUTH_ID)
+
+    expect(result.items[0]?.weekAvailability).toEqual(['monday', 'wednesday', 'saturday'])
+  })
+
+  it('carries an empty list when the subscription has no availability', async () => {
+    const { memberRequest } = makeMemberRequest({
+      subscriptions: [buildSub({ id: 's1', userId: 'u1', availability: [] })],
+    })
+
+    const result = await memberRequest.listRequestableCandidates(ACTOR_AUTH_ID)
+
+    expect(result.items[0]?.weekAvailability).toEqual([])
+  })
+
   it('counts the cards from the whole team, not the filtered page', async () => {
     // Searching a name must not drop "Vagas na minha equipe" to 1.
     const { memberRequest } = makeMemberRequest({
