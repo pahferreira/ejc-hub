@@ -26,6 +26,7 @@ const RUNNING: ScheduleActivity = {
   actualEndedAt: null,
   adjustedDurationMinutes: null,
   effectiveDurationMinutes: 45,
+  notes: [],
 }
 
 const NEXT: ScheduleActivity = {

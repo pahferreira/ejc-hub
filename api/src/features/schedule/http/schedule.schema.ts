@@ -1,4 +1,5 @@
 import { z } from 'zod/v4'
+import { SCHEDULE_NOTE_MAX_LENGTH } from '../../../../../common/schedule/schedule.constants.ts'
 
 /**
  * Adding a day. Shape only — whether the date is inside the event and still
@@ -70,9 +71,6 @@ export const scheduleActivityParamsSchema = z.object({
 export const scheduleActivityControlBodySchema = z.object({
   expectedStatus: z.enum(['planned', 'running', 'done', 'skipped']),
 })
-
-/** The longest Observação, in characters. The table's check constraint matches. */
-export const SCHEDULE_NOTE_MAX_LENGTH = 500
 
 /** Leaving a note. Who may write it, and in which role, is the core's. */
 export const createScheduleNoteBodySchema = z.object({

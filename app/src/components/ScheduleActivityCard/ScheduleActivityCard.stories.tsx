@@ -24,6 +24,7 @@ const meta = {
       actualEndedAt: null,
       adjustedDurationMinutes: null,
       effectiveDurationMinutes: 30,
+      notes: [],
     },
   },
   tags: ['autodocs'],
@@ -67,6 +68,7 @@ export const AllResponsible: Story = {
       actualEndedAt: null,
       adjustedDurationMinutes: null,
       effectiveDurationMinutes: 75,
+      notes: [],
     },
   },
   play: async ({ canvasElement }) => {
@@ -96,6 +98,7 @@ export const CrossesMidnight: Story = {
       actualEndedAt: null,
       adjustedDurationMinutes: null,
       effectiveDurationMinutes: 90,
+      notes: [],
     },
   },
   play: async ({ canvasElement }) => {
@@ -143,6 +146,7 @@ export const ManyTeams: Story = {
       actualEndedAt: null,
       adjustedDurationMinutes: null,
       effectiveDurationMinutes: 60,
+      notes: [],
     },
   },
   play: async ({ canvasElement }) => {
@@ -183,6 +187,7 @@ export const AllTeams: Story = {
       actualEndedAt: null,
       adjustedDurationMinutes: null,
       effectiveDurationMinutes: 60,
+      notes: [],
     },
   },
   play: async ({ canvasElement }) => {

@@ -10,6 +10,7 @@ import type { ActivityControls } from '../../utils/scheduleLive/scheduleLive'
 import { isMyTeamActivity } from '../../utils/scheduleTimeline/scheduleTimeline'
 import { Button } from '../Button/Button'
 import { ScheduleActivityChips } from '../ScheduleActivityChips/ScheduleActivityChips'
+import { ScheduleActivityNotes } from '../ScheduleActivityNotes/ScheduleActivityNotes'
 
 export type ScheduleTimelineRowProps = {
   activity: ScheduleActivity
@@ -30,6 +31,28 @@ export type ScheduleTimelineRowProps = {
   onFinish?: () => void
   /** A control request is in flight: the buttons are disabled. */
   isControlPending?: boolean
+  /**
+   * Opens the note form. The "✎ Nota" button shows only when given (admins and
+   * coordinators, live), and turns yellow once the activity has notes.
+   */
+  onAddNote?: () => void
+}
+
+function NoteButton(props: { hasNotes: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={props.onClick}
+      className={clsx(
+        'flex min-w-fit items-center justify-center gap-1 rounded-lg border-2 px-1.5 py-0.5 text-xs font-semibold hover:cursor-pointer',
+        props.hasNotes
+          ? 'border-amber-400 bg-amber-100 text-amber-900'
+          : 'border-tertiary bg-white text-dark-brown'
+      )}
+    >
+      ✎ Nota
+    </button>
+  )
 }
 
 function StatusChip(props: { children: React.ReactNode; tone: 'running' | 'done' }) {
@@ -58,13 +81,16 @@ function eventTime(instant: string): string {
  *
  * Live, a done row is muted under a "CONCLUÍDO" chip and shows its actual
  * times; the running row gets "● ACONTECENDO AGORA" and a filled dot. The
- * controls given show as "▶ Iniciar" and "✓ Concluir".
+ * controls given show as "▶ Iniciar" and "✓ Concluir". The Observações the
+ * viewer may read stack under the row, beside the "✎ Nota" button.
  */
 export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
   const { activity } = props
   const isMyTeam = isMyTeamActivity(activity, props.myTeamInstanceId)
   const isDone = props.live && activity.status === 'done'
   const isRunning = props.live && activity.status === 'running'
+  const notes = props.live ? activity.notes : []
+  const hasControls = props.controls?.start || props.controls?.finish
 
   const startTime =
     isDone && activity.actualStartedAt
@@ -120,14 +146,19 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
           <span className="text-xs text-gray-500">até {endTime}</span>
         </p>
 
-        {(props.controls?.start || props.controls?.finish) && (
-          <div className="flex justify-end">
-            {props.controls.start && (
+        <ScheduleActivityNotes notes={notes} />
+
+        {(hasControls || props.onAddNote) && (
+          <div className="flex justify-end gap-2">
+            {props.onAddNote && (
+              <NoteButton hasNotes={notes.length > 0} onClick={props.onAddNote} />
+            )}
+            {props.controls?.start && (
               <Button size="small" onClick={props.onStart} disabled={props.isControlPending}>
                 ▶ Iniciar
               </Button>
             )}
-            {props.controls.finish && (
+            {props.controls?.finish && (
               <Button size="small" onClick={props.onFinish} disabled={props.isControlPending}>
                 ✓ Concluir
               </Button>

@@ -18,6 +18,7 @@ function activity(id: string, plannedStartsAt: string): ScheduleActivity {
     actualEndedAt: null,
     adjustedDurationMinutes: null,
     effectiveDurationMinutes: 30,
+    notes: [],
   }
 }
 
