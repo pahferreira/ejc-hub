@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { teamBuildingApi } from './team-building.api'
 import { teamBuildingQueryKeys } from './team-building.types'
 import { teamsOverviewQueryKeys } from '../teams/teams.types'
@@ -8,6 +8,16 @@ type AssignCoordinatorsVars = {
   coordinatorIds: string[]
 }
 
+/** The queries a change to a team's coordinators leaves stale. */
+export function assignCoordinatorsStaleKeys(teamInstanceId: string): QueryKey[] {
+  return [
+    teamsOverviewQueryKeys.stats,
+    teamsOverviewQueryKeys.lists,
+    teamsOverviewQueryKeys.details,
+    teamBuildingQueryKeys.teamCandidates(teamInstanceId),
+  ]
+}
+
 export function useAssignCoordinatorsMutation() {
   const queryClient = useQueryClient()
 
@@ -15,11 +25,9 @@ export function useAssignCoordinatorsMutation() {
     mutationFn: (vars: AssignCoordinatorsVars) =>
       teamBuildingApi.assignCoordinators(vars.teamInstanceId, vars.coordinatorIds),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: teamsOverviewQueryKeys.stats })
-      queryClient.invalidateQueries({ queryKey: teamsOverviewQueryKeys.lists })
-      queryClient.invalidateQueries({
-        queryKey: teamBuildingQueryKeys.teamCandidates(vars.teamInstanceId),
-      })
+      for (const queryKey of assignCoordinatorsStaleKeys(vars.teamInstanceId)) {
+        queryClient.invalidateQueries({ queryKey })
+      }
     },
   })
 
