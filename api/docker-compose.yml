@@ -1,6 +1,6 @@
 services:
   db:
-    image: bitnami/postgresql:latest
+    image: postgres:17
     container_name: ejc_hub_database
     ports:
       - '5434:5432'

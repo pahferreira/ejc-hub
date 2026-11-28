@@ -75,6 +75,23 @@ jobs:
     defaults:
       run:
         working-directory: ./api
+    # The DB specs (*.db.spec.ts) run against this, on the same major as prod.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ejc_hub
+          POSTGRES_PASSWORD: ejc_hub
+          POSTGRES_DB: ejc_hub_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ejc_hub -d ejc_hub_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://ejc_hub:ejc_hub@localhost:5432/ejc_hub_test
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
