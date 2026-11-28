@@ -1,6 +1,6 @@
 services:
   db:
-    image: bitnami/postgresql:latest
+    image: postgres:17
     container_name: ejc_hub_database
     ports:
       - '5434:5432'
@@ -9,4 +9,8 @@ services:
       POSTGRES_PASSWORD: ejc_hub
       POSTGRES_DB: ejc_hub
     volumes:
-      - ./docker:/docker-entrypoint-initdb.d
+      # Keeps the dev data across container recreations and image updates.
+      - ejc_hub_data:/var/lib/postgresql/data
+
+volumes:
+  ejc_hub_data:

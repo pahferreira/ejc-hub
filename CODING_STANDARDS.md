@@ -17,6 +17,7 @@ The rules a review checks a change against. ESLint already enforces `prefer-cons
 - **Business rules:** in the feature's core class (`core/<Feature>.ts`), thrown as `AppError` with an `AppErrorCode`. A helper in `helpers/` is pure: data in, data out, never an `AppError`, a repository or a transaction (ESLint enforces it). Schemas check only the shape; a cross-field rule (X refused together with Y) is a business rule.
 - **Transactions:** a core method may read and run its checks before `runInTransaction`; the transaction makes the writes all-or-nothing. A race between the read and the write is the database constraints' job (unique, FK). A race no constraint catches is accepted and named in a comment (`Accepted race: …`).
 - **Tests:** the core's rules in `core/<Feature>.spec.ts`; a route's permissions and error mapping (403, 404, …) in `http/<feature>.routes.spec.ts`. A helper in `helpers/` gets its own `.spec.ts` only for behaviour the class's spec can't reach. Helper specs that predate this rule stay while their helper exists.
+- **Database tests:** a rule that lives in SQL (a `case` in an upsert, a constraint, an aggregate's `filter`) is tested against real Postgres, not by asserting the rendered SQL. The spec is `<Repository>.db.spec.ts` next to the repository and calls it through the app's own `db`; every table is truncated before each test, so a spec inserts the rows it needs. Rules in a core stay in its mocked `core/<Feature>.spec.ts`. `DrizzleEventFeePaymentRepository.db.spec.ts` is the reference. How to run them is in the README.
 
 ## App
 

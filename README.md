@@ -8,6 +8,17 @@
 4. Initiate the database by running `docker compose up -d`.
 5. Run `npm run dev` to start the development server.
 
+## API tests
+
+`npm test` in `api/` runs two Vitest projects:
+
+- **unit** (`npm run test:unit`, or `npm run test:unit:watch`): every `*.spec.ts`, with the database mocked. Needs no database.
+- **db** (`npm run test:db`): every `*.db.spec.ts`, against a real Postgres 17. It migrates the test database once, then truncates every table before each test.
+
+By default the db project runs against the compose Postgres (`docker compose up -d db` in `api/`), on a database of its own per worktree: `ejc_hub_<worktree folder>_<hash>_test`. It is created on first use, so parallel worktrees never wipe each other's rows. Stale ones can be dropped with `dropdb`. Set `TEST_DATABASE_URL` to use another database instead (CI does). If the server is down, `npm test` fails with a message saying so, never skips. The name must end in `_test`: the db project refuses any other database, since it truncates every table.
+
+The pre-push hook runs `npm test`, so pushing an `api` change needs the test database up.
+
 ## Git Hooks
 
 Running `npm install` at the root installs the Husky hooks.
