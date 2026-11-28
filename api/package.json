@@ -25,7 +25,8 @@
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
     "test:db": "vitest run --project db",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:unit:watch": "vitest --project unit"
   },
   "keywords": [],
   "author": "",
