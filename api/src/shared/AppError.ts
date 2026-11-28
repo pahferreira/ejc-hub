@@ -28,6 +28,15 @@ export const AppErrorCode = {
   // neither moved to another date nor deleted. Answers 400; the app maps it to
   // its own pt-BR message.
   ScheduleDayLocked: 'schedule_day_locked',
+  // An undo of a schedule activity's clock refused by one of its rules. Each
+  // answers 400 like `Validation`, with its own code so the app can say why:
+  // the activity is planned (nothing to undo), a reopen of an activity that
+  // isn't the latest finished, a reopen while another activity runs, or an
+  // undo of a skip once a later activity of the day has started.
+  ScheduleNothingToUndo: 'schedule_nothing_to_undo',
+  ScheduleReopenNotLatest: 'schedule_reopen_not_latest',
+  ScheduleReopenWhileRunning: 'schedule_reopen_while_running',
+  ScheduleUndoSkipAfterLaterStart: 'schedule_undo_skip_after_later_start',
   // There is no current event to scope the request to. The app maps this code
   // to its own pt-BR message.
   NoCurrentEvent: 'no_current_event',

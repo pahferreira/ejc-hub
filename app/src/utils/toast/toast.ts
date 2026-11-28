@@ -7,9 +7,22 @@ const toastConfig: ToasterProps = {
   position: 'top-center',
 }
 
+/**
+ * A button on a toast. Clicking it closes the toast unless `onClick` calls
+ * `event.preventDefault()`.
+ */
+export type ToastAction = {
+  label: string
+  onClick: (event: { preventDefault: () => void }) => void
+}
+
 type Success = {
   message: string
   callback?: () => void
+  /** A button on the success toast, such as "Desfazer". */
+  action?: ToastAction
+  /** How long the success toast stays, in ms, when not the default. */
+  duration?: number
 }
 
 export function toastPromise(pendingPromise: Promise<unknown>, success?: Success) {
@@ -18,7 +31,11 @@ export function toastPromise(pendingPromise: Promise<unknown>, success?: Success
     loading: 'Aguarde...',
     success: () => {
       success?.callback?.()
-      return success?.message || 'Sucesso!'
+      return {
+        message: success?.message || 'Sucesso!',
+        action: success?.action,
+        duration: success?.duration ?? TOAST_DURATION,
+      }
     },
     error: (error) => error.message,
   })

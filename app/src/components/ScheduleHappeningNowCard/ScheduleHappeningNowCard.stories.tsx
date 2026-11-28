@@ -115,12 +115,14 @@ export const Trimmed: Story = {
 
 /** An admin finishes the running activity. */
 export const Admin: Story = {
-  args: { onFinish: fn() },
+  args: { onFinish: fn(), onUndoStart: fn() },
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
 
     await userEvent.click(canvas.getByRole('button', { name: 'Marcar como concluída' }))
     await expect(args.onFinish).toHaveBeenCalled()
+    await userEvent.click(canvas.getByRole('button', { name: 'Desfazer início' }))
+    await expect(args.onUndoStart).toHaveBeenCalled()
   },
 }
 

@@ -20,6 +20,7 @@ import {
   doneActivityCount,
   forecastSchedule,
   nextPlannedActivity,
+  reopenableActivity,
   runningActivity,
   teamNextActivity,
 } from '../../utils/scheduleLive/scheduleLive'
@@ -60,9 +61,9 @@ function errorMessage(error: unknown): string {
  * Behind `ScheduleLive`, the Running Schedule: a top slot with the running
  * activity and its live timer (or the next one when nothing runs), the
  * viewer's team's next activity, the day's Atraso, each row's status and
- * Previsão, the days' "Concluído n/m", and the clock controls for whoever
- * holds `schedule:control`. The clock ticks every second on the server's time
- * and the page refetches every minute.
+ * Previsão, the days' "Concluído n/m", and the clock controls (start, finish,
+ * skip and their undo) for whoever holds `schedule:control`. The clock ticks
+ * every second on the server's time and the page refetches every minute.
  */
 export function SchedulePage() {
   const { isFeatureEnabled } = useFeatureFlag()
@@ -92,6 +93,12 @@ export function SchedulePage() {
   const eventActivities = days.flatMap((day) => day.activities)
   const running = isLive ? runningActivity(eventActivities) : null
   const next = isLive && selectedDay ? nextPlannedActivity(selectedDay.activities) : null
+  const reopenable = canControl ? reopenableActivity(eventActivities) : null
+  const controlContext = {
+    nextPlannedId: next?.id ?? null,
+    reopenableId: reopenable?.id ?? null,
+    dayActivities: selectedDay?.activities ?? [],
+  }
   const nextAfterRunning = running
     ? nextPlannedActivity(eventActivities.slice(eventActivities.indexOf(running) + 1))
     : null
@@ -150,6 +157,7 @@ export function SchedulePage() {
                   }
                   myTeamInstanceId={myTeamInstanceId}
                   onFinish={canControl ? () => controls.finish(running) : undefined}
+                  onUndoStart={canControl ? () => controls.undo(running) : undefined}
                   isControlPending={controls.isPending}
                 />
               </div>
@@ -164,6 +172,12 @@ export function SchedulePage() {
                   now={now}
                   myTeamInstanceId={myTeamInstanceId}
                   onStart={canControl ? () => controls.start(next) : undefined}
+                  onSkip={canControl ? () => controls.skip(next) : undefined}
+                  reopen={
+                    reopenable
+                      ? { title: reopenable.title, onReopen: () => controls.undo(reopenable) }
+                      : undefined
+                  }
                   isControlPending={controls.isPending}
                 />
               </div>
@@ -216,9 +230,11 @@ export function SchedulePage() {
                             ? forecastOf(activity.id)
                             : undefined
                         }
-                        controls={activityControls(activity, next?.id ?? null, canControl)}
+                        controls={activityControls(activity, controlContext, canControl)}
                         onStart={() => controls.start(activity)}
                         onFinish={() => controls.finish(activity)}
+                        onSkip={() => controls.skip(activity)}
+                        onUndo={() => controls.undo(activity)}
                         isControlPending={controls.isPending}
                       />
                     ))}

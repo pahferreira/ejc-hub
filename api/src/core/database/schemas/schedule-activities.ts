@@ -46,6 +46,9 @@ export const scheduleActivities = pgTable(
     // What really happened. Set when the activity starts and finishes.
     actualStartedAt: timestamp('actual_started_at', { withTimezone: true }),
     actualEndedAt: timestamp('actual_ended_at', { withTimezone: true }),
+    // The actual end a reopen cleared, kept while the activity runs again so
+    // undoing that start restores it as done. Null otherwise.
+    reopenedEndedAt: timestamp('reopened_ended_at', { withTimezone: true }),
     // A trim (or stretch) set during the event. Replaces duration_minutes in the
     // forecast; the planned end keeps using duration_minutes.
     adjustedDurationMinutes: integer('adjusted_duration_minutes'),

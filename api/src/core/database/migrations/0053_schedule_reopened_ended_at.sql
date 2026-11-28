@@ -1,0 +1,1 @@
+ALTER TABLE "schedule_activities" ADD COLUMN "reopened_ended_at" timestamp with time zone;

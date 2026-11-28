@@ -23,6 +23,13 @@ export type ScheduleNextActivityCardProps = {
   forMyTeam?: boolean
   /** Starts the activity. Left out for anyone who cannot control the clock. */
   onStart?: () => void
+  /** Skips the activity. Left out for anyone who cannot control the clock. */
+  onSkip?: () => void
+  /**
+   * The most recently finished activity, which may reopen since nothing runs,
+   * and how. Left out when there is none, or for anyone who cannot control the clock.
+   */
+  reopen?: { title: string; onReopen: () => void }
   isControlPending?: boolean
 }
 
@@ -30,8 +37,9 @@ export type ScheduleNextActivityCardProps = {
  * A dashed card for an activity still to start: "PRÓXIMA ATIVIDADE" in the
  * Cronograma's top slot when nothing runs, or "PRÓXIMA DA SUA EQUIPE" under
  * it. The title, its planned start, "place · Convidado: name", the team
- * chips, "Começa às {Previsão} — em {time}" with its drift chip, and the
- * admin's "Iniciar agora".
+ * chips, "Começa às {Previsão} — em {time}" with its drift chip, a
+ * "↻ Reabrir {title}" link for the last finished activity, and the admin's
+ * "Iniciar agora" and "⏭ Pular".
  */
 export function ScheduleNextActivityCard(props: ScheduleNextActivityCardProps) {
   const { activity } = props
@@ -70,13 +78,33 @@ export function ScheduleNextActivityCard(props: ScheduleNextActivityCardProps) {
             </ScheduleDriftChip>
           )}
         </p>
+
+        {props.reopen && (
+          <div>
+            <button
+              type="button"
+              onClick={props.reopen.onReopen}
+              disabled={props.isControlPending}
+              className="cursor-pointer text-sm font-semibold text-dark-brown underline disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              ↻ Reabrir {props.reopen.title}
+            </button>
+          </div>
+        )}
       </div>
-      {props.onStart && (
-        <div>
-          <Button onClick={props.onStart} disabled={props.isControlPending}>
-            <FaPlay />
-            Iniciar agora
-          </Button>
+      {(props.onStart || props.onSkip) && (
+        <div className="flex flex-wrap items-start gap-2">
+          {props.onStart && (
+            <Button onClick={props.onStart} disabled={props.isControlPending}>
+              <FaPlay />
+              Iniciar agora
+            </Button>
+          )}
+          {props.onSkip && (
+            <Button variant="outline" onClick={props.onSkip} disabled={props.isControlPending}>
+              ⏭ Pular
+            </Button>
+          )}
         </div>
       )}
     </section>

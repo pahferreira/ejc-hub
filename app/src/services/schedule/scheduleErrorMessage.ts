@@ -7,7 +7,7 @@ export function apiErrorStatus(error: unknown): number {
 }
 
 /** The API's error code, or an empty string when the failure carried none. */
-function apiErrorCode(error: unknown): string {
+export function apiErrorCode(error: unknown): string {
   return isAxiosError(error) ? ((error as ApiError).response?.data?.code ?? '') : ''
 }
 

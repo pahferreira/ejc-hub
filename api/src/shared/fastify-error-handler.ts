@@ -34,6 +34,10 @@ const appErrorStatus: Partial<Record<string, number>> = {
   [AppErrorCode.Validation]: HttpStatus.BadRequest,
   [AppErrorCode.ScheduleActivityLocked]: HttpStatus.BadRequest,
   [AppErrorCode.ScheduleDayLocked]: HttpStatus.BadRequest,
+  [AppErrorCode.ScheduleNothingToUndo]: HttpStatus.BadRequest,
+  [AppErrorCode.ScheduleReopenNotLatest]: HttpStatus.BadRequest,
+  [AppErrorCode.ScheduleReopenWhileRunning]: HttpStatus.BadRequest,
+  [AppErrorCode.ScheduleUndoSkipAfterLaterStart]: HttpStatus.BadRequest,
   [AppErrorCode.Conflict]: HttpStatus.Conflict,
 }
 
