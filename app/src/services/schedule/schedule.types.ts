@@ -128,6 +128,20 @@ export type FinishScheduleActivityResult = {
   activityId: string
 }
 
+/**
+ * Correcting an activity live: the status the screen shows, its actual times
+ * (ISO instants) and its trim, each left out to keep it. A null trim clears it.
+ */
+export type UpdateScheduleActivityLiveBody = ScheduleActivityControlBody & {
+  actualStartedAt?: string
+  actualEndedAt?: string
+  adjustedDurationMinutes?: number | null
+}
+
+export type UpdateScheduleActivityLiveResult = {
+  activityId: string
+}
+
 export const scheduleQueryKeys = {
   all: ['schedule'] as const,
 }

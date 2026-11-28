@@ -28,3 +28,33 @@ export function overlapsAny(activity: PlannedInterval, others: PlannedInterval[]
     )
   )
 }
+
+/** What placing an activity's real run in time needs: its status and actual times. */
+export type ActualTimes = {
+  status: 'planned' | 'running' | 'done' | 'skipped'
+  actualStartedAt: Date | null
+  actualEndedAt: Date | null
+}
+
+/**
+ * The interval an activity really took: `[start, end)` once done, `[start, now)`
+ * while it runs, and null when it never ran (planned or skipped).
+ */
+export function actualInterval(
+  activity: ActualTimes,
+  now: Date
+): { start: Date; end: Date } | null {
+  if (!activity.actualStartedAt) {
+    return null
+  }
+
+  if (activity.status === 'running') {
+    return { start: activity.actualStartedAt, end: now }
+  }
+
+  if (activity.status === 'done' && activity.actualEndedAt) {
+    return { start: activity.actualStartedAt, end: activity.actualEndedAt }
+  }
+
+  return null
+}

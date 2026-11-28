@@ -11,6 +11,7 @@ import {
 } from '../../utils/scheduleClock/scheduleClock'
 import { Button } from '../Button/Button'
 import { ScheduleActivityChips } from '../ScheduleActivityChips/ScheduleActivityChips'
+import { ScheduleActivityDuration } from '../ScheduleActivityDuration/ScheduleActivityDuration'
 import { ScheduleDriftChip } from '../ScheduleDriftChip/ScheduleDriftChip'
 
 export type ScheduleHappeningNowCardProps = {
@@ -31,10 +32,10 @@ export type ScheduleHappeningNowCardProps = {
 /**
  * The Cronograma's top slot while an activity runs: "ACONTECENDO AGORA" with
  * an "● AO VIVO" timer counting down its effective duration, its title, place
- * and who is responsible, "Previsto HH:mm · Iniciado HH:mm", "Decorridos" with
- * a progress bar, the admin's "Marcar como concluída", and "Próxima: {title}
- * às {Previsão}". Past its duration the timer, "Excedeu em" and a "+N min"
- * chip turn red and grow.
+ * and who is responsible, "Previsto HH:mm · Iniciado HH:mm" (plus the planned
+ * and trimmed durations once trimmed), "Decorridos" with a progress bar, the
+ * admin's "Marcar como concluída", and "Próxima: {title} às {Previsão}". Past
+ * its duration the timer, "Excedeu em" and a "+N min" chip turn red and grow.
  */
 export function ScheduleHappeningNowCard(props: ScheduleHappeningNowCardProps) {
   const { activity } = props
@@ -76,6 +77,15 @@ export function ScheduleHappeningNowCard(props: ScheduleHappeningNowCardProps) {
           Previsto {activityStartTime(activity)}
           {activity.actualStartedAt &&
             ` · Iniciado ${toEventTime(new Date(activity.actualStartedAt))}`}
+          {activity.adjustedDurationMinutes !== null && (
+            <>
+              {' · Duração '}
+              <ScheduleActivityDuration
+                durationMinutes={activity.durationMinutes}
+                adjustedDurationMinutes={activity.adjustedDurationMinutes}
+              />
+            </>
+          )}
         </span>
         {isOverrun && (
           <ScheduleDriftChip tone="late">{formatOverrunMinutes(clock.overrunMs)}</ScheduleDriftChip>

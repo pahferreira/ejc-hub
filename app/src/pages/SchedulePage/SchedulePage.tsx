@@ -3,6 +3,8 @@ import { hasPermission, SchedulePermissions } from '../../../../common/permissio
 import { ScheduleDayCard } from '../../components/ScheduleDayCard/ScheduleDayCard'
 import { ScheduleDriftChip } from '../../components/ScheduleDriftChip/ScheduleDriftChip'
 import { ScheduleHappeningNowCard } from '../../components/ScheduleHappeningNowCard/ScheduleHappeningNowCard'
+import { ScheduleLiveEditForm } from '../../components/ScheduleLiveEditForm/ScheduleLiveEditForm'
+import { useScheduleLiveEditForm } from '../../components/ScheduleLiveEditForm/useScheduleLiveEditForm'
 import { ScheduleNextActivityCard } from '../../components/ScheduleNextActivityCard/ScheduleNextActivityCard'
 import { ScheduleTimelineLegend } from '../../components/ScheduleTimelineLegend/ScheduleTimelineLegend'
 import { ScheduleTimelineRow } from '../../components/ScheduleTimelineRow/ScheduleTimelineRow'
@@ -23,6 +25,7 @@ import {
   runningActivity,
   teamNextActivity,
 } from '../../utils/scheduleLive/scheduleLive'
+import { canEditLive } from '../../utils/scheduleLiveEdit/scheduleLiveEdit'
 import { groupActivitiesByPeriod } from '../../utils/scheduleTimeline/scheduleTimeline'
 import { useScheduleClock } from './useScheduleClock'
 import { useScheduleControls } from './useScheduleControls'
@@ -61,8 +64,9 @@ function errorMessage(error: unknown): string {
  * activity and its live timer (or the next one when nothing runs), the
  * viewer's team's next activity, the day's Atraso, each row's status and
  * Previsão, the days' "Concluído n/m", and the clock controls for whoever
- * holds `schedule:control`. The clock ticks every second on the server's time
- * and the page refetches every minute.
+ * holds `schedule:control`, including the "✎" that opens the live-edit form
+ * (trim, actual times) in place of its row. The clock ticks every second on
+ * the server's time and the page refetches every minute.
  */
 export function SchedulePage() {
   const { isFeatureEnabled } = useFeatureFlag()
@@ -72,6 +76,7 @@ export function SchedulePage() {
   const { selectedDay, selectDay } = useSelectedScheduleDay(days)
   const { permissions } = useAuthentication()
   const controls = useScheduleControls()
+  const liveEdit = useScheduleLiveEditForm()
 
   const canControl = isLive && hasPermission(permissions, SchedulePermissions.Control)
 
@@ -205,23 +210,45 @@ export function SchedulePage() {
                     {group.label}
                   </h3>
                   <ol className="m-0 list-none p-0">
-                    {group.activities.map((activity) => (
-                      <ScheduleTimelineRow
-                        key={activity.id}
-                        activity={activity}
-                        myTeamInstanceId={myTeamInstanceId}
-                        live={isLive}
-                        forecast={
-                          activity.status === 'planned' || activity.status === 'running'
-                            ? forecastOf(activity.id)
-                            : undefined
-                        }
-                        controls={activityControls(activity, next?.id ?? null, canControl)}
-                        onStart={() => controls.start(activity)}
-                        onFinish={() => controls.finish(activity)}
-                        isControlPending={controls.isPending}
-                      />
-                    ))}
+                    {group.activities.map((activity) =>
+                      liveEdit.editingActivityId === activity.id ? (
+                        <li key={activity.id} className="mb-3">
+                          <ScheduleLiveEditForm
+                            title={activity.title}
+                            durationMinutes={activity.durationMinutes}
+                            fields={liveEdit.fields}
+                            values={liveEdit.values}
+                            onChange={liveEdit.change}
+                            fieldErrors={liveEdit.fieldErrors}
+                            error={liveEdit.error}
+                            onSubmit={liveEdit.submit}
+                            onCancel={liveEdit.close}
+                            isSubmitting={liveEdit.isSubmitting}
+                          />
+                        </li>
+                      ) : (
+                        <ScheduleTimelineRow
+                          key={activity.id}
+                          activity={activity}
+                          myTeamInstanceId={myTeamInstanceId}
+                          live={isLive}
+                          forecast={
+                            activity.status === 'planned' || activity.status === 'running'
+                              ? forecastOf(activity.id)
+                              : undefined
+                          }
+                          controls={activityControls(activity, next?.id ?? null, canControl)}
+                          onStart={() => controls.start(activity)}
+                          onFinish={() => controls.finish(activity)}
+                          isControlPending={controls.isPending}
+                          onEdit={
+                            canControl && canEditLive(activity.status)
+                              ? () => liveEdit.open(activity)
+                              : undefined
+                          }
+                        />
+                      )
+                    )}
                   </ol>
                 </div>
               ))}

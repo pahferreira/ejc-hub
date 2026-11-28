@@ -11,6 +11,7 @@ const scheduleApp = vi.hoisted(() => ({
   deleteDay: vi.fn(),
   startActivity: vi.fn(),
   finishActivity: vi.fn(),
+  updateActivityLive: vi.fn(),
 }))
 
 vi.mock('../application/schedule-app.ts', () => ({ scheduleApp }))
@@ -68,6 +69,7 @@ describe('schedule routes', () => {
       finishedActivityId: null,
     })
     scheduleApp.finishActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
+    scheduleApp.updateActivityLive.mockResolvedValue({ activityId: ACTIVITY_ID })
 
     server = await buildRouteTestServer(scheduleRoutes)
   })
@@ -88,6 +90,11 @@ describe('schedule routes', () => {
       ['DELETE', `/schedule/activities/${ACTIVITY_ID}`, {}],
       ['POST', `/schedule/activities/${ACTIVITY_ID}/start`, { expectedStatus: 'planned' }],
       ['POST', `/schedule/activities/${ACTIVITY_ID}/finish`, { expectedStatus: 'running' }],
+      [
+        'PATCH',
+        `/schedule/activities/${ACTIVITY_ID}/live`,
+        { expectedStatus: 'running', adjustedDurationMinutes: 20 },
+      ],
     ] as const)('answers %s %s with 401 without a token', async (method, url, payload) => {
       const response = await server.inject({ method, url, payload })
 
@@ -631,6 +638,120 @@ describe('schedule routes', () => {
         url,
         headers: CONTROLLER,
         payload: { expectedStatus },
+      })
+
+      expect(response.statusCode).toBe(409)
+    })
+  })
+
+  describe('PATCH /schedule/activities/:activityId/live', () => {
+    const url = `/schedule/activities/${ACTIVITY_ID}/live`
+    const CONTROLLER = authHeader({
+      sub: 'auth0|controller',
+      permissions: [SchedulePermissions.Control],
+    })
+
+    it('hands the core the fields and the caller with schedule:control', async () => {
+      const response = await server.inject({
+        method: 'PATCH',
+        url,
+        headers: CONTROLLER,
+        payload: {
+          expectedStatus: 'done',
+          actualStartedAt: '2026-04-03T21:05:00Z',
+          actualEndedAt: '2026-04-03T21:25:00Z',
+        },
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(response.json()).toEqual({ result: { activityId: ACTIVITY_ID } })
+      expect(scheduleApp.updateActivityLive).toHaveBeenCalledWith(ACTIVITY_ID, {
+        expectedStatus: 'done',
+        actualStartedAt: '2026-04-03T21:05:00Z',
+        actualEndedAt: '2026-04-03T21:25:00Z',
+        controllerAuthId: 'auth0|controller',
+      })
+    })
+
+    it('passes a null trim through, to clear it', async () => {
+      const response = await server.inject({
+        method: 'PATCH',
+        url,
+        headers: CONTROLLER,
+        payload: { expectedStatus: 'planned', adjustedDurationMinutes: null },
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(scheduleApp.updateActivityLive).toHaveBeenCalledWith(ACTIVITY_ID, {
+        expectedStatus: 'planned',
+        adjustedDurationMinutes: null,
+        controllerAuthId: 'auth0|controller',
+      })
+    })
+
+    it('refuses a caller without schedule:control', async () => {
+      const response = await server.inject({
+        method: 'PATCH',
+        url,
+        headers: ADMIN,
+        payload: { expectedStatus: 'planned', adjustedDurationMinutes: 20 },
+      })
+
+      expect(response.statusCode).toBe(403)
+      expect(scheduleApp.updateActivityLive).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      ['no expected status', { adjustedDurationMinutes: 20 }],
+      ['a trim of zero', { expectedStatus: 'planned', adjustedDurationMinutes: 0 }],
+      ['a negative trim', { expectedStatus: 'planned', adjustedDurationMinutes: -5 }],
+      ['a fractional trim', { expectedStatus: 'planned', adjustedDurationMinutes: 1.5 }],
+      [
+        'an actual start that is not an instant',
+        { expectedStatus: 'done', actualStartedAt: '18:00' },
+      ],
+      ['an actual end that is null', { expectedStatus: 'done', actualEndedAt: null }],
+    ])('answers 400 for %s', async (_label, payload) => {
+      const response = await server.inject({ method: 'PATCH', url, headers: CONTROLLER, payload })
+
+      expect(response.statusCode).toBe(400)
+      expect(scheduleApp.updateActivityLive).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      AppErrorCode.ScheduleNothingToChange,
+      AppErrorCode.ScheduleActualTimeNotAllowed,
+      AppErrorCode.ScheduleTrimNotAllowed,
+      AppErrorCode.ScheduleTrimNotPositive,
+      AppErrorCode.ScheduleTrimExceedsPlanned,
+      AppErrorCode.ScheduleActualStartNotBeforeEnd,
+      AppErrorCode.ScheduleActualStartInFuture,
+      AppErrorCode.ScheduleActualEndInFuture,
+      AppErrorCode.ScheduleActualTimesOverlap,
+    ])('answers 400 with the code when the core refuses with %s', async (code) => {
+      scheduleApp.updateActivityLive.mockRejectedValue(new AppError('Refused', code))
+
+      const response = await server.inject({
+        method: 'PATCH',
+        url,
+        headers: CONTROLLER,
+        payload: { expectedStatus: 'done', actualStartedAt: '2026-04-03T21:40:00Z' },
+      })
+
+      expect(response.statusCode).toBe(400)
+      expect(response.json()).toMatchObject({ code })
+    })
+
+    it('answers 409 when the core reports the schedule changed', async () => {
+      scheduleApp.updateActivityLive.mockRejectedValue(
+        new AppError('The schedule changed since it was read', AppErrorCode.Conflict)
+      )
+
+      const response = await server.inject({
+        method: 'PATCH',
+        url,
+        headers: CONTROLLER,
+        payload: { expectedStatus: 'running', adjustedDurationMinutes: 20 },
       })
 
       expect(response.statusCode).toBe(409)

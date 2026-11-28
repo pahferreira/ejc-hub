@@ -131,3 +131,16 @@ export const LastOfTheDay: Story = {
     await expect(within(canvasElement).queryByText(/Próxima:/)).not.toBeInTheDocument()
   },
 }
+
+/** A trimmed running activity: the planned duration struck through, the trimmed one next to it. */
+export const TrimmedDuration: Story = {
+  args: {
+    activity: { ...RUNNING, adjustedDurationMinutes: 30, effectiveDurationMinutes: 30 },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByLabelText('Planejada: 45 min').tagName).toBe('S')
+    await expect(canvas.getByLabelText('Ajustada: 30 min')).toBeVisible()
+  },
+}

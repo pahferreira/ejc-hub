@@ -157,3 +157,17 @@ export type FinishScheduleActivityInput = ScheduleActivityControlInput
 export type FinishScheduleActivityResult = {
   activityId: string
 }
+
+/**
+ * Correcting an activity live: its actual times (an ISO instant each) and its
+ * trim, each left out to keep it. A null trim clears it.
+ */
+export type UpdateScheduleActivityLiveInput = ScheduleActivityControlInput & {
+  actualStartedAt?: string
+  actualEndedAt?: string
+  adjustedDurationMinutes?: number | null
+}
+
+export type UpdateScheduleActivityLiveResult = {
+  activityId: string
+}

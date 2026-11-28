@@ -1,6 +1,10 @@
 import { isAxiosError } from 'axios'
 import { api } from '../api'
 import type { ApiError } from '../general/error'
+import {
+  LIVE_EDIT_ERROR,
+  liveEditErrorMessage,
+} from '../../utils/scheduleLiveEdit/scheduleLiveEdit'
 import type {
   ScheduleActivityBody,
   CreateScheduleActivityResult,
@@ -10,6 +14,8 @@ import type {
   ScheduleActivityControlBody,
   ScheduleReadModel,
   StartScheduleActivityResult,
+  UpdateScheduleActivityLiveBody,
+  UpdateScheduleActivityLiveResult,
   UpdateScheduleActivityResult,
   UpdateScheduleDayBody,
   UpdateScheduleDayResult,
@@ -218,6 +224,30 @@ async function finishActivity(input: { activityId: string; body: ScheduleActivit
   }
 }
 
+/**
+ * Corrects an activity's actual times or trims it. A 409 is "O cronograma
+ * mudou"; a 400 names the rule it broke, by the API's code.
+ */
+async function updateActivityLive(input: {
+  activityId: string
+  body: UpdateScheduleActivityLiveBody
+}) {
+  try {
+    const response = await api.patch<{ result: UpdateScheduleActivityLiveResult }>(
+      `/schedule/activities/${input.activityId}/live`,
+      input.body
+    )
+
+    return response.data.result
+  } catch (error: unknown) {
+    if (apiErrorStatus(error) === 400) {
+      throw new Error(liveEditErrorMessage(apiErrorCode(error)))
+    }
+
+    throw toControlError(error, LIVE_EDIT_ERROR)
+  }
+}
+
 export const scheduleApi = {
   getSchedule,
   createDay,
@@ -228,4 +258,5 @@ export const scheduleApi = {
   deleteDay,
   startActivity,
   finishActivity,
+  updateActivityLive,
 }

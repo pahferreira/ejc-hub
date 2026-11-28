@@ -33,6 +33,15 @@ const appErrorStatus: Partial<Record<string, number>> = {
   [AppErrorCode.NotFound]: HttpStatus.NotFound,
   [AppErrorCode.Validation]: HttpStatus.BadRequest,
   [AppErrorCode.Conflict]: HttpStatus.Conflict,
+  [AppErrorCode.ScheduleNothingToChange]: HttpStatus.BadRequest,
+  [AppErrorCode.ScheduleActualTimeNotAllowed]: HttpStatus.BadRequest,
+  [AppErrorCode.ScheduleTrimNotAllowed]: HttpStatus.BadRequest,
+  [AppErrorCode.ScheduleTrimNotPositive]: HttpStatus.BadRequest,
+  [AppErrorCode.ScheduleTrimExceedsPlanned]: HttpStatus.BadRequest,
+  [AppErrorCode.ScheduleActualStartNotBeforeEnd]: HttpStatus.BadRequest,
+  [AppErrorCode.ScheduleActualStartInFuture]: HttpStatus.BadRequest,
+  [AppErrorCode.ScheduleActualEndInFuture]: HttpStatus.BadRequest,
+  [AppErrorCode.ScheduleActualTimesOverlap]: HttpStatus.BadRequest,
 }
 
 export function fastifyErrorHandler(request: FastifyRequest, reply: FastifyReply, error: unknown) {

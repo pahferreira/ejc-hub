@@ -33,6 +33,17 @@ export type ScheduleActivityTransition = {
   controlledBy: string
 }
 
+/**
+ * A live correction of an activity: its actual times and its trim (null clears
+ * it), each left out to keep it, and the admin acting.
+ */
+export type ScheduleActivityLiveUpdate = {
+  actualStartedAt?: Date
+  actualEndedAt?: Date
+  adjustedDurationMinutes?: number | null
+  controlledBy: string
+}
+
 export interface ScheduleActivityRepository {
   /**
    * Every activity of one event across all its days, earliest planned start
@@ -92,5 +103,17 @@ export interface ScheduleActivityRepository {
     from: ScheduleActivityStatus,
     transition: ScheduleActivityTransition,
     executor?: DbExecutor
+  ) => Promise<ScheduleActivityModel | undefined>
+
+  /**
+   * Corrects one of an event's activities' actual times or trim, only while it
+   * still holds `status`. Returns the updated row, or undefined when it is
+   * missing or no longer in `status` (another admin acted first).
+   */
+  updateActivityLive: (
+    id: string,
+    eventId: string,
+    status: ScheduleActivityStatus,
+    update: ScheduleActivityLiveUpdate
   ) => Promise<ScheduleActivityModel | undefined>
 }

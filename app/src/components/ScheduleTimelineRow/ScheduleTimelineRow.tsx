@@ -17,6 +17,7 @@ import type { ActivityControls, ActivityForecast } from '../../utils/scheduleLiv
 import { isMyTeamActivity } from '../../utils/scheduleTimeline/scheduleTimeline'
 import { Button } from '../Button/Button'
 import { ScheduleActivityChips } from '../ScheduleActivityChips/ScheduleActivityChips'
+import { ScheduleActivityDuration } from '../ScheduleActivityDuration/ScheduleActivityDuration'
 import { ScheduleDriftChip } from '../ScheduleDriftChip/ScheduleDriftChip'
 import { DRIFT_TONE_DOT_CLASSES } from '../ScheduleDriftChip/driftToneClasses'
 import { FaCheck, FaPlay } from 'react-icons/fa'
@@ -46,6 +47,11 @@ export type ScheduleTimelineRowProps = {
   onFinish?: () => void
   /** A control request is in flight: the buttons are disabled. */
   isControlPending?: boolean
+  /**
+   * Opens the live-edit form (trim, actual times). Shows the "✎" when given:
+   * only for whoever can control the clock.
+   */
+  onEdit?: () => void
 }
 
 function StatusChip(props: { children: React.ReactNode; tone: 'running' | 'done' }) {
@@ -90,10 +96,12 @@ function rowTimes(props: ScheduleTimelineRowProps) {
     }
   }
 
+  // Live, a trimmed activity ends at its trimmed length.
+  const durationMinutes = props.live ? activity.effectiveDurationMinutes : activity.durationMinutes
   return {
     startTime: activityStartTime(activity),
-    endTime: activityEndTime(activity),
-    durationMinutes: props.live ? activity.effectiveDurationMinutes : activity.durationMinutes,
+    endTime: activityEndTime({ plannedStartsAt: activity.plannedStartsAt, durationMinutes }),
+    durationMinutes,
   }
 }
 
@@ -108,7 +116,9 @@ function rowTimes(props: ScheduleTimelineRowProps) {
  * AGORA" and a filled dot. A remaining row shows its Previsão, with the
  * planned start struck through and a "PREVISTO" chip when they differ, and
  * its dot is colored on time, late or early. The controls given show as
- * "Iniciar" and "Concluir".
+ * "Iniciar" and "Concluir". A trimmed activity shows its planned duration
+ * struck through beside the trimmed one, and ends ("até HH:mm") at its
+ * trimmed length, and the admin's "✎" opens the live-edit form.
  */
 export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
   const { activity } = props
@@ -131,9 +141,17 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
             {activityStartTime(activity)}
           </s>
         )}
-        <span className="text-xs font-semibold text-primary">
-          {formatDuration(durationMinutes)}
-        </span>
+        {isDone ? (
+          <span className="text-xs font-semibold text-primary">
+            {formatDuration(durationMinutes)}
+          </span>
+        ) : (
+          <ScheduleActivityDuration
+            className="text-xs font-semibold text-primary"
+            durationMinutes={activity.durationMinutes}
+            adjustedDurationMinutes={props.live ? activity.adjustedDurationMinutes : null}
+          />
+        )}
       </div>
 
       <div aria-hidden className="relative flex w-3 shrink-0 justify-center">
@@ -156,13 +174,25 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
           isRunning && 'border-2 border-primary'
         )}
       >
-        {(isRunning || driftMinutes !== 0) && (
+        {(isRunning || driftMinutes !== 0 || props.onEdit) && (
           <div className="flex flex-wrap items-center gap-1.5">
             {isRunning && <StatusChip tone="running">● ACONTECENDO AGORA</StatusChip>}
             {tone && driftMinutes !== 0 && (
               <ScheduleDriftChip tone={tone}>
                 PREVISTO {formatDriftMinutes(driftMinutes)}
               </ScheduleDriftChip>
+            )}
+            {props.onEdit && (
+              <span className="ml-auto">
+                <Button
+                  variant="text"
+                  size="small"
+                  ariaLabel={`Ajustar ${activity.title}`}
+                  onClick={props.onEdit}
+                >
+                  ✎
+                </Button>
+              </span>
             )}
           </div>
         )}
