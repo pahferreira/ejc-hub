@@ -46,8 +46,12 @@ class DrizzleEventFeePaymentRepository implements EventFeePaymentRepository {
           // Amounts on rows that are not `paid` carry no meaning and may be
           // stale after a fee change; nothing reads them, and they are
           // overwritten the next time the row is marked paid.
+          //
+          // `paid_at` follows the same rule: it is when the money came in, so
+          // re-confirming a `paid` row keeps the original date.
           ...(input.status === 'paid' && {
             amountCents: sql`case when ${schema.eventFeePayments.status} = 'paid' then ${schema.eventFeePayments.amountCents} else excluded.amount_cents end`,
+            paidAt: sql`case when ${schema.eventFeePayments.status} = 'paid' then ${schema.eventFeePayments.paidAt} else excluded.paid_at end`,
           }),
         },
       })

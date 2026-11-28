@@ -11,6 +11,7 @@ type StoredStatus = (typeof schema.eventFeePayments.$inferSelect)['status']
 const FEE = 6_000
 const NEW_FEE = 7_500
 const OLD_FEE = 5_000
+const PAID_AT = new Date('2026-01-10T12:00:00Z')
 
 async function insertEventAndMember() {
   const [event] = await db
@@ -40,7 +41,7 @@ async function insertPayment(
     amountCents,
     // A paid row carries a method, so a transition that should clear it is
     // checked against a real value, not one that was null all along.
-    paidAt: status === 'paid' ? new Date() : null,
+    paidAt: status === 'paid' ? PAID_AT : null,
     method: status === 'paid' ? 'pix' : null,
   })
 }
@@ -93,10 +94,9 @@ describe('DrizzleEventFeePaymentRepository.setPaymentsStatus (real Postgres)', (
 
         await setStatus(ids, 'paid', NEW_FEE)
 
-        expect(await storedPayment(ids.memberId)).toMatchObject({
-          status: 'paid',
-          amountCents: NEW_FEE,
-        })
+        const payment = await storedPayment(ids.memberId)
+        expect(payment).toMatchObject({ status: 'paid', amountCents: NEW_FEE })
+        expect(payment.paidAt).toBeInstanceOf(Date)
       }
     )
 
@@ -109,7 +109,7 @@ describe('DrizzleEventFeePaymentRepository.setPaymentsStatus (real Postgres)', (
       expect((await storedPayment(ids.memberId)).amountCents).toBe(FEE)
     })
 
-    it('keeps what a paid member paid when they are confirmed again after a fee change', async () => {
+    it('keeps what a paid member paid, and when, when they are confirmed again after a fee change', async () => {
       const ids = await insertEventAndMember()
       await insertPayment(ids, 'paid', OLD_FEE)
 
@@ -118,6 +118,8 @@ describe('DrizzleEventFeePaymentRepository.setPaymentsStatus (real Postgres)', (
       expect(await storedPayment(ids.memberId)).toMatchObject({
         status: 'paid',
         amountCents: OLD_FEE,
+        paidAt: PAID_AT,
+        method: 'pix',
       })
     })
   })
