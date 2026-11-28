@@ -6,10 +6,19 @@ import {
   activityStartTime,
   formatDuration,
 } from '../../utils/scheduleActivity/scheduleActivity'
-import type { ActivityControls } from '../../utils/scheduleLive/scheduleLive'
+import {
+  actualDurationMinutes,
+  driftTone,
+  formatDriftMinutes,
+  roundToMinute,
+  startDriftMinutes,
+} from '../../utils/scheduleClock/scheduleClock'
+import type { ActivityControls, ActivityForecast } from '../../utils/scheduleLive/scheduleLive'
 import { isMyTeamActivity } from '../../utils/scheduleTimeline/scheduleTimeline'
 import { Button } from '../Button/Button'
 import { ScheduleActivityChips } from '../ScheduleActivityChips/ScheduleActivityChips'
+import { ScheduleDriftChip } from '../ScheduleDriftChip/ScheduleDriftChip'
+import { DRIFT_TONE_DOT_CLASSES } from '../ScheduleDriftChip/driftToneClasses'
 import { FaCheck, FaPlay } from 'react-icons/fa'
 
 export type ScheduleTimelineRowProps = {
@@ -25,6 +34,12 @@ export type ScheduleTimelineRowProps = {
    * row is the Phase 1 plan.
    */
   live?: boolean
+  /**
+   * Live, a remaining (running or planned) activity's Previsão: the row shows
+   * it with the planned start struck through, a "PREVISTO +7 min" chip and a
+   * dot in its tone. Left out for done rows and the Phase 1 plan.
+   */
+  forecast?: ActivityForecast
   /** The clock controls to show, from `activityControls`. None when left out. */
   controls?: ActivityControls
   onStart?: () => void
@@ -51,6 +66,37 @@ function eventTime(instant: string): string {
   return toEventTime(new Date(instant))
 }
 
+/** The start column and "até" end of a row: planned, actual or forecast. */
+function rowTimes(props: ScheduleTimelineRowProps) {
+  const { activity, forecast } = props
+
+  if (props.live && activity.status === 'done') {
+    return {
+      startTime: activity.actualStartedAt
+        ? eventTime(activity.actualStartedAt)
+        : activityStartTime(activity),
+      endTime: activity.actualEndedAt
+        ? eventTime(activity.actualEndedAt)
+        : activityEndTime(activity),
+      durationMinutes: actualDurationMinutes(activity),
+    }
+  }
+
+  if (forecast) {
+    return {
+      startTime: toEventTime(roundToMinute(forecast.forecastStartsAt)),
+      endTime: toEventTime(roundToMinute(forecast.forecastEndsAt)),
+      durationMinutes: activity.effectiveDurationMinutes,
+    }
+  }
+
+  return {
+    startTime: activityStartTime(activity),
+    endTime: activityEndTime(activity),
+    durationMinutes: props.live ? activity.effectiveDurationMinutes : activity.durationMinutes,
+  }
+}
+
 /**
  * One activity on the Cronograma's "Linha do tempo": its start and duration
  * left of a vertical timeline, then the responsible chips, the title, and
@@ -58,8 +104,11 @@ function eventTime(instant: string): string {
  * border and a "Sua equipe" label beside their team's chip.
  *
  * Live, a done row is muted and shows its actual
- * times; the running row gets "● ACONTECENDO AGORA" and a filled dot. The
- * controls given show as "Iniciar" and "Concluir".
+ * times and how long it really took; the running row gets "● ACONTECENDO
+ * AGORA" and a filled dot. A remaining row shows its Previsão, with the
+ * planned start struck through and a "PREVISTO" chip when they differ, and
+ * its dot is colored on time, late or early. The controls given show as
+ * "Iniciar" and "Concluir".
  */
 export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
   const { activity } = props
@@ -67,19 +116,23 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
   const isDone = props.live && activity.status === 'done'
   const isRunning = props.live && activity.status === 'running'
 
-  const startTime =
-    isDone && activity.actualStartedAt
-      ? eventTime(activity.actualStartedAt)
-      : activityStartTime(activity)
-  const endTime =
-    isDone && activity.actualEndedAt ? eventTime(activity.actualEndedAt) : activityEndTime(activity)
+  const { startTime, endTime, durationMinutes } = rowTimes(props)
+  const driftMinutes = props.forecast
+    ? startDriftMinutes(activity, props.forecast.forecastStartsAt)
+    : 0
+  const tone = props.forecast ? driftTone(driftMinutes) : null
 
   return (
     <li className={clsx('flex gap-4', isDone && 'opacity-60')}>
       <div className="flex w-12 lg:w-16 shrink-0 flex-col items-end pt-3 text-right">
         <span className="text-base font-bold leading-tight text-dark-brown">{startTime}</span>
+        {driftMinutes !== 0 && (
+          <s aria-label="Horário planejado" className="text-xs text-gray-500">
+            {activityStartTime(activity)}
+          </s>
+        )}
         <span className="text-xs font-semibold text-primary">
-          {formatDuration(activity.durationMinutes)}
+          {formatDuration(durationMinutes)}
         </span>
       </div>
 
@@ -88,7 +141,8 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
         <span
           data-testid="timeline-dot"
           className={clsx(
-            'relative mt-4 h-3 w-3 rounded-full border-2 border-primary',
+            'relative mt-4 h-3 w-3 rounded-full border-2',
+            tone ? DRIFT_TONE_DOT_CLASSES[tone] : 'border-primary',
             isRunning ? 'bg-primary' : 'bg-white'
           )}
         />
@@ -102,8 +156,15 @@ export function ScheduleTimelineRow(props: ScheduleTimelineRowProps) {
           isRunning && 'border-2 border-primary'
         )}
       >
-        {(isRunning || isDone) && (
-          <div>{isRunning && <StatusChip tone="running">● ACONTECENDO AGORA</StatusChip>}</div>
+        {(isRunning || driftMinutes !== 0) && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {isRunning && <StatusChip tone="running">● ACONTECENDO AGORA</StatusChip>}
+            {tone && driftMinutes !== 0 && (
+              <ScheduleDriftChip tone={tone}>
+                PREVISTO {formatDriftMinutes(driftMinutes)}
+              </ScheduleDriftChip>
+            )}
+          </div>
         )}
 
         <ScheduleActivityChips activity={activity} myTeamInstanceId={props.myTeamInstanceId} />
