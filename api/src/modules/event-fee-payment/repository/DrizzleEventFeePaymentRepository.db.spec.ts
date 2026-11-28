@@ -38,7 +38,10 @@ async function insertPayment(
     userId: ids.memberId,
     status,
     amountCents,
+    // A paid row carries a method, so a transition that should clear it is
+    // checked against a real value, not one that was null all along.
     paidAt: status === 'paid' ? new Date() : null,
+    method: status === 'paid' ? 'pix' : null,
   })
 }
 
