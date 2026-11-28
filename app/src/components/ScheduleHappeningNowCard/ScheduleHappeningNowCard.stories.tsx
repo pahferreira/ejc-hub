@@ -44,7 +44,11 @@ const meta = {
   component: ScheduleHappeningNowCard,
   args: {
     activity: RUNNING,
+    // 18:19:30, twelve and a half minutes in.
+    now: new Date('2026-04-03T21:19:30Z'),
     next: NEXT,
+    // The 7-minute late start pushes Jantar to 18:52.
+    nextForecastStartsAt: new Date('2026-04-03T21:52:00Z'),
     myTeamInstanceId: 't-liturgia',
   },
   tags: ['autodocs'],
@@ -62,8 +66,50 @@ export const Default: Story = {
     await expect(canvas.getByText('Palestra: O amor de Deus')).toBeVisible()
     await expect(canvas.getByText('Convidado: Pe. João')).toBeVisible()
     await expect(canvas.getByText('Previsto 18:00 · Iniciado 18:07')).toBeVisible()
-    await expect(canvas.getByText(/Próxima:/)).toHaveTextContent('Próxima: Jantar às 18:45')
+    await expect(canvas.getByText(/Próxima:/)).toHaveTextContent('Próxima: Jantar às 18:52')
     await expect(canvas.queryByRole('button')).not.toBeInTheDocument()
+  },
+}
+
+/** The timer counts down the effective duration, with the elapsed time and its bar. */
+export const Timer: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByRole('timer', { name: 'Tempo restante' })).toHaveTextContent(
+      '● AO VIVO32:30'
+    )
+    await expect(canvas.getByText('Decorridos 12:30')).toBeVisible()
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '28')
+    await expect(canvas.queryByText(/Excedeu em/)).not.toBeInTheDocument()
+  },
+}
+
+/** Past its 45 minutes: "Excedeu em" and the "+N min" chip turn red and grow. */
+export const Overrun: Story = {
+  // 18:55:10, three minutes and ten seconds over.
+  args: { now: new Date('2026-04-03T21:55:10Z') },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByRole('timer', { name: 'Tempo excedido' })).toHaveTextContent(
+      '● AO VIVO+03:10'
+    )
+    await expect(canvas.getByText('Excedeu em 03:10')).toBeVisible()
+    await expect(canvas.getByText('+3 min')).toBeVisible()
+    await expect(canvas.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '100')
+  },
+}
+
+/** A trimmed activity counts down its effective duration. */
+export const Trimmed: Story = {
+  args: {
+    activity: { ...RUNNING, adjustedDurationMinutes: 15, effectiveDurationMinutes: 15 },
+  },
+  play: async ({ canvasElement }) => {
+    await expect(
+      within(canvasElement).getByRole('timer', { name: 'Tempo restante' })
+    ).toHaveTextContent('● AO VIVO02:30')
   },
 }
 
@@ -73,7 +119,7 @@ export const Admin: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement)
 
-    await userEvent.click(canvas.getByRole('button', { name: '✓ Marcar como concluída' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Marcar como concluída' }))
     await expect(args.onFinish).toHaveBeenCalled()
   },
 }

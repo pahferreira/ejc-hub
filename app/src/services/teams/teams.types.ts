@@ -28,7 +28,9 @@ export const teamsOverviewQueryKeys = {
   stats: ['teams', 'overview', 'stats'] as const,
   lists: ['teams', 'overview', 'list'] as const,
   list: (filters: TeamsListFilters = {}) => [...teamsOverviewQueryKeys.lists, filters] as const,
-  detail: (teamKey: string) => ['teams', 'detail', teamKey] as const,
+  /** Prefix of every team detail query, for mutations that only know the team's id. */
+  details: ['teams', 'detail'] as const,
+  detail: (teamKey: string) => [...teamsOverviewQueryKeys.details, teamKey] as const,
   myTeam: ['teams', 'me'] as const,
 }
 

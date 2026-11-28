@@ -86,14 +86,19 @@ export class Financial {
       const teams = await this.#aggregateTeams(event.id)
       const counts = this.#countsFrom(teams)
 
+      const collectedCents = teams.reduce((sum, team) => sum + team.collectedCents, 0)
+      // Only the members who owe: an exemption removes that person's fee from
+      // the target rather than leaving it permanently outstanding.
+      const unpaidCount = counts.totalMembers - counts.exemptCount - counts.paidCount
+
       return {
         // Rates, not counts: the head counts stay on the by-member page, and the
         // per-team table below carries the absolute numbers for this one.
         ...this.#ratesFrom(counts),
-        collectedCents: teams.reduce((sum, team) => sum + team.collectedCents, 0),
-        // Only the members who owe: an exemption removes that person's fee from
-        // the target rather than leaving it permanently outstanding.
-        expectedCents: event.feeAmountCents * (counts.totalMembers - counts.exemptCount),
+        collectedCents,
+        // What paid members actually paid plus today's fee for everyone still
+        // owing, so a fee change never bills an already-paid member twice.
+        expectedCents: collectedCents + event.feeAmountCents * unpaidCount,
         currency: event.feeCurrency,
         teams: teams.map((team) => team.row),
       }
