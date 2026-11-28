@@ -1,27 +1,32 @@
 import { FiCalendar } from 'react-icons/fi'
 import { hasPermission, SchedulePermissions } from '../../../../common/permissions'
 import { ScheduleDayCard } from '../../components/ScheduleDayCard/ScheduleDayCard'
+import { ScheduleDriftChip } from '../../components/ScheduleDriftChip/ScheduleDriftChip'
 import { ScheduleHappeningNowCard } from '../../components/ScheduleHappeningNowCard/ScheduleHappeningNowCard'
 import { ScheduleNextActivityCard } from '../../components/ScheduleNextActivityCard/ScheduleNextActivityCard'
 import { ScheduleNoteModal } from '../../components/ScheduleNoteModal/ScheduleNoteModal'
 import { useScheduleNoteForm } from '../../components/ScheduleNoteModal/useScheduleNoteForm'
+import { ScheduleTimelineLegend } from '../../components/ScheduleTimelineLegend/ScheduleTimelineLegend'
 import { ScheduleTimelineRow } from '../../components/ScheduleTimelineRow/ScheduleTimelineRow'
 import { useAuthentication } from '../../hooks/useAuthentication'
 import { FeatureFlag } from '../../hooks/useFeatureFlag/feature-flags'
 import { useFeatureFlag } from '../../hooks/useFeatureFlag/useFeatureFlag'
-import { useScheduleQuery } from '../../services/schedule/useScheduleQuery'
 import {
   isNoCurrentEventError,
   isScheduleForbiddenError,
 } from '../../services/schedule/schedule.api'
 import { pluralize } from '../../utils/pluralize/pluralize'
+import { driftTone, formatDayDrift } from '../../utils/scheduleClock/scheduleClock'
 import {
   activityControls,
   doneActivityCount,
+  forecastSchedule,
   nextPlannedActivity,
   runningActivity,
+  teamNextActivity,
 } from '../../utils/scheduleLive/scheduleLive'
 import { groupActivitiesByPeriod } from '../../utils/scheduleTimeline/scheduleTimeline'
+import { useScheduleClock } from './useScheduleClock'
 import { useScheduleControls } from './useScheduleControls'
 import { useSelectedScheduleDay } from './useSelectedScheduleDay'
 import { useScheduleViewedTracking } from './useScheduleViewedTracking'
@@ -55,21 +60,24 @@ function errorMessage(error: unknown): string {
  * rows highlighted.
  *
  * Behind `ScheduleLive`, the Running Schedule: a top slot with the running
- * activity (or the next one when nothing runs), each row's status, the days'
- * "Concluído n/m", and the clock controls for whoever holds `schedule:control`.
- * Admins and coordinators leave Observações on any activity; each row shows the
- * notes the API lets the viewer read.
+ * activity and its live timer (or the next one when nothing runs), the
+ * viewer's team's next activity, the day's Atraso, each row's status and
+ * Previsão, the days' "Concluído n/m", and the clock controls for whoever
+ * holds `schedule:control`. The clock ticks every second on the server's time
+ * and the page refetches every minute. Admins and coordinators leave
+ * Observações on any activity; each row shows the notes the API lets the
+ * viewer read.
  */
 export function SchedulePage() {
-  const scheduleQuery = useScheduleQuery()
+  const { isFeatureEnabled } = useFeatureFlag()
+  const isLive = isFeatureEnabled(FeatureFlag.ScheduleLive, false)
+  const { query: scheduleQuery, now } = useScheduleClock(isLive)
   const days = scheduleQuery.data?.days ?? []
   const { selectedDay, selectDay } = useSelectedScheduleDay(days)
   const { permissions } = useAuthentication()
-  const { isFeatureEnabled } = useFeatureFlag()
   const controls = useScheduleControls()
   const noteForm = useScheduleNoteForm()
 
-  const isLive = isFeatureEnabled(FeatureFlag.ScheduleLive, false)
   const canControl = isLive && hasPermission(permissions, SchedulePermissions.Control)
 
   useScheduleViewedTracking(selectedDay?.date, scheduleQuery.data?.viewerRole)
@@ -95,6 +103,14 @@ export function SchedulePage() {
   const nextAfterRunning = running
     ? nextPlannedActivity(eventActivities.slice(eventActivities.indexOf(running) + 1))
     : null
+  const forecast = isLive ? forecastSchedule(days, now) : null
+  const forecastOf = (activityId: string) => forecast?.byActivityId.get(activityId)
+  const teamNext = isLive
+    ? teamNextActivity(eventActivities, running ? nextAfterRunning : next, myTeamInstanceId)
+    : null
+  const dayDriftMinutes = selectedDay
+    ? forecast?.driftMinutesByDayId.get(selectedDay.id)
+    : undefined
 
   return (
     <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
@@ -123,11 +139,23 @@ export function SchedulePage() {
               ))}
             </div>
 
+            {dayDriftMinutes !== undefined && (
+              <div className="mt-6">
+                <ScheduleDriftChip tone={driftTone(dayDriftMinutes)}>
+                  {formatDayDrift(dayDriftMinutes)}
+                </ScheduleDriftChip>
+              </div>
+            )}
+
             {running && (
-              <div className="mt-8">
+              <div className="mt-6">
                 <ScheduleHappeningNowCard
                   activity={running}
+                  now={now}
                   next={nextAfterRunning}
+                  nextForecastStartsAt={
+                    nextAfterRunning ? forecastOf(nextAfterRunning.id)?.forecastStartsAt : undefined
+                  }
                   myTeamInstanceId={myTeamInstanceId}
                   onFinish={canControl ? () => controls.finish(running) : undefined}
                   isControlPending={controls.isPending}
@@ -135,12 +163,30 @@ export function SchedulePage() {
               </div>
             )}
             {!running && next && (
-              <div className="mt-8">
+              <div className="mt-6">
                 <ScheduleNextActivityCard
                   activity={next}
+                  forecastStartsAt={
+                    forecastOf(next.id)?.forecastStartsAt ?? new Date(next.plannedStartsAt)
+                  }
+                  now={now}
                   myTeamInstanceId={myTeamInstanceId}
                   onStart={canControl ? () => controls.start(next) : undefined}
                   isControlPending={controls.isPending}
+                />
+              </div>
+            )}
+
+            {teamNext && (
+              <div className="mt-4">
+                <ScheduleNextActivityCard
+                  forMyTeam
+                  activity={teamNext}
+                  forecastStartsAt={
+                    forecastOf(teamNext.id)?.forecastStartsAt ?? new Date(teamNext.plannedStartsAt)
+                  }
+                  now={now}
+                  myTeamInstanceId={myTeamInstanceId}
                 />
               </div>
             )}
@@ -153,7 +199,13 @@ export function SchedulePage() {
                   `${selectedDay.activities.length} atividade`,
                   `${selectedDay.activities.length} atividades`
                 )}
+                {isLive && ' · atrasos se propagam em cascata'}
               </p>
+              {isLive && (
+                <div className="mt-3">
+                  <ScheduleTimelineLegend />
+                </div>
+              )}
 
               {groupActivitiesByPeriod(selectedDay.activities, selectedDay.date).map((group) => (
                 <div key={group.period} className="mt-6">
@@ -167,6 +219,11 @@ export function SchedulePage() {
                         activity={activity}
                         myTeamInstanceId={myTeamInstanceId}
                         live={isLive}
+                        forecast={
+                          activity.status === 'planned' || activity.status === 'running'
+                            ? forecastOf(activity.id)
+                            : undefined
+                        }
                         controls={activityControls(activity, next?.id ?? null, canControl)}
                         onStart={() => controls.start(activity)}
                         onFinish={() => controls.finish(activity)}

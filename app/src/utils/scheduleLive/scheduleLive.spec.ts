@@ -6,8 +6,11 @@ import type {
 import {
   activityControls,
   doneActivityCount,
+  forecastSchedule,
+  forecastScheduleDay,
   nextPlannedActivity,
   runningActivity,
+  teamNextActivity,
 } from './scheduleLive'
 
 function activity(
@@ -124,5 +127,129 @@ describe('doneActivityCount', () => {
 
   it('is zero for a day that has not started', () => {
     expect(doneActivityCount([activity('a1', 'planned')])).toBe(0)
+  })
+})
+
+describe('forecastScheduleDay', () => {
+  // 18:00, 18:30 and 19:00 in São Paulo, 30 minutes each.
+  const day = (first: ScheduleActivity) => ({
+    activities: [
+      first,
+      activity('a2', 'planned', { plannedStartsAt: '2026-04-03T21:30:00Z' }),
+      activity('a3', 'planned', { plannedStartsAt: '2026-04-03T22:00:00Z' }),
+    ],
+  })
+
+  it('pushes the remaining activities by a running overrun as now advances', () => {
+    const running = activity('a1', 'running', { actualStartedAt: '2026-04-03T21:05:00Z' })
+    const forecast = forecastScheduleDay(day(running), new Date('2026-04-03T21:45:00Z'))
+
+    expect(forecast.driftMinutes).toBe(15)
+    expect(forecast.byActivityId.get('a2')?.forecastStartsAt).toEqual(
+      new Date('2026-04-03T21:45:00Z')
+    )
+    expect(forecast.byActivityId.get('a3')?.forecastStartsAt).toEqual(
+      new Date('2026-04-03T22:15:00Z')
+    )
+  })
+
+  it('pulls the remaining activities earlier after an early finish', () => {
+    const done = activity('a1', 'done', {
+      actualStartedAt: '2026-04-03T21:00:00Z',
+      actualEndedAt: '2026-04-03T21:20:00Z',
+    })
+    const forecast = forecastScheduleDay(day(done), new Date('2026-04-03T21:20:00Z'))
+
+    expect(forecast.driftMinutes).toBe(-10)
+    expect(forecast.byActivityId.get('a2')?.forecastStartsAt).toEqual(
+      new Date('2026-04-03T21:20:00Z')
+    )
+  })
+
+  it('keeps a day that has not started on time', () => {
+    const forecast = forecastScheduleDay(
+      day(activity('a1', 'planned')),
+      new Date('2026-04-03T12:00:00Z')
+    )
+
+    expect(forecast.driftMinutes).toBe(0)
+    expect(forecast.byActivityId.get('a1')?.forecastStartsAt).toEqual(
+      new Date('2026-04-03T21:00:00Z')
+    )
+  })
+})
+
+describe('teamNextActivity', () => {
+  const team = (teamInstanceId: string) => [
+    { teamInstanceId, teamName: teamInstanceId, teamKey: teamInstanceId, colorToken: 'violet' },
+  ]
+  const activities = [
+    activity('a1', 'done', { teams: team('t-mine') }),
+    activity('a2', 'planned', { teams: team('t-other') }),
+    activity('a3', 'planned', { teams: team('t-mine') }),
+    activity('a4', 'planned', { teams: team('t-mine') }),
+  ]
+
+  it("is the team's first planned activity from the Próxima one on", () => {
+    expect(teamNextActivity(activities, activities[1], 't-mine')?.id).toBe('a3')
+  })
+
+  it("counts an activity for every team as the team's", () => {
+    const withAllTeams = [
+      activities[1],
+      activity('a5', 'planned', { allTeams: true }),
+      activities[2],
+    ]
+    expect(teamNextActivity(withAllTeams, activities[1], 't-mine')?.id).toBe('a5')
+  })
+
+  it("is null when the Próxima one is already the team's", () => {
+    expect(teamNextActivity(activities, activities[2], 't-mine')).toBeNull()
+  })
+
+  it('is null when the viewer has no team', () => {
+    expect(teamNextActivity(activities, activities[1], null)).toBeNull()
+  })
+
+  it('is null when the team has nothing left', () => {
+    expect(teamNextActivity(activities, activities[1], 't-none')).toBeNull()
+  })
+
+  it('is null when nothing is next', () => {
+    expect(teamNextActivity(activities, null, 't-mine')).toBeNull()
+  })
+})
+
+describe('forecastSchedule', () => {
+  const friday = {
+    id: 'day-fri',
+    activities: [
+      activity('a1', 'running', { actualStartedAt: '2026-04-03T21:10:00Z' }),
+      activity('a2', 'planned', { plannedStartsAt: '2026-04-03T21:30:00Z' }),
+    ],
+  }
+  const saturday = {
+    id: 'day-sat',
+    activities: [activity('b1', 'planned', { plannedStartsAt: '2026-04-04T12:00:00Z' })],
+  }
+
+  it("forecasts every day's activities, resetting the drift each day", () => {
+    const forecast = forecastSchedule([friday, saturday], new Date('2026-04-03T21:20:00Z'))
+
+    expect(forecast.driftMinutesByDayId.get('day-fri')).toBe(10)
+    expect(forecast.driftMinutesByDayId.get('day-sat')).toBe(0)
+    expect(forecast.byActivityId.get('a2')?.forecastStartsAt).toEqual(
+      new Date('2026-04-03T21:40:00Z')
+    )
+    expect(forecast.byActivityId.get('b1')?.forecastStartsAt).toEqual(
+      new Date('2026-04-04T12:00:00Z')
+    )
+  })
+
+  it('is empty without days', () => {
+    const forecast = forecastSchedule([], new Date('2026-04-03T21:20:00Z'))
+
+    expect(forecast.byActivityId.size).toBe(0)
+    expect(forecast.driftMinutesByDayId.size).toBe(0)
   })
 })
