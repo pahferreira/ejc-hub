@@ -29,6 +29,7 @@ function StatefulForm(props: {
   onSubmit: () => void
   onCancel: () => void
   onDelete?: () => void
+  planLockHint?: string
 }) {
   const [values, setValues] = useState<ScheduleActivityFormValues>({ ...INITIAL, ...props.initial })
 
@@ -43,6 +44,7 @@ function StatefulForm(props: {
         onCancel={props.onCancel}
         mode={props.mode}
         onDelete={props.onDelete}
+        planLockHint={props.planLockHint}
       />
     </div>
   )
@@ -116,6 +118,34 @@ export const Edit: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Excluir' }))
     await expect(args.onDelete).toHaveBeenCalledOnce()
 
+    await userEvent.click(canvas.getByRole('button', { name: 'Salvar alterações' }))
+    await expect(args.onSubmit).toHaveBeenCalledOnce()
+  },
+}
+
+/** A started activity: Início and Duração are read-only with a hint; the rest still edits. */
+export const EditStarted: Story = {
+  args: {
+    mode: 'edit',
+    planLockHint: 'A atividade já começou',
+    initial: {
+      title: 'Missa',
+      startTime: '19:00',
+      durationMinutes: 60,
+      place: 'Capela',
+      adminsResponsible: true,
+    },
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByText('A atividade já começou')).toBeInTheDocument()
+    await expect(canvas.getByLabelText('Início*')).toBeDisabled()
+    await expect(canvas.getByLabelText('Duração (min)*')).toBeDisabled()
+    await expect(canvas.queryByRole('button', { name: 'Excluir' })).toBeNull()
+
+    await userEvent.clear(canvas.getByLabelText('Local*'))
+    await userEvent.type(canvas.getByLabelText('Local*'), 'Salão')
     await userEvent.click(canvas.getByRole('button', { name: 'Salvar alterações' }))
     await expect(args.onSubmit).toHaveBeenCalledOnce()
   },

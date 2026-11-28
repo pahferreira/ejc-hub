@@ -16,6 +16,7 @@ import { isNoCurrentEventError } from '../../services/schedule/schedule.api'
 import type { ScheduleEvent } from '../../services/schedule/schedule.types'
 import { ROUTE_PATHS } from '../../constants/routePaths'
 import { toastPromise } from '../../utils/toast/toast'
+import { isDayLocked } from '../../utils/scheduleActivity/scheduleActivity'
 import {
   eventDateOptions,
   formatScheduleDay,
@@ -64,7 +65,9 @@ export function SchedulePlanningPage() {
   const days = scheduleQuery.data?.days ?? []
   const selectedDay = days.find((day) => day.id === selectedDayId) ?? days[0]
   const activityForm = useScheduleActivityForm(
-    selectedDay ? { id: selectedDay.id, date: selectedDay.date } : null
+    selectedDay
+      ? { id: selectedDay.id, date: selectedDay.date, activities: selectedDay.activities }
+      : null
   )
   const activityDeletion = useDeleteScheduleActivity(activityForm.close)
 
@@ -144,14 +147,17 @@ export function SchedulePlanningPage() {
                 <h2 className="m-0 text-xl font-semibold text-dark-brown">
                   {formatScheduleDay(selectedDay.date)}
                 </h2>
-                <div className="flex items-center gap-2">
-                  <Button variant="text" onClick={() => dayForm.openToEdit(selectedDay)}>
-                    Editar dia
-                  </Button>
-                  <Button variant="text" onClick={() => setIsConfirmingDelete(true)}>
-                    Excluir dia
-                  </Button>
-                </div>
+                {/* A day with a started activity keeps its date and its history: the API refuses both. */}
+                {!isDayLocked(selectedDay.activities) && (
+                  <div className="flex items-center gap-2">
+                    <Button variant="text" onClick={() => dayForm.openToEdit(selectedDay)}>
+                      Editar dia
+                    </Button>
+                    <Button variant="text" onClick={() => setIsConfirmingDelete(true)}>
+                      Excluir dia
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <ScheduleDayActivities

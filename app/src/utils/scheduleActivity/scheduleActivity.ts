@@ -33,6 +33,35 @@ export function hasSomeoneResponsible(responsible: ActivityResponsible): boolean
   )
 }
 
+/**
+ * Whether an activity's plan is locked: once it starts (or is skipped) its
+ * planned start and duration are the fixed reference, and it can't be deleted.
+ * The API refuses the same edits.
+ */
+export function isPlanLocked(activity: Pick<ScheduleActivity, 'status'>): boolean {
+  return activity.status !== 'planned'
+}
+
+/**
+ * The hint a locked activity's form shows under Início and Duração, or
+ * undefined while it is still planned.
+ */
+export function planLockHint(activity: Pick<ScheduleActivity, 'status'>): string | undefined {
+  if (!isPlanLocked(activity)) {
+    return undefined
+  }
+
+  return activity.status === 'skipped' ? 'A atividade foi pulada' : 'A atividade já começou'
+}
+
+/**
+ * Whether a day is locked: it holds an activity whose plan is locked, so it can
+ * be neither deleted nor moved to another date. The API refuses the same.
+ */
+export function isDayLocked(activities: Pick<ScheduleActivity, 'status'>[]): boolean {
+  return activities.some(isPlanLocked)
+}
+
 /** The end instant of an activity: its start plus its duration. */
 function endInstant(activity: Pick<ScheduleActivity, 'plannedStartsAt' | 'durationMinutes'>): Date {
   return new Date(

@@ -71,7 +71,11 @@ const EMPTY_VALUES: ScheduleActivityFormValues = {
  * Stand-ins for `useScheduleActivityForm` and `useDeleteScheduleActivity`: same
  * placements and pre-fill, no API, so the story can walk the edit and gap flows.
  */
-function StatefulDay(props: { onSubmit: () => void; onConfirmDelete: () => void }) {
+function StatefulDay(props: {
+  activities?: ScheduleActivity[]
+  onSubmit: () => void
+  onConfirmDelete: () => void
+}) {
   const [placement, setPlacement] = useState<ScheduleActivityFormPlacement | null>(null)
   const [values, setValues] = useState(EMPTY_VALUES)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
@@ -116,7 +120,7 @@ function StatefulDay(props: { onSubmit: () => void; onConfirmDelete: () => void 
   return (
     <div className="max-w-xl p-4">
       <ScheduleDayActivities
-        activities={ACTIVITIES}
+        activities={props.activities ?? ACTIVITIES}
         dayDate="2026-04-03"
         teamOptions={TEAM_OPTIONS}
         form={form}
@@ -180,5 +184,30 @@ export const EditAndDelete: Story = {
 
     await userEvent.click(screen.getByRole('button', { name: 'Excluir atividade' }))
     await expect(args.onConfirmDelete).toHaveBeenCalledOnce()
+  },
+}
+
+/** A started activity: Início and Duração are read-only with a hint, and there is no Excluir. */
+export const EditStarted: Story = {
+  args: {
+    activities: [
+      {
+        ...ACTIVITIES[0],
+        status: 'running',
+        actualStartedAt: '2026-04-03T15:02:00Z',
+      },
+      ACTIVITIES[1],
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Editar Almoço' }))
+
+    await expect(canvas.getByLabelText('Início*')).toBeDisabled()
+    await expect(canvas.getByLabelText('Duração (min)*')).toBeDisabled()
+    await expect(canvas.getByLabelText('Título*')).toBeEnabled()
+    await expect(canvas.getByText('A atividade já começou')).toBeInTheDocument()
+    await expect(canvas.queryByRole('button', { name: 'Excluir' })).toBeNull()
   },
 }

@@ -32,12 +32,18 @@ export type ScheduleActivityFormProps = {
   mode?: 'create' | 'edit'
   /** Asks to delete the activity being edited; shows "Excluir" when given. */
   onDelete?: () => void
+  /**
+   * Why the plan is locked ("A atividade já começou"). When given, Início and
+   * Duração are read-only and this shows under them.
+   */
+  planLockHint?: string
 }
 
 /**
  * The inline "NOVA ATIVIDADE" card, or "EDITAR ATIVIDADE" in place of the card
  * it edits. Not a drawer: it sits in the day's list where the activity lands. A live "Termina às" tracks the start and
  * duration; the responsible box groups teams, a guest, the admins toggle and the all-teams toggle.
+ * Once the activity has started, its start and duration are read-only.
  */
 export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
   const { values, onChange } = props
@@ -77,6 +83,7 @@ export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
           value={values.startTime}
           onChange={(startTime) => onChange({ startTime })}
           error={props.fieldErrors?.startTime}
+          disabled={Boolean(props.planLockHint)}
         />
         <Input
           label="Duração (min)"
@@ -87,6 +94,7 @@ export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
           value={String(values.durationMinutes)}
           onChange={(value) => onChange({ durationMinutes: Number(value) })}
           error={props.fieldErrors?.durationMinutes}
+          disabled={Boolean(props.planLockHint)}
         />
         <Input
           label="Local"
@@ -97,6 +105,10 @@ export function ScheduleActivityForm(props: ScheduleActivityFormProps) {
           error={props.fieldErrors?.place}
         />
       </div>
+
+      {props.planLockHint && (
+        <p className="m-0 -mt-2 text-sm text-gray-500">{props.planLockHint}</p>
+      )}
 
       <fieldset className="flex flex-col gap-3 rounded-lg border border-tertiary p-3">
         <legend className="px-1 text-xs font-semibold text-gray-500">

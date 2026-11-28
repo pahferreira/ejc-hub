@@ -30,4 +30,13 @@ export const InvalidInput = {
   },
 } satisfies StoryObj
 
+export const DisabledInput = {
+  args: {
+    label: 'Início',
+    type: 'time',
+    value: '18:00',
+    disabled: true,
+  },
+} satisfies StoryObj
+
 export default meta

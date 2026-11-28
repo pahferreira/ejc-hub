@@ -8,7 +8,9 @@ import { useUpdateScheduleActivityMutation } from '../../services/schedule/useUp
 import type { ScheduleActivity } from '../../services/schedule/schedule.types'
 import {
   activityFormValues,
+  activityStartTime,
   buildActivityBody,
+  isPlanLocked,
   DEFAULT_ACTIVITY_DURATION,
   DEFAULT_ACTIVITY_START,
   type ActivityGap,
@@ -37,6 +39,27 @@ function initialValues(startTime: string, durationMinutes: number): ScheduleActi
 }
 
 /**
+ * The form's values with a locked activity's Início and Duração put back to its
+ * stored plan. An activity can start while its edit form is open; its start and
+ * duration are then read-only, and the API refuses any change to them, so the
+ * other fields still save. Any other activity's values pass through as they are.
+ */
+export function withLockedPlan(
+  values: ScheduleActivityFormValues,
+  activity: ScheduleActivity | undefined
+): ScheduleActivityFormValues {
+  if (!activity || !isPlanLocked(activity)) {
+    return values
+  }
+
+  return {
+    ...values,
+    startTime: activityStartTime(activity),
+    durationMinutes: activity.durationMinutes,
+  }
+}
+
+/**
  * Where the open form sits in the day's list: at the end (a new activity), in
  * a gap (a new activity filling it, right under the activity it follows), or
  * in place of the card it edits.
@@ -49,7 +72,8 @@ export type ScheduleActivityFormPlacement =
 /**
  * The inline activity form: open state, where it sits, its values, the shape
  * checks it runs before submitting (`scheduleActivityFormSchema`), and the
- * create and edit. `day` is the day the activity lands on.
+ * create and edit. `day` is the day the activity lands on, with its activities
+ * as last read, so an edit sees its activity start while the form is open.
  *
  * `open` starts a new activity at the end of the day, `fillGap` one filling a
  * gap (its start and length), and `edit` pre-fills every field from an
@@ -59,7 +83,9 @@ export type ScheduleActivityFormPlacement =
  * change. API validation errors (overlap…) come back from the mutation and
  * render inline.
  */
-export function useScheduleActivityForm(day: { id: string; date: string } | null) {
+export function useScheduleActivityForm(
+  day: { id: string; date: string; activities: ScheduleActivity[] } | null
+) {
   const posthog = usePostHog()
   const createMutation = useCreateScheduleActivityMutation()
   const updateMutation = useUpdateScheduleActivityMutation()
@@ -71,6 +97,9 @@ export function useScheduleActivityForm(day: { id: string; date: string } | null
   const [placement, setPlacement] = useState<ScheduleActivityFormPlacement | null>(null)
   const [apiError, setApiError] = useState<string>()
   const editingActivityId = placement?.kind === 'edit' ? placement.activityId : undefined
+  const editedActivity = editingActivityId
+    ? day?.activities.find((activity) => activity.id === editingActivityId)
+    : undefined
 
   const show = (next: ScheduleActivityFormPlacement, values: ScheduleActivityFormValues) => {
     form.reset(values)
@@ -155,6 +184,14 @@ export function useScheduleActivityForm(day: { id: string; date: string } | null
       return
     }
 
+    // Started since the form opened: the stored start and duration replace
+    // whatever was typed, so validation and the save see the locked plan.
+    if (editedActivity && isPlanLocked(editedActivity)) {
+      const locked = withLockedPlan(form.getValues(), editedActivity)
+      form.setValue('startTime', locked.startTime)
+      form.setValue('durationMinutes', locked.durationMinutes)
+    }
+
     void form.handleSubmit(save)()
   }
 
@@ -166,7 +203,7 @@ export function useScheduleActivityForm(day: { id: string; date: string } | null
     fillGap,
     edit,
     close,
-    values: form.watch(),
+    values: withLockedPlan(form.watch(), editedActivity),
     change,
     fieldErrors,
     error: apiError,

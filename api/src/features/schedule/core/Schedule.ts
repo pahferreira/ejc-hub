@@ -124,6 +124,19 @@ export class Schedule {
   }
 
   /**
+   * Refuses (400) a day holding an activity that has left `planned`: started,
+   * done or skipped. Such a day is history, so it neither moves nor goes.
+   */
+  #assertDayAllPlanned(activities: ScheduleActivityModel[], dayId: string): void {
+    if (activities.some((activity) => activity.dayId === dayId && activity.status !== 'planned')) {
+      throw new AppError(
+        'The day has an activity that is no longer planned',
+        AppErrorCode.ScheduleDayLocked
+      )
+    }
+  }
+
+  /**
    * Runs a write that sets a day's date, turning the `unique(event_id, date)`
    * violation into the same 409 the read gives. The constraint is what catches
    * two admins taking the same date at once.
@@ -379,8 +392,26 @@ export class Schedule {
         throw new AppError('Schedule activity not found', AppErrorCode.NotFound)
       }
 
+      // Once started, the plan is the fixed reference the forecast measures
+      // against: its day, start and duration stay as they were. Title, place and
+      // who is responsible stay editable. Checked before the planning rules, so a
+      // locked change answers the lock, not an overlap or a day-start error.
+      if (
+        existing.status !== 'planned' &&
+        (input.dayId !== existing.dayId ||
+          new Date(input.plannedStartsAt).getTime() !== existing.plannedStartsAt.getTime() ||
+          input.durationMinutes !== existing.durationMinutes)
+      ) {
+        throw new AppError(
+          'The planned start and duration are locked once the activity has started',
+          AppErrorCode.ScheduleActivityLocked
+        )
+      }
+
       const plan = await this.#checkActivityPlan(event, input, activityId)
 
+      // Accepted race: an activity started after this read can still have its
+      // planned start or duration changed, and no constraint catches it.
       await runInTransaction(async (tx) => {
         const updated = await this.#scheduleActivityRepository.updateActivity(
           activityId,
@@ -407,11 +438,27 @@ export class Schedule {
   }
 
   /**
-   * Hard-deletes one of the current event's activities with its team links. No
-   * status guard in Phase 1. An activity of another event reads as missing.
+   * Hard-deletes one of the current event's activities with its team links.
+   * Only a planned activity goes: one that started, finished or was skipped is
+   * history. An activity of another event reads as missing.
    */
   async deleteActivity(activityId: string): Promise<DeleteScheduleActivityResult> {
     return this.#withCurrentEvent(async (event) => {
+      const activity = await this.#scheduleActivityRepository.findActivityById(activityId, event.id)
+
+      if (!activity) {
+        throw new AppError('Schedule activity not found', AppErrorCode.NotFound)
+      }
+
+      if (activity.status !== 'planned') {
+        throw new AppError(
+          'Only a planned activity can be deleted',
+          AppErrorCode.ScheduleActivityLocked
+        )
+      }
+
+      // Accepted race: an activity started after this read is deleted anyway,
+      // and no constraint catches it.
       const deleted = await this.#scheduleActivityRepository.deleteActivity(activityId, event.id)
 
       if (!deleted) {
@@ -425,7 +472,8 @@ export class Schedule {
   /**
    * Moves one of the current event's days to another date. Every activity on
    * it shifts by the same whole number of days and keeps its São Paulo time of
-   * day. The day and its activities move in one transaction.
+   * day. The day and its activities move in one transaction. Only a day whose
+   * activities are all planned moves: history keeps its date.
    */
   async updateDay(dayId: string, input: UpdateScheduleDayInput): Promise<UpdateScheduleDayResult> {
     return this.#withCurrentEvent(async (event) => {
@@ -435,12 +483,22 @@ export class Schedule {
         throw new AppError('Schedule day not found', AppErrorCode.NotFound)
       }
 
-      await this.#assertDayDateAvailable(event, input.date, day.id)
+      // Its own date: nothing moves, so there is nothing to check or write, even
+      // on a day that has started.
+      if (input.date === day.date) {
+        return { dayId: day.id, date: day.date }
+      }
 
-      const shift = daysBetween(day.date, input.date)
       // Accepted race: an activity added to the day after this read stays on the
       // old date, and no constraint catches it.
       const activities = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
+
+      // Checked first, so a started day answers the lock, not a taken or
+      // out-of-event date.
+      this.#assertDayAllPlanned(activities, day.id)
+      await this.#assertDayDateAvailable(event, input.date, day.id)
+
+      const shift = daysBetween(day.date, input.date)
       const moved = activities
         .filter((activity) => activity.dayId === day.id)
         .map((activity) => ({
@@ -488,10 +546,23 @@ export class Schedule {
 
   /**
    * Hard-deletes one of the current event's days. Its activities go with it,
-   * by the FK's cascade. A day of another event reads as missing.
+   * by the FK's cascade, so only a day whose activities are all planned goes.
+   * A day of another event reads as missing.
    */
   async deleteDay(dayId: string): Promise<DeleteScheduleDayResult> {
     return this.#withCurrentEvent(async (event) => {
+      const day = await this.#scheduleDayRepository.findDayById(dayId, event.id)
+
+      if (!day) {
+        throw new AppError('Schedule day not found', AppErrorCode.NotFound)
+      }
+
+      const activities = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
+
+      this.#assertDayAllPlanned(activities, day.id)
+
+      // Accepted race: an activity of the day started after this read is
+      // deleted with it, and no constraint catches it.
       const deleted = await this.#scheduleDayRepository.deleteDay(dayId, event.id)
 
       if (!deleted) {
