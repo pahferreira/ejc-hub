@@ -271,7 +271,7 @@ _Constraints:_ `PRIMARY KEY (activity_id, team_instance_id)` · `FK (team_instan
 
 _Constraints:_ `FK (team_instance_id, event_id) → team_instances (id, event_id)` · `CHECK (char_length(body) BETWEEN 1 AND 500)` · `CHECK ((author_role = 'coordinator') = (team_instance_id IS NOT NULL))` · `INDEX (event_id, created_at)`
 
-Visibility is resolved at read time, not stored: a coordinator's note reaches its team; an admin's note reaches the coordinators of the activity's current teams. See `Schedule.getSchedule`.
+Visibility is resolved at read time, not stored: a coordinator's note reaches its team; an admin's note reaches the coordinators of the activity's current teams. Only `schedule:control` holders read every note as admin; a `schedule:read` holder on no team reads none. See `Schedule.getSchedule`.
 
 ### Relationships
 

@@ -1861,15 +1861,40 @@ describe('Schedule', () => {
         }
       )
 
-      it('shows every note to an admin who reads without running the clock', async () => {
-        schedule = buildNotesSchedule([activityWith('none')])
+      it('shows no notes to a schedule:read holder who is on no team and does not run the clock', async () => {
+        schedule = buildNotesSchedule([activityWith('liturgia')])
+        await schedule.createNote('act', {
+          authorAuthId: COORDINATOR.authId,
+          permissions: COORDINATOR.permissions,
+          body: 'Da Liturgia',
+        })
         await schedule.createNote('act', {
           authorAuthId: CHIEF.authId,
           permissions: CHIEF.permissions,
           body: 'Da coordenação geral',
         })
 
-        expect(await notesSeenBy(ADMIN)).toEqual(['Da coordenação geral'])
+        const model = await schedule.getSchedule(ADMIN)
+
+        expect(model.viewerRole).toBe('admin')
+        expect(model.days[0]?.activities[0]?.notes).toEqual([])
+      })
+
+      it('shows a schedule:read holder on a team only what their team role reads', async () => {
+        memberships['user-admin'] = { id: 'membership-5', teamInstanceId: LITURGIA, type: 'member' }
+        schedule = buildNotesSchedule([activityWith('liturgia')])
+        await schedule.createNote('act', {
+          authorAuthId: COORDINATOR.authId,
+          permissions: COORDINATOR.permissions,
+          body: 'Da Liturgia',
+        })
+        await schedule.createNote('act', {
+          authorAuthId: CHIEF.authId,
+          permissions: CHIEF.permissions,
+          body: 'Da coordenação geral',
+        })
+
+        expect(await notesSeenBy(ADMIN)).toEqual(['Da Liturgia'])
       })
 
       it('shows every note to an admin who runs the clock while on a team', async () => {

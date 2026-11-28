@@ -176,21 +176,23 @@ export class Schedule {
   }
 
   /**
-   * Who the viewer reads notes as. Anyone who runs the clock reads as an admin,
-   * even when on a team, so an admin always sees the notes they wrote. Everyone
-   * else reads in the role `#resolveViewerTeam` gave them. A team role always
-   * comes with a team; if it ever didn't, the read is refused rather than let
-   * through as an admin.
+   * Who the viewer reads notes as, or null when they read none. A team member
+   * reads by their team role. Anyone who runs the clock (schedule:control) reads
+   * as an admin, even when on a team, so an admin always sees the notes they
+   * wrote. A schedule:read holder on no team reads no notes: reading the
+   * Cronograma is not reading its notes. A team role always comes with a team;
+   * if it ever didn't, the read is refused rather than let through as an admin.
    */
   #noteReader(
     viewer: ScheduleViewer,
     viewerTeam: Pick<ScheduleReadModel, 'myTeamInstanceId' | 'viewerRole'>
-  ): NoteReader {
-    if (
-      hasPermission(viewer.permissions, SchedulePermissions.Control) ||
-      viewerTeam.viewerRole === 'admin'
-    ) {
+  ): NoteReader | null {
+    if (hasPermission(viewer.permissions, SchedulePermissions.Control)) {
       return { role: 'admin' }
+    }
+
+    if (viewerTeam.viewerRole === 'admin') {
+      return null
     }
 
     if (!viewerTeam.myTeamInstanceId) {
@@ -242,7 +244,7 @@ export class Schedule {
           ),
         }
 
-        if (!canReadNote(reader, row, activityTeams)) {
+        if (!reader || !canReadNote(reader, row, activityTeams)) {
           continue
         }
 
