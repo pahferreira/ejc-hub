@@ -30,6 +30,7 @@ export type ScheduleActivityTransition = {
   status: ScheduleActivityStatus
   actualStartedAt?: Date | null
   actualEndedAt?: Date | null
+  reopenedEndedAt?: Date | null
   controlledBy: string
 }
 

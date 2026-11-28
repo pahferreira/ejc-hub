@@ -25,6 +25,8 @@ export type ScheduleHappeningNowCardProps = {
   myTeamInstanceId: string | null
   /** Finishes the activity. Left out for anyone who cannot control the clock. */
   onFinish?: () => void
+  /** Undoes the start. Left out for anyone who cannot control the clock. */
+  onUndoStart?: () => void
   isControlPending?: boolean
 }
 
@@ -32,8 +34,8 @@ export type ScheduleHappeningNowCardProps = {
  * The Cronograma's top slot while an activity runs: "ACONTECENDO AGORA" with
  * an "● AO VIVO" timer counting down its effective duration, its title, place
  * and who is responsible, "Previsto HH:mm · Iniciado HH:mm", "Decorridos" with
- * a progress bar, the admin's "Marcar como concluída", and "Próxima: {title}
- * às {Previsão}". Past its duration the timer, "Excedeu em" and a "+N min"
+ * a progress bar, the admin's "Marcar como concluída" and "Desfazer início",
+ * and "Próxima: {title} às {Previsão}". Past its duration the timer, "Excedeu em" and a "+N min"
  * chip turn red and grow.
  */
 export function ScheduleHappeningNowCard(props: ScheduleHappeningNowCardProps) {
@@ -102,12 +104,19 @@ export function ScheduleHappeningNowCard(props: ScheduleHappeningNowCardProps) {
         </div>
       </div>
 
-      {props.onFinish && (
-        <div>
-          <Button onClick={props.onFinish} disabled={props.isControlPending}>
-            <FaCheck />
-            Marcar como concluída
-          </Button>
+      {(props.onFinish || props.onUndoStart) && (
+        <div className="flex flex-wrap gap-2">
+          {props.onFinish && (
+            <Button onClick={props.onFinish} disabled={props.isControlPending}>
+              <FaCheck />
+              Marcar como concluída
+            </Button>
+          )}
+          {props.onUndoStart && (
+            <Button variant="outline" onClick={props.onUndoStart} disabled={props.isControlPending}>
+              Desfazer início
+            </Button>
+          )}
         </div>
       )}
 

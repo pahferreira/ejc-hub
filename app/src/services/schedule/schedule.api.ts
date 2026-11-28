@@ -9,7 +9,9 @@ import type {
   FinishScheduleActivityResult,
   ScheduleActivityControlBody,
   ScheduleReadModel,
+  SkipScheduleActivityResult,
   StartScheduleActivityResult,
+  UndoScheduleActivityResult,
   UpdateScheduleActivityResult,
   UpdateScheduleDayBody,
   UpdateScheduleDayResult,
@@ -170,24 +172,39 @@ async function deleteDay(dayId: string) {
   }
 }
 
+/** Another admin acted first: the screen was stale. The page refetches. */
+const SCHEDULE_CHANGED_MESSAGE = 'O cronograma mudou'
+
+/** Why the API refused an undo, by its error code, as the toast says it. */
+const undoRefusalMessageByCode: Record<string, string> = {
+  schedule_nothing_to_undo: 'Esta atividade não tem nada para desfazer.',
+  schedule_reopen_not_latest: 'Só a última atividade concluída pode ser reaberta.',
+  schedule_reopen_while_running: 'Conclua a atividade em andamento antes de reabrir outra.',
+  schedule_undo_skip_after_later_start:
+    'Uma atividade seguinte do dia já começou, então o pulo não pode ser desfeito.',
+}
+
 /**
- * A clock control refused because another admin acted first: the screen was
- * stale. The page refetches and shows its message.
+ * The toast message of a failed clock control, from the API's status and
+ * code: a 409 is "O cronograma mudou", an undo refusal says which rule
+ * refused it, and anything else is the control's own fallback.
  */
-export class ScheduleChangedError extends Error {
-  constructor() {
-    super('O cronograma mudou')
+export function controlErrorMessage(
+  failure: { status: number; code: string },
+  fallback: string
+): string {
+  if (failure.status === 409) {
+    return SCHEDULE_CHANGED_MESSAGE
   }
+
+  return undoRefusalMessageByCode[failure.code] ?? fallback
 }
 
-/** Whether a failed clock control means the schedule changed under the admin. */
-export function isScheduleChangedError(error: unknown): boolean {
-  return error instanceof ScheduleChangedError
-}
-
-/** A failed clock control as the toast shows it: 409 is "O cronograma mudou". */
+/** A failed clock control as the toast shows it. */
 function toControlError(error: unknown, fallback: string): Error {
-  return apiErrorStatus(error) === 409 ? new ScheduleChangedError() : new Error(fallback)
+  return new Error(
+    controlErrorMessage({ status: apiErrorStatus(error), code: apiErrorCode(error) }, fallback)
+  )
 }
 
 /** Starts the day's next planned activity, finishing the running one. */
@@ -218,6 +235,34 @@ async function finishActivity(input: { activityId: string; body: ScheduleActivit
   }
 }
 
+/** Skips a planned activity: it takes no time and the day moves earlier. */
+async function skipActivity(input: { activityId: string; body: ScheduleActivityControlBody }) {
+  try {
+    const response = await api.post<{ result: SkipScheduleActivityResult }>(
+      `/schedule/activities/${input.activityId}/skip`,
+      input.body
+    )
+
+    return response.data.result
+  } catch (error: unknown) {
+    throw toControlError(error, 'Não foi possível pular a atividade.')
+  }
+}
+
+/** Undoes an activity's last start, finish or skip, named by the status the screen shows. */
+async function undoActivity(input: { activityId: string; body: ScheduleActivityControlBody }) {
+  try {
+    const response = await api.post<{ result: UndoScheduleActivityResult }>(
+      `/schedule/activities/${input.activityId}/undo`,
+      input.body
+    )
+
+    return response.data.result
+  } catch (error: unknown) {
+    throw toControlError(error, 'Não foi possível desfazer.')
+  }
+}
+
 export const scheduleApi = {
   getSchedule,
   createDay,
@@ -228,4 +273,6 @@ export const scheduleApi = {
   deleteDay,
   startActivity,
   finishActivity,
+  skipActivity,
+  undoActivity,
 }

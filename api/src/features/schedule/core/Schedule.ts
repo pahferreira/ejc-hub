@@ -1,12 +1,13 @@
 import { AppError, AppErrorCode } from '../../../shared/AppError.ts'
 import { runInTransaction } from '../../../core/database/client.ts'
 import { isUniqueViolation } from '../../../shared/is-unique-violation.ts'
-import type { EventModel } from '../../../core/database/schemas/index.ts'
+import type { EventModel, ScheduleActivityModel } from '../../../core/database/schemas/index.ts'
 import type { EventRepository } from '../../../modules/event/domain/EventRepository.ts'
 import type { ScheduleDayRepository } from '../../../modules/schedule-day/domain/ScheduleDayRepository.ts'
 import type {
   InsertScheduleActivityInput,
   ScheduleActivityRepository,
+  ScheduleActivityTransition,
 } from '../../../modules/schedule-activity/domain/ScheduleActivityRepository.ts'
 import type { ScheduleActivityTeamRepository } from '../../../modules/schedule-activity-team/domain/ScheduleActivityTeamRepository.ts'
 import type { TeamInstanceRepository } from '../../../modules/team-instance/domain/TeamInstanceRepository.ts'
@@ -33,8 +34,12 @@ import type {
   ScheduleActivityPlan,
   ScheduleReadModel,
   ScheduleViewer,
+  SkipScheduleActivityInput,
+  SkipScheduleActivityResult,
   StartScheduleActivityInput,
   StartScheduleActivityResult,
+  UndoScheduleActivityInput,
+  UndoScheduleActivityResult,
   UpdateScheduleActivityInput,
   UpdateScheduleActivityResult,
   UpdateScheduleDayInput,
@@ -564,7 +569,7 @@ export class Schedule {
               running.id,
               event.id,
               'running',
-              { status: 'done', actualEndedAt: now, controlledBy },
+              { status: 'done', actualEndedAt: now, reopenedEndedAt: null, controlledBy },
               tx
             )
 
@@ -626,7 +631,7 @@ export class Schedule {
         activity.id,
         event.id,
         'running',
-        { status: 'done', actualEndedAt: new Date(), controlledBy }
+        { status: 'done', actualEndedAt: new Date(), reopenedEndedAt: null, controlledBy }
       )
 
       // Finished by another admin since the read.
@@ -635,6 +640,176 @@ export class Schedule {
       }
 
       return { activityId: activity.id }
+    })
+  }
+
+  /**
+   * Skips a planned activity: it takes no time and the day moves earlier. Any
+   * planned activity can be skipped, not only the next one. Same 409 and 400
+   * rules as a start.
+   */
+  async skipActivity(
+    activityId: string,
+    input: SkipScheduleActivityInput
+  ): Promise<SkipScheduleActivityResult> {
+    return this.#withCurrentEvent(async (event) => {
+      const activity = await this.#scheduleActivityRepository.findActivityById(activityId, event.id)
+
+      if (!activity) {
+        throw new AppError('Schedule activity not found', AppErrorCode.NotFound)
+      }
+
+      if (activity.status !== input.expectedStatus) {
+        throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
+      }
+
+      if (activity.status !== 'planned') {
+        throw new AppError('Only a planned activity can be skipped', AppErrorCode.Validation)
+      }
+
+      const controlledBy = await this.#resolveControllerId(input.controllerAuthId)
+
+      const skipped = await this.#scheduleActivityRepository.transitionActivity(
+        activity.id,
+        event.id,
+        'planned',
+        { status: 'skipped', controlledBy }
+      )
+
+      // Started or skipped by another admin since the read.
+      if (!skipped) {
+        throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
+      }
+
+      return { activityId: activity.id }
+    })
+  }
+
+  /**
+   * The step an undo takes from the activity's status, or why it is refused:
+   *
+   * - running → planned, clearing the actual start. The activity the start
+   *   finished stays done. A reopened activity goes back to done instead, with
+   *   its original actual start and end, so the real start isn't lost;
+   * - done → running, only for the event's most recently finished activity
+   *   and only while nothing runs. It resumes from its original actual start,
+   *   and its actual end moves to `reopenedEndedAt` until it finishes again;
+   * - skipped → planned, only while no later activity of its day has started,
+   *   so an un-skipped activity never becomes "next" behind one already run.
+   */
+  #undoTransition(
+    activity: ScheduleActivityModel,
+    activities: ScheduleActivityModel[]
+  ): Omit<ScheduleActivityTransition, 'controlledBy'> {
+    switch (activity.status) {
+      case 'running':
+        if (activity.reopenedEndedAt) {
+          return { status: 'done', actualEndedAt: activity.reopenedEndedAt, reopenedEndedAt: null }
+        }
+
+        return { status: 'planned', actualStartedAt: null }
+
+      case 'done': {
+        if (activities.some((candidate) => candidate.status === 'running')) {
+          throw new AppError(
+            'A finished activity cannot reopen while another one runs',
+            AppErrorCode.ScheduleReopenWhileRunning
+          )
+        }
+
+        const latestEnd = Math.max(
+          ...activities.map((candidate) => candidate.actualEndedAt?.getTime() ?? -Infinity)
+        )
+
+        if (activity.actualEndedAt?.getTime() !== latestEnd) {
+          throw new AppError(
+            'Only the most recently finished activity can reopen',
+            AppErrorCode.ScheduleReopenNotLatest
+          )
+        }
+
+        return { status: 'running', actualEndedAt: null, reopenedEndedAt: activity.actualEndedAt }
+      }
+
+      case 'skipped': {
+        // The repository orders by planned start, so what follows on the day is later.
+        const laterOnDay = activities
+          .slice(activities.indexOf(activity) + 1)
+          .filter((candidate) => candidate.dayId === activity.dayId)
+
+        if (
+          laterOnDay.some(
+            (candidate) => candidate.status === 'running' || candidate.status === 'done'
+          )
+        ) {
+          throw new AppError(
+            'A skip cannot be undone once a later activity of the day has started',
+            AppErrorCode.ScheduleUndoSkipAfterLaterStart
+          )
+        }
+
+        return { status: 'planned' }
+      }
+
+      case 'planned':
+        throw new AppError(
+          'A planned activity has nothing to undo',
+          AppErrorCode.ScheduleNothingToUndo
+        )
+    }
+  }
+
+  /**
+   * Undoes the last step of an activity's clock, one step only: it is not a
+   * history, and it doesn't revert trims, edits or notes. `#undoTransition`
+   * holds the rules. Same 409 rules as a start; a refused undo is a 400 whose
+   * code names the rule, so the app can say why.
+   */
+  async undoActivity(
+    activityId: string,
+    input: UndoScheduleActivityInput
+  ): Promise<UndoScheduleActivityResult> {
+    return this.#withCurrentEvent(async (event) => {
+      const activities = await this.#scheduleActivityRepository.listActivitiesByEvent(event.id)
+      const activity = activities.find((candidate) => candidate.id === activityId)
+
+      if (!activity) {
+        throw new AppError('Schedule activity not found', AppErrorCode.NotFound)
+      }
+
+      if (activity.status !== input.expectedStatus) {
+        throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
+      }
+
+      const transition = this.#undoTransition(activity, activities)
+      const controlledBy = await this.#resolveControllerId(input.controllerAuthId)
+
+      // Accepted race: an undo of a skip or a finish passes this read while
+      // another admin starts a later activity, and no constraint catches it
+      // (a reopen racing a start is caught by the one-running index).
+      let undone: ScheduleActivityModel | undefined
+
+      try {
+        undone = await this.#scheduleActivityRepository.transitionActivity(
+          activity.id,
+          event.id,
+          activity.status,
+          { ...transition, controlledBy }
+        )
+      } catch (error) {
+        // Another admin started an activity since the read.
+        if (isUniqueViolation(error, ONE_RUNNING_UNIQUE)) {
+          throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
+        }
+        throw error
+      }
+
+      // Moved by another admin since the read.
+      if (!undone) {
+        throw new AppError(SCHEDULE_CHANGED, AppErrorCode.Conflict)
+      }
+
+      return { activityId: activity.id, status: transition.status }
     })
   }
 }
