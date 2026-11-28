@@ -54,7 +54,10 @@ export function RequestMembersTable(props: RequestMembersTableProps) {
         )}
       </ul>
 
-      <div className="hidden md:block">
+      {/* Tighter than the shared px-6: with "Disponibilidade" the six columns
+          only fit the ~960px a 1280px screen leaves beside the sidebar at
+          px-3; any wider and "Ação" scrolls out of view (#391). */}
+      <div className="hidden md:block [&_td]:px-3 [&_th]:px-3">
         <Table bordered={false}>
           <Table.Header>
             {table.getHeaderGroups().map((headerGroup) => (

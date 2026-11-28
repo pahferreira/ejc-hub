@@ -53,7 +53,7 @@ const DEFAULT_EMPTY_LABEL = '—'
  * readable, so they get a real popover instead.
  *
  * The panel is positioned with Headless UI's `anchor` rather than
- * `absolute`-in-flow (the pattern `TableActionCell` and `Selector` use) for one
+ * `absolute`-in-flow (the pattern `TableActionCell` uses) for one
  * specific reason: this renders inside two nested clipping contexts —
  * `RequestMembersTable`'s `overflow-hidden` section and `Table`'s
  * `overflow-x-auto` wrapper — either of which would cut an in-flow panel off.

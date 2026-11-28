@@ -37,19 +37,18 @@ class DrizzleEventFeePaymentRepository implements EventFeePaymentRepository {
           recordedBy: input.recordedBy,
           updatedAt: now,
           ...statusFields,
-          // Re-prices only a row that was never priced.
+          // `amount_cents` means "what this person paid" (ADR #11), so it is
+          // stamped from the event's current fee only when a row moves into
+          // `paid`. A re-confirmed `paid` row keeps what was actually paid, and
+          // every other transition leaves the amount alone — including
+          // `refunded`, which keeps what was paid before the money went back.
           //
-          // A row already carrying an amount keeps it: that is the snapshot this
-          // column exists for, and changing someone's status must not silently
-          // reprice them to today's event fee. But a row stamped 0 was written
-          // while the event had no fee configured, and it is indistinguishable
-          // from a real charge of nothing — so re-confirming that member is the
-          // one moment we can correct it.
-          //
-          // The trade-off is deliberate: a member genuinely charged 0 under a
-          // free event gets priced the moment someone re-confirms them. An
-          // exemption, not a zero charge, is how a comped member is recorded.
-          amountCents: sql`case when ${schema.eventFeePayments.amountCents} = 0 then excluded.amount_cents else ${schema.eventFeePayments.amountCents} end`,
+          // Amounts on rows that are not `paid` carry no meaning and may be
+          // stale after a fee change; nothing reads them, and they are
+          // overwritten the next time the row is marked paid.
+          ...(input.status === 'paid' && {
+            amountCents: sql`case when ${schema.eventFeePayments.status} = 'paid' then ${schema.eventFeePayments.amountCents} else excluded.amount_cents end`,
+          }),
         },
       })
       .returning({ userId: schema.eventFeePayments.userId })

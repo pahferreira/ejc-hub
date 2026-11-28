@@ -5,6 +5,7 @@ import { UserAvatar } from '../UserAvatar/UserAvatar'
 import { RequestMemberRowAction } from './RequestMemberRowAction'
 import type { RequestMemberRow } from './requestMembersColumns'
 import { TruncatedPillList } from '../TruncatedPillList/TruncatedPillList'
+import { WeekAvailability } from '../WeekAvailability/WeekAvailability'
 
 export type RequestMembersListItemProps = {
   row: RequestMemberRow
@@ -42,6 +43,8 @@ export function RequestMembersListItem(props: RequestMembersListItemProps) {
       <div className="flex flex-wrap items-center gap-2">
         <TruncatedPillList items={row.areas} itemNoun="habilidades" maxVisible={5} />
       </div>
+
+      <WeekAvailability weekAvailability={row.weekAvailability} />
 
       <div className="flex items-center justify-between gap-3">
         <TeamPreferenceAvatars preferences={row.preferences} />

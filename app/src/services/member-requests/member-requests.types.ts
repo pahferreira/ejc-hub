@@ -33,6 +33,8 @@ export type RequestableCandidateRow = {
   /** Skill-derived labels shown as pills (e.g. ["Comunicação"]). */
   areas: string[]
   preferences: TeamPreference[]
+  /** Weekdays from the signup form (e.g. ["monday", "friday"]); empty when none. */
+  weekAvailability: string[]
   rowStatus: RequestRowStatus
 }
 
