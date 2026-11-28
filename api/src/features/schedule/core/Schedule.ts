@@ -569,7 +569,7 @@ export class Schedule {
               running.id,
               event.id,
               'running',
-              { status: 'done', actualEndedAt: now, controlledBy },
+              { status: 'done', actualEndedAt: now, reopenedEndedAt: null, controlledBy },
               tx
             )
 
@@ -631,7 +631,7 @@ export class Schedule {
         activity.id,
         event.id,
         'running',
-        { status: 'done', actualEndedAt: new Date(), controlledBy }
+        { status: 'done', actualEndedAt: new Date(), reopenedEndedAt: null, controlledBy }
       )
 
       // Finished by another admin since the read.
@@ -689,10 +689,11 @@ export class Schedule {
    * The step an undo takes from the activity's status, or why it is refused:
    *
    * - running → planned, clearing the actual start. The activity the start
-   *   finished stays done;
-   * - done → running, clearing the actual end, only for the event's most
-   *   recently finished activity and only while nothing runs. It resumes from
-   *   its original actual start;
+   *   finished stays done. A reopened activity goes back to done instead, with
+   *   its original actual start and end, so the real start isn't lost;
+   * - done → running, only for the event's most recently finished activity
+   *   and only while nothing runs. It resumes from its original actual start,
+   *   and its actual end moves to `reopenedEndedAt` until it finishes again;
    * - skipped → planned, only while no later activity of its day has started,
    *   so an un-skipped activity never becomes "next" behind one already run.
    */
@@ -702,6 +703,10 @@ export class Schedule {
   ): Omit<ScheduleActivityTransition, 'controlledBy'> {
     switch (activity.status) {
       case 'running':
+        if (activity.reopenedEndedAt) {
+          return { status: 'done', actualEndedAt: activity.reopenedEndedAt, reopenedEndedAt: null }
+        }
+
         return { status: 'planned', actualStartedAt: null }
 
       case 'done': {
@@ -723,7 +728,7 @@ export class Schedule {
           )
         }
 
-        return { status: 'running', actualEndedAt: null }
+        return { status: 'running', actualEndedAt: null, reopenedEndedAt: activity.actualEndedAt }
       }
 
       case 'skipped': {

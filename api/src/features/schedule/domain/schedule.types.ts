@@ -167,7 +167,8 @@ export type SkipScheduleActivityResult = {
 
 /**
  * Undoing the last step of an activity's clock. `expectedStatus` names the
- * step: running is undone to planned, done to running, skipped to planned.
+ * step: running is undone to planned (or back to done after a reopen), done
+ * to running, skipped to planned.
  */
 export type UndoScheduleActivityInput = ScheduleActivityControlInput
 

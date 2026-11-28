@@ -196,6 +196,7 @@ function buildActivityRepositories(initial: StoredActivity[] = []) {
         status: 'planned',
         actualStartedAt: null,
         actualEndedAt: null,
+        reopenedEndedAt: null,
         adjustedDurationMinutes: null,
         controlledBy: null,
         createdAt: new Date(),
@@ -338,6 +339,7 @@ function storedActivity(
     status: 'planned',
     actualStartedAt: null,
     actualEndedAt: null,
+    reopenedEndedAt: null,
     adjustedDurationMinutes: null,
     controlledBy: null,
     createdAt: new Date(),
@@ -1580,6 +1582,7 @@ describe('Schedule', () => {
           status: 'planned',
           actualStartedAt: null,
           actualEndedAt: null,
+          reopenedEndedAt: null,
           controlledBy: 'user-controller',
         })
       })
@@ -1615,6 +1618,98 @@ describe('Schedule', () => {
           status: 'running',
           actualStartedAt: new Date(FRI_18H),
           actualEndedAt: null,
+        })
+      })
+
+      it('undoes the start of a reopened activity back to done, with its original start and end', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_18H),
+            actualEndedAt: new Date(FRI_1820),
+          }),
+        ])
+        await schedule.undoActivity('a1', {
+          expectedStatus: 'done',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(await stored('a1')).toMatchObject({
+          status: 'running',
+          actualEndedAt: null,
+          reopenedEndedAt: new Date(FRI_1820),
+        })
+
+        const result = await schedule.undoActivity('a1', {
+          expectedStatus: 'running',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(result).toEqual({ activityId: 'a1', status: 'done' })
+        expect(await stored('a1')).toMatchObject({
+          status: 'done',
+          actualStartedAt: new Date(FRI_18H),
+          actualEndedAt: new Date(FRI_1820),
+          reopenedEndedAt: null,
+          controlledBy: 'user-controller',
+        })
+      })
+
+      it('forgets the earlier end once a reopened activity finishes, so a later start undoes to planned', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_18H),
+            actualEndedAt: new Date(FRI_1820),
+          }),
+          storedActivity('a2', 'day-fri', FRI_1830, 30),
+        ])
+        await schedule.undoActivity('a1', {
+          expectedStatus: 'done',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+        await schedule.startActivity('a2', {
+          expectedStatus: 'planned',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(await stored('a1')).toMatchObject({
+          status: 'done',
+          actualEndedAt: NOW,
+          reopenedEndedAt: null,
+        })
+
+        const result = await schedule.undoActivity('a2', {
+          expectedStatus: 'running',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(result).toEqual({ activityId: 'a2', status: 'planned' })
+        expect(await stored('a2')).toMatchObject({ status: 'planned', actualStartedAt: null })
+      })
+
+      it('forgets the earlier end once a reopened activity is finished', async () => {
+        schedule = buildClockSchedule([
+          storedActivity('a1', 'day-fri', FRI_18H, 30, {
+            status: 'done',
+            actualStartedAt: new Date(FRI_18H),
+            actualEndedAt: new Date(FRI_1820),
+          }),
+        ])
+        await schedule.undoActivity('a1', {
+          expectedStatus: 'done',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+        await schedule.finishActivity('a1', {
+          expectedStatus: 'running',
+          controllerAuthId: CONTROLLER_AUTH_ID,
+        })
+
+        expect(await stored('a1')).toMatchObject({
+          status: 'done',
+          actualStartedAt: new Date(FRI_18H),
+          actualEndedAt: NOW,
+          reopenedEndedAt: null,
         })
       })
 
