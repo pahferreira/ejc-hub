@@ -8,7 +8,10 @@ export type SetFeePaymentsStatusInput = {
   status: SettableFeeStatus
   /** The user making the change, stored on the row as `recordedBy`. */
   recordedBy: string
-  /** The event's current fee, snapshotted onto rows this call creates. */
+  /**
+   * The event's current fee, stamped onto a row when it moves into `paid` from
+   * any other status (ADR #11). Also written on rows this call creates.
+   */
   amountCents: number
   executor?: DbExecutor
 }

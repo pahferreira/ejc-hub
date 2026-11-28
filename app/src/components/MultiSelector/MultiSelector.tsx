@@ -1,11 +1,5 @@
-import { useState, Fragment } from 'react'
-import {
-  Listbox,
-  ListboxButton,
-  ListboxOption,
-  ListboxOptions,
-  Transition,
-} from '@headlessui/react'
+import { useState } from 'react'
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react'
 import { FiChevronDown } from 'react-icons/fi'
 
 export type Option = {
@@ -65,47 +59,52 @@ export function MultiSelector(props: MultiSelectorProps) {
                 }`}
               />
             </ListboxButton>
-            <Transition
-              as={Fragment}
-              leave="transition ease-in duration-100"
-              leaveFrom="opacity-100"
-              leaveTo="opacity-0"
+            {/*
+              `anchor` portals the list out of the page, so a scrolling parent
+              (`main`, a Drawer body) can't clip it, and flips it upward when
+              there's no room below. Anchoring sets an inline `max-height`,
+              so the cap goes in `--anchor-max-height`. `z-60` keeps it above
+              the sticky header, popovers and the fixed bulk-selection bar;
+              modals and drawers close it, since it closes on outside click.
+            */}
+            <ListboxOptions
+              transition
+              anchor={{ to: 'bottom start', gap: 4 }}
+              className="z-60 w-(--button-width) overflow-auto [--anchor-max-height:15rem] rounded-lg border border-primary bg-white p-1 shadow-lg transition duration-100 ease-in focus:outline-none data-[leave]:data-[closed]:opacity-0"
             >
-              <ListboxOptions className="absolute z-10 mt-1 w-full max-h-60 overflow-auto rounded-lg border border-primary bg-white p-1 shadow-lg focus:outline-none">
-                <div className="border-b border-secondary p-2">
-                  <input
-                    type="text"
-                    className="w-full rounded-md border border-primary px-3 py-2 text-sm text-dark-brown focus:border-dark-brown focus:outline-none"
-                    placeholder="Search..."
-                    value={searchValue}
-                    onChange={(e) => setSearchValue(e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
+              <div className="border-b border-secondary p-2">
+                <input
+                  type="text"
+                  className="w-full rounded-md border border-primary px-3 py-2 text-sm text-dark-brown focus:border-dark-brown focus:outline-none"
+                  placeholder="Search..."
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+              {filteredOptions.length === 0 ? (
+                <div className="px-3 py-3 text-center text-sm text-dark-brown">
+                  No options found
                 </div>
-                {filteredOptions.length === 0 ? (
-                  <div className="px-3 py-3 text-center text-sm text-dark-brown">
-                    No options found
-                  </div>
-                ) : (
-                  filteredOptions.map((option) => (
-                    <ListboxOption
-                      key={option.value}
-                      value={option}
-                      className="relative cursor-pointer select-none rounded-md px-3 py-2.5 text-sm text-dark-brown transition-colors hover:bg-tertiary"
-                    >
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={verifyOptionsIsSelected(props.selected, option)}
-                          className="h-4 w-4 cursor-pointer rounded border border-primary accent-primary"
-                        />
-                        <span>{option.label}</span>
-                      </div>
-                    </ListboxOption>
-                  ))
-                )}
-              </ListboxOptions>
-            </Transition>
+              ) : (
+                filteredOptions.map((option) => (
+                  <ListboxOption
+                    key={option.value}
+                    value={option}
+                    className="relative cursor-pointer select-none rounded-md px-3 py-2.5 text-sm text-dark-brown transition-colors hover:bg-tertiary"
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={verifyOptionsIsSelected(props.selected, option)}
+                        className="h-4 w-4 cursor-pointer rounded border border-primary accent-primary"
+                      />
+                      <span>{option.label}</span>
+                    </div>
+                  </ListboxOption>
+                ))
+              )}
+            </ListboxOptions>
           </div>
         )}
       </Listbox>
