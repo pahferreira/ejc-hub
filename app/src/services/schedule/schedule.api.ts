@@ -6,6 +6,8 @@ import type {
   CreateScheduleActivityResult,
   CreateScheduleDayBody,
   CreateScheduleDayResult,
+  CreateScheduleNoteBody,
+  CreateScheduleNoteResult,
   FinishScheduleActivityResult,
   ScheduleActivityControlBody,
   ScheduleReadModel,
@@ -218,6 +220,24 @@ async function finishActivity(input: { activityId: string; body: ScheduleActivit
   }
 }
 
+/** Leaves an Observação on an activity. 403: only admins and coordinators write notes. */
+async function createNote(input: { activityId: string; body: CreateScheduleNoteBody }) {
+  try {
+    const response = await api.post<{ result: CreateScheduleNoteResult }>(
+      `/schedule/activities/${input.activityId}/notes`,
+      input.body
+    )
+
+    return response.data.result
+  } catch (error: unknown) {
+    throw new Error(
+      apiErrorStatus(error) === 403
+        ? 'Só a coordenação e os administradores deixam notas.'
+        : 'Não foi possível salvar a nota.'
+    )
+  }
+}
+
 export const scheduleApi = {
   getSchedule,
   createDay,
@@ -228,4 +248,5 @@ export const scheduleApi = {
   deleteDay,
   startActivity,
   finishActivity,
+  createNote,
 }

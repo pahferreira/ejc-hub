@@ -33,6 +33,7 @@ function activity(
     actualEndedAt: null,
     adjustedDurationMinutes: null,
     effectiveDurationMinutes: 30,
+    notes: [],
     ...overrides,
   }
 }

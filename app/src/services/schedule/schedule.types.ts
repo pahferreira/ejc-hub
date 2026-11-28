@@ -40,6 +40,33 @@ export type ScheduleActivity = {
   adjustedDurationMinutes: number | null
   /** `adjustedDurationMinutes ?? durationMinutes`. */
   effectiveDurationMinutes: number
+  /** The Observações the caller may read, oldest first. */
+  notes: ScheduleActivityNote[]
+}
+
+/** The role a note was written in. */
+export type ScheduleNoteAuthorRole = 'admin' | 'coordinator'
+
+/** One Observação on an activity, as the API lets the caller read it. */
+export type ScheduleActivityNote = {
+  id: string
+  body: string
+  /** The author's nickname, or the first word of their name. */
+  authorName: string
+  authorRole: ScheduleNoteAuthorRole
+  /** An ISO instant. */
+  createdAt: string
+}
+
+/** The `POST /schedule/activities/:activityId/notes` body. */
+export type CreateScheduleNoteBody = {
+  /** Up to `SCHEDULE_NOTE_MAX_LENGTH` characters. */
+  body: string
+}
+
+export type CreateScheduleNoteResult = {
+  noteId: string
+  activityId: string
 }
 
 /** One schedule day: a São Paulo date of the current event, with its activities. */

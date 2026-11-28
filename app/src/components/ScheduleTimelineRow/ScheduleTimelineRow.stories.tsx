@@ -29,6 +29,7 @@ const meta = {
       actualEndedAt: null,
       adjustedDurationMinutes: null,
       effectiveDurationMinutes: 45,
+      notes: [],
     },
   },
   decorators: [
@@ -89,6 +90,7 @@ export const MyTeam: Story = {
       actualEndedAt: null,
       adjustedDurationMinutes: null,
       effectiveDurationMinutes: 60,
+      notes: [],
     },
   },
   play: async ({ canvasElement }) => {
@@ -118,6 +120,7 @@ export const AdminsResponsible: Story = {
       actualEndedAt: null,
       adjustedDurationMinutes: null,
       effectiveDurationMinutes: 30,
+      notes: [],
     },
   },
   play: async ({ canvasElement }) => {
@@ -202,6 +205,81 @@ export const RunningForMembers: Story = {
     const canvas = within(canvasElement)
 
     await expect(canvas.getByText('● ACONTECENDO AGORA')).toBeVisible()
+    await expect(canvas.queryByRole('button')).not.toBeInTheDocument()
+  },
+}
+
+/** Live, for an admin or coordinator, with no notes yet: a plain "✎ Nota" button. */
+export const NoteButtonWithoutNotes: Story = {
+  args: {
+    live: true,
+    onAddNote: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement)
+    const button = canvas.getByRole('button', { name: '✎ Nota' })
+
+    await expect(button).not.toHaveClass('bg-amber-100')
+    await userEvent.click(button)
+    await expect(args.onAddNote).toHaveBeenCalled()
+  },
+}
+
+/** Live, with notes: they stack under the row and the "✎ Nota" button turns yellow. */
+export const WithNotes: Story = {
+  args: {
+    live: true,
+    onAddNote: fn(),
+    activity: {
+      ...meta.args.activity,
+      notes: [
+        {
+          id: 'note-1',
+          body: 'Levar os violões para o salão antes das 18h.',
+          authorName: 'Ana',
+          authorRole: 'coordinator',
+          createdAt: '2026-04-03T17:32:00Z',
+        },
+        {
+          id: 'note-2',
+          body: 'O padre chega 5 minutos atrasado.',
+          authorName: 'Bruno',
+          authorRole: 'admin',
+          createdAt: '2026-04-03T17:40:00Z',
+        },
+      ],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByText('Ana (coordenação) · 14:32')).toBeVisible()
+    await expect(canvas.getByText('Bruno (administração) · 14:40')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: '✎ Nota' })).toHaveClass('bg-amber-100')
+  },
+}
+
+/** Live, a member reads their coordinators' notes but has no "✎ Nota" button. */
+export const NotesForMembers: Story = {
+  args: {
+    live: true,
+    activity: {
+      ...meta.args.activity,
+      notes: [
+        {
+          id: 'note-1',
+          body: 'Levar os violões para o salão antes das 18h.',
+          authorName: 'Ana',
+          authorRole: 'coordinator',
+          createdAt: '2026-04-03T17:32:00Z',
+        },
+      ],
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+
+    await expect(canvas.getByText('Ana (coordenação) · 14:32')).toBeVisible()
     await expect(canvas.queryByRole('button')).not.toBeInTheDocument()
   },
 }

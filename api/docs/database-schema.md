@@ -257,6 +257,22 @@ Deleting a day deletes its activities. Existing tables keep `timestamp`, so comp
 
 _Constraints:_ `PRIMARY KEY (activity_id, team_instance_id)` · `FK (team_instance_id, event_id) → team_instances (id, event_id)` — the same pattern as `team_memberships`
 
+**schedule_activity_notes** (Observações)
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| activity_id | uuid | FK → schedule_activities, `ON DELETE CASCADE` |
+| event_id | uuid | FK → events |
+| author_id | uuid | FK → users |
+| author_role | enum `schedule_note_author_role` | `admin` \| `coordinator`: decides who reads the note |
+| team_instance_id | uuid | The coordinator's team at write time; null for an admin |
+| body | text | 1–500 characters |
+| created_at, updated_at | timestamptz | |
+
+_Constraints:_ `FK (team_instance_id, event_id) → team_instances (id, event_id)` · `CHECK (char_length(body) BETWEEN 1 AND 500)` · `CHECK ((author_role = 'coordinator') = (team_instance_id IS NOT NULL))` · `INDEX (event_id, created_at)`
+
+Visibility is resolved at read time, not stored: a coordinator's note reaches its team; an admin's note reaches the coordinators of the activity's current teams. Only `schedule:control` holders read every note as admin; a `schedule:read` holder on no team reads none. See `Schedule.getSchedule`.
+
 ### Relationships
 
 ```
@@ -275,4 +291,6 @@ users ─┬─< subscriptions >── events
 team_templates ─< team_instances >── events
 
 events ─< schedule_days ─< schedule_activities ─< schedule_activity_teams >── team_instances
+                                              │
+                                              └─< schedule_activity_notes >── users
 ```

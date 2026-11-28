@@ -102,8 +102,8 @@ class DrizzleTeamMembershipRepository implements TeamMembershipRepository {
     return membershipsByTeam
   }
 
-  async findMembershipByUserAndEvent(userId: string, eventId: string) {
-    const results = await db
+  async findMembershipByUserAndEvent(userId: string, eventId: string, executor: DbExecutor = db) {
+    const results = await executor
       .select({
         id: schema.teamMemberships.id,
         teamInstanceId: schema.teamMemberships.teamInstanceId,

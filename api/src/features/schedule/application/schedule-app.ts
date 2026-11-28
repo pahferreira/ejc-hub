@@ -6,6 +6,7 @@ import { scheduleActivityTeamRepository } from '../../../modules/schedule-activi
 import { teamInstanceRepository } from '../../../modules/team-instance/repository/DrizzleTeamInstanceRepository.ts'
 import { userRepository } from '../../../modules/user/repository/DrizzleUserRepository.ts'
 import { teamMembershipRepository } from '../../../modules/team-membership/repository/DrizzleTeamMembershipRepository.ts'
+import { scheduleActivityNoteRepository } from '../../../modules/schedule-activity-note/repository/DrizzleScheduleActivityNoteRepository.ts'
 
 export const scheduleApp = new Schedule(
   eventRepository,
@@ -14,5 +15,6 @@ export const scheduleApp = new Schedule(
   scheduleActivityTeamRepository,
   teamInstanceRepository,
   userRepository,
-  teamMembershipRepository
+  teamMembershipRepository,
+  scheduleActivityNoteRepository
 )

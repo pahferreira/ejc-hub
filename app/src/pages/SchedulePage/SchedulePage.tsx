@@ -4,6 +4,8 @@ import { ScheduleDayCard } from '../../components/ScheduleDayCard/ScheduleDayCar
 import { ScheduleDriftChip } from '../../components/ScheduleDriftChip/ScheduleDriftChip'
 import { ScheduleHappeningNowCard } from '../../components/ScheduleHappeningNowCard/ScheduleHappeningNowCard'
 import { ScheduleNextActivityCard } from '../../components/ScheduleNextActivityCard/ScheduleNextActivityCard'
+import { ScheduleNoteModal } from '../../components/ScheduleNoteModal/ScheduleNoteModal'
+import { useScheduleNoteForm } from '../../components/ScheduleNoteModal/useScheduleNoteForm'
 import { ScheduleTimelineLegend } from '../../components/ScheduleTimelineLegend/ScheduleTimelineLegend'
 import { ScheduleTimelineRow } from '../../components/ScheduleTimelineRow/ScheduleTimelineRow'
 import { useAuthentication } from '../../hooks/useAuthentication'
@@ -62,7 +64,9 @@ function errorMessage(error: unknown): string {
  * viewer's team's next activity, the day's Atraso, each row's status and
  * Previsão, the days' "Concluído n/m", and the clock controls for whoever
  * holds `schedule:control`. The clock ticks every second on the server's time
- * and the page refetches every minute.
+ * and the page refetches every minute. Admins and coordinators leave
+ * Observações on any activity; each row shows the notes the API lets the
+ * viewer read.
  */
 export function SchedulePage() {
   const { isFeatureEnabled } = useFeatureFlag()
@@ -72,6 +76,7 @@ export function SchedulePage() {
   const { selectedDay, selectDay } = useSelectedScheduleDay(days)
   const { permissions } = useAuthentication()
   const controls = useScheduleControls()
+  const noteForm = useScheduleNoteForm()
 
   const canControl = isLive && hasPermission(permissions, SchedulePermissions.Control)
 
@@ -85,7 +90,10 @@ export function SchedulePage() {
     return <PageMessage tone="error" message={errorMessage(scheduleQuery.error)} />
   }
 
-  const { event, myTeamInstanceId } = scheduleQuery.data
+  const { event, myTeamInstanceId, viewerRole } = scheduleQuery.data
+  // The API's write rule: whoever runs the clock writes as an admin, and a
+  // coordinator of the current event writes for their team.
+  const canWriteNotes = isLive && (canControl || viewerRole === 'coordinator')
   // One activity runs per event, so the running one shows whichever day is
   // selected (a night activity can run past midnight into the next day's tab).
   // Iniciar follows the selected day: activities start in order within their day.
@@ -220,12 +228,24 @@ export function SchedulePage() {
                         onStart={() => controls.start(activity)}
                         onFinish={() => controls.finish(activity)}
                         isControlPending={controls.isPending}
+                        onAddNote={canWriteNotes ? () => noteForm.open(activity) : undefined}
                       />
                     ))}
                   </ol>
                 </div>
               ))}
             </section>
+
+            <ScheduleNoteModal
+              open={noteForm.isOpen}
+              onClose={noteForm.close}
+              activityTitle={noteForm.activityTitle}
+              body={noteForm.body}
+              onBodyChange={noteForm.setBody}
+              error={noteForm.error}
+              onSubmit={noteForm.submit}
+              isSubmitting={noteForm.isSubmitting}
+            />
           </>
         ) : (
           <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-tertiary bg-white px-6 py-12 text-center">

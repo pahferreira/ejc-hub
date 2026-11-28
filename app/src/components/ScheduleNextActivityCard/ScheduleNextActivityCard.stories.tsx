@@ -32,6 +32,7 @@ const meta = {
       actualEndedAt: null,
       adjustedDurationMinutes: null,
       effectiveDurationMinutes: 45,
+      notes: [],
     },
   },
   tags: ['autodocs'],

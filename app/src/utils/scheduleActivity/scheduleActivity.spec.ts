@@ -33,6 +33,7 @@ function activity(overrides: Partial<ScheduleActivity> = {}): ScheduleActivity {
     actualEndedAt: null,
     adjustedDurationMinutes: null,
     effectiveDurationMinutes: 30,
+    notes: [],
     ...overrides,
   }
 }
@@ -262,6 +263,7 @@ describe('activityFormValues', () => {
       actualEndedAt: null,
       adjustedDurationMinutes: null,
       effectiveDurationMinutes: 50,
+      notes: [],
     })
 
     expect(activityFormValues(card)).toEqual({

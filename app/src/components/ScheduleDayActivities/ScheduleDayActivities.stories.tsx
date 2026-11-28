@@ -30,6 +30,7 @@ const ACTIVITIES: ScheduleActivity[] = [
     actualEndedAt: null,
     adjustedDurationMinutes: null,
     effectiveDurationMinutes: 60,
+    notes: [],
   },
   {
     id: 'palestra',
@@ -48,6 +49,7 @@ const ACTIVITIES: ScheduleActivity[] = [
     actualEndedAt: null,
     adjustedDurationMinutes: null,
     effectiveDurationMinutes: 45,
+    notes: [],
   },
 ]
 

@@ -11,6 +11,7 @@ import {
   scheduleActivityControlBodySchema,
   createScheduleActivityBodySchema,
   createScheduleDayBodySchema,
+  createScheduleNoteBodySchema,
   scheduleActivityBodySchema,
   scheduleActivityParamsSchema,
   scheduleDayParamsSchema,
@@ -211,6 +212,37 @@ export function scheduleRoutes(server: FastifyServerInstance) {
           })
 
           return reply.code(HttpStatus.Ok).send({ result })
+        } catch (error) {
+          fastifyErrorHandler(request, reply, error)
+        }
+      }
+    )
+
+    // Authentication only. Who writes, and as what, is the core's: `schedule:control`
+    // writes as an admin, a coordinator of the current event for their team, and
+    // anyone else gets a 403. Coordinators hold no Auth0 role, so the token cannot
+    // say who they are.
+    server.post(
+      '/schedule/activities/:activityId/notes',
+      {
+        schema: { params: scheduleActivityParamsSchema, body: createScheduleNoteBodySchema },
+        preHandler: authGuard(server),
+      },
+      async (request, reply) => {
+        try {
+          const caller = callerOrUnauthorized(request, reply)
+
+          if (!caller) {
+            return reply
+          }
+
+          const result = await scheduleApp.createNote(request.params.activityId, {
+            authorAuthId: caller.authId,
+            permissions: caller.permissions,
+            body: request.body.body,
+          })
+
+          return reply.code(HttpStatus.Created).send({ result })
         } catch (error) {
           fastifyErrorHandler(request, reply, error)
         }

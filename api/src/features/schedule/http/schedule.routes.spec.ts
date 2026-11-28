@@ -11,6 +11,7 @@ const scheduleApp = vi.hoisted(() => ({
   deleteDay: vi.fn(),
   startActivity: vi.fn(),
   finishActivity: vi.fn(),
+  createNote: vi.fn(),
 }))
 
 vi.mock('../application/schedule-app.ts', () => ({ scheduleApp }))
@@ -68,6 +69,7 @@ describe('schedule routes', () => {
       finishedActivityId: null,
     })
     scheduleApp.finishActivity.mockResolvedValue({ activityId: ACTIVITY_ID })
+    scheduleApp.createNote.mockResolvedValue({ noteId: 'note-1', activityId: ACTIVITY_ID })
 
     server = await buildRouteTestServer(scheduleRoutes)
   })
@@ -88,6 +90,7 @@ describe('schedule routes', () => {
       ['DELETE', `/schedule/activities/${ACTIVITY_ID}`, {}],
       ['POST', `/schedule/activities/${ACTIVITY_ID}/start`, { expectedStatus: 'planned' }],
       ['POST', `/schedule/activities/${ACTIVITY_ID}/finish`, { expectedStatus: 'running' }],
+      ['POST', `/schedule/activities/${ACTIVITY_ID}/notes`, { body: 'Oi' }],
     ] as const)('answers %s %s with 401 without a token', async (method, url, payload) => {
       const response = await server.inject({ method, url, payload })
 
@@ -634,6 +637,91 @@ describe('schedule routes', () => {
       })
 
       expect(response.statusCode).toBe(409)
+    })
+  })
+
+  describe('POST /schedule/activities/:activityId/notes', () => {
+    const url = `/schedule/activities/${ACTIVITY_ID}/notes`
+    // No permissions: a coordinator's token carries none, and the core decides.
+    const NOTE_WRITER = authHeader({ sub: 'auth0|writer', permissions: [] })
+
+    it('hands the core the trimmed body and the caller, and answers 201', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url,
+        headers: NOTE_WRITER,
+        payload: { body: '  Levar os violões  ' },
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(response.json()).toEqual({ result: { noteId: 'note-1', activityId: ACTIVITY_ID } })
+      expect(scheduleApp.createNote).toHaveBeenCalledWith(ACTIVITY_ID, {
+        authorAuthId: 'auth0|writer',
+        permissions: [],
+        body: 'Levar os violões',
+      })
+    })
+
+    it('accepts a body of exactly 500 characters', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url,
+        headers: NOTE_WRITER,
+        payload: { body: 'a'.repeat(500) },
+      })
+
+      expect(response.statusCode).toBe(201)
+    })
+
+    it('answers 403 when the core refuses the author (a member or an outsider)', async () => {
+      scheduleApp.createNote.mockRejectedValue(
+        new AppError('Only an admin or a coordinator can leave a note', AppErrorCode.Forbidden)
+      )
+
+      const response = await server.inject({
+        method: 'POST',
+        url,
+        headers: NOTE_WRITER,
+        payload: { body: 'Oi' },
+      })
+
+      expect(response.statusCode).toBe(403)
+    })
+
+    it.each([
+      ['a body over 500 characters', url, { body: 'a'.repeat(501) }],
+      ['an empty body', url, { body: '   ' }],
+      ['no body', url, {}],
+      [
+        'an activity id that is not a uuid',
+        '/schedule/activities/not-a-uuid/notes',
+        { body: 'Oi' },
+      ],
+    ])('answers 400 for %s', async (_label, requestUrl, payload) => {
+      const response = await server.inject({
+        method: 'POST',
+        url: requestUrl,
+        headers: NOTE_WRITER,
+        payload,
+      })
+
+      expect(response.statusCode).toBe(400)
+      expect(scheduleApp.createNote).not.toHaveBeenCalled()
+    })
+
+    it('answers 404 when the core does not find the activity', async () => {
+      scheduleApp.createNote.mockRejectedValue(
+        new AppError('Schedule activity not found', AppErrorCode.NotFound)
+      )
+
+      const response = await server.inject({
+        method: 'POST',
+        url,
+        headers: NOTE_WRITER,
+        payload: { body: 'Oi' },
+      })
+
+      expect(response.statusCode).toBe(404)
     })
   })
 
